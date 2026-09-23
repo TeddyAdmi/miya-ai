@@ -13,11 +13,8 @@
 <body>
 <div class="app">
 <header class="topbar">
-  <a class="brand" href="/" aria-label="Miya AI">
-    <span class="brand-mark">M</span>
-    <span class="brand-name">Miya <b>AI</b></span>
-  </a>
-  <nav class="top-tabs">
+  <a class="brand" href="/" aria-label="Miya AI"><span class="brand-mark">M</span><span class="brand-name">Miya <b>AI</b></span></a>
+  <nav class="top-tabs" aria-label="Режим">
     <button class="top-tab active" data-mode="generator">Генератор</button>
     <button class="top-tab" data-mode="editor">Редактор</button>
     <button class="top-tab" data-mode="video">Видео</button>
@@ -31,40 +28,38 @@
 
 <main class="main">
   <section class="workspace" id="workspace">
-    <div class="canvas" id="canvas">
-      <div class="empty-state">
-        <div class="empty-logo">✦</div>
-        <h2>Что создадим?</h2>
-        <p>Опиши идею в поле ниже — результат появится здесь.</p>
-      </div>
+    <div class="workspace-toolbar">
+      <div><span class="mode-label" id="workspaceHint">TEXT → IMAGE</span><span class="mode-title" id="modeTitle">Генератор</span></div>
+      <button class="clear-btn" id="clearCanvas">Очистить</button>
     </div>
-    <div class="gallery" id="resultGallery"></div>
-  </section>
-
-  <section class="composer-wrap">
-    <div class="composer" id="composer">
-      <div class="composer-input-row">
-        <button class="attach" id="composerAttach" title="Добавить изображение">＋</button>
-        <textarea id="composerInput" rows="1" maxlength="4000" placeholder="Опиши изображение, которое хочешь создать..."></textarea>
-        <button class="mic" id="composerMic" title="Голосовой ввод">⌕</button>
-        <button class="send" id="composerSend"><span>✦</span><span id="composerSendText">Создать</span></button>
-      </div>
-      <div class="composer-options" id="composerOptions">
-        <button class="pill" id="composerModel">FLUX Dev</button>
-        <button class="pill" id="composerQuality">Standard</button>
-        <button class="pill" id="composerSize">1024</button>
-        <button class="pill" id="composerRatio">1:1</button>
-        <button class="pill" id="composerCount">1</button>
-        <span class="composer-spacer"></span>
-        <button class="improve" id="improve">✦ Улучшить промпт</button>
-      </div>
-      <div class="video-options" id="videoOptions">
-        <button class="pill">LTX 2.3</button><button class="pill">5 сек</button><button class="pill">16:9</button><button class="pill">Audio</button>
-      </div>
-      <div class="composer-status"><span class="status-dot"></span><span id="composerStatus">FLUX Dev · Image generation</span></div>
-    </div>
+    <div class="canvas" id="canvas"></div>
   </section>
 </main>
+
+<section class="composer-wrap">
+  <div class="composer" id="composer">
+    <div class="composer-context" id="composerContext">FLUX Dev · Image generation</div>
+    <div class="composer-input-row">
+      <button class="attach" id="composerAttach" title="Добавить изображение">＋</button>
+      <textarea id="composerInput" rows="1" maxlength="4000" placeholder="Опиши изображение, которое хочешь создать..."></textarea>
+      <button class="mic" id="composerMic" title="Голосовой ввод">⌕</button>
+      <button class="send" id="composerSend"><span>✦</span><span id="composerSendText">Создать</span></button>
+    </div>
+    <div class="composer-options" id="composerOptions">
+      <button class="pill" id="composerModel">FLUX Dev</button>
+      <button class="pill" id="composerQuality">Standard</button>
+      <button class="pill" id="composerSize">1024</button>
+      <button class="pill" id="composerRatio">1:1</button>
+      <button class="pill" id="composerCount">1</button>
+      <span class="composer-spacer"></span>
+      <button class="improve" id="improve">✦ Улучшить промпт</button>
+    </div>
+    <div class="video-options" id="videoOptions">
+      <button class="pill">LTX 2.3</button><button class="pill">5 сек</button><button class="pill">16:9</button><button class="pill">Audio</button>
+    </div>
+    <div class="composer-status"><span class="status-dot"></span><span id="composerStatus">FLUX Dev · Free image generation</span></div>
+  </div>
+</section>
 
 <input id="referenceInput" type="file" accept="image/*" hidden>
 <nav class="mobile-tabs">
