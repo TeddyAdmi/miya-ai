@@ -34,13 +34,10 @@ function modeHero(){
    </div>
    <div class="model-strip"><div><span class="live-dot"></span><b>FLUX Dev</b><small>Основная модель Miya</small></div><span class="model-chip">FAST</span><span class="model-chip quality">QUALITY</span></div>
  </div>`;
- return `<div class="studio-room">
-   <div class="room-intro"><div class="hero-mark video">▶</div><div><div class="mini-badge">LTX VIDEO ENGINE</div><h2>Создай видео с помощью AI</h2><p>Текст → видео или изображение → видео. Настройки доступны прямо внизу.</p></div></div>
-   <div class="feature-row">
-    <button class="feature-card" id="videoTextFeature" data-prompt="Cinematic camera movement, natural motion, premium film lighting"><span class="feature-icon cyan">T</span><div><b>Текст → Видео</b><small>Опиши сцену и движение</small></div><i>→</i></button>
-    <button class="feature-card" id="videoImageFeature"><span class="feature-icon orange">▧</span><div><b>Изображение → Видео</b><small>Оживи загруженное изображение</small></div><i>→</i></button>
-   </div>
-   <div class="model-strip"><div><span class="live-dot"></span><b>LTX 2.3</b><small>Video generation</small></div><span class="model-chip">5 SEC</span><span class="model-chip">AUDIO</span></div>
+ return `<div class="plain-studio">
+   <div class="mini-badge">LTX VIDEO ENGINE</div>
+   <h2>Создай видео с помощью AI</h2>
+   <p>Текст → видео или изображение → видео. Настройки доступны прямо внизу.</p>
  </div>`;
 }
 function showEmpty(){
