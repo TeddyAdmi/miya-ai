@@ -1,14 +1,14 @@
 const ideas=[
-  "Кинематографичный портрет в мягком вечернем свете",
+  "Кинематографичный горный пейзаж на рассвете, туман и золотой свет",
+  "Роскошная альпийская долина, озеро как зеркало, ultra realistic",
   "Футуристический город после дождя, неон и отражения",
-  "Премиальная предметная фотография на чистом фоне",
-  "Милый чиби-персонаж в детализированном 3D стиле",
-  "Путешественник на вершине горы на рассвете",
-  "Роскошный интерьер современного дома",
-  "Фэнтезийный лес с туманом и золотым светом",
-  "Редакционная fashion-съёмка высокого класса",
-  "Миниатюрный мир внутри стеклянного шара",
-  "Кинопостер для фантастического фильма"
+  "Премиальная fashion-съёмка в мягком вечернем свете",
+  "Милый 3D-персонаж в детализированном сказочном мире",
+  "Одинокий дом в горах, драматичные облака, кинематографичный кадр",
+  "Фэнтезийный лес с туманом и солнечными лучами",
+  "Минималистичный интерьер современного дома с панорамными окнами",
+  "Кинопостер для фантастического фильма",
+  "Путешественник на вершине горы, epic wide shot"
 ];
 
 const modes={
@@ -24,13 +24,17 @@ let mode="generator";
 function renderIdeas(){
   const box=$("#ideas");
   box.innerHTML="";
-  [...ideas].sort(()=>Math.random()-.5).slice(0,5).forEach((idea)=>{
+  [...ideas].sort(()=>Math.random()-.5).slice(0,5).forEach(idea=>{
     const b=document.createElement("button");
     b.className="idea";
     b.textContent=idea;
-    b.onclick=()=>$("#prompt").value=idea;
+    b.onclick=()=>{ $("#prompt").value=idea; updateCount(); };
     box.appendChild(b);
   });
+}
+
+function updateCount(){
+  $("#count").textContent=$("#prompt").value.length+" / 4000";
 }
 
 function setMode(next){
@@ -38,22 +42,24 @@ function setMode(next){
   const data=modes[next];
   $("#modeTitle").textContent=data.title;
   $("#modeSubtitle").textContent=data.subtitle;
-  $("#emptyText").textContent=data.empty;
-  $$(".top-tab,.tool,.mobile-nav button").forEach(el=>el.classList.toggle("active",el.dataset.mode===next));
+  $$("[data-mode]").forEach(el=>el.classList.toggle("active",el.dataset.mode===next));
 }
 
-$$("[data-mode]").forEach(el=>el.addEventListener("click",()=>el.disabled||setMode(el.dataset.mode)));
-$("#randomIdea").onclick=()=>renderIdeas();
-$("#clearPrompt").onclick=()=>$("#prompt").value="";
+$$("[data-mode]").forEach(el=>el.addEventListener("click",()=>!el.disabled&&setMode(el.dataset.mode)));
+$("#randomIdea").onclick=renderIdeas;
+$("#prompt").addEventListener("input",updateCount);
+$("#clearPrompt").onclick=()=>{ $("#prompt").value=""; updateCount(); };
 $("#clearCanvas").onclick=()=>{
-  $("#canvas").innerHTML='<div class="empty"><div class="empty-icon">✦</div><strong>Твой будущий результат</strong><span id="emptyText">'+modes[mode].empty+"</span></div>";
+  $("#canvas").innerHTML='<div class="canvas-empty"><div class="empty-symbol">✦</div><b>Твой будущий результат</b><span>'+modes[mode].empty+"</span></div>";
 };
 $$("[data-ratio]").forEach(btn=>btn.addEventListener("click",()=>{
   $$("[data-ratio]").forEach(x=>x.classList.remove("selected"));
   btn.classList.add("selected");
 }));
 $("#voice").onclick=()=>alert("Голосовой ввод подключим позже.");
-$("#create").onclick=()=>alert("Модели пока не подключены. Сначала собираем чистую студию, затем добавим нужные модели.");
+$("#improve").onclick=()=>alert("Улучшение промпта подключим вместе с AI-моделями.");
+$("#create").onclick=()=>alert("Сейчас это чистая студия. Модели подключим следующим этапом.");
 
 renderIdeas();
 setMode("generator");
+updateCount();
