@@ -19,26 +19,9 @@ function modeHero(){
      <h2>Чем займёмся сегодня?</h2>
      <p>Напиши идею — Miya поможет превратить её в текст, изображение или видео.</p>
    </div>
-   <div class="quick-grid">
-     <button class="quick-card" data-prompt="Придумай 5 идей для вирусного короткого видео"><span class="q-icon purple">✦</span><b>Идеи для контента</b><small>Придумать вирусные идеи</small></button>
-     <button class="quick-card" data-prompt="Создай кинематографичный промпт для изображения"><span class="q-icon blue">▧</span><b>Создать изображение</b><small>Промпт для FLUX</small></button>
-     <button class="quick-card" data-prompt="Придумай сценарий короткого AI-видео"><span class="q-icon cyan">▶</span><b>Создать видео</b><small>Сценарий + движение</small></button>
-     <button class="quick-card" data-prompt="Улучши мой промпт и добавь кинематографичную детализацию"><span class="q-icon gold">✦</span><b>Улучшить промпт</b><small>Свет, камера, детали</small></button>
-   </div>
  </div>`;
- if(mode==="images") return `<div class="studio-room">
-   <div class="room-intro"><div class="hero-mark small">▧</div><div><div class="mini-badge">FLUX IMAGE ENGINE</div><h2>Создай или измени изображение</h2><p>Один промпт — генерация или редактирование с исходным изображением.</p></div></div>
-   <div class="feature-row">
-    <button class="feature-card" id="uploadFeature"><span class="feature-icon purple">＋</span><div><b>Изображение → Изображение</b><small>Загрузи фото и опиши изменения</small></div><i>→</i></button>
-    <button class="feature-card" data-prompt="Cinematic editorial portrait, dramatic lighting, premium photography, ultra detailed"><span class="feature-icon blue">✦</span><div><b>Текст → Изображение</b><small>Начать с чистого промпта</small></div><i>→</i></button>
-   </div>
-   <div class="model-strip"><div><span class="live-dot"></span><b>FLUX Dev</b><small>Основная модель Miya</small></div><span class="model-chip">FAST</span><span class="model-chip quality">QUALITY</span></div>
- </div>`;
- return `<div class="plain-studio">
-   <div class="mini-badge">LTX VIDEO ENGINE</div>
-   <h2>Создай видео с помощью AI</h2>
-   <p>Текст → видео или изображение → видео. Настройки доступны прямо внизу.</p>
- </div>`;
+ if(mode==="images") return `<div class="studio-room clean-canvas"></div>`;
+ return `<div class="studio-room clean-canvas"></div>`;
 }
 function showEmpty(){
  const c=$("#canvas");c.innerHTML=modeHero();bindQuickCards();
