@@ -4,8 +4,8 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#ffffff">
-<meta name="description" content="Miya AI — Image, Video, Editor and AI Chat">
-<title>Miya AI — Image & Video Studio</title>
+<meta name="description" content="Miya Studio — Images, Video and AI Chat">
+<title>Miya Studio — AI Image & Video Studio</title>
 <link rel="icon" href="/favicon.svg" type="image/svg+xml">
 <link rel="manifest" href="/b_manifest.json">
 <link rel="stylesheet" href="/styles.css">
@@ -13,7 +13,7 @@
 <body>
 <div class="app">
 <header class="topbar">
-  <a class="brand" href="/" aria-label="Miya AI"><span class="brand-mark">M</span><span class="brand-name">Miya <b>AI</b></span></a>
+  <a class="brand" href="/" aria-label="Miya Studio"><span class="brand-mark">M</span><span class="brand-name">Miya <b>Studio</b></span></a>
   <div class="top-actions">
     <button class="top-icon" id="themeToggle" title="Тема">☼</button>
     <div class="profile"><span>M</span><div><b>Miya User</b><small>0 PKOIN</small></div></div>
@@ -22,52 +22,60 @@
 
 <main class="main">
   <aside class="sidebar" aria-label="Инструменты">
-    <div class="side-title">Miya AI</div>
-    <button class="side-btn active" data-mode="generator"><span>✦</span><b>Генерация</b></button>
-    <button class="side-btn" data-mode="editor"><span>◌</span><b>Редактор</b></button>
+    <div class="side-logo"><span class="side-logo-mark">M</span><span>Miya Studio</span></div>
+    <button class="side-btn active" data-mode="chat"><span>◉</span><b>AI Chat</b></button>
+    <button class="side-btn" data-mode="images"><span>✦</span><b>Картинки</b></button>
     <button class="side-btn" data-mode="video"><span>▶</span><b>Видео</b></button>
-    <button class="side-btn" data-mode="chat"><span>◉</span><b>AI Chat</b></button>
   </aside>
+
   <section class="workspace" id="workspace">
-    <div class="workspace-toolbar">
-      <div><span class="mode-label" id="workspaceHint">TEXT → IMAGE</span><span class="mode-title" id="modeTitle">Генератор</span></div>
-      <button class="clear-btn" id="clearCanvas">Очистить</button>
-    </div>
+    <div class="workspace-toolbar"></div>
     <div class="canvas" id="canvas"></div>
   </section>
 </main>
 
 <section class="composer-wrap">
   <div class="composer" id="composer">
-    <div class="composer-context" id="composerContext">FLUX Dev · Image generation</div>
+    <div class="composer-context" id="composerContext">AI Chat</div>
     <div class="composer-input-row">
       <button class="attach" id="composerAttach" title="Добавить изображение">＋</button>
-      <textarea id="composerInput" rows="1" maxlength="4000" placeholder="Опиши изображение, которое хочешь создать..."></textarea>
+      <textarea id="composerInput" rows="1" maxlength="4000" placeholder="Напиши сообщение..."></textarea>
       <button class="mic" id="composerMic" title="Голосовой ввод">⌕</button>
-      <button class="send" id="composerSend"><span>✦</span><span id="composerSendText">Создать</span></button>
+      <button class="send" id="composerSend"><span>✦</span><span id="composerSendText">Отправить</span></button>
     </div>
-    <div class="composer-options" id="composerOptions">
-      <button class="pill" id="composerModel">FLUX Dev</button>
-      <button class="pill" id="composerQuality">Standard</button>
-      <button class="pill" id="composerSize">1024</button>
-      <button class="pill" id="composerRatio">1:1</button>
-      <button class="pill" id="composerCount">1</button>
+
+    <div class="composer-options image-settings" id="composerOptions">
+      <select class="select-pill" id="composerModel" aria-label="Модель">
+        <option>FLUX Dev</option>
+        <option>FLUX Kontext Dev</option>
+      </select>
+      <select class="select-pill" id="composerSize" aria-label="Размер">
+        <option>1024 × 1024</option>
+        <option>1024 × 1536</option>
+        <option>1536 × 1024</option>
+        <option>1536 × 1536</option>
+      </select>
+      <select class="select-pill" id="composerQuality" aria-label="Качество">
+        <option>Standard</option>
+        <option>High</option>
+        <option>Ultra</option>
+      </select>
       <span class="composer-spacer"></span>
       <button class="improve" id="improve">✦ Улучшить промпт</button>
     </div>
+
     <div class="video-options" id="videoOptions">
       <button class="pill">LTX 2.3</button><button class="pill">5 сек</button><button class="pill">16:9</button><button class="pill">Audio</button>
     </div>
-    <div class="composer-status"><span class="status-dot"></span><span id="composerStatus">FLUX Dev · Free image generation</span></div>
+    <div class="composer-status"><span class="status-dot"></span><span id="composerStatus">AI Chat</span></div>
   </div>
 </section>
 
 <input id="referenceInput" type="file" accept="image/*" hidden>
 <nav class="mobile-tabs">
-  <button class="active" data-mode="generator">✦<small>Генератор</small></button>
-  <button data-mode="editor">◌<small>Редактор</small></button>
+  <button class="active" data-mode="chat">◉<small>AI Chat</small></button>
+  <button data-mode="images">✦<small>Картинки</small></button>
   <button data-mode="video">▶<small>Видео</small></button>
-  <button data-mode="chat">◉<small>Chat</small></button>
 </nav>
 <script type="module" src="/src/app.js"></script>
 </body>
