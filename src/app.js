@@ -21,8 +21,9 @@ function syncInput(){
 
 function showEmpty(){
  const canvas=$("#canvas");
+ $("#resultGallery").innerHTML="";
  if(mode==="chat"){
-  canvas.innerHTML='<div class="chat-stream"><div class="empty-state"><div class="empty-logo">M</div><h2>AI Chat</h2><p>Задай вопрос или попроси помочь с идеей.</p></div></div>';
+  canvas.innerHTML='<div class="chat-stream"><div class="chat-welcome"><div class="empty-logo">M</div><h2>Чем могу помочь?</h2><p>Спроси что угодно или начни новый разговор.</p></div></div>';
  }else{
   canvas.innerHTML='<div class="empty-state"><div class="empty-logo">✦</div><h2>Что создадим?</h2><p>Опиши идею в поле ниже — результат появится здесь.</p></div>';
  }
@@ -95,8 +96,13 @@ function setMode(next){
  mode=next;const m=modes[next];
  $("#workspaceHint").textContent=m.hint;$("#modeTitle").textContent=m.title;$("#modeSubtitle").textContent=m.subtitle;
  $("#composerInput").placeholder=m.placeholder;$("#composerSendText").textContent=m.send;$("#composerStatus").textContent=m.status;
- $("#composerOptions").style.display=next==="chat"?"none":"flex";
+ $("#composerOptions").style.display=next==="video"||next==="editor"||next==="generator"?"flex":"flex";
  $("#videoOptions").classList.toggle("show",next==="video");
+ $("#composerModel").textContent=next==="chat"?"Miya AI":"FLUX Dev";
+ $("#composerQuality").textContent=next==="chat"?"Web · Files":"Standard";
+ $("#composerSize").textContent=next==="chat"?"Thinking":"1024";
+ $("#composerRatio").textContent=next==="editor"?"Strength 70%":next==="video"?"16:9":"1:1";
+ $("#composerCount").textContent=next==="chat"?"Tools":"1";
  $$(".top-tab,[data-mode]").forEach(x=>x.classList.toggle("active",x.dataset.mode===next));
  showEmpty();syncInput();
 }
@@ -127,7 +133,9 @@ $("#referenceInput").onchange=e=>{
  const file=e.target.files?.[0];
  if(!file)return;
  const reader=new FileReader();
- reader.onload=()=>{referenceImage=String(reader.result||"");toast("Изображение добавлено")};
+ reader.onload=()=>{referenceImage=String(reader.result||"");
+   if(mode==="editor"){const c=$("#canvas");c.innerHTML="";const img=document.createElement("img");img.className="result-image editor-source";img.src=referenceImage;img.alt="Source image";c.appendChild(img);$("#composerStatus").textContent="Image ready · describe your edit";}
+   toast("Изображение добавлено")};
  reader.readAsDataURL(file);
 };
 
