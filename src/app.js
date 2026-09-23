@@ -130,10 +130,6 @@ $("#improve").onclick=()=>{
  const i=$("#composerInput");if(i.value.trim())i.value=i.value.trim()+", cinematic composition, professional lighting, realistic textures, highly detailed, premium quality";else toast("Сначала введи промпт");syncInput()
 };
 $("#themeToggle").onclick=()=>{document.body.classList.toggle("light");$("#themeToggle").textContent=document.body.classList.contains("light")?"☾":"☼"};
-$("#helpButton").onclick=()=>toast("Miya: выбери раздел слева и начни с промпта");
-$("#brandHome").onclick=e=>{e.preventDefault();setMode("chat")};
-$("#clearCanvas").onclick=()=>{chatStarted=false;showEmpty();$("#composerInput").value="";syncInput();toast("Рабочая область очищена")};
-$("#newTask").onclick=()=>{$("#composerInput").focus();toast("Новая задача готова")};
 $("#profileButton").onclick=()=>toast("Профиль Miya User · 0 PKOIN");
 $$("[data-tool]").forEach(b=>b.onclick=()=>{
  const tool=b.dataset.tool;
@@ -142,5 +138,4 @@ $$("[data-tool]").forEach(b=>b.onclick=()=>{
  else if(tool==="history")toast("История будет отображаться здесь после генераций");
  else toast("Библиотека Miya готовится");
 });
-$("#globalSearch").addEventListener("keydown",e=>{if(e.key==="Enter"&&e.target.value.trim())toast("Поиск: "+e.target.value.trim())});
 setMode("chat");
