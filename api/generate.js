@@ -66,7 +66,7 @@ export default async function handler(req, res) {
     ];
 
     const imageUrl = candidates.find(
-      value => typeof value === "string" && /^https?:\\/\\//i.test(value)
+      value => typeof value === "string" && (value.startsWith("http://") || value.startsWith("https://"))
     );
 
     if (!imageUrl) {
