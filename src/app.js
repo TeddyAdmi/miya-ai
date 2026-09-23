@@ -27,3 +27,5 @@ $("#create").onclick=()=>showToast("Настройки готовы. Следу�
 $("#clearHistory").onclick=()=>showToast("История пока пуста.");
 $(".new-project").onclick=()=>{$("#prompt").value="";$("#negativePrompt").value="";resultCount=1;$("#resultCount").textContent="1";resetCanvas();updateCount();showToast("Создано новое рабочее пространство")};
 renderIdeas();setMode("generator");updateCount();
+$$(".model-option").forEach(b=>b.addEventListener("click",()=>{selectGroup(".model-option",b);showToast("Выбрана модель: "+b.dataset.model.toUpperCase())}));
+$$(".result-view").forEach(b=>b.addEventListener("click",()=>selectGroup(".result-view",b)));
