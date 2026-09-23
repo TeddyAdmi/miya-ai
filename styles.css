@@ -84,3 +84,7 @@ body.light .mobile-nav{background:rgba(255,255,255,.96);border-color:#dce3ed}
 body.light .mobile-nav button.active{background:#edf4ff;color:#3478ee}
 body.light #toast{background:#fff;border-color:#cbd9eb;color:#24344c;box-shadow:0 12px 35px rgba(40,60,90,.15)}
 @media(max-width:680px){.hero h1{font-size:27px}.brand-copy strong{font-size:16px}}
+
+
+/* Miya composer layout v2 */
+@media (min-width:900px){.workspace-grid{display:flex!important;flex-direction:column!important;gap:18px!important}.workspace{width:100%!important}.controls{width:100%!important;max-width:none!important;display:grid!important;grid-template-columns:minmax(0,1fr) auto;gap:14px 18px!important;padding:18px 20px!important}.controls>.panel-title,.controls>.prompt-wrap,.controls>.prompt-tools,.controls>.quick,.controls>.control-block,.controls>.control-row,.controls>.collapsible,.controls>.reference-box,.controls>.create,.controls>.engine,.controls>.model-select-block{grid-column:1/-1}.controls>.control-block,.controls>.control-row{display:none}.controls>.create{min-height:54px}.controls>.engine{margin-top:0}}.miya-video-options{display:none;gap:10px;flex-wrap:wrap;margin:0 0 4px}.miya-video-options.show{display:flex}.miya-video-options button{border:1px solid var(--line);background:var(--panel);border-radius:10px;padding:9px 12px;color:inherit;font-weight:600;cursor:pointer}.miya-video-options button.selected{border-color:#7657ff;background:#f6f3ff}.top-tab.active{position:relative;z-index:2}@media(max-width:899px){.controls{display:flex!important;flex-direction:column!important}}
