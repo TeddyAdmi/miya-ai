@@ -23,7 +23,7 @@ $("#referenceInput").addEventListener("change",e=>{const file=e.target.files?.[0
 ["dragleave","drop"].forEach(ev=>$("#referenceAdd").addEventListener(ev,e=>{e.preventDefault();$("#referenceAdd").classList.remove("dragover")}));
 $("#referenceAdd").addEventListener("drop",e=>{const file=e.dataTransfer.files?.[0];if(!file||!file.type.startsWith("image/"))return;$("#referenceInput").files=e.dataTransfer.files;$("#referenceInput").dispatchEvent(new Event("change"))});
 $("#voice").onclick=()=>showToast("Голосовой ввод подключим вместе с AI-функциями.");$("#improve").onclick=()=>showToast("Улучшение промпта подключим вместе с AI-моделями.");
-$("#create").onclick=()=>showToast("Настройки готовы. Следующий этап — подключение модели генерации.");
+$("#create").onclick=()=>{const p=$("#prompt").value.trim();if(!p){showToast(mode==="video"?"Сначала опиши видео":"Сначала опиши, что создать");$("#prompt").focus();return}showToast(mode==="video"?"Видео готовится…":mode==="editor"?"Изменения применяются…":"Генерация запускается…")};
 $("#clearHistory").onclick=()=>showToast("История пока пуста.");
 $(".new-project").onclick=()=>{$("#prompt").value="";$("#negativePrompt").value="";resultCount=1;$("#resultCount").textContent="1";resetCanvas();updateCount();showToast("Создано новое рабочее пространство")};
 renderIdeas();setMode("generator");updateCount();
