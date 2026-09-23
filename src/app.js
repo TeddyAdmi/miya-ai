@@ -29,3 +29,10 @@ $(".new-project").onclick=()=>{$("#prompt").value="";$("#negativePrompt").value=
 renderIdeas();setMode("generator");updateCount();
 $$(".model-option").forEach(b=>b.addEventListener("click",()=>{selectGroup(".model-option",b);showToast("Выбрана модель: "+b.dataset.model.toUpperCase())}));
 $$(".result-view").forEach(b=>b.addEventListener("click",()=>selectGroup(".result-view",b)));
+
+const themeToggle=$("#themeToggle");
+const savedTheme=localStorage.getItem("miya-theme");
+if(savedTheme==="light") document.body.classList.add("light");
+function syncThemeButton(){if(themeToggle) themeToggle.textContent=document.body.classList.contains("light")?"☾":"☀";}
+syncThemeButton();
+themeToggle?.addEventListener("click",()=>{document.body.classList.toggle("light");localStorage.setItem("miya-theme",document.body.classList.contains("light")?"light":"dark");syncThemeButton();showToast(document.body.classList.contains("light")?"Светлая тема":"Тёмная тема")});
