@@ -1,21 +1,54 @@
-const ideas=["Кинематографичный горный пейзаж на рассвете, туман и золотой свет","Роскошная альпийская долина, озеро как зеркало, ultra realistic","Футуристический город после дождя, неон и отражения","Премиальная fashion-съёмка в мягком вечернем свете","Милый 3D-персонаж в детализированном сказочном мире","Одинокий дом в горах, драматичные облака, кинематографичный кадр","Фэнтезийный лес с туманом и солнечными лучами","Минималистичный интерьер современного дома с панорамными окнами","Кинопостер для фантастического фильма","Путешественник на вершине горы, epic wide shot"];
-const modes={generator:{title:"Генератор изображений",subtitle:"Создай изображение по описанию",hint:"TEXT TO IMAGE",placeholder:"Опиши изображение, которое хочешь создать...",send:"Создать",status:"FLUX · Image generation"},editor:{title:"Miya Editor",subtitle:"Редактируй изображение с помощью AI",hint:"IMAGE TO IMAGE",placeholder:"Что изменить в изображении?",send:"Применить",status:"FLUX · Image editing"},video:{title:"Видео-студия",subtitle:"Создавай видео из текста или изображения",hint:"IMAGE / TEXT TO VIDEO",placeholder:"Опиши видео или движение...",send:"Создать видео",status:"LTX · Video generation"},chat:{title:"AI Chat",subtitle:"Общайся с подключённой AI-моделью",hint:"AI CHAT",placeholder:"Напиши сообщение...",send:"Отправить",status:"AI Chat · connected models"}};
-const $=s=>document.querySelector(s),$$=s=>[...document.querySelectorAll(s)];let mode="generator",resultCount=1;
-function toast(m){let t=$("#toast");if(!t){t=document.createElement("div");t.id="toast";document.body.appendChild(t)}t.textContent=m;t.classList.add("show");clearTimeout(window.__t);window.__t=setTimeout(()=>t.classList.remove("show"),2200)}
-function sync(){const i=$("#composerInput");if(!i)return;i.style.height="auto";i.style.height=Math.min(130,Math.max(30,i.scrollHeight))+"px";$("#count")?.replaceChildren(document.createTextNode(i.value.length+" / 4000"))}
-function empty(){if(mode==="chat"){$("#canvas").innerHTML='<div class="chat-empty"><div class="chat-logo">M</div><h3>AI Chat</h3><p>Задай вопрос, попроси написать текст или помоги себе с промптом.</p><div class="chat-suggestions"><button data-chat="Улучши мой промпт для генерации изображения">Улучшить промпт</button><button data-chat="Придумай 5 идей для изображения">Придумать идеи</button><button data-chat="Помоги создать сценарий короткого видео">Сценарий видео</button></div></div>';$$(".chat-suggestions button").forEach(b=>b.onclick=()=>{$("#composerInput").value=b.dataset.chat;sync();$("#composerInput").focus()});return}$("#canvas").innerHTML='<div class="canvas-empty"><div class="empty-symbol">✦</div><b>'+modes[mode].title+'</b><span>Здесь появится результат.</span></div><div class="canvas-grid"></div>'}
-function setMode(n){mode=n;const m=modes[n];$("#modeTitle").textContent=m.title;$("#modeSubtitle").textContent=m.subtitle;$("#canvasHint").textContent=m.hint;$$("[data-mode]").forEach(x=>x.classList.toggle("active",x.dataset.mode===n));$("#composerInput").placeholder=m.placeholder;$("#composerSendText").textContent=m.send;$("#composerStatus").textContent=m.status;$("#composerOptions").style.display=n==="chat"?"none":"flex";empty();sync()}
-function ideas(){const b=$("#ideas");if(!b)return;b.innerHTML="";ideas.list.sort(()=>Math.random()-.5).slice(0,5).forEach(x=>{const q=document.createElement("button");q.className="idea";q.textContent=x;q.onclick=()=>{$("#composerInput").value=x;sync()};b.appendChild(q)})}
-ideas.list=ideas;
-function chat(role,text){let s=$("#canvas .chat-stream");if(!s){$("#canvas").innerHTML='<div class="chat-stream"></div>';s=$("#canvas .chat-stream")}const r=document.createElement("div");r.className="chat-row "+role;r.innerHTML='<div class="chat-avatar">'+(role==="user"?"U":"M")+'</div><div class="chat-bubble"></div>';r.querySelector(".chat-bubble").textContent=text;s.appendChild(r);s.scrollTop=s.scrollHeight}
-$$("[data-mode]").forEach(x=>x.onclick=()=>!x.disabled&&setMode(x.dataset.mode));
-$("#composerInput").addEventListener("input",sync);$("#composerInput").addEventListener("keydown",e=>{if(e.key==="Enter"&&!e.shiftKey){e.preventDefault();$("#composerSend").click()}});
-$("#composerSend").onclick=()=>{const p=$("#composerInput").value.trim();if(!p){toast(mode==="chat"?"Напиши сообщение":"Сначала опиши, что создать");return}if(mode==="chat"){chat("user",p);$("#composerInput").value="";sync();setTimeout(()=>chat("assistant","Интерфейс AI Chat готов. Реальную модель подключим к этому composer без изменения UI."),300)}else toast(modes[mode].send+" запущено…")};
-$("#composerMic").onclick=()=>toast("Голосовой ввод подключим через speech API");$("#composerAttach").onclick=()=>{$("#referenceInput")?.click();toast("Изображение выбрано как reference")};
-$("#randomIdea")?.addEventListener("click",ideas);$("#clearCanvas")?.addEventListener("click",empty);$("#clearPrompt")?.addEventListener("click",()=>{$("#composerInput").value="";sync()});
-$$("[data-ratio]").forEach(b=>b.onclick=()=>{select("[data-ratio]",b);$("#composerRatio").textContent=b.dataset.ratio});$$("[data-quality]").forEach(b=>b.onclick=()=>select("[data-quality]",b));$$(".model-option").forEach(b=>b.onclick=()=>{select(".model-option",b);$("#composerModel").textContent=b.dataset.model.toUpperCase()});
-function select(s,e){$$(s).forEach(x=>x.classList.remove("selected"));e.classList.add("selected")}
-$("#countMinus")?.addEventListener("click",()=>{resultCount=Math.max(1,resultCount-1);$("#composerCount").textContent=resultCount});$("#countPlus")?.addEventListener("click",()=>{resultCount=Math.min(4,resultCount+1);$("#composerCount").textContent=resultCount});
-$$(".collapse-head").forEach(b=>b.onclick=()=>{const x=$("#"+b.dataset.target);x.classList.toggle("collapsed")});
-const themeToggle=$("#themeToggle");if(localStorage.getItem("miya-theme")==="light")document.body.classList.add("light");themeToggle&&(themeToggle.textContent=document.body.classList.contains("light")?"☾":"☀",themeToggle.onclick=()=>{document.body.classList.toggle("light");localStorage.setItem("miya-theme",document.body.classList.contains("light")?"light":"dark")});
-ideas();setMode("generator");
+const modes={
+ generator:{title:"Генератор",subtitle:"Создай изображение по описанию",hint:"TEXT → IMAGE",placeholder:"Опиши изображение, которое хочешь создать...",send:"Создать",status:"FLUX Dev · Image generation"},
+ editor:{title:"Miya Editor",subtitle:"Редактируй изображение с помощью AI",hint:"IMAGE → IMAGE",placeholder:"Что изменить в изображении?",send:"Применить",status:"FLUX Kontext Dev · Image editing"},
+ video:{title:"Видео",subtitle:"Создавай видео из текста или изображения",hint:"IMAGE / TEXT → VIDEO",placeholder:"Опиши видео или движение...",send:"Создать видео",status:"LTX · Video generation"},
+ chat:{title:"AI Chat",subtitle:"Общайся с AI-моделью",hint:"AI CHAT",placeholder:"Напиши сообщение...",send:"Отправить",status:"AI Chat"}
+};
+const $=s=>document.querySelector(s), $$=s=>[...document.querySelectorAll(s)];
+let mode="generator";
+
+function toast(message){
+ let t=$("#toast");
+ if(!t){t=document.createElement("div");t.id="toast";Object.assign(t.style,{position:"fixed",left:"50%",bottom:"180px",transform:"translateX(-50%)",zIndex:"100",padding:"10px 14px",borderRadius:"10px",background:"#182033",color:"#fff",fontSize:"11px",boxShadow:"0 10px 30px #0003"});document.body.appendChild(t)}
+ t.textContent=message;t.style.display="block";clearTimeout(window.__toast);window.__toast=setTimeout(()=>t.style.display="none",2200);
+}
+function syncInput(){
+ const input=$("#composerInput");if(!input)return;
+ input.style.height="auto";input.style.height=Math.min(130,Math.max(38,input.scrollHeight))+"px";
+}
+function showEmpty(){
+ const canvas=$("#canvas");
+ if(mode==="chat"){
+  canvas.innerHTML='<div class="chat-stream"><div class="empty-state"><div class="empty-logo">M</div><h2>AI Chat</h2><p>Задай вопрос или попроси помочь с идеей.</p></div></div>';
+ }else{
+  canvas.innerHTML='<div class="empty-state"><div class="empty-logo">✦</div><h2>Что создадим?</h2><p>Опиши идею в поле ниже — результат появится здесь.</p></div>';
+ }
+}
+function setMode(next){
+ mode=next;const m=modes[next];
+ $("#workspaceHint").textContent=m.hint;$("#modeTitle").textContent=m.title;$("#modeSubtitle").textContent=m.subtitle;
+ $("#composerInput").placeholder=m.placeholder;$("#composerSendText").textContent=m.send;$("#composerStatus").textContent=m.status;
+ $("#composerOptions").style.display=next==="chat"?"none":"flex";
+ $("#videoOptions").classList.toggle("show",next==="video");
+ $$(".top-tab,[data-mode]").forEach(x=>x.classList.toggle("active",x.dataset.mode===next));
+ showEmpty();syncInput();
+}
+$$("[data-mode]").forEach(b=>b.addEventListener("click",()=>setMode(b.dataset.mode)));
+$("#composerInput").addEventListener("input",syncInput);
+$("#composerInput").addEventListener("keydown",e=>{if(e.key==="Enter"&&!e.shiftKey){e.preventDefault();$("#composerSend").click()}});
+$("#composerSend").addEventListener("click",()=>{
+ const value=$("#composerInput").value.trim();
+ if(!value){toast(mode==="chat"?"Напиши сообщение":"Сначала опиши, что создать");return}
+ if(mode==="chat"){
+  const stream=$("#canvas .chat-stream")||($("#canvas").innerHTML='<div class="chat-stream"></div>',$("#canvas .chat-stream"));
+  const row=document.createElement("div");row.className="chat-row user";row.innerHTML='<div class="chat-avatar">U</div><div class="chat-bubble"></div>';row.querySelector(".chat-bubble").textContent=value;stream.appendChild(row);stream.scrollTop=stream.scrollHeight;$("#composerInput").value="";syncInput();return;
+ }
+ toast(modes[mode].send+" — подключение модели будет выполнено следующим этапом");
+});
+$("#composerAttach").onclick=()=>$("#referenceInput").click();
+$("#referenceInput").onchange=e=>{if(e.target.files?.[0])toast("Изображение добавлено");};
+$("#composerMic").onclick=()=>toast("Голосовой ввод");
+$("#clearCanvas").onclick=showEmpty;
+$("#improve").onclick=()=>{const i=$("#composerInput");if(i.value.trim())i.value=i.value.trim()+", cinematic, highly detailed, professional quality";else toast("Сначала введи промпт");syncInput()};
+$("#themeToggle").onclick=()=>{document.body.classList.toggle("dark");$("#themeToggle").textContent=document.body.classList.contains("dark")?"☾":"☼"};
+setMode("generator");
