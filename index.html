@@ -14,12 +14,7 @@
 <div class="app">
 <header class="topbar">
   <a class="brand" href="/" aria-label="Miya AI"><span class="brand-mark">M</span><span class="brand-name">Miya <b>AI</b></span></a>
-  <nav class="top-tabs" aria-label="Режим">
-    <button class="top-tab active" data-mode="generator">Генератор</button>
-    <button class="top-tab" data-mode="editor">Редактор</button>
-    <button class="top-tab" data-mode="video">Видео</button>
-    <button class="top-tab" data-mode="chat">AI Chat</button>
-  </nav>
+  <nav class="top-tabs" aria-label="Раздел"><button class="top-tab active" data-mode="generator">Создать</button></nav>
   <div class="top-actions">
     <button class="top-icon" id="themeToggle" title="Тема">☼</button>
     <div class="profile"><span>M</span><div><b>Miya User</b><small>0 PKOIN</small></div></div>
@@ -27,6 +22,13 @@
 </header>
 
 <main class="main">
+  <aside class="sidebar" aria-label="Инструменты">
+    <div class="side-title">Miya AI</div>
+    <button class="side-btn active" data-mode="generator"><span>✦</span><b>Генерация</b></button>
+    <button class="side-btn" data-mode="editor"><span>◌</span><b>Редактор</b></button>
+    <button class="side-btn" data-mode="video"><span>▶</span><b>Видео</b></button>
+    <button class="side-btn" data-mode="chat"><span>◉</span><b>AI Chat</b></button>
+  </aside>
   <section class="workspace" id="workspace">
     <div class="workspace-toolbar">
       <div><span class="mode-label" id="workspaceHint">TEXT → IMAGE</span><span class="mode-title" id="modeTitle">Генератор</span></div>
