@@ -1,0 +1,101 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="theme-color" content="#7450e8">
+  <meta name="description" content="Miya AI — Image & Video Studio">
+  <title>Miya AI — Image & Video Studio</title>
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+  <link rel="manifest" href="/b_manifest.json">
+  <link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+  <div class="app">
+    <header class="topbar">
+      <a class="brand" href="/">
+        <span class="brand-mark">M</span>
+        <span><strong>Miya AI</strong><small>Image & Video Studio</small></span>
+      </a>
+      <nav class="top-tabs" aria-label="Режимы">
+        <button class="top-tab active" data-mode="generator">Генератор</button>
+        <button class="top-tab" data-mode="editor">Фото-редактор</button>
+        <button class="top-tab" data-mode="video">Видео</button>
+      </nav>
+      <div class="profile"><span class="profile-dot"></span><span>Miya User</span><small>Web mode</small></div>
+    </header>
+
+    <main>
+      <section class="hero">
+        <div>
+          <span class="eyebrow">MIYA AI</span>
+          <h1>Создавай. Редактируй. Анимируй.</h1>
+          <p>Единая студия для изображений и видео. Модели подключим следующим этапом.</p>
+        </div>
+        <span class="status"><i></i> Studio ready</span>
+      </section>
+
+      <section class="studio">
+        <aside class="sidebar card">
+          <div class="side-title">Инструменты</div>
+          <button class="tool active" data-mode="generator"><b>Генератор</b><span>Text → Image</span></button>
+          <button class="tool" data-mode="editor"><b>Фото-редактор</b><span>Image → Image</span></button>
+          <button class="tool" data-mode="video"><b>Видео</b><span>Image → Video</span></button>
+          <div class="side-divider"></div>
+          <button class="tool disabled"><b>AI Character</b><span>Скоро</span></button>
+          <button class="tool disabled"><b>Lip Sync</b><span>Скоро</span></button>
+        </aside>
+
+        <section class="workspace card">
+          <div class="workspace-head">
+            <div><h2 id="modeTitle">Генератор изображений</h2><p id="modeSubtitle">Создай изображение по описанию</p></div>
+            <button class="ghost" id="clearCanvas">Очистить</button>
+          </div>
+          <div class="canvas" id="canvas">
+            <div class="empty">
+              <div class="empty-icon">✦</div>
+              <strong id="emptyTitle">Твой будущий результат</strong>
+              <span id="emptyText">Напиши идею справа — здесь появится изображение.</span>
+            </div>
+          </div>
+        </section>
+
+        <aside class="controls card">
+          <div class="control-block">
+            <label for="prompt">Промпт</label>
+            <div class="prompt-wrap">
+              <textarea id="prompt" placeholder="Опиши, что хочешь создать..."></textarea>
+              <div class="prompt-actions"><button id="voice" title="Голосовой ввод">⌕</button><button id="clearPrompt" title="Очистить">×</button></div>
+            </div>
+          </div>
+
+          <div class="quick">
+            <div class="control-label"><span>Быстрые идеи</span><button id="randomIdea">↻</button></div>
+            <div id="ideas" class="ideas"></div>
+          </div>
+
+          <div class="control-block">
+            <div class="control-label"><span>Формат</span></div>
+            <div class="segmented" id="ratios">
+              <button class="selected" data-ratio="1:1">1:1</button><button data-ratio="4:5">4:5</button><button data-ratio="16:9">16:9</button><button data-ratio="9:16">9:16</button>
+            </div>
+          </div>
+
+          <button class="create" id="create">Создать</button>
+          <div class="engine"><b>AI engine</b><span>Модели пока не подключены</span></div>
+        </aside>
+      </section>
+
+      <section class="history card">
+        <div><h2>История Miya AI</h2><p>Здесь будут последние созданные работы.</p></div>
+        <div class="history-empty">История пока пуста</div>
+      </section>
+    </main>
+
+    <nav class="mobile-nav">
+      <button class="active" data-mode="generator">Генератор</button><button data-mode="editor">Редактор</button><button data-mode="video">Видео</button>
+    </nav>
+  </div>
+  <script type="module" src="/src/app.js"></script>
+</body>
+</html>
