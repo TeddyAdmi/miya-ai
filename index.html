@@ -3,80 +3,122 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<meta name="theme-color" content="#ffffff">
-<meta name="description" content="Miya Studio — Images, Video and AI Chat">
-<title>Miya Studio — AI Image & Video Studio</title>
+<meta name="theme-color" content="#061426">
+<meta name="description" content="Miya — AI Chat, images and video creation">
+<title>Miya — AI Creative Studio</title>
 <link rel="icon" href="/favicon.svg" type="image/svg+xml">
 <link rel="manifest" href="/b_manifest.json">
 <link rel="stylesheet" href="/styles.css">
 </head>
 <body>
-<div class="app">
-<header class="topbar">
-  <a class="brand" href="/" aria-label="Miya Studio"><span class="brand-mark">M</span><span class="brand-name">Miya <b>Studio</b></span></a>
-  <div class="top-actions">
-    <button class="top-icon" id="themeToggle" title="Тема">☼</button>
-    <div class="profile"><span>M</span><div><b>Miya User</b><small>0 PKOIN</small></div></div>
-  </div>
-</header>
+<div class="app-shell">
+  <header class="topbar">
+    <a class="brand" href="#" id="brandHome" aria-label="Miya">
+      <span class="brand-star">✦</span>
+      <span class="brand-name">Miya</span>
+    </a>
+    <nav class="top-nav" aria-label="Основная навигация">
+      <button class="top-nav-btn active" data-mode="chat">AI Chat</button>
+      <button class="top-nav-btn" data-mode="images">Картинки</button>
+      <button class="top-nav-btn" data-mode="video">Видео</button>
+    </nav>
+    <div class="top-search">
+      <span>⌕</span><input id="globalSearch" placeholder="Поиск функций, моделей, промптов...">
+      <kbd>⌘ K</kbd>
+    </div>
+    <div class="top-actions">
+      <button class="top-icon" id="themeToggle" title="Тема">☼</button>
+      <button class="top-icon" id="helpButton" title="Помощь">?</button>
+      <div class="profile">
+        <span>M</span>
+        <div><b>Miya User</b><small>0 PKOIN</small></div>
+      </div>
+    </div>
+  </header>
 
-<main class="main">
-  <aside class="sidebar" aria-label="Инструменты">
-    <div class="side-logo"><span class="side-logo-mark">M</span><span>Miya Studio</span></div>
-    <button class="side-btn active" data-mode="chat"><span>◉</span><b>AI Chat</b></button>
-    <button class="side-btn" data-mode="images"><span>✦</span><b>Картинки</b></button>
-    <button class="side-btn" data-mode="video"><span>▶</span><b>Видео</b></button>
-  </aside>
+  <main class="main">
+    <aside class="sidebar">
+      <div class="side-brand"><span class="side-star">✦</span><div><b>Miya</b><small>AI creative workspace</small></div></div>
 
-  <section class="workspace" id="workspace">
-    <div class="workspace-toolbar"></div>
-    <div class="canvas" id="canvas"></div>
+      <div class="side-label">РАЗДЕЛЫ</div>
+      <button class="side-btn active" data-mode="chat"><span class="ico">◉</span><b>AI Chat</b><em>⌘</em></button>
+      <button class="side-btn" data-mode="images"><span class="ico">▧</span><b>Картинки</b><em>1</em></button>
+      <button class="side-btn" data-mode="video"><span class="ico">▶</span><b>Видео</b><em>2</em></button>
+
+      <div class="side-label tools-label">ИНСТРУМЕНТЫ</div>
+      <button class="tool-btn" data-tool="upload"><span>＋</span>Загрузить изображение</button>
+      <button class="tool-btn" data-tool="improve"><span>✦</span>Улучшить промпт</button>
+      <button class="tool-btn" data-tool="history"><span>◷</span>История</button>
+      <button class="tool-btn" data-tool="library"><span>▱</span>Библиотека</button>
+
+      <div class="sidebar-spacer"></div>
+      <div class="system-card">
+        <div class="system-title"><span class="live-dot"></span>Система онлайн</div>
+        <div class="system-row"><span>Изображения</span><b>Готово</b></div>
+        <div class="system-row"><span>Видео</span><b>Готово</b></div>
+      </div>
+      <button class="side-user" id="profileButton"><span>M</span><div><b>Miya User</b><small>0 PKOIN</small></div><i>⋯</i></button>
+    </aside>
+
+    <section class="workspace" id="workspace">
+      <div class="workspace-head">
+        <div>
+          <div class="eyebrow" id="workspaceEyebrow">AI CHAT · MIYA</div>
+          <h1 id="workspaceTitle">Твоя AI-комната</h1>
+          <p id="workspaceSubtitle">Общайся с Miya, придумывай идеи и управляй созданием контента.</p>
+        </div>
+        <div class="head-actions">
+          <button class="ghost-btn" id="clearCanvas">Очистить</button>
+          <button class="primary-btn" id="newTask">＋ Новая задача</button>
+        </div>
+      </div>
+
+      <div class="canvas" id="canvas"></div>
+    </section>
+  </main>
+
+  <section class="composer-wrap">
+    <div class="composer" id="composer">
+      <div class="composer-input-row">
+        <button class="attach" id="composerAttach" title="Добавить изображение">＋</button>
+        <textarea id="composerInput" rows="1" maxlength="4000" placeholder="Напиши сообщение..."></textarea>
+        <button class="mic" id="composerMic" title="Голосовой ввод">⌕</button>
+        <button class="send" id="composerSend"><span>✦</span><span id="composerSendText">Отправить</span></button>
+      </div>
+      <div class="composer-options image-settings" id="composerOptions">
+        <select class="select-pill" id="composerModel" aria-label="Модель">
+          <option>FLUX Dev</option>
+          <option>FLUX Kontext Dev</option>
+        </select>
+        <select class="select-pill" id="composerSize" aria-label="Размер">
+          <option>1024 × 1024</option>
+          <option>1024 × 1536</option>
+          <option>1536 × 1024</option>
+          <option>1536 × 1536</option>
+        </select>
+        <select class="select-pill" id="composerQuality" aria-label="Качество">
+          <option>Standard</option><option>High</option><option>Ultra</option>
+        </select>
+        <span class="composer-spacer"></span>
+        <button class="improve" id="improve">✦ Улучшить промпт</button>
+      </div>
+      <div class="video-options" id="videoOptions">
+        <select class="select-pill" id="videoModel"><option>LTX 2.3</option><option>LTX 2.5 Free</option></select>
+        <select class="select-pill" id="videoDuration"><option>5 сек</option><option>8 сек</option><option>10 сек</option></select>
+        <select class="select-pill" id="videoRatio"><option>16:9</option><option>9:16</option><option>1:1</option></select>
+        <button class="pill active-pill" id="audioToggle">Audio</button>
+      </div>
+      <div class="composer-status"><span class="status-dot"></span><span id="composerStatus">AI Chat готов</span><span class="status-right">Enter — отправить · Shift + Enter — новая строка</span></div>
+    </div>
   </section>
-</main>
 
-<section class="composer-wrap">
-  <div class="composer" id="composer">
-    <div class="composer-context" id="composerContext">AI Chat</div>
-    <div class="composer-input-row">
-      <button class="attach" id="composerAttach" title="Добавить изображение">＋</button>
-      <textarea id="composerInput" rows="1" maxlength="4000" placeholder="Напиши сообщение..."></textarea>
-      <button class="mic" id="composerMic" title="Голосовой ввод">⌕</button>
-      <button class="send" id="composerSend"><span>✦</span><span id="composerSendText">Отправить</span></button>
-    </div>
-
-    <div class="composer-options image-settings" id="composerOptions">
-      <select class="select-pill" id="composerModel" aria-label="Модель">
-        <option>FLUX Dev</option>
-        <option>FLUX Kontext Dev</option>
-      </select>
-      <select class="select-pill" id="composerSize" aria-label="Размер">
-        <option>1024 × 1024</option>
-        <option>1024 × 1536</option>
-        <option>1536 × 1024</option>
-        <option>1536 × 1536</option>
-      </select>
-      <select class="select-pill" id="composerQuality" aria-label="Качество">
-        <option>Standard</option>
-        <option>High</option>
-        <option>Ultra</option>
-      </select>
-      <span class="composer-spacer"></span>
-      <button class="improve" id="improve">✦ Улучшить промпт</button>
-    </div>
-
-    <div class="video-options" id="videoOptions">
-      <button class="pill">LTX 2.3</button><button class="pill">5 сек</button><button class="pill">16:9</button><button class="pill">Audio</button>
-    </div>
-    <div class="composer-status"><span class="status-dot"></span><span id="composerStatus">AI Chat</span></div>
-  </div>
-</section>
-
-<input id="referenceInput" type="file" accept="image/*" hidden>
-<nav class="mobile-tabs">
-  <button class="active" data-mode="chat">◉<small>AI Chat</small></button>
-  <button data-mode="images">✦<small>Картинки</small></button>
-  <button data-mode="video">▶<small>Видео</small></button>
-</nav>
+  <input id="referenceInput" type="file" accept="image/*" hidden>
+  <nav class="mobile-tabs">
+    <button class="active" data-mode="chat">◉<small>AI Chat</small></button>
+    <button data-mode="images">▧<small>Картинки</small></button>
+    <button data-mode="video">▶<small>Видео</small></button>
+  </nav>
+</div>
 <script type="module" src="/src/app.js"></script>
 </body>
 </html>
