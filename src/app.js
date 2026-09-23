@@ -1,5 +1,5 @@
 const modes={
- generator:{title:"Генератор",subtitle:"Создай изображение по описанию",hint:"TEXT → IMAGE",placeholder:"Опиши изображение, которое хочешь создать...",send:"Создать",status:"FLUX Dev · Image generation"},
+ generator:{title:"Генератор",subtitle:"Создай изображение по описанию",hint:"TEXT → IMAGE",placeholder:"Опиши изображение, которое хочешь создать...",send:"Создать",status:"FLUX Dev · Free image generation"},
  editor:{title:"Miya Editor",subtitle:"Редактируй изображение с помощью AI",hint:"IMAGE → IMAGE",placeholder:"Что изменить в изображении?",send:"Применить",status:"FLUX Kontext Dev · Image editing"},
  video:{title:"Видео",subtitle:"Создавай видео из текста или изображения",hint:"IMAGE / TEXT → VIDEO",placeholder:"Опиши видео или движение...",send:"Создать видео",status:"LTX · Video generation"},
  chat:{title:"AI Chat",subtitle:"Общайся с AI-моделью",hint:"AI CHAT",placeholder:"Напиши сообщение...",send:"Отправить",status:"AI Chat"}
@@ -29,7 +29,7 @@ function showEmpty(){
 }
 
 function showLoading(){
- $("#canvas").innerHTML='<div class="empty-state"><div class="empty-logo">✦</div><h2>Создаём изображение…</h2><p>FLUX Dev обрабатывает твой промпт.</p></div>';
+ $("#canvas").innerHTML='<div class="empty-state"><div class="empty-logo">✦</div><h2>Создаём изображение…</h2><p>Бесплатный FLUX Dev обрабатывает твой промпт.</p></div>';
 }
 
 function showImage(imageUrl){
@@ -63,7 +63,7 @@ async function generateImage(prompt){
    headers:{"Content-Type":"application/json","Accept":"application/json"},
    body:JSON.stringify({
     mode:"image",
-    provider:"vheer",
+    provider:"legacy-flux",
     prompt,
     model:"Flux Dev",
     quality:$("#composerQuality")?.textContent?.trim()||"Standard",
@@ -84,7 +84,7 @@ async function generateImage(prompt){
   syncInput();
  }catch(error){
   showEmpty();
-  $("#composerStatus").textContent="FLUX Dev · Image generation";
+  $("#composerStatus").textContent="FLUX Dev · Free image generation";
   toast(error.message||"Ошибка генерации");
  }finally{
   $("#composerSend").disabled=false;
@@ -132,7 +132,7 @@ $("#referenceInput").onchange=e=>{
 };
 
 $("#composerMic").onclick=()=>toast("Голосовой ввод");
-$("#clearCanvas").onclick=()=>{ $("#resultGallery").innerHTML=""; showEmpty(); };
+$("#clearCanvas").onclick=()=>{$("#resultGallery").innerHTML="";showEmpty();};
 $("#improve").onclick=()=>{const i=$("#composerInput");if(i.value.trim())i.value=i.value.trim()+", cinematic, highly detailed, professional quality";else toast("Сначала введи промпт");syncInput()};
 $("#themeToggle").onclick=()=>{document.body.classList.toggle("dark");$("#themeToggle").textContent=document.body.classList.contains("dark")?"☾":"☼"};
 setMode("generator");
