@@ -75,7 +75,6 @@ $("#referenceInput").onchange=e=>{
  reader.readAsDataURL(file)
 };
 $("#composerMic").onclick=()=>toast("Голосовой ввод");
-$("#clearCanvas").onclick=showEmpty;
 $("#improve").onclick=()=>{const i=$("#composerInput");if(i.value.trim())i.value=i.value.trim()+", cinematic, highly detailed, professional quality";else toast("Сначала введи промпт");syncInput()};
 $("#themeToggle").onclick=()=>{document.body.classList.toggle("dark");$("#themeToggle").textContent=document.body.classList.contains("dark")?"☾":"☼"};
 setMode("chat");
