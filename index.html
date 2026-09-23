@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <meta name="theme-color" content="#7450e8">
+  <meta name="theme-color" content="#7357e8">
   <meta name="description" content="Miya AI — Image & Video Studio">
   <title>Miya AI — Image & Video Studio</title>
   <link rel="icon" href="/favicon.svg" type="image/svg+xml">
@@ -15,59 +15,67 @@
     <header class="topbar">
       <a class="brand" href="/">
         <span class="brand-mark">M</span>
-        <span><strong>Miya AI</strong><small>Image & Video Studio</small></span>
+        <span class="brand-copy"><strong>Miya AI</strong><small>Image & Video Studio</small></span>
       </a>
       <nav class="top-tabs" aria-label="Режимы">
         <button class="top-tab active" data-mode="generator">Генератор</button>
         <button class="top-tab" data-mode="editor">Фото-редактор</button>
         <button class="top-tab" data-mode="video">Видео</button>
       </nav>
-      <div class="profile"><span class="profile-dot"></span><span>Miya User</span><small>Web mode</small></div>
+      <div class="profile"><span class="profile-avatar">M</span><span><b>Miya User</b><small>Web mode</small></span><i></i></div>
     </header>
 
     <main>
       <section class="hero">
-        <div>
-          <span class="eyebrow">MIYA AI</span>
-          <h1>Создавай. Редактируй. Анимируй.</h1>
-          <p>Единая студия для изображений и видео. Модели подключим следующим этапом.</p>
+        <div class="hero-copy">
+          <span class="eyebrow"><i></i> MIYA AI STUDIO</span>
+          <h1>Создавай изображения,<br><em>которые хочется сохранить.</em></h1>
+          <p>Генерация, редактирование и видео — в одном красивом рабочем пространстве.</p>
         </div>
-        <span class="status"><i></i> Studio ready</span>
+        <div class="hero-chip"><span>●</span> Studio ready</div>
       </section>
 
       <section class="studio">
         <aside class="sidebar card">
-          <div class="side-title">Инструменты</div>
-          <button class="tool active" data-mode="generator"><b>Генератор</b><span>Text → Image</span></button>
-          <button class="tool" data-mode="editor"><b>Фото-редактор</b><span>Image → Image</span></button>
-          <button class="tool" data-mode="video"><b>Видео</b><span>Image → Video</span></button>
+          <div class="side-label">WORKSPACE</div>
+          <button class="tool active" data-mode="generator">
+            <span class="tool-icon">✦</span><span><b>Генератор</b><small>Text → Image</small></span>
+          </button>
+          <button class="tool" data-mode="editor">
+            <span class="tool-icon">◌</span><span><b>Фото-редактор</b><small>Image → Image</small></span>
+          </button>
+          <button class="tool" data-mode="video">
+            <span class="tool-icon">▶</span><span><b>Видео</b><small>Image → Video</small></span>
+          </button>
           <div class="side-divider"></div>
-          <button class="tool disabled"><b>AI Character</b><span>Скоро</span></button>
-          <button class="tool disabled"><b>Lip Sync</b><span>Скоро</span></button>
+          <div class="side-label">COMING SOON</div>
+          <button class="tool disabled"><span class="tool-icon">✧</span><span><b>AI Character</b><small>Скоро</small></span></button>
+          <button class="tool disabled"><span class="tool-icon">◉</span><span><b>Lip Sync</b><small>Скоро</small></span></button>
+          <div class="side-bottom"><span class="mini-orb"></span><div><b>Miya AI</b><small>Creative workspace</small></div></div>
         </aside>
 
         <section class="workspace card">
           <div class="workspace-head">
-            <div><h2 id="modeTitle">Генератор изображений</h2><p id="modeSubtitle">Создай изображение по описанию</p></div>
+            <div><span class="workspace-kicker">CREATE</span><h2 id="modeTitle">Генератор изображений</h2><p id="modeSubtitle">Создай изображение по описанию</p></div>
             <button class="ghost" id="clearCanvas">Очистить</button>
           </div>
           <div class="canvas" id="canvas">
-            <div class="empty">
-              <div class="empty-icon">✦</div>
-              <strong id="emptyTitle">Твой будущий результат</strong>
-              <span id="emptyText">Напиши идею справа — здесь появится изображение.</span>
+            <div class="canvas-art">
+              <img src="https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?auto=format&fit=crop&w=1400&q=88" alt="Горный пейзаж">
+              <div class="art-shade"></div>
+              <div class="art-caption"><span>MIYA PREVIEW</span><b>Mountain escape</b><small>Красивый результат начинается с идеи.</small></div>
+              <div class="art-badge">AI CREATIVE</div>
             </div>
           </div>
         </section>
 
         <aside class="controls card">
-          <div class="control-block">
-            <label for="prompt">Промпт</label>
-            <div class="prompt-wrap">
-              <textarea id="prompt" placeholder="Опиши, что хочешь создать..."></textarea>
-              <div class="prompt-actions"><button id="voice" title="Голосовой ввод">⌕</button><button id="clearPrompt" title="Очистить">×</button></div>
-            </div>
+          <div class="controls-head"><div><span class="workspace-kicker">PROMPT</span><h3>Что создать?</h3></div><span class="count" id="count">0 / 4000</span></div>
+          <div class="prompt-wrap">
+            <textarea id="prompt" maxlength="4000" placeholder="Опиши изображение, которое хочешь увидеть..."></textarea>
+            <div class="prompt-actions"><button id="voice" title="Голосовой ввод">⌕</button><button id="clearPrompt" title="Очистить">×</button></div>
           </div>
+          <div class="prompt-tools"><button id="improve">✦ Улучшить промпт</button></div>
 
           <div class="quick">
             <div class="control-label"><span>Быстрые идеи</span><button id="randomIdea">↻</button></div>
@@ -75,25 +83,30 @@
           </div>
 
           <div class="control-block">
-            <div class="control-label"><span>Формат</span></div>
+            <div class="control-label"><span>Формат</span><span class="muted">Aspect ratio</span></div>
             <div class="segmented" id="ratios">
               <button class="selected" data-ratio="1:1">1:1</button><button data-ratio="4:5">4:5</button><button data-ratio="16:9">16:9</button><button data-ratio="9:16">9:16</button>
             </div>
           </div>
 
-          <button class="create" id="create">Создать</button>
-          <div class="engine"><b>AI engine</b><span>Модели пока не подключены</span></div>
+          <button class="create" id="create"><span>✦</span> Создать изображение</button>
+          <div class="engine"><span class="engine-dot"></span><div><b>AI engine</b><small>Модели подключим следующим этапом</small></div><span class="arrow">›</span></div>
         </aside>
       </section>
 
       <section class="history card">
-        <div><h2>История Miya AI</h2><p>Здесь будут последние созданные работы.</p></div>
-        <div class="history-empty">История пока пуста</div>
+        <div class="history-head"><div><span class="workspace-kicker">YOUR CREATIONS</span><h2>История Miya AI</h2><p>Последние созданные работы будут появляться здесь.</p></div><button class="ghost">Очистить историю</button></div>
+        <div class="history-strip">
+          <div class="history-empty"><span>✦</span><b>Твоя история</b><small>Создай первую работу, и она появится здесь.</small></div>
+          <div class="history-line"></div>
+        </div>
       </section>
     </main>
 
     <nav class="mobile-nav">
-      <button class="active" data-mode="generator">Генератор</button><button data-mode="editor">Редактор</button><button data-mode="video">Видео</button>
+      <button class="active" data-mode="generator"><span>✦</span>Генератор</button>
+      <button data-mode="editor"><span>◌</span>Редактор</button>
+      <button data-mode="video"><span>▶</span>Видео</button>
     </nav>
   </div>
   <script type="module" src="/src/app.js"></script>
