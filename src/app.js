@@ -18,7 +18,7 @@ function clearComposerAttachment(){
  referenceImage=null;
  setComposerAttachment("");
 }
-function openEditor(url){referenceImage=url;setComposerAttachment(url);mode="images";const m=modes.images;$("#workspaceEyebrow").textContent=m.eyebrow;$("#workspaceTitle").textContent=m.title;$("#workspaceSubtitle").textContent=m.subtitle;$("#composerInput").placeholder=m.placeholder;$("#composerSendText").textContent=m.send;$("#composerStatus").textContent="Image ready · describe your edit";$(".image-settings").style.display="flex";$("#videoOptions").classList.remove("show");$("[data-mode]").forEach(x=>x.classList.toggle("active",x.dataset.mode==="images"));$("#canvas").innerHTML='<div class="source-layout"><div class="source-card media-card"><img src="'+url+'" alt="Source image"></div><div class="source-info"><span class="mini-badge">IMAGE → IMAGE</span><h3>Изображение загружено</h3><p>Опиши внизу, какие изменения нужно сделать.</p></div></div>';$("#composerInput").focus();syncInput()}
+function openEditor(url){referenceImage=url;setComposerAttachment(url);mode="images";const m=modes.images;$("#workspaceEyebrow").textContent=m.eyebrow;$("#workspaceTitle").textContent=m.title;$("#workspaceSubtitle").textContent=m.subtitle;$("#composerInput").placeholder=m.placeholder;$("#composerSendText").textContent=m.send;$("#composerStatus").textContent="Flux Kontext Dev · готово к редактированию";$(".image-settings").style.display="flex";$("#videoOptions").classList.remove("show");$("[data-mode]").forEach(x=>x.classList.toggle("active",x.dataset.mode==="images"));$("#canvas").innerHTML='<div class="source-layout"><div class="source-card media-card"><img src="'+url+'" alt="Source image"></div><div class="source-info"><span class="mini-badge">IMAGE → IMAGE</span><h3>Изображение загружено</h3><p>Опиши внизу, какие изменения нужно сделать.</p></div></div>';$("#composerInput").focus();syncInput()}
 async function downloadImage(url){
  try{
   const response=await fetch(url,{mode:"cors"});
@@ -96,16 +96,16 @@ card.appendChild(actions);
  $("#composerStatus").textContent="FLUX Dev · Image ready";
 }
 async function generateImage(prompt){
- showLoading();$("#composerSend").disabled=true;$("#composerStatus").textContent="FLUX Dev · Generating…";
+ showLoading();$("#composerSend").disabled=true;$("#composerStatus").textContent=referenceImage?"Flux Kontext Dev · Generating…":"FLUX Dev · Generating…";
  try{
   const size=$("#composerSize").value.trim();
   const response=await fetch("/api/generate",{method:"POST",headers:{"Content-Type":"application/json","Accept":"application/json"},body:JSON.stringify({
    mode:"image",provider:"legacy-flux",prompt,model:$("#composerModel").value.trim(),quality:$("#composerQuality").value.trim(),size,ratio:$("#composerRatio").value,outputFormat:"png",
-   options:referenceImage?{imageUrl:referenceImage}:{}
+   options:referenceImage?(referenceImage.startsWith("data:image/")?{imageBase64:referenceImage}:{imageUrl:referenceImage}):{}
   })});
   const data=await response.json().catch(()=>({}));
   if(!response.ok||!data.imageUrl)throw new Error(data.message||data.error||"Не удалось получить изображение");
-  showImage(data.imageUrl);$("#composerInput").value="";syncInput();
+  showImage(data.imageUrl);$("#composerInput").value="";syncInput();$("#composerStatus").textContent=(data.model|| (referenceImage?"Flux Kontext Dev":"FLUX Dev"))+" · Image ready";
  }catch(e){toast(e.message||"Ошибка генерации");showEmpty()}finally{$("#composerSend").disabled=false}
 }
 function addChatMessage(text,isUser){
@@ -125,7 +125,7 @@ function setMode(next){
  $("#composerInput").placeholder=m.placeholder;$("#composerSendText").textContent=m.send;$("#composerStatus").textContent=m.status;
  $(".image-settings").style.display=next==="images"?"flex":"none";$("#videoOptions").classList.toggle("show",next==="video");
  $$("[data-mode]").forEach(x=>x.classList.toggle("active",x.dataset.mode===next));
- if(next==="images"){ renderImageLibrary(); $("#composerModel").value="FLUX Dev"; $("#composerSize").value="1024 × 1024"; $("#composerQuality").value="Standard"; $("#composerRatio").value="1:1" }
+ if(next==="images"){ renderImageLibrary(); $("#composerModel").value=referenceImage?"FLUX Kontext Dev":"FLUX Dev"; $("#composerSize").value="1024 × 1024"; $("#composerQuality").value="Standard"; $("#composerRatio").value="1:1" }
  if(next!=="images")showEmpty();syncInput()
 }
 $$("[data-mode]").forEach(b=>b.addEventListener("click",()=>setMode(b.dataset.mode)));
