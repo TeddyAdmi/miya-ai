@@ -4,7 +4,7 @@
     "api/generate.js": {
       "maxDuration": 60
     },
-    "api/chat/index.js": {
+    "api/chat.js": {
       "maxDuration": 60
     }
   }
