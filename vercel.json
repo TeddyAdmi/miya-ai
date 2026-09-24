@@ -1,8 +1,18 @@
 {
   "version": 2,
-  "functions": {
-    "api/generate.js": {
-      "maxDuration": 60
+  "builds": [
+    {
+      "src": "api/generate.js",
+      "use": "@vercel/node"
     }
-  }
+  ],
+  "routes": [
+    {
+      "src": "/api/generate(?:/)?",
+      "dest": "/api/generate.js"
+    },
+    {
+      "handle": "filesystem"
+    }
+  ]
 }
