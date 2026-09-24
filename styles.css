@@ -194,3 +194,46 @@ body.light .side-subbtn.active span{color:#6d55b5}
 body.light .chat-history-mini-item{color:#65788f}
 body.light .chat-history-mini-item:hover{background:#edf3f9;color:#182436}
 body.light .chat-history-mini-item.active{background:#ecebff;color:#48449a}
+
+
+/* AI Chat hover flyout: the chat history opens to the right of AI Chat. */
+.sidebar{overflow:visible}
+.side-menu-toggle{position:relative}
+.side-submenu{
+  position:absolute;
+  left:calc(100% + 8px);
+  top:94px;
+  width:245px;
+  max-height:360px;
+  padding:8px;
+  display:flex;
+  flex-direction:column;
+  gap:3px;
+  overflow:auto;
+  opacity:0;
+  visibility:hidden;
+  pointer-events:none;
+  transform:translateX(-5px);
+  background:rgba(7,22,40,.98);
+  border:1px solid var(--line);
+  border-radius:10px;
+  box-shadow:0 18px 45px rgba(0,0,0,.35);
+  transition:opacity .16s ease,transform .16s ease,visibility .16s ease;
+  z-index:100;
+}
+.side-menu-toggle:hover + .side-submenu,
+.side-submenu:hover{
+  opacity:1;
+  visibility:visible;
+  pointer-events:auto;
+  transform:translateX(0);
+}
+.side-subbtn{height:34px;padding:0 10px}
+.chat-history-mini{padding:2px 0 0;max-height:290px}
+.chat-history-mini-item{padding:8px 9px}
+body.light .side-submenu{
+  background:rgba(255,255,255,.99);
+  border-color:#d6e0eb;
+  box-shadow:0 18px 45px rgba(30,55,85,.16);
+}
+@media(max-width:800px){.side-submenu{display:none!important}}
