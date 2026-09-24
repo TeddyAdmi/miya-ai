@@ -52,7 +52,7 @@ export default async function handler(req, res) {
       });
     } catch (error) {
       if (error?.name === "AbortError") {
-        return res.status(504).json({ ok: false, error: "FLUX_TIMEOUT", message: "PixelSter did not respond within 58 seconds." });
+        return res.status(504).json({ ok: false, error: "FLUX_TIMEOUT", message: isImageToImage ? "Flux Kontext Dev did not finish within 58 seconds. The free PixelSter upstream timed out." : "Flux Dev did not finish within 58 seconds. The free PixelSter upstream timed out." });
       }
       throw error;
     } finally {
