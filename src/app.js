@@ -40,7 +40,45 @@ function renderChatHistoryMini(){
 
 const LIB_KEY="miyaLibrary";
 function getLibrary(){try{return JSON.parse(localStorage.getItem(LIB_KEY)||"[]").filter(x=>x&&typeof x.url==="string"&&!x.url.includes("access.vheer.com/results/"))}catch{return[]}}
-function saveMedia(type,url){if(!url)return;const items=getLibrary();items.unshift({type,url,createdAt:Date.now()});localStorage.setItem(LIB_KEY,JSON.stringify(items))}
+const MEDIA_DB="miyaMediaCache";
+function openMediaDB(){
+ return new Promise((resolve,reject)=>{
+  if(!window.indexedDB)return resolve(null);
+  const r=indexedDB.open(MEDIA_DB,1);
+  r.onupgradeneeded=()=>{if(!r.result.objectStoreNames.contains("media"))r.result.createObjectStore("media",{keyPath:"id"})};
+  r.onsuccess=()=>resolve(r.result);r.onerror=()=>reject(r.error);
+ });
+}
+async function cacheMedia(id,url){
+ try{
+  const db=await openMediaDB();if(!db)return;
+  const response=await fetch(url,{mode:"cors"});if(!response.ok)return;
+  const blob=await response.blob();
+  await new Promise((resolve,reject)=>{const tx=db.transaction("media","readwrite");tx.objectStore("media").put({id,blob,url,createdAt:Date.now()});tx.oncomplete=resolve;tx.onerror=()=>reject(tx.error)});
+ }catch{}
+}
+async function getCachedMedia(id){
+ try{
+  const db=await openMediaDB();if(!db)return null;
+  return await new Promise((resolve,reject)=>{const tx=db.transaction("media","readonly");const r=tx.objectStore("media").get(id);r.onsuccess=()=>resolve(r.result||null);r.onerror=()=>reject(r.error)});
+ }catch{return null}
+}
+function saveMedia(type,url){
+ if(!url)return;
+ const id=type+"-"+Date.now()+"-"+Math.random().toString(36).slice(2);
+ const item={id,type,url,createdAt:Date.now()};
+ const items=getLibrary();items.unshift(item);
+ try{localStorage.setItem(LIB_KEY,JSON.stringify(items.slice(0,500)))}catch{
+   try{localStorage.setItem(LIB_KEY,JSON.stringify(items.slice(0,100)))}catch{}
+ }
+ cacheMedia(id,url);
+ return item;
+}
+async function resolveMediaUrl(item){
+ const cached=await getCachedMedia(item.id);
+ if(cached?.blob)return URL.createObjectURL(cached.blob);
+ return item.url;
+}
 function setComposerAttachment(url){
  const box=$("#composerAttachment"),img=$("#composerAttachmentImage");
  if(!box||!img)return;
@@ -70,8 +108,8 @@ async function downloadImage(url){
   document.body.appendChild(a);a.click();a.remove();
  }
 }
-function renderImageLibrary(){const c=$("#canvas"),items=getLibrary().filter(x=>x.type==="image");if(!items.length){showEmpty();return}c.innerHTML='<div class="results-head"><div><span class="mini-badge">LIBRARY · IMAGES</span><h3>Все созданные картинки</h3></div></div><div class="result-grid"></div>';const grid=c.querySelector(".result-grid");items.forEach(item=>{const card=document.createElement("div");card.className="media-card";const img=document.createElement("img");img.src=item.url;img.alt="Miya generated image";img.onerror=()=>card.remove();card.appendChild(img);const meta=document.createElement("div");meta.className="media-meta";meta.innerHTML="<b>FLUX Dev</b><span>Готово</span>";card.appendChild(meta);grid.appendChild(card)})}
-function renderLibrary(){const c=$("#canvas"),items=getLibrary();if(!items.length){c.innerHTML='<div class="library-empty"><div class="hero-mark small">▱</div><h2>Библиотека пуста</h2><p>Созданные картинки и видео будут автоматически сохраняться здесь.</p></div>';return}const images=items.filter(x=>x.type==="image"),videos=items.filter(x=>x.type==="video");c.innerHTML='<div class="library-section"><div class="results-head"><div><span class="mini-badge">LIBRARY</span><h3>Библиотека Miya</h3></div></div><div class="library-title">Картинки</div><div class="result-grid image-library-grid"></div><div class="library-title video-library-title">Видео</div><div class="result-grid video-library-grid"></div></div>';const ig=c.querySelector(".image-library-grid"),vg=c.querySelector(".video-library-grid");images.forEach(item=>{const card=document.createElement("div");card.className="media-card";const img=document.createElement("img");img.src=item.url;img.alt="Miya generated image";card.appendChild(img);ig.appendChild(card)});videos.forEach(item=>{const card=document.createElement("div");card.className="media-card";const v=document.createElement("video");v.src=item.url;v.controls=true;v.playsInline=true;card.appendChild(v);vg.appendChild(card)});if(!images.length)ig.innerHTML='<div class="library-note">Пока нет созданных картинок.</div>';if(!videos.length)vg.innerHTML='<div class="library-note">Пока нет созданных видео.</div>'}
+function renderImageLibrary(){const c=$("#canvas"),items=getLibrary().filter(x=>x.type==="image");if(!items.length){showEmpty();return}c.innerHTML='<div class="results-head"><div><span class="mini-badge">LIBRARY · IMAGES</span><h3>Все созданные картинки</h3></div></div><div class="result-grid"></div>';const grid=c.querySelector(".result-grid");items.forEach(item=>{const card=document.createElement("div");card.className="media-card";const img=document.createElement("img");img.alt="Miya generated image";img.onerror=()=>card.remove();card.appendChild(img);resolveMediaUrl(item).then(url=>{if(url)img.src=url});const meta=document.createElement("div");meta.className="media-meta";meta.innerHTML="<b>FLUX Dev</b><span>Готово</span>";card.appendChild(meta);grid.appendChild(card)})}
+function renderLibrary(){const c=$("#canvas"),items=getLibrary();if(!items.length){c.innerHTML='<div class="library-empty"><div class="hero-mark small">▱</div><h2>Библиотека пуста</h2><p>Созданные картинки и видео будут автоматически сохраняться здесь.</p></div>';return}const images=items.filter(x=>x.type==="image"),videos=items.filter(x=>x.type==="video");c.innerHTML='<div class="library-section"><div class="results-head"><div><span class="mini-badge">LIBRARY</span><h3>Библиотека Miya</h3></div></div><div class="library-title">Картинки</div><div class="result-grid image-library-grid"></div><div class="library-title video-library-title">Видео</div><div class="result-grid video-library-grid"></div></div>';const ig=c.querySelector(".image-library-grid"),vg=c.querySelector(".video-library-grid");images.forEach(item=>{const card=document.createElement("div");card.className="media-card";const img=document.createElement("img");img.alt="Miya generated image";card.appendChild(img);ig.appendChild(card);resolveMediaUrl(item).then(url=>{if(url)img.src=url})});videos.forEach(item=>{const card=document.createElement("div");card.className="media-card";const v=document.createElement("video");v.src=item.url;v.controls=true;v.playsInline=true;card.appendChild(v);vg.appendChild(card)});if(!images.length)ig.innerHTML='<div class="library-note">Пока нет созданных картинок.</div>';if(!videos.length)vg.innerHTML='<div class="library-note">Пока нет созданных видео.</div>'}
 
 function toast(message){
  let t=$("#toast");if(!t){t=document.createElement("div");t.id="toast";t.className="toast";document.body.appendChild(t)}
@@ -80,16 +118,12 @@ function toast(message){
 }
 function syncInput(){const i=$("#composerInput");if(!i)return;i.style.height="auto";i.style.height=Math.min(120,Math.max(42,i.scrollHeight))+"px"}
 function modeHero(){
- if(mode==="chat") return `<div class="chat-shell">
-   <section class="chat-main">
-     <div class="chat-welcome">
-       <div class="hero-mark">✦</div>
-       <div class="mini-badge">MIYA AI</div>
-       <h2>Чем займёмся сегодня?</h2>
-       <p>Напиши вопрос, идею или задачу. Miya поможет с текстом, промптами, изображениями и видео.</p>
-       
-     </div>
-   </section>
+ if(mode==="chat") return `<div class="studio-room clean-canvas chat-room">
+   <div class="chat-welcome section-welcome">
+     <div class="hero-mark">✦</div><div class="mini-badge">MIYA CHAT</div>
+     <h2>Общайся с Miya</h2>
+     <p>Задавай вопросы, придумывай идеи, создавай промпты и работай с контентом.</p>
+   </div>
  </div>`;
  if(mode==="images") return `<div class="studio-room clean-canvas">
    <div class="chat-welcome section-welcome">
