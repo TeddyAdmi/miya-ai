@@ -87,12 +87,7 @@ function modeHero(){
        <div class="mini-badge">MIYA AI</div>
        <h2>Чем займёмся сегодня?</h2>
        <p>Напиши вопрос, идею или задачу. Miya поможет с текстом, промптами, изображениями и видео.</p>
-       <div class="chat-quick-actions">
-         <button data-chat-prompt="Придумай 10 идей для YouTube Shorts">✦ Идеи для контента</button>
-         <button data-chat-prompt="Напиши кинематографичный промпт для генерации видео">🎬 Промпт для видео</button>
-         <button data-chat-prompt="Создай подробный промпт для изображения">▧ Промпт для изображения</button>
-         <button data-chat-prompt="Помоги улучшить мой текст">✎ Улучшить текст</button>
-       </div>
+       
      </div>
    </section>
  </div>`;
@@ -149,7 +144,7 @@ function showLoading(){
   if(!grid){c.innerHTML='<div class="result-grid"></div>';grid=c.querySelector(".result-grid")}
   const old=c.querySelector(".generation-loading");if(old)old.remove();
   const card=document.createElement("div");card.className="generation-loading";
-  card.innerHTML='<div class="progress-ring"><span class="progress-percent">0%</span><b>Загрузка…</b><span>Flux Kontext Dev обрабатывает исходник</span><small>Подготовка изображения</small></div>';
+  card.innerHTML='<div class="generation-progress"><div class="progress-circle"><span class="progress-percent">0%</span></div><div class="progress-copy"><b>Создание изображения</b><span class="progress-model">FLUX Dev</span></div></div>';
   c.insertBefore(card,grid);return;
  }
  c.innerHTML='<div class="loading-state"><div class="spinner"></div><b>Готовим видео…</b><span>Запрос отправлен в видеодвижок Miya.</span></div>';
@@ -169,8 +164,8 @@ card.appendChild(actions);
 }
 async function generateImage(prompt){
  showLoading();$("#composerSend").disabled=true;
- const loader=$("#canvas .generation-loading"),ring=loader?.querySelector(".progress-ring");
- let progress=0; const progressTimer=setInterval(()=>{progress=Math.min(progress+Math.max(2,Math.round((88-progress)/18)),88);if(ring)ring.style.setProperty("--progress",progress+"%");if(ring)ring.querySelector(".progress-percent").textContent=progress+"%"},700);$("#composerStatus").textContent=referenceImage?"Flux Kontext Dev · Generating…":"FLUX Dev · Generating…";
+ const loader=$("#canvas .generation-loading"),ring=loader?.querySelector(".progress-circle");
+ let progress=0; const progressTimer=setInterval(()=>{progress=Math.min(progress+Math.max(2,Math.round((96-progress)/18)),96);if(ring)ring.style.setProperty("--progress",progress+"%");if(ring)ring.querySelector(".progress-percent").textContent=progress+"%"},700);$("#composerStatus").textContent=referenceImage?"Flux Kontext Dev · Generating…":"FLUX Dev · Generating…";
  try{
   
   const payload={prompt,ratio:referenceImage?($("#composerRatio").value==="1:1"?"auto":$("#composerRatio").value):$("#composerRatio").value};
@@ -221,7 +216,7 @@ async function requestChat(){
    chatMessages.push({role:"assistant",content:data.text});
    addChatMessage(data.text,false);
    saveCurrentChat();
-   status.textContent="Miya · Gemini 2.5 Flash-Lite";
+   status.textContent="Miya · Gemini";
  }catch(e){
    toast(e.message||"Ошибка AI Chat");
    status.textContent="AI Chat · ошибка";
@@ -235,10 +230,10 @@ function setMode(next){
  $("#composerInput").placeholder=m.placeholder;$("#composerSendText").textContent=m.send;$("#composerStatus").textContent=m.status;
  $(".image-settings").style.display=next==="images"?"flex":"none";$("#videoOptions").classList.toggle("show",next==="video");
  $$("[data-mode]").forEach(x=>x.classList.toggle("active",x.dataset.mode===next));
- $("#chatMenuToggle")?.classList.add("active");
+ $("#chatMenuToggle")?.classList.toggle("active",next==="chat");
  if($("#chatSubmenu")?.classList.contains("collapsed"))$("#chatSubmenu").classList.remove("collapsed");
  if($("#chatMenuToggle")){$("#chatMenuToggle").classList.remove("collapsed");$("#chatMenuToggle").setAttribute("aria-expanded","true")}
- if($("#chatMenuArrow"))$("#chatMenuArrow").textContent="⌄";
+ if($("#chatMenuArrow"))$("#chatMenuArrow").textContent="→";
  if(next==="images"){ renderImageLibrary(); $("#composerModel").value=referenceImage?"FLUX Kontext Dev":"FLUX Dev"; $("#composerRatio").value="16:9" }
  if(next!=="images")showEmpty();syncInput()
 }
