@@ -119,3 +119,52 @@ body.light .progress-ring{background:#f8fafc;box-shadow:0 0 0 1px rgba(129,88,20
 @media(max-width:800px){.generation-loading{width:min(300px,calc(100% - 24px));height:205px;padding:12px}.progress-ring{width:158px;height:158px;flex-basis:158px}.progress-ring .progress-percent{font-size:23px}.progress-ring b{font-size:13px}.progress-ring span:not(.progress-percent){font-size:8px}.progress-ring small{font-size:7px}}
 /* Smaller image workspace description */
 .workspace-head p{font-size:10px;line-height:1.45}
+
+/* AI Chat room — ChatGPT-style workspace */
+.chat-shell{width:100%;max-width:1180px;min-height:calc(100vh - 150px);margin:0 auto;display:grid;grid-template-columns:205px minmax(0,1fr);border:1px solid var(--line);border-radius:14px;overflow:hidden;background:rgba(5,18,33,.28)}
+.chat-history{padding:12px 9px;background:rgba(6,20,37,.62);border-right:1px solid var(--line);min-height:560px}
+.chat-history-title{font-size:7px;letter-spacing:.14em;font-weight:800;color:#6884a2;padding:18px 9px 7px}
+.new-chat-btn{width:100%;height:36px;border:1px solid #315d88;border-radius:8px;background:#102b48;color:#eaf3ff;font-size:9px;font-weight:800;text-align:left;padding:0 10px;display:flex;align-items:center;gap:8px}
+.new-chat-btn span{font-size:15px;color:#c080ff}.new-chat-btn:hover{background:#153758;border-color:#527fb0}
+.history-item{width:100%;height:32px;border:1px solid transparent;border-radius:7px;background:transparent;color:#8198b1;font-size:8px;text-align:left;padding:0 8px;display:flex;align-items:center;gap:7px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.history-item span{font-size:7px;color:#647f9d}.history-item:hover{background:#0b2845;color:#e8f3ff}.history-item.active{background:#162e4e;color:#fff;border-color:#284d74}
+.chat-main{min-width:0;display:flex;flex-direction:column;min-height:560px}
+.chat-main .chat-welcome{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:30px 24px 130px}
+.chat-main .chat-welcome .hero-mark{margin-bottom:12px}
+.chat-main .chat-welcome h2{font-size:27px}
+.chat-main .chat-welcome p{font-size:11px;max-width:560px}
+.chat-quick-actions{width:min(720px,100%);display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-top:24px}
+.chat-quick-actions button{min-height:48px;border:1px solid var(--line);border-radius:9px;background:rgba(10,31,53,.7);color:#9eb2c8;text-align:left;padding:0 13px;font-size:9px;font-weight:700}
+.chat-quick-actions button:hover{border-color:#4277aa;background:#102b48;color:#fff;transform:translateY(-1px)}
+.chat-stream{width:min(820px,100%);height:auto;min-height:500px;margin:0 auto;padding:28px 20px 170px}
+.chat-row{max-width:86%;align-items:flex-start;margin-bottom:7px}.chat-content{min-width:0}
+.chat-bubble{font-size:11px;padding:11px 14px;border-radius:13px}
+.chat-actions{display:flex;gap:5px;flex-wrap:wrap;margin:5px 2px 0;opacity:.72}
+.chat-actions button{background:transparent;color:#68829f;font-size:7px;padding:4px 5px;border-radius:5px}
+.chat-actions button:hover{background:#102944;color:#b9d0e8}
+.chat-row.user .chat-content{display:flex;justify-content:flex-end}
+.chat-row.user .chat-bubble{max-width:100%}
+body.light .chat-shell{background:rgba(255,255,255,.55);border-color:#dbe4ee}
+body.light .chat-history{background:#f8fafc;border-color:#dbe4ee}
+body.light .new-chat-btn{background:#fff;color:#33465c;border-color:#d4dfeb}
+body.light .new-chat-btn:hover,.body.light .history-item:hover{background:#eef3f9}
+body.light .history-item{color:#65798f}.body.light .history-item.active{background:#ecebff;color:#48449a;border-color:#d6d4f3}
+body.light .chat-quick-actions button{background:#fff;color:#61748a;border-color:#d8e2ec}
+body.light .chat-quick-actions button:hover{background:#f4f1ff;border-color:#c7bced;color:#4c438e}
+@media(max-width:900px){
+ .chat-shell{grid-template-columns:1fr;border:0;border-radius:0;background:transparent}
+ .chat-history{display:none}
+ .chat-main{min-height:calc(100dvh - 120px)}
+ .chat-main .chat-welcome{padding:20px 8px 150px}
+ .chat-main .chat-welcome h2{font-size:22px}
+ .chat-main .chat-welcome p{font-size:9px}
+ .chat-quick-actions{grid-template-columns:1fr 1fr;gap:7px}
+ .chat-quick-actions button{min-height:44px;font-size:8px;padding:0 9px}
+ .chat-stream{padding:18px 4px 170px}
+}
+@media(max-width:520px){
+ .chat-quick-actions{grid-template-columns:1fr}
+ .chat-main .chat-welcome{padding-left:4px;padding-right:4px}
+ .chat-bubble{font-size:10px}
+ .chat-actions button{font-size:7px}
+}
