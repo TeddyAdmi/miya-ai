@@ -54,6 +54,7 @@ function showImage(url){
  if(!grid){c.innerHTML='<div class="results-head"><div><span class="mini-badge">RESULT</span><h3>Результаты Miya</h3></div><button class="ghost-btn" id="backToStudio">＋ Ещё</button></div>';grid=document.createElement("div");grid.className="result-grid";c.appendChild(grid)}
  const card=document.createElement("div");card.className="media-card";const img=document.createElement("img");img.src=url;img.alt="Miya generated image";card.appendChild(img);
  const meta=document.createElement("div");meta.className="media-meta";meta.innerHTML='<b>FLUX Dev</b><span>Готово</span>';card.appendChild(meta);grid.prepend(card);
+ while(grid.children.length>6)grid.lastElementChild.remove();
  const back=$("#backToStudio");if(back)back.onclick=showEmpty;
  $("#composerStatus").textContent="FLUX Dev · Image ready";
 }
