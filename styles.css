@@ -68,3 +68,42 @@ body.light .topbar,body.light .sidebar{background:rgba(255,255,255,.94)}body.lig
 .generation-loading span{font-size:10px;color:#89a9c8}
 .generation-loading .spinner{width:24px;height:24px;border-radius:50%;border:2px solid rgba(150,190,230,.22);border-top-color:#b879ff;animation:spin .8s linear infinite}
 @media(max-width:800px){.generation-loading{min-height:120px}}
+
+/* Final visual cleanup */
+.eyebrow,.mini-badge{font-size:8px}
+.workspace-head h1{font-size:24px}
+.workspace-head p{font-size:11px;line-height:1.55}
+.side-label{font-size:8px}.side-btn{font-size:10px}.tool-btn{font-size:9px}.system-title{font-size:9px}.system-row{font-size:8px}.system-row b{font-size:7px}.side-user b{font-size:9px}.side-user small{font-size:7px}
+.composer textarea{font-size:12px}.select-pill{font-size:9px}.composer-status{font-size:8px}.send{font-size:10px}.attach,.mic{font-size:16px}
+.results-head h3{font-size:15px}
+.generation-loading b{font-size:14px}.generation-loading span{font-size:11px}
+
+/* Light theme: remove dark-mode surfaces everywhere */
+body.light{background:#f4f7fb;color:#182436}
+body.light .workspace{background:radial-gradient(circle at 50% 10%,rgba(70,120,180,.08),transparent 38%)}
+body.light .sidebar{background:rgba(255,255,255,.98);border-color:#dce4ee}
+body.light .side-btn{color:#64748a}
+body.light .side-btn:hover,body.light .tool-btn:hover{background:#edf3f9;color:#182436}
+body.light .side-btn.active{background:linear-gradient(90deg,#e8eaff,#eee8ff);border-color:#c7cbed;color:#31336f;box-shadow:none}
+body.light .side-btn.active .ico{color:#4f4fb1}
+body.light .tool-btn{color:#65788f}
+body.light .system-card,body.light .side-user,body.light .room-intro,body.light .feature-card,body.light .model-strip,body.light .quick-card,body.light .source-info,body.light .chat-bubble,body.light .composer{background:#fff;border-color:#dbe4ee;box-shadow:0 8px 25px rgba(30,55,85,.07)}
+body.light .system-card{background:#f8fafc}
+body.light .system-row b{background:#dff7ef;color:#16795f}
+body.light .media-card{background:#eef3f8;border-color:#d8e2ed}
+body.light .media-actions .media-action{background:rgba(255,255,255,.94);color:#34465c;border-color:#cbd8e5;box-shadow:0 5px 14px rgba(30,55,85,.14)}
+body.light .media-action:hover{background:#f0ebff;color:#51409c;border-color:#bca7ed}
+body.light .media-action::after{background:#fff;color:#24364c;border-color:#d6e0eb}
+body.light .composer{background:rgba(255,255,255,.98)}
+body.light .attach,body.light .mic,body.light .select-pill,body.light .pill{background:#f4f7fa;color:#52657b;border-color:#d3deea}
+body.light .composer textarea::placeholder{color:#8797a9}
+body.light .floating-theme{background:#fff;color:#5d7087;border-color:#d4dfeb;box-shadow:0 8px 22px rgba(30,55,85,.12)}
+body.light .generation-loading{background:linear-gradient(135deg,#fff,#f2f6fa);border-color:#d5e0eb;color:#23364b;box-shadow:0 10px 30px rgba(30,55,85,.09)}
+body.light .generation-loading span{color:#71859a}
+body.light .spinner{border-color:#d7e2ed;border-top-color:#8758d8}
+body.light .chat-row.user .chat-bubble{background:#eef1ff;border-color:#d2d8f2}
+body.light .chat-bubble{background:#fff}
+body.light .mobile-tabs{background:rgba(255,255,255,.98);border-color:#d6e0eb}
+body.light .mobile-tabs button{color:#718197}
+body.light .mobile-tabs button.active{background:#ecebff;color:#48449a}
+@media(max-width:800px){.workspace-head h1{font-size:20px}.workspace-head p{font-size:9px}.workspace-head .eyebrow{font-size:8px}.composer textarea{font-size:11px}.select-pill{font-size:9px}}
