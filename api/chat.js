@@ -16,7 +16,7 @@ export default async function handler(req, res) {
     const messages = Array.isArray(body.messages) ? body.messages : [];
     const model = typeof body.model === "string" && body.model.trim()
       ? body.model.trim()
-      : "gemini-3.8-flash";
+      : "gemini-2.5-flash-lite";
 
     const contents = messages
       .filter(m => m && (m.role === "user" || m.role === "assistant") && typeof m.content === "string")
@@ -44,9 +44,7 @@ export default async function handler(req, res) {
 
     let response;
     let data = {};
-    let lastStatus = 500;
-
-    for (let attempt = 0; attempt < 3; attempt++) {
+        for (let attempt = 0; attempt < 3; attempt++) {
       response = await fetch(
         `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent?key=${encodeURIComponent(apiKey)}`,
         {
@@ -57,8 +55,6 @@ export default async function handler(req, res) {
       );
 
       data = await response.json().catch(() => ({}));
-      lastStatus = response.status;
-
       if (response.ok) break;
 
       if (![408, 429, 500, 502, 503, 504].includes(response.status) || attempt === 2) {
