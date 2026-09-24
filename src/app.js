@@ -113,8 +113,8 @@ async function generateImage(prompt){
   
   const payload={prompt,ratio:referenceImage?($("#composerRatio").value==="1:1"?"auto":$("#composerRatio").value):$("#composerRatio").value};
   if(referenceImage){if(referenceImage.startsWith("data:image/"))payload.imageBase64=referenceImage;else payload.imageUrl=referenceImage}
-  const endpoint=referenceImage?"https://ahm7xmakki.com/api/pti":"/api/generate";
-  const response=await fetch(endpoint,{method:"POST",headers:{"Content-Type":"application/json","Accept":"application/json"},body:JSON.stringify(referenceImage?payload:{mode:"image",provider:"legacy-flux",prompt,model:$("#composerModel").value.trim(),ratio:$("#composerRatio").value,outputFormat:"png",options:{} }),signal:AbortSignal.timeout(referenceImage?120000:60000)});
+  const endpoint="/api/generate";
+  const response=await fetch(endpoint,{method:"POST",headers:{"Content-Type":"application/json","Accept":"application/json"},body:JSON.stringify({mode:"image",provider:"legacy-flux",prompt,model:$("#composerModel").value.trim(),ratio:$("#composerRatio").value,outputFormat:"png",options:referenceImage?payload:{} }),signal:AbortSignal.timeout(60000)});
   const data=await response.json().catch(()=>({}));
   if(!response.ok||!data.imageUrl)throw new Error(data.message||data.error||"Не удалось получить изображение");
   $("#canvas .generation-loading")?.remove();showImage(data.imageUrl);$("#composerInput").value="";syncInput();clearComposerAttachment();$("#composerModel").value="FLUX Dev";$("#composerStatus").textContent="FLUX Dev · Image ready";
