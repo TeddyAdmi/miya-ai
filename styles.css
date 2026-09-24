@@ -313,3 +313,82 @@ body.light .progress-model{color:#71859a}
   .progress-copy b{font-size:9px}
   .progress-model{font-size:7px}
 }
+
+/* Latest workspace layout */
+.chat-room{min-height:calc(100vh - 150px);border:0!important;background:transparent!important;overflow:visible!important}
+.chat-room .section-welcome,
+.studio-room .section-welcome{
+  min-height:calc(100vh - 250px);
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  text-align:center;
+  padding:30px 20px 150px;
+  background:transparent;
+  border:0;
+  box-shadow:none;
+}
+.chat-room .section-welcome h2,
+.studio-room .section-welcome h2{font-size:25px;margin:10px 0 5px}
+.chat-room .section-welcome p,
+.studio-room .section-welcome p{font-size:10px;max-width:540px;color:var(--muted);margin:0;line-height:1.5}
+
+/* Saved chats: easy to enter and no gap between button and flyout. */
+.side-submenu{left:100%!important;top:74px!important;border:0!important;border-radius:8px!important}
+.side-menu-toggle:hover + .side-submenu,
+.side-submenu:hover{pointer-events:auto!important;visibility:visible!important;opacity:1!important}
+.chat-history-mini-item{cursor:pointer!important;pointer-events:auto!important}
+
+/* Every generated image occupies the same visual 16:9 workspace tile. */
+.result-grid{align-items:start}
+.media-card{
+  position:relative;
+  aspect-ratio:16 / 9;
+  width:100%;
+  overflow:hidden;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  background:#081a2d;
+  border-radius:10px;
+}
+.media-card img,
+.media-card video{
+  width:100%;
+  height:100%;
+  object-fit:contain;
+  display:block;
+  background:#081a2d;
+}
+body.light .media-card,
+body.light .media-card img,
+body.light .media-card video{background:#edf2f7}
+
+/* Compact viewport-centered generation overlay, independent of canvas scroll. */
+.generation-loading{
+  position:fixed!important;
+  top:50vh!important;
+  left:50vw!important;
+  width:220px!important;
+  height:62px!important;
+  min-height:0!important;
+  margin:0!important;
+  padding:0 12px!important;
+  transform:translate(-50%,-50%)!important;
+  z-index:9999!important;
+  border-radius:10px!important;
+  border:1px solid rgba(123,164,205,.25)!important;
+  background:rgba(7,23,41,.9)!important;
+  box-shadow:0 16px 48px rgba(0,0,0,.34)!important;
+}
+.generation-progress{gap:9px}
+.progress-circle{width:36px!important;height:36px!important;flex-basis:36px!important}
+.progress-circle .progress-percent{font-size:8px!important}
+.progress-copy b{font-size:9px!important}
+.progress-model{font-size:7px!important}
+@media(max-width:800px){
+  .generation-loading{width:205px!important;height:58px!important}
+  .chat-room .section-welcome,.studio-room .section-welcome{min-height:calc(100vh - 210px);padding-bottom:140px}
+  .chat-room .section-welcome h2,.studio-room .section-welcome h2{font-size:21px}
+}
