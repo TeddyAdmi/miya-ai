@@ -5,6 +5,39 @@ const modes={
 };
 const $=s=>document.querySelector(s),$$=s=>[...document.querySelectorAll(s)];
 let mode="chat",referenceImage=null,chatStarted=false,chatMessages=[];
+const CHAT_KEY="miyaChats";
+function getChats(){try{return JSON.parse(localStorage.getItem(CHAT_KEY)||"[]").filter(x=>x&&Array.isArray(x.messages))}catch{return[]}}
+function saveCurrentChat(){
+ if(!chatMessages.length)return;
+ const chats=getChats();
+ const title=(chatMessages.find(x=>x.role==="user")?.content||"Новый чат").trim().slice(0,42);
+ const currentId=window.__miyaChatId||Date.now().toString();
+ const item={id:currentId,title,messages:chatMessages,updatedAt:Date.now()};
+ const index=chats.findIndex(x=>x.id===currentId);
+ if(index>=0)chats[index]=item;else chats.unshift(item);
+ localStorage.setItem(CHAT_KEY,JSON.stringify(chats.slice(0,50)));
+ window.__miyaChatId=currentId;
+ renderChatHistoryMini();
+}
+function renderChatHistoryMini(){
+ const box=$("#chatHistoryMini");if(!box)return;
+ const chats=getChats();
+ box.innerHTML="";
+ chats.forEach(chat=>{
+   const b=document.createElement("button");
+   b.className="chat-history-mini-item"+(chat.id===window.__miyaChatId?" active":"");
+   b.textContent=chat.title||"Новый чат";
+   b.title=chat.title||"Новый чат";
+   b.onclick=()=>{
+     mode="chat";chatMessages=chat.messages.slice();window.__miyaChatId=chat.id;chatStarted=true;
+     setMode("chat");const c=$("#canvas");c.innerHTML='<div class="chat-stream"></div>';
+     chatMessages.forEach(m=>addChatMessage(m.content,m.role==="user"));
+     $("#composerInput").focus();
+   };
+   box.appendChild(b);
+ });
+}
+
 const LIB_KEY="miyaLibrary";
 function getLibrary(){try{return JSON.parse(localStorage.getItem(LIB_KEY)||"[]").filter(x=>x&&typeof x.url==="string"&&!x.url.includes("access.vheer.com/results/"))}catch{return[]}}
 function saveMedia(type,url){if(!url)return;const items=getLibrary();items.unshift({type,url,createdAt:Date.now()});localStorage.setItem(LIB_KEY,JSON.stringify(items))}
@@ -98,7 +131,7 @@ function bindChatUI(){
  const newChat=$("#newChatBtn");
  if(newChat)newChat.onclick=()=>{
    chatStarted=false;
-   chatMessages=[];
+   chatMessages=[];window.__miyaChatId=null;
    $("#canvas").innerHTML=modeHero();
    bindChatUI();
    $("#composerInput").value="";
@@ -198,6 +231,7 @@ async function requestChat(){
    if(!response.ok||!data.text) throw new Error(data.message||data.error||"Не удалось получить ответ Miya");
    chatMessages.push({role:"assistant",content:data.text});
    addChatMessage(data.text,false);
+   saveCurrentChat();
    status.textContent="Miya · Gemini 2.5 Flash-Lite";
  }catch(e){
    toast(e.message||"Ошибка AI Chat");
@@ -238,7 +272,7 @@ $("#composerSend").addEventListener("click",async()=>{
  const value=$("#composerInput").value.trim();
  if(!value){toast(mode==="chat"?"Напиши сообщение":mode==="video"?"Опиши видео":"Опиши, что создать или изменить");return}
  if(mode==="images"){await generateImage(value);return}
- if(mode==="chat"){chatMessages.push({role:"user",content:value});addChatMessage(value,true);$("#composerInput").value="";syncInput();await requestChat();return}
+ if(mode==="chat"){chatMessages.push({role:"user",content:value});addChatMessage(value,true);$("#composerInput").value="";syncInput();saveCurrentChat();await requestChat();return}
  showLoading();$("#composerStatus").textContent="LTX · Request prepared";
  setTimeout(()=>{toast("Видео-задача подготовлена. LTX endpoint подключим следующим шагом.");showEmpty();$("#composerStatus").textContent=modes.video.status},500)
 });
