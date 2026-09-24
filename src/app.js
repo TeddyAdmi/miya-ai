@@ -20,8 +20,20 @@ function modeHero(){
      <p>Напиши идею — Miya поможет превратить её в текст, изображение или видео.</p>
    </div>
  </div>`;
- if(mode==="images") return `<div class="studio-room clean-canvas"></div>`;
- return `<div class="studio-room clean-canvas"></div>`;
+ if(mode==="images") return `<div class="studio-room clean-canvas">
+   <div class="chat-welcome section-welcome">
+     <div class="hero-mark image">▧</div><div class="mini-badge">MIYA IMAGES</div>
+     <h2>Создавай изображения</h2>
+     <p>Создавай новые изображения или редактируй исходники с помощью AI.</p>
+   </div>
+ </div>`;
+ return `<div class="studio-room clean-canvas">
+   <div class="chat-welcome section-welcome">
+     <div class="hero-mark video">▶</div><div class="mini-badge">MIYA VIDEO</div>
+     <h2>Создавай видео</h2>
+     <p>Создавай видео из текста или оживляй загруженные изображения.</p>
+   </div>
+ </div>`;
 }
 function showEmpty(){
  const c=$("#canvas");c.innerHTML=modeHero();bindQuickCards();
