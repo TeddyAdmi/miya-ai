@@ -87,7 +87,7 @@ function showLoading(){
   if(!grid){c.innerHTML='<div class="result-grid"></div>';grid=c.querySelector(".result-grid")}
   const old=c.querySelector(".generation-loading");if(old)old.remove();
   const card=document.createElement("div");card.className="generation-loading";
-  card.innerHTML='<div class="progress-ring"><span>0%</span></div><b>Загрузка…</b><span>Flux Kontext Dev обрабатывает исходник</span><small>Подготовка изображения</small>';
+  card.innerHTML='<div class="progress-ring"><span class="progress-percent">0%</span><b>Загрузка…</b><span>Flux Kontext Dev обрабатывает исходник</span><small>Подготовка изображения</small></div>';
   c.insertBefore(card,grid);return;
  }
  c.innerHTML='<div class="loading-state"><div class="spinner"></div><b>Готовим видео…</b><span>Запрос отправлен в видеодвижок Miya.</span></div>';
@@ -107,8 +107,8 @@ card.appendChild(actions);
 }
 async function generateImage(prompt){
  showLoading();$("#composerSend").disabled=true;
- const loader=$("#canvas .generation-loading"),ring=loader?.querySelector(".progress-ring"),label=loader?.querySelector("span");
- let progress=0; const progressTimer=setInterval(()=>{progress=Math.min(progress+Math.max(2,Math.round((88-progress)/18)),88);if(ring)ring.style.setProperty("--progress",progress+"%");if(ring)ring.querySelector("span").textContent=progress+"%";if(label)label.textContent=referenceImage?"Flux Kontext Dev обрабатывает исходник":"FLUX Dev создаёт изображение"},700);$("#composerStatus").textContent=referenceImage?"Flux Kontext Dev · Generating…":"FLUX Dev · Generating…";
+ const loader=$("#canvas .generation-loading"),ring=loader?.querySelector(".progress-ring");
+ let progress=0; const progressTimer=setInterval(()=>{progress=Math.min(progress+Math.max(2,Math.round((88-progress)/18)),88);if(ring)ring.style.setProperty("--progress",progress+"%");if(ring)ring.querySelector(".progress-percent").textContent=progress+"%"},700);$("#composerStatus").textContent=referenceImage?"Flux Kontext Dev · Generating…":"FLUX Dev · Generating…";
  try{
   
   const payload={prompt,ratio:referenceImage?($("#composerRatio").value==="1:1"?"auto":$("#composerRatio").value):$("#composerRatio").value};
