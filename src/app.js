@@ -93,6 +93,7 @@ function showEmpty(){
  const c=$("#canvas");c.innerHTML=modeHero();bindQuickCards();bindChatUI();
 }
 function bindChatUI(){
+ // chat prompt binding uses a real NodeList-to-array conversion
  if(mode!=="chat")return;
  const newChat=$("#newChatBtn");
  if(newChat)newChat.onclick=()=>{
@@ -105,7 +106,7 @@ function bindChatUI(){
    $("#composerInput").focus();
    $("#composerStatus").textContent="AI Chat готов";
  };
- $("[data-chat-prompt]").forEach(b=>b.onclick=()=>{
+ Array.from(document.querySelectorAll("[data-chat-prompt]")).forEach(b=>b.onclick=()=>{
    $("#composerInput").value=b.dataset.chatPrompt||"";
    syncInput();
    $("#composerInput").focus();
