@@ -87,7 +87,7 @@ function showLoading(){
   if(!grid){c.innerHTML='<div class="result-grid"></div>';grid=c.querySelector(".result-grid")}
   const old=c.querySelector(".generation-loading");if(old)old.remove();
   const card=document.createElement("div");card.className="generation-loading";
-  card.innerHTML='<div class="progress-ring"><span>0%</span></div><b>Загрузка…</b><span>Подготовка изображения</span>';
+  card.innerHTML='<div class="progress-ring"><span>0%</span></div><b>Загрузка…</b><span>Flux Kontext Dev обрабатывает исходник</span><small>Подготовка изображения</small>';
   c.insertBefore(card,grid);return;
  }
  c.innerHTML='<div class="loading-state"><div class="spinner"></div><b>Готовим видео…</b><span>Запрос отправлен в видеодвижок Miya.</span></div>';
