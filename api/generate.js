@@ -19,28 +19,25 @@ export default async function handler(req, res) {
     const options =
       body.options && typeof body.options === "object" ? body.options : {};
 
-    /*
-     * Keep the free FLUX transport used by Miya's original path.
-     * The payload now forwards imageUrl/imageBase64 so the same endpoint
-     * can receive an Image → Image request when the upstream supports it.
-     */
+    const imageUrl =
+      typeof options.imageUrl === "string" ? options.imageUrl.trim() : "";
+    const imageBase64 =
+      typeof options.imageBase64 === "string" ? options.imageBase64.trim() : "";
+
+    const isImageToImage = Boolean(imageUrl || imageBase64);
+    const endpoint = isImageToImage
+      ? "https://ahm7xmakki.com/api/pti"
+      : "https://ahm7xmakki.com/api/tti";
+
     const payload = {
       prompt,
-      ratio
+      ratio: isImageToImage && ratio === "1:1" ? "auto" : ratio
     };
 
-    if (typeof options.imageUrl === "string" && options.imageUrl.trim()) {
-      payload.imageUrl = options.imageUrl.trim();
-    }
+    if (imageUrl) payload.imageUrl = imageUrl;
+    if (imageBase64) payload.imageBase64 = imageBase64;
 
-    if (
-      typeof options.imageBase64 === "string" &&
-      options.imageBase64.trim()
-    ) {
-      payload.imageBase64 = options.imageBase64.trim();
-    }
-
-    const response = await fetch("https://ahm7xmakki.com/api/tti", {
+    const response = await fetch(endpoint, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -61,7 +58,7 @@ export default async function handler(req, res) {
       });
     }
 
-    if (!response.ok) {
+    if (!response.ok || data?.success === false) {
       return res.status(502).json({
         ok: false,
         error: String(
@@ -88,14 +85,14 @@ export default async function handler(req, res) {
       ok: true,
       mode: "image",
       status: "completed",
-      provider: "Legacy PixelSter",
-      model: "Flux Dev",
+      provider: "PixelSter",
+      model: isImageToImage ? "Flux Kontext Dev" : "Flux Dev",
       imageUrl: data.imageUrl,
       meta: {
         transport: "http-json",
         free: true,
-        source: "original-miyaa-flux-path",
-        edit: Boolean(payload.imageUrl || payload.imageBase64)
+        endpoint: isImageToImage ? "/api/pti" : "/api/tti",
+        edit: isImageToImage
       }
     });
   } catch (error) {
