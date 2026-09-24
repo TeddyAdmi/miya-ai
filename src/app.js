@@ -325,15 +325,3 @@ $$("[data-tool]").forEach(b=>b.onclick=()=>{
 setMode("chat");
 renderChatHistoryMini();
 
-
-/* Chat attachments stay in the current room; they are not an image-generation mode switch. */
-.chat-image-attachment{
-  display:block;
-  width:min(320px,100%);
-  max-height:260px;
-  object-fit:contain;
-  border:1px solid var(--line);
-  border-radius:10px;
-  margin:0 0 7px;
-  background:#081a2d;
-}
