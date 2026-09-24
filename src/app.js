@@ -211,11 +211,27 @@ function setMode(next){
  $("#workspaceEyebrow").textContent=m.eyebrow;$("#workspaceTitle").textContent=m.title;$("#workspaceSubtitle").textContent=m.subtitle;
  $("#composerInput").placeholder=m.placeholder;$("#composerSendText").textContent=m.send;$("#composerStatus").textContent=m.status;
  $(".image-settings").style.display=next==="images"?"flex":"none";$("#videoOptions").classList.toggle("show",next==="video");
- $$("[data-mode]").forEach(x=>x.classList.toggle("active",x.dataset.mode===next));
+ $("[data-mode]").forEach(x=>x.classList.toggle("active",x.dataset.mode===next));
+ $("#chatMenuToggle")?.classList.add("active");
+ if($("#chatSubmenu")?.classList.contains("collapsed"))$("#chatSubmenu").classList.remove("collapsed");
+ if($("#chatMenuToggle")){$("#chatMenuToggle").classList.remove("collapsed");$("#chatMenuToggle").setAttribute("aria-expanded","true")}
+ if($("#chatMenuArrow"))$("#chatMenuArrow").textContent="⌄";
  if(next==="images"){ renderImageLibrary(); $("#composerModel").value=referenceImage?"FLUX Kontext Dev":"FLUX Dev"; $("#composerRatio").value="16:9" }
  if(next!=="images")showEmpty();syncInput()
 }
-$$("[data-mode]").forEach(b=>b.addEventListener("click",()=>setMode(b.dataset.mode)));
+const chatMenuToggle=$("#chatMenuToggle");
+const chatSubmenu=$("#chatSubmenu");
+const chatMenuArrow=$("#chatMenuArrow");
+if(chatMenuToggle&&chatSubmenu){
+ chatMenuToggle.addEventListener("click",()=>{
+   if(mode!=="chat"){setMode("chat");return}
+   const collapsed=chatSubmenu.classList.toggle("collapsed");
+   chatMenuToggle.classList.toggle("collapsed",collapsed);
+   chatMenuToggle.setAttribute("aria-expanded",String(!collapsed));
+   if(chatMenuArrow)chatMenuArrow.textContent=collapsed?"›":"⌄";
+ });
+}
+$("[data-mode]").forEach(b=>b.addEventListener("click",()=>setMode(b.dataset.mode)));
 $("#composerInput").addEventListener("input",syncInput);
 $("#composerInput").addEventListener("keydown",e=>{if(e.key==="Enter"&&!e.shiftKey){e.preventDefault();$("#composerSend").click()}});
 $("#composerSend").addEventListener("click",async()=>{
