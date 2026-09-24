@@ -188,7 +188,7 @@ async function requestChat(){
  status.textContent="Miya думает…";
  $("#composerSend").disabled=true;
  try{
-   const response=await fetch("/api/chat",{
+   const response=await fetch("/api/miya-chat",{
      method:"POST",
      headers:{"Content-Type":"application/json","Accept":"application/json"},
      body:JSON.stringify({model:"gemini-2.5-flash-lite",messages:chatMessages}),
