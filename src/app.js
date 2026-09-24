@@ -317,3 +317,4 @@ $$("[data-tool]").forEach(b=>b.onclick=()=>{
  else renderLibrary();
 });
 setMode("chat");
+renderChatHistoryMini();
