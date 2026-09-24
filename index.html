@@ -64,6 +64,10 @@
     <div class="composer" id="composer">
       <div class="composer-input-row">
         <button class="attach" id="composerAttach" title="Добавить изображение">＋</button>
+        <div class="composer-attachment" id="composerAttachment" hidden>
+          <img id="composerAttachmentImage" alt="Прикреплённое изображение">
+          <button type="button" id="composerAttachmentRemove" title="Удалить изображение">×</button>
+        </div>
         <textarea id="composerInput" rows="1" maxlength="4000" placeholder="Напиши сообщение..."></textarea>
         <button class="mic" id="composerMic" title="Голосовой ввод">⌕</button>
         <button class="send" id="composerSend"><span>✦</span><span id="composerSendText">Отправить</span></button>
