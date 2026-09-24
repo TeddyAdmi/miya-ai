@@ -85,7 +85,7 @@ function showLoading(){
  if(mode==="images"){
   let grid=c.querySelector(".result-grid");
   if(!grid){
-   c.innerHTML='<div class="results-head"><div><span class="mini-badge">RESULT</span><h3>Результаты Miya</h3></div></div><div class="result-grid"></div>';
+   c.innerHTML='<div class="result-grid"></div>';
    grid=c.querySelector(".result-grid");
   }
   const old=c.querySelector(".generation-loading");
@@ -114,9 +114,9 @@ card.appendChild(actions);
 async function generateImage(prompt){
  showLoading();$("#composerSend").disabled=true;$("#composerStatus").textContent=referenceImage?"Flux Kontext Dev · Generating…":"FLUX Dev · Generating…";
  try{
-  const size=$("#composerSize").value.trim();
+  
   const response=await fetch("/api/generate",{method:"POST",headers:{"Content-Type":"application/json","Accept":"application/json"},body:JSON.stringify({
-   mode:"image",provider:"legacy-flux",prompt,model:$("#composerModel").value.trim(),quality:$("#composerQuality").value.trim(),size,ratio:$("#composerRatio").value,outputFormat:"png",
+   mode:"image",provider:"legacy-flux",prompt,model:$("#composerModel").value.trim(),ratio:$("#composerRatio").value,outputFormat:"png",
    options:referenceImage?(referenceImage.startsWith("data:image/")?{imageBase64:referenceImage}:{imageUrl:referenceImage}):{}
   })});
   const data=await response.json().catch(()=>({}));
