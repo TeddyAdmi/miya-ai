@@ -47,12 +47,32 @@ function toast(message){
 }
 function syncInput(){const i=$("#composerInput");if(!i)return;i.style.height="auto";i.style.height=Math.min(120,Math.max(42,i.scrollHeight))+"px"}
 function modeHero(){
- if(mode==="chat") return `<div class="chat-room">
-   <div class="chat-welcome">
-     <div class="hero-mark">✦</div><div class="mini-badge">MIYA AI</div>
-     <h2>Чем займёмся сегодня?</h2>
-     <p>Напиши идею — Miya поможет превратить её в текст, изображение или видео.</p>
-   </div>
+ if(mode==="chat") return `<div class="chat-shell">
+   <aside class="chat-history">
+     <button class="new-chat-btn" id="newChatBtn"><span>＋</span>Новый чат</button>
+     <div class="chat-history-title">СЕГОДНЯ</div>
+     <button class="history-item active"><span>◉</span>Новый разговор</button>
+     <button class="history-item"><span>◉</span>Идеи для YouTube</button>
+     <button class="history-item"><span>◉</span>Промпт для Veo</button>
+     <button class="history-item"><span>◉</span>Создание сценария</button>
+     <div class="chat-history-title">ВЧЕРА</div>
+     <button class="history-item"><span>◉</span>Редактирование текста</button>
+     <button class="history-item"><span>◉</span>Новая идея</button>
+   </aside>
+   <section class="chat-main">
+     <div class="chat-welcome">
+       <div class="hero-mark">✦</div>
+       <div class="mini-badge">MIYA AI</div>
+       <h2>Чем займёмся сегодня?</h2>
+       <p>Напиши вопрос, идею или задачу. Miya поможет с текстом, промптами, изображениями и видео.</p>
+       <div class="chat-quick-actions">
+         <button data-chat-prompt="Придумай 10 идей для YouTube Shorts">✦ Идеи для контента</button>
+         <button data-chat-prompt="Напиши кинематографичный промпт для генерации видео">🎬 Промпт для видео</button>
+         <button data-chat-prompt="Создай подробный промпт для изображения">▧ Промпт для изображения</button>
+         <button data-chat-prompt="Помоги улучшить мой текст">✎ Улучшить текст</button>
+       </div>
+     </div>
+   </section>
  </div>`;
  if(mode==="images") return `<div class="studio-room clean-canvas">
    <div class="chat-welcome section-welcome">
@@ -70,7 +90,25 @@ function modeHero(){
  </div>`;
 }
 function showEmpty(){
- const c=$("#canvas");c.innerHTML=modeHero();bindQuickCards();
+ const c=$("#canvas");c.innerHTML=modeHero();bindQuickCards();bindChatUI();
+}
+function bindChatUI(){
+ if(mode!=="chat")return;
+ const newChat=$("#newChatBtn");
+ if(newChat)newChat.onclick=()=>{
+   chatStarted=false;
+   $("#canvas").innerHTML=modeHero();
+   bindChatUI();
+   $("#composerInput").value="";
+   syncInput();
+   $("#composerInput").focus();
+   $("#composerStatus").textContent="AI Chat готов";
+ };
+ $("[data-chat-prompt]").forEach(b=>b.onclick=()=>{
+   $("#composerInput").value=b.dataset.chatPrompt||"";
+   syncInput();
+   $("#composerInput").focus();
+ });
 }
 function bindQuickCards(){
  $$(".quick-card,.feature-card[data-prompt]").forEach(b=>b.onclick=()=>{
@@ -121,15 +159,34 @@ async function generateImage(prompt){
  }catch(e){toast(e.message||"Ошибка генерации")}finally{clearInterval(progressTimer);$("#canvas .generation-loading")?.remove();$("#composerSend").disabled=false}
 }
 function addChatMessage(text,isUser){
- let stream=$("#canvas .chat-stream");if(!stream){$("#canvas").innerHTML='<div class="chat-stream"></div>';stream=$("#canvas .chat-stream")}
+ let stream=$("#canvas .chat-stream");
+ if(!stream){
+   $("#canvas").innerHTML='<div class="chat-stream"></div>';
+   stream=$("#canvas .chat-stream");
+ }
  const welcome=stream.querySelector(".chat-welcome");if(welcome)welcome.remove();
  const row=document.createElement("div");row.className="chat-row "+(isUser?"user":"assistant");
  const av=document.createElement("div");av.className="chat-avatar";av.textContent=isUser?"U":"M";
- const bubble=document.createElement("div");bubble.className="chat-bubble";bubble.textContent=text;row.append(av,bubble);stream.appendChild(row);stream.scrollTop=stream.scrollHeight;
+ const content=document.createElement("div");content.className="chat-content";
+ const bubble=document.createElement("div");bubble.className="chat-bubble";bubble.textContent=text;
+ content.appendChild(bubble);
+ if(!isUser){
+   const actions=document.createElement("div");actions.className="chat-actions";
+   actions.innerHTML='<button title="Копировать">Копировать</button><button title="Повторить">Повторить</button><button title="Создать изображение">▧ Изображение</button><button title="Создать видео">▶ Видео</button>';
+   actions.querySelector('[title="Копировать"]').onclick=()=>navigator.clipboard?.writeText(text).then(()=>toast("Скопировано"));
+   actions.querySelector('[title="Создать изображение"]').onclick=()=>{setMode("images");$("#composerInput").value=text;syncInput();$("#composerInput").focus()};
+   actions.querySelector('[title="Создать видео"]').onclick=()=>{setMode("video");$("#composerInput").value=text;syncInput();$("#composerInput").focus()};
+   content.appendChild(actions);
+ }
+ row.append(av,content);stream.appendChild(row);stream.scrollTop=stream.scrollHeight;
  chatStarted=true;
 }
 function addLocalAssistant(){
- setTimeout(()=>addChatMessage("Готово. Я могу подготовить идею, промпт и структуру задачи для Miya. Генерация изображения доступна во вкладке «Картинки».",false),280)
+ $("#composerStatus").textContent="Miya думает…";
+ setTimeout(()=>{
+   addChatMessage("Готово. Я могу помочь с идеей, текстом, сценарием или промптом. Когда задача связана с изображением или видео, я передам её в соответствующую комнату Miya.",false);
+   $("#composerStatus").textContent="AI Chat готов";
+ },450)
 }
 function setMode(next){
  mode=next;const m=modes[next];
