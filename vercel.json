@@ -3,9 +3,6 @@
   "functions": {
     "api/generate.js": {
       "maxDuration": 60
-    },
-    "api/miya-chat.js": {
-      "maxDuration": 60
     }
   }
 }
