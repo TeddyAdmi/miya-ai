@@ -38,7 +38,7 @@ export default async function handler(req, res) {
     if (imageBase64) payload.imageBase64 = imageBase64;
 
     const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 55000);
+    const timeout = setTimeout(() => controller.abort(), 58000);
     let response;
     try {
       response = await fetch(endpoint, {
@@ -52,7 +52,7 @@ export default async function handler(req, res) {
       });
     } catch (error) {
       if (error?.name === "AbortError") {
-        return res.status(504).json({ ok: false, error: "FLUX_TIMEOUT", message: "PixelSter did not respond within 55 seconds." });
+        return res.status(504).json({ ok: false, error: "FLUX_TIMEOUT", message: "PixelSter did not respond within 58 seconds." });
       }
       throw error;
     } finally {
