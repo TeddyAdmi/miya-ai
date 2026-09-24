@@ -94,7 +94,7 @@ function showLoading(){
 }
 function showImage(url){
  const c=$("#canvas");let grid=c.querySelector(".result-grid");
- if(!grid){c.innerHTML='<div class="results-head"><div><span class="mini-badge">RESULT</span><h3>Результаты Miya</h3></div></div><div class="result-grid"></div>';grid=c.querySelector(".result-grid")}
+ if(!grid){c.innerHTML='<div class="result-grid"></div>';grid=c.querySelector(".result-grid")}
  const card=document.createElement("div");card.className="media-card";const img=document.createElement("img");img.src=url;img.alt="Miya generated image";card.appendChild(img);
  const actions=document.createElement("div");actions.className="media-actions";
 actions.innerHTML='<button class="media-action edit-action" title="Редактировать" aria-label="Редактировать">✦</button><button class="media-action download-action" title="Скачать" aria-label="Скачать">↓</button>';
