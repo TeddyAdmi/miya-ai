@@ -37,3 +37,5 @@ body.light .topbar,body.light .sidebar{background:rgba(255,255,255,.94)}body.lig
   .workspace-head{pointer-events:none;background:transparent;backdrop-filter:none}
   .workspace-copy{max-width:calc(100% - 50px)}
 }
+
+.media-actions{position:absolute;left:8px;right:8px;bottom:8px;display:flex;gap:5px;z-index:3}.media-action{height:26px;flex:1;border:1px solid rgba(93,140,185,.65);border-radius:6px;background:rgba(5,18,34,.88);backdrop-filter:blur(8px);color:#dcecff;font-size:7px;font-weight:800}.media-action:hover{border-color:#9a68ff;background:#172b49}.media-card:has(.media-actions) .media-meta{display:none}
