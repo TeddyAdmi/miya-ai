@@ -191,7 +191,7 @@ async function requestChat(){
    const response=await fetch("/api/generate",{
      method:"POST",
      headers:{"Content-Type":"application/json","Accept":"application/json"},
-     body:JSON.stringify({mode:"chat",model:"gemini-2.5-flash-lite",messages:chatMessages}),
+     body:JSON.stringify({mode:"chat",model:"gemini-3.5-flash-lite",messages:chatMessages}),
      signal:AbortSignal.timeout(90000)
    });
    const data=await response.json().catch(()=>({}));
