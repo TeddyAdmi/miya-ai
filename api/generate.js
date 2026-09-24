@@ -35,7 +35,7 @@ export default async function handler(req, res) {
         .map(m => {
           const parts = [{ text: m.content.slice(0, 12000) }];
           if (m.role === "user" && typeof m.image === "string" && m.image.startsWith("data:image/")) {
-            const match = m.image.match(/^data:(image\\/[a-zA-Z0-9.+-]+);base64,(.+)$/);
+            const match = m.image.match(/^data:(image\/[a-zA-Z0-9.+-]+);base64,(.+)$/);
             if (match && match[2].length <= 20 * 1024 * 1024) {
               parts.unshift({
                 inline_data: {
