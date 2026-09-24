@@ -168,3 +168,21 @@ body.light .chat-quick-actions button:hover{background:#f4f1ff;border-color:#c7b
  .chat-bubble{font-size:10px}
  .chat-actions button{font-size:7px}
 }
+
+/* AI Chat accordion navigation */
+.side-menu-toggle{margin-bottom:2px}
+.side-menu-toggle em{font-size:11px;color:#7791ad;transition:transform .18s}
+.side-menu-toggle.collapsed em{transform:rotate(-90deg)}
+.side-submenu{display:flex;flex-direction:column;gap:2px;padding:2px 0 7px 14px;overflow:hidden;transition:max-height .2s ease,opacity .2s ease}
+.side-submenu.collapsed{max-height:0!important;opacity:0;padding-top:0;padding-bottom:0;pointer-events:none}
+.side-subbtn{width:100%;height:32px;border:1px solid transparent;border-radius:7px;background:transparent;color:#7890aa;display:flex;align-items:center;gap:8px;padding:0 9px;text-align:left;font-size:9px}
+.side-subbtn span{width:15px;text-align:center;font-size:10px;color:#708ba8}
+.side-subbtn b{font-weight:700}
+.side-subbtn:hover{background:#0a2745;color:#eaf4ff}
+.side-subbtn.active{background:#182e50;border-color:#294e77;color:#fff}
+.side-subbtn.active span{color:#b77aff}
+body.light .side-subbtn{color:#65788f}
+body.light .side-subbtn:hover{background:#edf3f9;color:#182436}
+body.light .side-subbtn.active{background:#ecebff;border-color:#d6d4f3;color:#48449a}
+body.light .side-subbtn.active span{color:#6d55b5}
+@media(max-width:800px){.side-menu-toggle,.side-submenu{display:none}}
