@@ -12,7 +12,7 @@ function saveCurrentChat(){
  const chats=getChats();
  const title=(chatMessages.find(x=>x.role==="user")?.content||"Новый чат").trim().slice(0,42);
  const currentId=window.__miyaChatId||Date.now().toString();
- const item={id:currentId,title,messages:chatMessages,updatedAt:Date.now()};
+ const messagesForStorage=chatMessages.map(m=>m.image&&m.image.length<250000?m:{...m,image:""});\n const item={id:currentId,title,messages:messagesForStorage,updatedAt:Date.now()};
  const index=chats.findIndex(x=>x.id===currentId);
  if(index>=0)chats[index]=item;else chats.unshift(item);
  localStorage.setItem(CHAT_KEY,JSON.stringify(chats.slice(0,50)));
