@@ -191,14 +191,14 @@ async function requestChat(){
    const response=await fetch("/api/chat",{
      method:"POST",
      headers:{"Content-Type":"application/json","Accept":"application/json"},
-     body:JSON.stringify({model:"gemini-3.8-flash",messages:chatMessages}),
+     body:JSON.stringify({model:"gemini-2.5-flash-lite",messages:chatMessages}),
      signal:AbortSignal.timeout(90000)
    });
    const data=await response.json().catch(()=>({}));
    if(!response.ok||!data.text) throw new Error(data.message||data.error||"Не удалось получить ответ Miya");
    chatMessages.push({role:"assistant",content:data.text});
    addChatMessage(data.text,false);
-   status.textContent="Miya · Gemini 3.8 Flash";
+   status.textContent="Miya · Gemini 2.5 Flash-Lite";
  }catch(e){
    toast(e.message||"Ошибка AI Chat");
    status.textContent="AI Chat · ошибка";
