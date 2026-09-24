@@ -37,14 +37,27 @@ export default async function handler(req, res) {
     if (imageUrl) payload.imageUrl = imageUrl;
     if (imageBase64) payload.imageBase64 = imageBase64;
 
-    const response = await fetch(endpoint, {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 55000);
+    let response;
+    try {
+      response = await fetch(endpoint, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
         "Accept": "application/json"
       },
-      body: JSON.stringify(payload)
-    });
+      body: JSON.stringify(payload),
+      signal: controller.signal
+      });
+    } catch (error) {
+      if (error?.name === "AbortError") {
+        return res.status(504).json({ ok: false, error: "FLUX_TIMEOUT", message: "PixelSter did not respond within 55 seconds." });
+      }
+      throw error;
+    } finally {
+      clearTimeout(timeout);
+    }
 
     const raw = await response.text();
 
@@ -54,7 +67,10 @@ export default async function handler(req, res) {
     } catch {
       return res.status(502).json({
         ok: false,
-        error: "FLUX_NON_JSON_RESPONSE"
+        error: "FLUX_NON_JSON_RESPONSE",
+        upstreamStatus: response.status,
+        upstreamContentType: response.headers.get("content-type") || "",
+        upstreamBody: raw.slice(0, 500)
       });
     }
 
