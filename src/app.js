@@ -31,7 +31,7 @@ function renderChatHistoryMini(){
    b.onclick=()=>{
      mode="chat";chatMessages=chat.messages.slice();window.__miyaChatId=chat.id;chatStarted=true;
      setMode("chat");const c=$("#canvas");c.innerHTML='<div class="chat-stream"></div>';
-     chatMessages.forEach(m=>addChatMessage(m.content,m.role==="user"));
+     chatMessages.forEach(m=>addChatMessage(m.content,m.role==="user",m.image||""));
      $("#composerInput").focus();
    };
    box.appendChild(b);
@@ -211,7 +211,7 @@ async function generateImage(prompt){
   $("#canvas .generation-loading")?.remove();showImage(data.imageUrl);$("#composerInput").value="";syncInput();clearComposerAttachment();$("#composerModel").value="FLUX Dev";$("#composerStatus").textContent="FLUX Dev · Image ready";
  }catch(e){toast(e.message||"Ошибка генерации")}finally{clearInterval(progressTimer);$("#canvas .generation-loading")?.remove();$("#composerSend").disabled=false}
 }
-function addChatMessage(text,isUser){
+function addChatMessage(text,isUser,image=""){
  let stream=$("#canvas .chat-stream");
  if(!stream){
    $("#canvas").innerHTML='<div class="chat-stream"></div>';
@@ -223,6 +223,7 @@ function addChatMessage(text,isUser){
  const content=document.createElement("div");content.className="chat-content";
  const bubble=document.createElement("div");bubble.className="chat-bubble";bubble.textContent=text;
  content.appendChild(bubble);
+ if(image){const preview=document.createElement("img");preview.className="chat-image-attachment";preview.src=image;preview.alt="Прикреплённое изображение";content.insertBefore(preview,bubble)}
  if(!isUser){
    const actions=document.createElement("div");actions.className="chat-actions";
    actions.innerHTML='<button title="Копировать">Копировать</button><button title="Повторить">Повторить</button><button title="Создать изображение">▧ Изображение</button><button title="Создать видео">▶ Видео</button>';
@@ -242,7 +243,7 @@ async function requestChat(){
    const response=await fetch("/api/generate",{
      method:"POST",
      headers:{"Content-Type":"application/json","Accept":"application/json"},
-     body:JSON.stringify({mode:"chat",model:"gemini-3.5-flash-lite",messages:chatMessages}),
+     body:JSON.stringify({mode:"chat",model:"gemini-3.8-flash",messages:chatMessages}),
      signal:AbortSignal.timeout(90000)
    });
    const data=await response.json().catch(()=>({}));
@@ -282,7 +283,7 @@ $("#composerSend").addEventListener("click",async()=>{
  const value=$("#composerInput").value.trim();
  if(!value){toast(mode==="chat"?"Напиши сообщение":mode==="video"?"Опиши видео":"Опиши, что создать или изменить");return}
  if(mode==="images"){await generateImage(value);return}
- if(mode==="chat"){chatMessages.push({role:"user",content:value});addChatMessage(value,true);$("#composerInput").value="";syncInput();saveCurrentChat();await requestChat();return}
+ if(mode==="chat"){const attachedImage=referenceImage;chatMessages.push({role:"user",content:value,image:attachedImage||""});addChatMessage(value,true,attachedImage||"");$("#composerInput").value="";syncInput();saveCurrentChat();await requestChat();return}
  showLoading();$("#composerStatus").textContent="LTX · Request prepared";
  setTimeout(()=>{toast("Видео-задача подготовлена. LTX endpoint подключим следующим шагом.");showEmpty();$("#composerStatus").textContent=modes.video.status},500)
 });
@@ -292,9 +293,14 @@ $("#referenceInput").onchange=e=>{
  const file=e.target.files?.[0];if(!file)return;
  const reader=new FileReader();
  reader.onload=()=>{
-  referenceImage=String(reader.result||"");setComposerAttachment(referenceImage);setMode("images");
-  $("#composerModel").value="FLUX Kontext Dev";
-  $("#composerStatus").textContent="Flux Kontext Dev · готово к редактированию";toast("Изображение добавлено");
+  referenceImage=String(reader.result||"");setComposerAttachment(referenceImage);
+  if(mode==="images"){
+    $("#composerModel").value="FLUX Kontext Dev";
+    $("#composerStatus").textContent="Flux Kontext Dev · готово к редактированию";
+  }else{
+    $("#composerStatus").textContent="Изображение прикреплено · можно спросить Miya о фото";
+  }
+  toast(mode==="chat"?"Изображение прикреплено к чату":"Изображение добавлено");
   $("#composerInput").focus();
  };
  reader.readAsDataURL(file);e.target.value="";
@@ -318,3 +324,16 @@ $$("[data-tool]").forEach(b=>b.onclick=()=>{
 });
 setMode("chat");
 renderChatHistoryMini();
+
+
+/* Chat attachments stay in the current room; they are not an image-generation mode switch. */
+.chat-image-attachment{
+  display:block;
+  width:min(320px,100%);
+  max-height:260px;
+  object-fit:contain;
+  border:1px solid var(--line);
+  border-radius:10px;
+  margin:0 0 7px;
+  background:#081a2d;
+}
