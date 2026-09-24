@@ -5,6 +5,11 @@ const modes={
 };
 const $=s=>document.querySelector(s),$$=s=>[...document.querySelectorAll(s)];
 let mode="chat",referenceImage=null,chatStarted=false;
+const LIB_KEY="miyaLibrary";
+function getLibrary(){try{return JSON.parse(localStorage.getItem(LIB_KEY)||"[]")}catch{return[]}}
+function saveMedia(type,url){if(!url)return;const items=getLibrary();items.unshift({type,url,createdAt:Date.now()});localStorage.setItem(LIB_KEY,JSON.stringify(items))}
+function renderImageLibrary(){const c=$("#canvas"),items=getLibrary().filter(x=>x.type==="image");if(!items.length){showEmpty();return}c.innerHTML='<div class="results-head"><div><span class="mini-badge">LIBRARY · IMAGES</span><h3>Все созданные картинки</h3></div></div><div class="result-grid"></div>';const grid=c.querySelector(".result-grid");items.forEach(item=>{const card=document.createElement("div");card.className="media-card";const img=document.createElement("img");img.src=item.url;img.alt="Miya generated image";card.appendChild(img);const meta=document.createElement("div");meta.className="media-meta";meta.innerHTML="<b>FLUX Dev</b><span>Готово</span>";card.appendChild(meta);grid.appendChild(card)})}
+function renderLibrary(){const c=$("#canvas"),items=getLibrary();if(!items.length){c.innerHTML='<div class="library-empty"><div class="hero-mark small">▱</div><h2>Библиотека пуста</h2><p>Созданные картинки и видео будут автоматически сохраняться здесь.</p></div>';return}const images=items.filter(x=>x.type==="image"),videos=items.filter(x=>x.type==="video");c.innerHTML='<div class="library-section"><div class="results-head"><div><span class="mini-badge">LIBRARY</span><h3>Библиотека Miya</h3></div></div><div class="library-title">Картинки</div><div class="result-grid image-library-grid"></div><div class="library-title video-library-title">Видео</div><div class="result-grid video-library-grid"></div></div>';const ig=c.querySelector(".image-library-grid"),vg=c.querySelector(".video-library-grid");images.forEach(item=>{const card=document.createElement("div");card.className="media-card";const img=document.createElement("img");img.src=item.url;img.alt="Miya generated image";card.appendChild(img);ig.appendChild(card)});videos.forEach(item=>{const card=document.createElement("div");card.className="media-card";const v=document.createElement("video");v.src=item.url;v.controls=true;v.playsInline=true;card.appendChild(v);vg.appendChild(card)});if(!images.length)ig.innerHTML='<div class="library-note">Пока нет созданных картинок.</div>';if(!videos.length)vg.innerHTML='<div class="library-note">Пока нет созданных видео.</div>'}
 
 function toast(message){
  let t=$("#toast");if(!t){t=document.createElement("div");t.id="toast";t.className="toast";document.body.appendChild(t)}
@@ -51,11 +56,10 @@ function showLoading(){
 }
 function showImage(url){
  const c=$("#canvas");let grid=c.querySelector(".result-grid");
- if(!grid){c.innerHTML='<div class="results-head"><div><span class="mini-badge">RESULT</span><h3>Результаты Miya</h3></div><button class="ghost-btn" id="backToStudio">＋ Ещё</button></div>';grid=document.createElement("div");grid.className="result-grid";c.appendChild(grid)}
+ if(!grid){c.innerHTML='<div class="results-head"><div><span class="mini-badge">RESULT</span><h3>Результаты Miya</h3></div></div><div class="result-grid"></div>';grid=c.querySelector(".result-grid")}
  const card=document.createElement("div");card.className="media-card";const img=document.createElement("img");img.src=url;img.alt="Miya generated image";card.appendChild(img);
  const meta=document.createElement("div");meta.className="media-meta";meta.innerHTML='<b>FLUX Dev</b><span>Готово</span>';card.appendChild(meta);grid.prepend(card);
- while(grid.children.length>6)grid.lastElementChild.remove();
- const back=$("#backToStudio");if(back)back.onclick=showEmpty;
+ saveMedia("image",url);
  $("#composerStatus").textContent="FLUX Dev · Image ready";
 }
 async function generateImage(prompt){
@@ -88,8 +92,8 @@ function setMode(next){
  $("#composerInput").placeholder=m.placeholder;$("#composerSendText").textContent=m.send;$("#composerStatus").textContent=m.status;
  $(".image-settings").style.display=next==="images"?"flex":"none";$("#videoOptions").classList.toggle("show",next==="video");
  $$("[data-mode]").forEach(x=>x.classList.toggle("active",x.dataset.mode===next));
- if(next==="images"){ $("#composerModel").value="FLUX Dev"; $("#composerSize").value="1024 × 1024"; $("#composerQuality").value="Standard" }
- showEmpty();syncInput()
+ if(next==="images"){ renderImageLibrary(); $("#composerModel").value="FLUX Dev"; $("#composerSize").value="1024 × 1024"; $("#composerQuality").value="Standard" }
+ if(next!=="images")showEmpty();syncInput()
 }
 $$("[data-mode]").forEach(b=>b.addEventListener("click",()=>setMode(b.dataset.mode)));
 $("#composerInput").addEventListener("input",syncInput);
@@ -128,7 +132,7 @@ $$("[data-tool]").forEach(b=>b.onclick=()=>{
  const tool=b.dataset.tool;
  if(tool==="upload")$("#referenceInput").click();
  else if(tool==="improve")$("#improve").click();
- else if(tool==="history")toast("История будет отображаться здесь после генераций");
- else toast("Библиотека Miya готовится");
+ else if(tool==="history"){renderLibrary()}
+ else renderLibrary();
 });
 setMode("chat");
