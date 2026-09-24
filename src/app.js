@@ -141,7 +141,7 @@ function setMode(next){
  $("#composerInput").placeholder=m.placeholder;$("#composerSendText").textContent=m.send;$("#composerStatus").textContent=m.status;
  $(".image-settings").style.display=next==="images"?"flex":"none";$("#videoOptions").classList.toggle("show",next==="video");
  $$("[data-mode]").forEach(x=>x.classList.toggle("active",x.dataset.mode===next));
- if(next==="images"){ renderImageLibrary(); $("#composerModel").value=referenceImage?"FLUX Kontext Dev":"FLUX Dev"; $("#composerSize").value="1024 × 1024"; $("#composerQuality").value="Standard"; $("#composerRatio").value="1:1" }
+ if(next==="images"){ renderImageLibrary(); $("#composerModel").value=referenceImage?"FLUX Kontext Dev":"FLUX Dev"; $("#composerRatio").value="1:1" }
  if(next!=="images")showEmpty();syncInput()
 }
 $$("[data-mode]").forEach(b=>b.addEventListener("click",()=>setMode(b.dataset.mode)));
