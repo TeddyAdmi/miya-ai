@@ -27,9 +27,14 @@
       </div>
 
       <div class="side-label">РАЗДЕЛЫ</div>
-      <button class="side-btn active" data-mode="chat"><span class="ico">◉</span><b>AI Chat</b><em>⌘</em></button>
-      <button class="side-btn" data-mode="images"><span class="ico">▧</span><b>Картинки</b><em>1</em></button>
-      <button class="side-btn" data-mode="video"><span class="ico">▶</span><b>Видео</b><em>2</em></button>
+      <button class="side-btn side-menu-toggle active" id="chatMenuToggle" type="button" aria-expanded="true">
+        <span class="ico">◉</span><b>AI Chat</b><em id="chatMenuArrow">⌄</em>
+      </button>
+      <div class="side-submenu" id="chatSubmenu">
+        <button class="side-subbtn active" data-mode="chat" type="button"><span>◉</span><b>Новый чат</b></button>
+        <button class="side-subbtn" data-mode="images" type="button"><span>▧</span><b>Картинки</b></button>
+        <button class="side-subbtn" data-mode="video" type="button"><span>▶</span><b>Видео</b></button>
+      </div>
 
       <div class="side-label tools-label">ИНСТРУМЕНТЫ</div>
       <button class="tool-btn" data-tool="upload"><span>＋</span>Загрузить изображение</button>
