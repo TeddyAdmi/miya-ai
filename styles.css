@@ -186,3 +186,11 @@ body.light .side-subbtn:hover{background:#edf3f9;color:#182436}
 body.light .side-subbtn.active{background:#ecebff;border-color:#d6d4f3;color:#48449a}
 body.light .side-subbtn.active span{color:#6d55b5}
 @media(max-width:800px){.side-menu-toggle,.side-submenu{display:none}}
+
+.chat-history-mini{display:flex;flex-direction:column;gap:2px;padding:2px 0 4px 24px;max-height:230px;overflow:auto}
+.chat-history-mini-item{border:0;background:transparent;color:#7088a5;text-align:left;border-radius:6px;padding:7px 8px;font-size:9px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;cursor:pointer}
+.chat-history-mini-item:hover{background:#0a2745;color:#eaf4ff}
+.chat-history-mini-item.active{background:#182e50;color:#fff}
+body.light .chat-history-mini-item{color:#65788f}
+body.light .chat-history-mini-item:hover{background:#edf3f9;color:#182436}
+body.light .chat-history-mini-item.active{background:#ecebff;color:#48449a}
