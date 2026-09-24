@@ -81,17 +81,6 @@ function toast(message){
 function syncInput(){const i=$("#composerInput");if(!i)return;i.style.height="auto";i.style.height=Math.min(120,Math.max(42,i.scrollHeight))+"px"}
 function modeHero(){
  if(mode==="chat") return `<div class="chat-shell">
-   <aside class="chat-history">
-     <button class="new-chat-btn" id="newChatBtn"><span>＋</span>Новый чат</button>
-     <div class="chat-history-title">СЕГОДНЯ</div>
-     <button class="history-item active"><span>◉</span>Новый разговор</button>
-     <button class="history-item"><span>◉</span>Идеи для YouTube</button>
-     <button class="history-item"><span>◉</span>Промпт для Veo</button>
-     <button class="history-item"><span>◉</span>Создание сценария</button>
-     <div class="chat-history-title">ВЧЕРА</div>
-     <button class="history-item"><span>◉</span>Редактирование текста</button>
-     <button class="history-item"><span>◉</span>Новая идея</button>
-   </aside>
    <section class="chat-main">
      <div class="chat-welcome">
        <div class="hero-mark">✦</div>
@@ -254,16 +243,8 @@ function setMode(next){
  if(next!=="images")showEmpty();syncInput()
 }
 const chatMenuToggle=$("#chatMenuToggle");
-const chatSubmenu=$("#chatSubmenu");
-const chatMenuArrow=$("#chatMenuArrow");
-if(chatMenuToggle&&chatSubmenu){
- chatMenuToggle.addEventListener("click",()=>{
-   if(mode!=="chat"){setMode("chat");return}
-   const collapsed=chatSubmenu.classList.toggle("collapsed");
-   chatMenuToggle.classList.toggle("collapsed",collapsed);
-   chatMenuToggle.setAttribute("aria-expanded",String(!collapsed));
-   if(chatMenuArrow)chatMenuArrow.textContent=collapsed?"›":"⌄";
- });
+if(chatMenuToggle){
+ chatMenuToggle.addEventListener("click",()=>setMode("chat"));
 }
 $("[data-mode]").forEach(b=>b.addEventListener("click",()=>setMode(b.dataset.mode)));
 $("#composerInput").addEventListener("input",syncInput);
