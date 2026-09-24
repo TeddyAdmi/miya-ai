@@ -17,8 +17,9 @@ function setComposerAttachment(url){
 function clearComposerAttachment(){
  referenceImage=null;
  setComposerAttachment("");
+ if(mode==="images"&&$("#composerModel")) $("#composerModel").value="FLUX Dev";
 }
-function openEditor(url){referenceImage=url;setComposerAttachment(url);mode="images";const m=modes.images;$("#workspaceEyebrow").textContent=m.eyebrow;$("#workspaceTitle").textContent=m.title;$("#workspaceSubtitle").textContent=m.subtitle;$("#composerInput").placeholder=m.placeholder;$("#composerSendText").textContent=m.send;$("#composerStatus").textContent="Flux Kontext Dev · готово к редактированию";$(".image-settings").style.display="flex";$("#videoOptions").classList.remove("show");$("[data-mode]").forEach(x=>x.classList.toggle("active",x.dataset.mode==="images"));$("#canvas").innerHTML='<div class="source-layout"><div class="source-card media-card"><img src="'+url+'" alt="Source image"></div><div class="source-info"><span class="mini-badge">IMAGE → IMAGE</span><h3>Изображение загружено</h3><p>Опиши внизу, какие изменения нужно сделать.</p></div></div>';$("#composerInput").focus();syncInput()}
+function openEditor(url){referenceImage=url;setComposerAttachment(url);mode="images";$("#composerModel").value="FLUX Kontext Dev";const m=modes.images;$("#workspaceEyebrow").textContent=m.eyebrow;$("#workspaceTitle").textContent=m.title;$("#workspaceSubtitle").textContent=m.subtitle;$("#composerInput").placeholder=m.placeholder;$("#composerSendText").textContent=m.send;$("#composerStatus").textContent="Flux Kontext Dev · готово к редактированию";$(".image-settings").style.display="flex";$("#videoOptions").classList.remove("show");$("[data-mode]").forEach(x=>x.classList.toggle("active",x.dataset.mode==="images"));if(!$("#canvas .result-grid")) renderImageLibrary();$("#composerInput").focus();syncInput()}
 async function downloadImage(url){
  try{
   const response=await fetch(url,{mode:"cors"});
@@ -80,7 +81,22 @@ function bindQuickCards(){
  const vi=$("#videoImageFeature");if(vi)vi.onclick=()=>$("#referenceInput").click();
 }
 function showLoading(){
- $("#canvas").innerHTML=`<div class="loading-state"><div class="spinner"></div><b>${mode==="images"?"Создаём изображение…":"Готовим видео…"}</b><span>${mode==="images"?"FLUX обрабатывает твой запрос.":"Запрос отправлен в видеодвижок Miya."}</span></div>`
+ const c=$("#canvas");
+ if(mode==="images"){
+  let grid=c.querySelector(".result-grid");
+  if(!grid){
+   c.innerHTML='<div class="results-head"><div><span class="mini-badge">RESULT</span><h3>Результаты Miya</h3></div></div><div class="result-grid"></div>';
+   grid=c.querySelector(".result-grid");
+  }
+  const old=c.querySelector(".generation-loading");
+  if(old) old.remove();
+  const card=document.createElement("div");
+  card.className="generation-loading";
+  card.innerHTML='<div class="spinner"></div><b>Создаём изображение…</b><span>'+(referenceImage?"Flux Kontext Dev обрабатывает исходник.":"FLUX Dev создаёт новое изображение.")+'</span>';
+  c.insertBefore(card,grid);
+  return;
+ }
+ c.innerHTML='<div class="loading-state"><div class="spinner"></div><b>Готовим видео…</b><span>Запрос отправлен в видеодвижок Miya.</span></div>';
 }
 function showImage(url){
  const c=$("#canvas");let grid=c.querySelector(".result-grid");
@@ -105,8 +121,8 @@ async function generateImage(prompt){
   })});
   const data=await response.json().catch(()=>({}));
   if(!response.ok||!data.imageUrl)throw new Error(data.message||data.error||"Не удалось получить изображение");
-  showImage(data.imageUrl);$("#composerInput").value="";syncInput();$("#composerStatus").textContent=(data.model|| (referenceImage?"Flux Kontext Dev":"FLUX Dev"))+" · Image ready";
- }catch(e){toast(e.message||"Ошибка генерации");showEmpty()}finally{$("#composerSend").disabled=false}
+  $("#canvas .generation-loading")?.remove();showImage(data.imageUrl);$("#composerInput").value="";syncInput();clearComposerAttachment();$("#composerModel").value="FLUX Dev";$("#composerStatus").textContent="FLUX Dev · Image ready";
+ }catch(e){$("#canvas .generation-loading")?.remove();toast(e.message||"Ошибка генерации")}finally{$("#composerSend").disabled=false}
 }
 function addChatMessage(text,isUser){
  let stream=$("#canvas .chat-stream");if(!stream){$("#canvas").innerHTML='<div class="chat-stream"></div>';stream=$("#canvas .chat-stream")}
@@ -146,9 +162,9 @@ $("#referenceInput").onchange=e=>{
  const reader=new FileReader();
  reader.onload=()=>{
   referenceImage=String(reader.result||"");setComposerAttachment(referenceImage);setMode("images");
-  const c=$("#canvas");c.innerHTML='<div class="source-layout"><div class="source-card media-card"><img src="'+referenceImage+'" alt="Source image"></div><div class="source-info"><span class="mini-badge">SOURCE IMAGE</span><h3>Изображение загружено</h3><p>Опиши внизу, что нужно изменить. Miya передаст исходник в FLUX.</p><button class="primary-btn" id="sourceContinue">Продолжить →</button></div></div>';
-  $("#composerStatus").textContent="Image ready · describe your edit";toast("Изображение добавлено");
-  const sc=$("#sourceContinue");if(sc)sc.onclick=()=>$("#composerInput").focus();
+  $("#composerModel").value="FLUX Kontext Dev";
+  $("#composerStatus").textContent="Flux Kontext Dev · готово к редактированию";toast("Изображение добавлено");
+  $("#composerInput").focus();
  };
  reader.readAsDataURL(file);e.target.value="";
 };
