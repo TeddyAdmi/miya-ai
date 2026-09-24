@@ -23,7 +23,7 @@ export default async function handler(req, res) {
       const model =
         typeof body.model === "string" && body.model.trim()
           ? body.model.trim()
-          : "gemini-3.5-flash-lite";
+          : "gemini-3.8-flash";
 
       const contents = messages
         .filter(
@@ -32,10 +32,24 @@ export default async function handler(req, res) {
             (m.role === "user" || m.role === "assistant") &&
             typeof m.content === "string"
         )
-        .map(m => ({
-          role: m.role === "assistant" ? "model" : "user",
-          parts: [{ text: m.content.slice(0, 12000) }]
-        }));
+        .map(m => {
+          const parts = [{ text: m.content.slice(0, 12000) }];
+          if (m.role === "user" && typeof m.image === "string" && m.image.startsWith("data:image/")) {
+            const match = m.image.match(/^data:(image\\/[a-zA-Z0-9.+-]+);base64,(.+)$/);
+            if (match && match[2].length <= 20 * 1024 * 1024) {
+              parts.unshift({
+                inline_data: {
+                  mime_type: match[1],
+                  data: match[2]
+                }
+              });
+            }
+          }
+          return {
+            role: m.role === "assistant" ? "model" : "user",
+            parts
+          };
+        });
 
       if (!contents.length || contents[contents.length - 1].role !== "user") {
         return res.status(400).json({ error: "A user message is required" });
