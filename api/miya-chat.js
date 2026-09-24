@@ -19,7 +19,7 @@ export default async function handler(req, res) {
     const messages = Array.isArray(body.messages) ? body.messages : [];
     const model = typeof body.model === "string" && body.model.trim()
       ? body.model.trim()
-      : "gemini-2.5-flash-lite";
+      : "gemini-3.5-flash-lite";
 
     const contents = messages
       .filter(m => m && (m.role === "user" || m.role === "assistant") && typeof m.content === "string")
