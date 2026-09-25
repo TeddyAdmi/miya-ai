@@ -26,7 +26,7 @@ function renderChatHistoryMini(){
  box.innerHTML="";
  chats.forEach(chat=>{
    const b=document.createElement("button");
-   b.className="chat-history-mini-item"+(chat.id===window.__miyaChatId?" active":"");
+   b.className="chat-history-mini-item";
    b.textContent=chat.title||"Новый чат";
    b.title=chat.title||"Новый чат";
    b.onclick=()=>{
@@ -265,7 +265,7 @@ function setMode(next){
  $("#workspaceEyebrow").textContent=m.eyebrow;$("#workspaceTitle").textContent=m.title;$("#workspaceSubtitle").textContent=m.subtitle;
  $("#composerInput").placeholder=m.placeholder;$("#composerSendText").textContent=m.send;$("#composerStatus").textContent=m.status;
  $(".image-settings").style.display=next==="images"?"flex":"none";$("#videoOptions").classList.toggle("show",next==="video");
- $$("[data-mode]").forEach(x=>x.classList.toggle("active",x.dataset.mode===next));
+ $("[data-mode]").forEach(x=>x.classList.toggle("active",x.dataset.mode===next)); $("#chatSubmenu .side-subbtn").forEach(x=>x.classList.remove("active"));
  $("#chatMenuToggle")?.classList.toggle("active",next==="chat");
  if($("#chatSubmenu")?.classList.contains("collapsed"))$("#chatSubmenu").classList.remove("collapsed");
  if($("#chatMenuToggle")){$("#chatMenuToggle").classList.remove("collapsed");$("#chatMenuToggle").setAttribute("aria-expanded","true")}
