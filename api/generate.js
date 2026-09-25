@@ -160,9 +160,15 @@ async function handler(req, res) {
       "https://www.ahm7xmakki.com" + endpointPath
     ];
 
+    const requestedCopies = Number(body.copies ?? body.count ?? 1);
+    const copies = Number.isFinite(requestedCopies)
+      ? Math.max(1, Math.min(4, Math.round(requestedCopies)))
+      : 1;
+
     const payload = {
       prompt,
-      ratio: isImageToImage && ratio === "1:1" ? "auto" : ratio
+      ratio: isImageToImage && ratio === "1:1" ? "auto" : ratio,
+      ...(copies > 1 && !isImageToImage ? { copies } : {})
     };
 
     if (imageUrl) {
@@ -193,7 +199,11 @@ async function handler(req, res) {
         : "image/jpeg";
       payload.imageBase64 = "data:" + mime + ";base64," + sourceBuffer.toString("base64");
     }
-    if (imageBase64) payload.imageBase64 = imageBase64;
+    if (imageBase64) {
+      payload.imageBase64 = imageBase64;
+      // Keep the conventional field used by the PixelSter upload UI as well.
+      payload.image = imageBase64;
+    }
 
     if (isImageToImage && imageBase64) {
       const match = imageBase64.match(/^data:image\/[^;]+;base64,(.+)$/i);
@@ -292,9 +302,12 @@ async function handler(req, res) {
     if (!response || !response.ok || data?.success === false) {
       return res.status(502).json({
         ok: false,
-        error: String(data?.error || data?.message || `FLUX_HTTP_${response.status}`),
-        upstreamStatus: response.status,
-        upstreamBody: raw.slice(0, 500)
+        error: String(data?.error || data?.message || `FLUX_HTTP_${response?.status || "UNKNOWN"}`),
+        message: isImageToImage
+          ? "Flux Kontext Dev отклонил исходное изображение или запрос."
+          : "Flux Dev не вернул изображение.",
+        upstreamStatus: response?.status || null,
+        upstreamBody: raw.slice(0, 1000)
       });
     }
 
@@ -310,13 +323,31 @@ async function handler(req, res) {
       });
     }
 
+    const imageUrls = Array.isArray(data?.imageUrls)
+      ? data.imageUrls.filter(url => typeof url === "string" && /^https?:\/\//i.test(url))
+      : Array.isArray(data?.images)
+        ? data.images.map(item => typeof item === "string" ? item : item?.imageUrl).filter(url => typeof url === "string" && /^https?:\/\//i.test(url))
+        : data?.imageUrl
+          ? [data.imageUrl]
+          : [];
+
+    if (!imageUrls.length) {
+      return res.status(502).json({
+        ok: false,
+        error: "FLUX_IMAGE_URL_MISSING",
+        providerResponse: data
+      });
+    }
+
     return res.status(200).json({
       ok: true,
       mode: "image",
       status: "completed",
       provider: "PixelSter",
       model: isImageToImage ? "Flux Kontext Dev" : "Flux Dev",
-      imageUrl: data.imageUrl,
+      imageUrl: imageUrls[0],
+      imageUrls,
+      count: imageUrls.length,
       meta: {
         transport: "http-json",
         free: true,
