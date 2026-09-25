@@ -492,3 +492,30 @@ body.light .workspace:after{
   content:none!important;
   background-image:none!important;
 }
+
+.chat-nav-wrap{position:relative!important}
+.chat-nav-wrap .side-menu-toggle{position:relative!important}
+.chat-nav-wrap .side-submenu{
+  left:100%!important;
+  top:0!important;
+  transform:none!important;
+  margin:0!important;
+  transition:opacity .12s ease,visibility .12s ease!important;
+}
+.chat-nav-wrap:hover .side-submenu,
+.chat-nav-wrap .side-submenu:hover{
+  opacity:1!important;
+  visibility:visible!important;
+  pointer-events:auto!important;
+  transform:none!important;
+}
+.chat-history-row{display:flex;align-items:center;gap:2px;width:100%}
+.chat-history-mini-item{flex:1;min-width:0;text-align:left;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.chat-history-actions{display:flex;align-items:center;gap:1px;flex:0 0 auto}
+.chat-history-actions button{
+  width:22px;height:26px;padding:0;border:0;background:transparent;color:var(--muted);
+  border-radius:5px;cursor:pointer;font-size:12px;line-height:1
+}
+.chat-history-actions button:hover{background:rgba(120,150,190,.14);color:inherit}
+body.light .chat-history-actions button:hover{background:#edf3f9}
+.chat-history-mini{overflow-x:hidden}
