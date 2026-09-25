@@ -169,7 +169,7 @@ async function handler(req, res) {
         });
       }
       const contentType = sourceResponse.headers.get("content-type") || "image/jpeg";
-      const mime = /^image\\/(jpeg|png|webp)$/i.test(contentType)
+      const mime = /^image\/(jpeg|png|webp)$/i.test(contentType)
         ? contentType.split(";")[0]
         : "image/jpeg";
       payload.imageBase64 = "data:" + mime + ";base64," + sourceBuffer.toString("base64");
