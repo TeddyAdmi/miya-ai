@@ -464,6 +464,9 @@ async function requestChat(){
  }
 }
 function restoreReferenceImage(){try{referenceImage=referenceImage||sessionStorage.getItem("miyaReferenceImage")||""}catch{};setComposerAttachment(referenceImage||"")}
+function setVideoRatioDefault(){
+ const el=$("#videoRatio"); if(el) el.value=referenceImage?"auto":"16:9";
+}
 function setMode(next,render=true){
  const changedSection=next!==mode;
  if(changedSection){referenceImage=null;try{sessionStorage.removeItem("miyaReferenceImage")}catch{};setComposerAttachment("");$("#composerInput").value="";syncInput()}
@@ -471,6 +474,7 @@ function setMode(next,render=true){
  $("#workspaceEyebrow").textContent=m.eyebrow;$("#workspaceTitle").textContent=m.title;$("#workspaceSubtitle").textContent=m.subtitle;
  $("#composerInput").placeholder=m.placeholder;$("#composerSendText").textContent=m.send;$("#composerStatus").textContent=m.status;
  $(".image-settings").style.display=next==="images"?"flex":"none";$("#videoOptions").classList.toggle("show",next==="video");
+ if(next==="video") setVideoRatioDefault();
  document.querySelectorAll("[data-mode]").forEach(x=>x.classList.toggle("active",x.dataset.mode===next));
  document.querySelectorAll("#chatSubmenu .side-subbtn").forEach(x=>x.classList.remove("active"));
  $("#chatMenuToggle")?.classList.toggle("active",next==="chat");
@@ -486,7 +490,7 @@ function setMode(next,render=true){
    referenceImage=referenceImage||null;
    renderImageLibrary();
    $("#composerModel").value=referenceImage?"FLUX Kontext Dev":"FLUX Dev";
-   $("#composerRatio").value="auto";
+   $("#composerRatio").value=referenceImage?"auto":"16:9";
  }else{
    showEmpty();
  }
@@ -535,6 +539,7 @@ $("#referenceInput").onchange=e=>{
   referenceImage=String(reader.result||"");try{sessionStorage.setItem("miyaReferenceImage",referenceImage)}catch{};setComposerAttachment(referenceImage);
   if(mode==="images"){
     $("#composerModel").value="FLUX Kontext Dev";
+    $("#composerRatio").value="auto";
     $("#composerStatus").textContent="Flux Kontext Dev · готово к редактированию";
   }else{
     $("#composerStatus").textContent="Изображение прикреплено · можно спросить Miya о фото";
@@ -643,3 +648,6 @@ if(chatNavWrap){chatNavWrap.addEventListener("mouseleave",()=>{chatMenuSuppresse
 
 // Keep chat action menus from becoming sticky when the pointer leaves the flyout.
 document.addEventListener("click",e=>{if(!e.target.closest(".chat-history-row"))resetChatMenus()});
+document.addEventListener("click",e=>{
+ if(!e.target.closest(".media-actions")) document.querySelectorAll(".media-action-menu.open").forEach(x=>x.classList.remove("open"));
+});
