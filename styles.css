@@ -1325,3 +1325,20 @@ body.light .video-options .video-trash:hover{background:#edf3f9!important;color:
 .composer-copy:hover{background:rgba(120,150,190,.12)!important;color:inherit!important}
 body.light .composer-copy:hover{background:#edf3f9!important;color:#182436!important}
 .composer-emoji:not(.chat-only){display:none!important}
+
+
+/* Modern icon system */
+.menu-svg svg,.action-svg svg,.media-more svg,.media-menu-icon svg{
+  width:16px;height:16px;display:block;fill:none;stroke:currentColor;
+  stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;
+}
+.menu-svg{display:grid!important;place-items:center;width:18px!important;height:18px!important;color:#b78aff}
+.chat-history-menu button:hover .menu-svg{color:#d9baff}
+.action-svg{display:grid!important;place-items:center;width:18px!important;height:18px!important;color:#b77cff}
+.media-action-menu button:hover .action-svg{color:#d7b6ff}
+.media-more svg{width:18px;height:18px;stroke-width:2.2}
+.media-more{color:#cbdcff!important}
+.media-menu-icon{display:grid!important;place-items:center}
+.media-menu-icon svg{width:15px;height:15px}
+.chat-history-menu .menu-icon{flex:0 0 18px}
+.chat-history-menu button{display:flex;align-items:center;gap:9px}
