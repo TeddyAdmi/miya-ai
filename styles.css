@@ -1295,3 +1295,14 @@ body.light .composer-options .composer-trash:hover{
   background:#edf3f9!important;
   color:#182436!important;
 }
+
+/* Video prompt controls: trash follows the ratio selector. */
+.video-options .video-trash{
+  flex:0 0 38px!important;width:38px!important;height:38px!important;
+  padding:0!important;display:grid!important;place-items:center!important;
+  border:0!important;background:transparent!important;color:var(--muted)!important;
+  border-radius:9px!important;cursor:pointer!important;
+}
+.video-options .video-trash svg{width:16px!important;height:16px!important;fill:none!important;stroke:currentColor!important;stroke-width:1.8!important;stroke-linecap:round!important;stroke-linejoin:round!important}
+.video-options .video-trash:hover{background:rgba(120,150,190,.12)!important;color:inherit!important}
+body.light .video-options .video-trash:hover{background:#edf3f9!important;color:#182436!important}
