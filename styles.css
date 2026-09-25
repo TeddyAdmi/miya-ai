@@ -1342,3 +1342,22 @@ body.light .composer-copy:hover{background:#edf3f9!important;color:#182436!impor
 .media-menu-icon svg{width:15px;height:15px}
 .chat-history-menu .menu-icon{flex:0 0 18px}
 .chat-history-menu button{display:flex;align-items:center;gap:9px}
+
+
+/* Chat room: keep the latest exchange in the visible area above the fixed composer. */
+.chat-stream{
+  height:calc(100dvh - 150px)!important;
+  max-height:calc(100dvh - 150px)!important;
+  min-height:0!important;
+  overflow-y:auto!important;
+  overscroll-behavior:contain!important;
+  scroll-behavior:smooth!important;
+  padding-bottom:28px!important;
+}
+@media(max-width:800px){
+  .chat-stream{
+    height:calc(100dvh - 205px)!important;
+    max-height:calc(100dvh - 205px)!important;
+    padding-bottom:18px!important;
+  }
+}
