@@ -128,7 +128,7 @@ function openSavedChat(id){
  chatMenuSuppressed=true;$("#chatSubmenu")?.classList.add("suppressed");resetChatMenus();resetChatFlyoutScroll();$("#chatMenuToggle")?.setAttribute("aria-expanded","false");
  mode="chat";chatMessages=chat.messages.map(m=>({...m}));window.__miyaChatId=chat.id;chatStarted=true;
  restoreReferenceImage();setMode("chat",false);
- const c=$("#canvas");c.innerHTML='<div class="chat-stream"></div>';
+ const c=$("#canvas");c.classList.add("chat-canvas");c.innerHTML='<div class="chat-stream"></div>';
  chatMessages.forEach(m=>addChatMessage(m.content,m.role==="user",m.image||""));
  renderChatHistoryMini();
  requestAnimationFrame(()=>{
@@ -609,7 +609,12 @@ function addChatMessage(text,isUser,image=""){
    actions.querySelector('[title="Создать видео"]').onclick=()=>{setMode("video");$("#composerInput").value=text;syncInput();$("#composerInput").focus()};
    content.appendChild(actions);
  }
- row.append(av,content);stream.appendChild(row);const workspace=$("#workspace");if(workspace)requestAnimationFrame(()=>workspace.scrollTo({top:workspace.scrollHeight,behavior:"smooth"}));
+ row.append(av,content);
+ stream.appendChild(row);
+ const workspace=$("#workspace");
+ if(workspace)requestAnimationFrame(()=>{
+   workspace.scrollTo({top:workspace.scrollHeight,behavior:"smooth"});
+ });
  chatStarted=true;
 }
 async function requestChat(){
@@ -684,6 +689,7 @@ function setMode(next,render=true){
  if($("#chatMenuArrow"))$("#chatMenuArrow").textContent="→";
  if(!render){syncInput();return}
  const canvas=$("#canvas");
+ if(canvas)canvas.classList.toggle("chat-canvas",next==="chat");
  if(canvas)canvas.innerHTML="";
  if(next==="images"){
    referenceImage=referenceImage||null;
