@@ -131,11 +131,8 @@ function openSavedChat(id){
  const c=$("#canvas");c.classList.add("chat-canvas");c.innerHTML='<div class="chat-stream"></div>';
  chatMessages.forEach(m=>addChatMessage(m.content,m.role==="user",m.image||""));
  renderChatHistoryMini();
- requestAnimationFrame(()=>{
-   const workspace=$("#workspace");
-   if(workspace)workspace.scrollTo({top:workspace.scrollHeight,behavior:"auto"});
+ scrollChatToLatest("auto");
    $("#composerInput")?.focus();
- });
 }
 
 const LIB_KEY="miyaLibrary";
@@ -331,9 +328,12 @@ function openImageViewer(item){
  resolveMediaUrl(item).then(url=>{if(url&&modal.classList.contains("open"))img.src=url}).catch(()=>{});
  img.onerror=()=>{img.alt="Изображение недоступно"};
  img.dataset.zoom="1";
- img.style.transform="scale(1)";
- modal.querySelector(".image-viewer-zoom").textContent="＋";
- modal.querySelector(".image-viewer-zoom").title="Увеличить";
+ img.dataset.panX="0";
+ img.dataset.panY="0";
+ const zoomControl=modal.querySelector(".image-viewer-zoom");
+ zoomControl.innerHTML='<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.8" cy="10.8" r="6.3"/><path d="m16 16 4.2 4.2M10.8 7.7v6.2M7.7 10.8h6.2"/></svg>';
+ zoomControl.title="Увеличить";
+ img.style.transform="translate3d(0,0,0) scale(1)";
  modal.classList.add("open");
  document.body.classList.add("image-viewer-open");
 }
@@ -454,7 +454,36 @@ function bindQuickCards(){
 }
 function scrollImagesToTop(){
  const workspace=$("#workspace");
- if(workspace)requestAnimationFrame(()=>workspace.scrollTo({top:0,behavior:"smooth"}));
+ if(workspace)requestAnimationFrame(()=>{
+   const first=workspace.querySelector(".result-grid .media-card,.result-grid img,.result-grid video");
+   if(first){
+     const wr=workspace.getBoundingClientRect();
+     const fr=first.getBoundingClientRect();
+     const target=Math.max(0,workspace.scrollTop+(fr.top-wr.top)-10);
+     workspace.scrollTo({top:target,behavior:"smooth"});
+   }else{
+     workspace.scrollTo({top:0,behavior:"smooth"});
+   }
+ });
+}
+function scrollChatToLatest(behavior="smooth"){
+ const workspace=$("#workspace");
+ const composer=document.querySelector(".composer");
+ const latest=workspace?.querySelector(".chat-stream .chat-row:last-child");
+ if(!workspace||!composer||!latest)return;
+ requestAnimationFrame(()=>{
+   requestAnimationFrame(()=>{
+     const wr=workspace.getBoundingClientRect();
+     const cr=composer.getBoundingClientRect();
+     const lr=latest.getBoundingClientRect();
+     const gap=10;
+     // Align the bottom edge of the newest message with the top edge
+     // of the composer, leaving a small readable breathing room.
+     const target=workspace.scrollTop+(lr.bottom-(cr.top-gap));
+     const max=Math.max(0,workspace.scrollHeight-workspace.clientHeight);
+     workspace.scrollTo({top:Math.max(0,Math.min(max,target)),behavior});
+   });
+ });
 }
 function showLoading(){
  const c=$("#canvas");
@@ -572,6 +601,7 @@ async function generateImage(prompt){
    : data.imageUrl?[data.imageUrl]:[];
   if(!generatedUrls.length)throw new Error("Сервер не вернул готовое изображение");
   generatedUrls.forEach((url)=>showImage(url,prompt,actualModel));
+  scrollImagesToTop();
   $("#composerInput").value="";syncInput();
   $("#composerModel").value=referenceImage?"FLUX Kontext Dev":"FLUX Dev";
   $("#composerStatus").textContent=actualModel+" · готово";
@@ -611,10 +641,7 @@ function addChatMessage(text,isUser,image=""){
  }
  row.append(av,content);
  stream.appendChild(row);
- const workspace=$("#workspace");
- if(workspace)requestAnimationFrame(()=>{
-   workspace.scrollTo({top:workspace.scrollHeight,behavior:"smooth"});
- });
+ scrollChatToLatest("smooth");
  chatStarted=true;
 }
 async function requestChat(){
