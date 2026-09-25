@@ -241,6 +241,44 @@ function showPrompt(item){
  modal.querySelector(".media-prompt-body").textContent=item.prompt||"Промт для этой картинки не сохранён. Если изображение создано до сохранения промтов, восстановить исходный текст автоматически нельзя.";
  modal.classList.add("open");
 }
+function closeImageViewer(){
+ const modal=$("#imageViewerModal");
+ if(modal){modal.classList.remove("open");document.body.classList.remove("image-viewer-open")}
+}
+function openImageViewer(item){
+ let modal=$("#imageViewerModal");
+ if(!modal){
+  modal=document.createElement("div");
+  modal.id="imageViewerModal";
+  modal.className="image-viewer-modal";
+  modal.innerHTML='<div class="image-viewer-backdrop"></div><div class="image-viewer-stage"><img class="image-viewer-image" alt="Miya AI Studio"><div class="image-viewer-controls"><button type="button" class="image-viewer-zoom" aria-label="Увеличить масштаб">＋</button><button type="button" class="image-viewer-close" aria-label="Закрыть">×</button></div></div>';
+  document.body.appendChild(modal);
+  modal.querySelector(".image-viewer-backdrop").onclick=closeImageViewer;
+  modal.querySelector(".image-viewer-close").onclick=closeImageViewer;
+  modal.querySelector(".image-viewer-zoom").onclick=()=>{
+    const img=modal.querySelector(".image-viewer-image");
+    const current=Number(img.dataset.zoom||"1");
+    const next=current>=3?1:Math.min(3,Math.round((current+.5)*10)/10);
+    img.dataset.zoom=String(next);
+    img.style.transform="scale("+next+")";
+    modal.querySelector(".image-viewer-zoom").textContent=next>=3?"−":"＋";
+    modal.querySelector(".image-viewer-zoom").title=next>=3?"Уменьшить":"Увеличить";
+  };
+  document.addEventListener("keydown",e=>{
+    if(!$("#imageViewerModal")?.classList.contains("open"))return;
+    if(e.key==="Escape")closeImageViewer();
+  });
+ }
+ const img=modal.querySelector(".image-viewer-image");
+ img.src=item.url;
+ resolveMediaUrl(item).then(url=>{if(url&&modal.classList.contains("open"))img.src=url});
+ img.dataset.zoom="1";
+ img.style.transform="scale(1)";
+ modal.querySelector(".image-viewer-zoom").textContent="＋";
+ modal.querySelector(".image-viewer-zoom").title="Увеличить";
+ modal.classList.add("open");
+ document.body.classList.add("image-viewer-open");
+}
 function buildMediaCard(item,{video=false}={}){
  const card=document.createElement("div");card.className="media-card";
  const media=video?document.createElement("video"):document.createElement("img");
@@ -475,7 +513,7 @@ $("#composerSend").addEventListener("click",async()=>{
  setTimeout(()=>{toast("Видео-задача подготовлена. LTX endpoint подключим следующим шагом.");showEmpty();$("#composerStatus").textContent=modes.video.status},500)
 });
 $("#composerAttach").onclick=()=>$("#referenceInput").click();
-$("#composerClear").onclick=()=>{
+$("#composerTrash").onclick=()=>{
   $("#composerInput").value="";
   clearComposerAttachment();
   syncInput();
