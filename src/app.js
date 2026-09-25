@@ -156,10 +156,10 @@ async function getCachedMedia(id){
   return await new Promise((resolve,reject)=>{const tx=db.transaction("media","readonly");const r=tx.objectStore("media").get(id);r.onsuccess=()=>resolve(r.result||null);r.onerror=()=>reject(r.error)});
  }catch{return null}
 }
-function saveMedia(type,url){
+function saveMedia(type,url,prompt=""){
  if(!url)return;
  const id=type+"-"+Date.now()+"-"+Math.random().toString(36).slice(2);
- const item={id,type,url,createdAt:Date.now()};
+ const item={id,type,url,prompt:String(prompt||""),model:type==="image"?"FLUX Dev":"LTX",createdAt:Date.now()};
  const items=getLibrary();items.unshift(item);
  try{localStorage.setItem(LIB_KEY,JSON.stringify(items.slice(0,500)))}catch{
    try{localStorage.setItem(LIB_KEY,JSON.stringify(items.slice(0,100)))}catch{}
@@ -201,8 +201,59 @@ async function downloadImage(url){
   document.body.appendChild(a);a.click();a.remove();
  }
 }
-function renderImageLibrary(){const c=$("#canvas"),items=getLibrary().filter(x=>x.type==="image");if(!items.length){showEmpty();return}c.innerHTML='<div class="results-head"><div><span class="mini-badge">LIBRARY · IMAGES</span><h3>Все созданные картинки</h3></div></div><div class="result-grid"></div>';const grid=c.querySelector(".result-grid");items.forEach(item=>{const card=document.createElement("div");card.className="media-card";const img=document.createElement("img");img.alt="Miya generated image";img.onerror=()=>card.remove();card.appendChild(img);resolveMediaUrl(item).then(url=>{if(url)img.src=url});const meta=document.createElement("div");meta.className="media-meta";meta.innerHTML="<b>FLUX Dev</b><span>Готово</span>";card.appendChild(meta);grid.appendChild(card)})}
-function renderLibrary(){const c=$("#canvas"),items=getLibrary();if(!items.length){c.innerHTML='<div class="studio-room clean-canvas"><div class="section-welcome"><div class="mini-badge">LIBRARY</div><h2>Библиотека пуста</h2><p>Созданные картинки и видео будут автоматически сохраняться здесь.</p></div></div>';return}const images=items.filter(x=>x.type==="image"),videos=items.filter(x=>x.type==="video");c.innerHTML='<div class="library-section"><div class="results-head"><div><span class="mini-badge">LIBRARY</span><h3>Библиотека Miya</h3></div></div><div class="library-title">Картинки</div><div class="result-grid image-library-grid"></div><div class="library-title video-library-title">Видео</div><div class="result-grid video-library-grid"></div></div>';const ig=c.querySelector(".image-library-grid"),vg=c.querySelector(".video-library-grid");images.forEach(item=>{const card=document.createElement("div");card.className="media-card";const img=document.createElement("img");img.alt="Miya generated image";card.appendChild(img);ig.appendChild(card);resolveMediaUrl(item).then(url=>{if(url)img.src=url})});videos.forEach(item=>{const card=document.createElement("div");card.className="media-card";const v=document.createElement("video");v.src=item.url;v.controls=true;v.playsInline=true;card.appendChild(v);vg.appendChild(card)});if(!images.length)ig.innerHTML='<div class="library-note">Пока нет созданных картинок.</div>';if(!videos.length)vg.innerHTML='<div class="library-note">Пока нет созданных видео.</div>'}
+async function deleteMedia(item,card){
+ const items=getLibrary().filter(x=>x.id!==item.id);
+ try{localStorage.setItem(LIB_KEY,JSON.stringify(items))}catch{}
+ try{const db=await openMediaDB();if(db){await new Promise((resolve,reject)=>{const tx=db.transaction("media","readwrite");tx.objectStore("media").delete(item.id);tx.oncomplete=resolve;tx.onerror=()=>reject(tx.error)})}}catch{}
+ card?.remove();
+ if(mode==="images")renderImageLibrary();
+}
+function showPrompt(item){
+ let modal=$("#mediaPromptModal");
+ if(!modal){
+  modal=document.createElement("div");modal.id="mediaPromptModal";modal.className="media-prompt-modal";
+  modal.innerHTML='<div class="media-prompt-backdrop"></div><div class="media-prompt-dialog" role="dialog" aria-modal="true"><div class="media-prompt-head"><b>Промт изображения</b><button type="button" class="media-prompt-close" aria-label="Закрыть">×</button></div><div class="media-prompt-body"></div></div>';
+  document.body.appendChild(modal);
+  modal.querySelector(".media-prompt-close").onclick=()=>modal.classList.remove("open");
+  modal.querySelector(".media-prompt-backdrop").onclick=()=>modal.classList.remove("open");
+ }
+ modal.querySelector(".media-prompt-body").textContent=item.prompt||"Промт для этой картинки не сохранён.";
+ modal.classList.add("open");
+}
+function buildMediaCard(item,{video=false}={}){
+ const card=document.createElement("div");card.className="media-card";
+ const media=video?document.createElement("video"):document.createElement("img");
+ media.alt=video?"Miya generated video":"Miya generated image";
+ if(video){media.controls=true;media.playsInline=true;media.src=item.url}else{media.onerror=()=>card.classList.add("media-load-error");resolveMediaUrl(item).then(url=>{if(url)media.src=url})}
+ card.appendChild(media);
+ const actions=document.createElement("div");actions.className="media-actions";
+ if(!video){
+  const promptBtn=document.createElement("button");promptBtn.className="media-action";promptBtn.title="Промт";promptBtn.textContent="P";promptBtn.onclick=()=>showPrompt(item);
+  const editBtn=document.createElement("button");editBtn.className="media-action";editBtn.title="Редактировать";editBtn.textContent="✦";editBtn.onclick=()=>openEditor(item.url);
+  const downloadBtn=document.createElement("button");downloadBtn.className="media-action";downloadBtn.title="Скачать";downloadBtn.textContent="↓";downloadBtn.onclick=()=>downloadImage(item.url);
+  const deleteBtn=document.createElement("button");deleteBtn.className="media-action delete-action";deleteBtn.title="Удалить";deleteBtn.textContent="×";deleteBtn.onclick=()=>deleteMedia(item,card);
+  actions.append(promptBtn,editBtn,downloadBtn,deleteBtn);
+ }else{
+  const deleteBtn=document.createElement("button");deleteBtn.className="media-action delete-action";deleteBtn.title="Удалить";deleteBtn.textContent="×";deleteBtn.onclick=()=>deleteMedia(item,card);
+  actions.append(deleteBtn);
+ }
+ card.appendChild(actions);return card;
+}
+function renderImageLibrary(){
+ const c=$("#canvas"),items=getLibrary().filter(x=>x.type==="image");
+ if(!items.length){showEmpty();return}
+ c.innerHTML='<div class="results-head"><div><h3>Все созданные картинки</h3></div></div><div class="result-grid"></div>';
+ const grid=c.querySelector(".result-grid");items.forEach(item=>grid.appendChild(buildMediaCard(item)));
+}
+function renderLibrary(tab="images"){
+ const c=$("#canvas"),items=getLibrary(),images=items.filter(x=>x.type==="image"),videos=items.filter(x=>x.type==="video");
+ c.innerHTML='<div class="library-section"><div class="results-head"><div><h3>Библиотека Miya</h3></div></div><div class="library-tabs"><button type="button" class="library-tab" data-library-tab="images">Картинки</button><button type="button" class="library-tab" data-library-tab="videos">Видео</button></div><div class="result-grid library-media-grid"></div></div>';
+ c.querySelectorAll("[data-library-tab]").forEach(btn=>btn.classList.toggle("active",btn.dataset.libraryTab===tab));
+ const grid=c.querySelector(".library-media-grid");const list=tab==="videos"?videos:images;
+ if(!list.length){grid.innerHTML='<div class="library-note">'+(tab==="videos"?"Пока нет созданных видео.":"Пока нет созданных картинок.")+'</div>'}
+ else list.forEach(item=>grid.appendChild(buildMediaCard(item,{video:tab==="videos"})));
+ c.querySelectorAll("[data-library-tab]").forEach(btn=>btn.onclick=()=>renderLibrary(btn.dataset.libraryTab));
+}
 
 function toast(message){
  let t=$("#toast");if(!t){t=document.createElement("div");t.id="toast";t.className="toast";document.body.appendChild(t)}
@@ -280,17 +331,11 @@ function showLoading(){
  }
  c.innerHTML='<div class="loading-state"><div class="spinner"></div><b>Готовим видео…</b><span>Запрос отправлен в видеодвижок Miya.</span></div>';
 }
-function showImage(url){
+function showImage(url,prompt=""){
+ const item=saveMedia("image",url,prompt);
  const c=$("#canvas");let grid=c.querySelector(".result-grid");
  if(!grid){c.innerHTML='<div class="result-grid"></div>';grid=c.querySelector(".result-grid")}
- const card=document.createElement("div");card.className="media-card";const img=document.createElement("img");img.src=url;img.alt="Miya generated image";card.appendChild(img);
- const actions=document.createElement("div");actions.className="media-actions";
-actions.innerHTML='<button class="media-action edit-action" title="Редактировать" aria-label="Редактировать">✦</button><button class="media-action download-action" title="Скачать" aria-label="Скачать">↓</button>';
-card.appendChild(actions);
- const meta=document.createElement("div");meta.className="media-meta";meta.innerHTML='<b>FLUX Dev</b><span>Готово</span>';card.appendChild(meta);grid.prepend(card);
- saveMedia("image",url);
- card.querySelector(".edit-action").onclick=()=>openEditor(url);
- card.querySelector(".download-action").onclick=()=>downloadImage(url);
+ const card=buildMediaCard(item);grid.prepend(card);
  $("#composerStatus").textContent="FLUX Dev · Image ready";
 }
 async function generateImage(prompt){
@@ -305,7 +350,7 @@ async function generateImage(prompt){
   const response=await fetch(endpoint,{method:"POST",headers:{"Content-Type":"application/json","Accept":"application/json"},body:JSON.stringify({mode:"image",provider:"legacy-flux",prompt,model:$("#composerModel").value.trim(),ratio:$("#composerRatio").value,outputFormat:"png",options:referenceImage?payload:{} }),signal:AbortSignal.timeout(60000)});
   const data=await response.json().catch(()=>({}));
   if(!response.ok||!data.imageUrl)throw new Error(data.message||data.error||"Не удалось получить изображение");
-  const actualModel=data.model||"FLUX Dev"; const modelLabel2=loader?.querySelector(".progress-model"); if(modelLabel2)modelLabel2.textContent=actualModel+" · ответ получен"; $("#canvas .generation-loading")?.remove();showImage(data.imageUrl);$("#composerInput").value="";syncInput();$("#composerModel").value=referenceImage?"FLUX Kontext Dev":"FLUX Dev";$("#composerStatus").textContent="FLUX Dev · Image ready";
+  const actualModel=data.model||"FLUX Dev"; const modelLabel2=loader?.querySelector(".progress-model"); if(modelLabel2)modelLabel2.textContent=actualModel+" · ответ получен"; $("#canvas .generation-loading")?.remove();showImage(data.imageUrl,prompt);$("#composerInput").value="";syncInput();$("#composerModel").value=referenceImage?"FLUX Kontext Dev":"FLUX Dev";$("#composerStatus").textContent="FLUX Dev · Image ready";
  }catch(e){toast(e.message||"Ошибка генерации")}finally{$("#canvas .generation-loading")?.remove();$("#composerSend").disabled=false}
 }
 function addChatMessage(text,isUser,image=""){
@@ -473,11 +518,15 @@ document.querySelectorAll("[data-tool]").forEach(b=>b.onclick=()=>{
  if(tool==="upload"){$("#referenceInput").click();return}
  if(tool==="improve"){$("#improve").click();return}
  if(tool==="history"||tool==="library"){
-   mode="chat";
+   chatMenuSuppressed=true;
+   $("#chatSubmenu")?.classList.add("suppressed");
    document.querySelectorAll("[data-mode]").forEach(x=>x.classList.remove("active"));
    $("#chatMenuToggle")?.classList.remove("active");
-   $("#canvas").innerHTML="";
-   renderLibrary();
+   mode="images";
+   const m=modes.images;
+   $("#workspaceEyebrow").textContent=m.eyebrow;$("#workspaceTitle").textContent="Библиотека Miya";$("#workspaceSubtitle").textContent="Сохранённые изображения и видео";
+   $(".image-settings").style.display="none";$("#videoOptions").classList.remove("show");
+   renderLibrary("images");
  }
 });
 renderChatHistoryMini();
