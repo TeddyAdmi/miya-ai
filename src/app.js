@@ -315,7 +315,7 @@ function renderImageLibrary(){
 }
 function renderLibrary(tab="images"){
  const c=$("#canvas"),items=getLibrary(),images=items.filter(x=>x.type==="image"),videos=items.filter(x=>x.type==="video");
- c.innerHTML='<div class="library-section"><div class="results-head"><div><h3>Библиотека Miya</h3></div></div><div class="library-tabs"><button type="button" class="library-tab" data-library-tab="images">Картинки</button><button type="button" class="library-tab" data-library-tab="videos">Видео</button></div><div class="result-grid library-media-grid"></div></div>';
+ c.innerHTML='<div class="library-section"><div class="library-tabs"><button type="button" class="library-tab" data-library-tab="images">Картинки</button><button type="button" class="library-tab" data-library-tab="videos">Видео</button></div><div class="result-grid library-media-grid"></div></div>';
  c.querySelectorAll("[data-library-tab]").forEach(btn=>btn.classList.toggle("active",btn.dataset.libraryTab===tab));
  const grid=c.querySelector(".library-media-grid");const list=tab==="videos"?videos:images;
  if(!list.length){grid.innerHTML='<div class="library-note">'+(tab==="videos"?"Пока нет созданных видео.":"Пока нет созданных картинок.")+'</div>'}
@@ -749,7 +749,7 @@ document.querySelectorAll("[data-tool]").forEach(b=>b.onclick=()=>{
    referenceImage=null;try{sessionStorage.removeItem("miyaReferenceImage")}catch{};setComposerAttachment("");$("#composerInput").value="";syncInput();
    mode="images";
    const m=modes.images;
-   $("#workspaceEyebrow").textContent=m.eyebrow;$("#workspaceTitle").textContent="Библиотека Miya";$("#workspaceSubtitle").textContent="Сохранённые изображения и видео";
+   $("#workspaceEyebrow").textContent=m.eyebrow;$("#workspaceTitle").textContent="";$("#workspaceSubtitle").textContent="";
    $(".image-settings").style.display="none";$("#videoOptions").classList.remove("show");
    renderLibrary("images");
  }
