@@ -158,10 +158,10 @@ async function getCachedMedia(id){
   return await new Promise((resolve,reject)=>{const tx=db.transaction("media","readonly");const r=tx.objectStore("media").get(id);r.onsuccess=()=>resolve(r.result||null);r.onerror=()=>reject(r.error)});
  }catch{return null}
 }
-function saveMedia(type,url,prompt=""){
+function saveMedia(type,url,prompt="",model=""){
  if(!url)return;
  const id=type+"-"+Date.now()+"-"+Math.random().toString(36).slice(2);
- const item={id,type,url,prompt:String(prompt||""),model:type==="image"?"FLUX Dev":"LTX",createdAt:Date.now()};
+ const item={id,type,url,prompt:String(prompt||""),model:String(model||((type==="image")?"FLUX Dev":"LTX")),createdAt:Date.now()};
  const items=getLibrary();items.unshift(item);
  try{localStorage.setItem(LIB_KEY,JSON.stringify(items.slice(0,500)))}catch{
    try{localStorage.setItem(LIB_KEY,JSON.stringify(items.slice(0,100)))}catch{}
@@ -238,7 +238,7 @@ function showPrompt(item){
   modal.querySelector(".media-prompt-close").onclick=()=>modal.classList.remove("open");
   modal.querySelector(".media-prompt-backdrop").onclick=()=>modal.classList.remove("open");
  }
- modal.querySelector(".media-prompt-body").textContent=item.prompt||"Промт для этой картинки не сохранён.";
+ modal.querySelector(".media-prompt-body").textContent=item.prompt||"Промт для этой картинки не сохранён. Если изображение создано до сохранения промтов, восстановить исходный текст автоматически нельзя.";
  modal.classList.add("open");
 }
 function buildMediaCard(item,{video=false}={}){
@@ -355,8 +355,8 @@ function showLoading(){
  }
  c.innerHTML='<div class="loading-state"><div class="spinner"></div><b>Готовим видео…</b><span>Запрос отправлен в видеодвижок Miya.</span></div>';
 }
-function showImage(url,prompt=""){
- const item=saveMedia("image",url,prompt);
+function showImage(url,prompt="",model="FLUX Dev"){
+ const item=saveMedia("image",url,prompt,model);
  const c=$("#canvas");let grid=c.querySelector(".result-grid");
  if(!grid){c.innerHTML='<div class="result-grid"></div>';grid=c.querySelector(".result-grid")}
  const card=buildMediaCard(item);grid.prepend(card);
@@ -374,7 +374,7 @@ async function generateImage(prompt){
   const response=await fetch(endpoint,{method:"POST",headers:{"Content-Type":"application/json","Accept":"application/json"},body:JSON.stringify({mode:"image",provider:"legacy-flux",prompt,model:$("#composerModel").value.trim(),ratio:$("#composerRatio").value,outputFormat:"png",options:referenceImage?payload:{} }),signal:AbortSignal.timeout(60000)});
   const data=await response.json().catch(()=>({}));
   if(!response.ok||!data.imageUrl)throw new Error(data.message||data.error||"Не удалось получить изображение");
-  const actualModel=data.model||"FLUX Dev"; const modelLabel2=loader?.querySelector(".progress-model"); if(modelLabel2)modelLabel2.textContent=actualModel+" · ответ получен"; $("#canvas .generation-loading")?.remove();showImage(data.imageUrl,prompt);$("#composerInput").value="";syncInput();$("#composerModel").value=referenceImage?"FLUX Kontext Dev":"FLUX Dev";$("#composerStatus").textContent="FLUX Dev · Image ready";
+  const actualModel=data.model||"FLUX Dev"; const modelLabel2=loader?.querySelector(".progress-model"); if(modelLabel2)modelLabel2.textContent=actualModel+" · ответ получен"; $("#canvas .generation-loading")?.remove();showImage(data.imageUrl,prompt,actualModel);$("#composerInput").value="";syncInput();$("#composerModel").value=referenceImage?"FLUX Kontext Dev":"FLUX Dev";$("#composerStatus").textContent="FLUX Dev · Image ready";
  }catch(e){toast(e.message||"Ошибка генерации")}finally{$("#canvas .generation-loading")?.remove();$("#composerSend").disabled=false}
 }
 function addChatMessage(text,isUser,image=""){
@@ -475,6 +475,13 @@ $("#composerSend").addEventListener("click",async()=>{
  setTimeout(()=>{toast("Видео-задача подготовлена. LTX endpoint подключим следующим шагом.");showEmpty();$("#composerStatus").textContent=modes.video.status},500)
 });
 $("#composerAttach").onclick=()=>$("#referenceInput").click();
+$("#composerClear").onclick=()=>{
+  $("#composerInput").value="";
+  clearComposerAttachment();
+  syncInput();
+  $("#composerInput").focus();
+  $("#composerStatus").textContent=modes[mode]?.status||"Готово";
+};
 $("#composerAttachmentRemove").onclick=()=>clearComposerAttachment();
 $("#referenceInput").onchange=e=>{
  const file=e.target.files?.[0];if(!file)return;
