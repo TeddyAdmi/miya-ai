@@ -185,7 +185,7 @@ function clearComposerAttachment(){
  setComposerAttachment("");
  if(mode==="images"&&$("#composerModel")) $("#composerModel").value="FLUX Dev";
 }
-function openEditor(url){referenceImage=url;try{sessionStorage.setItem("miyaReferenceImage",referenceImage)}catch{};setComposerAttachment(url);mode="images";$("#composerModel").value="FLUX Kontext Dev";const m=modes.images;$("#workspaceEyebrow").textContent=m.eyebrow;$("#workspaceTitle").textContent=m.title;$("#workspaceSubtitle").textContent=m.subtitle;$("#composerInput").placeholder=m.placeholder;$("#composerSendText").textContent=m.send;$("#composerStatus").textContent="Flux Kontext Dev · готово к редактированию";$(".image-settings").style.display="flex";$("#videoOptions").classList.remove("show");document.querySelectorAll("[data-mode]").forEach(x=>x.classList.toggle("active",x.dataset.mode==="images"));if(!$("#canvas .result-grid")) renderImageLibrary();$("#composerInput").focus();syncInput()}
+function openEditor(url){referenceImage=url;try{sessionStorage.setItem("miyaReferenceImage",referenceImage)}catch{};setComposerAttachment(url);mode="images";$("#composerModel").value="FLUX Kontext Dev";$("#composerRatio").value="auto";const m=modes.images;$("#workspaceEyebrow").textContent=m.eyebrow;$("#workspaceTitle").textContent=m.title;$("#workspaceSubtitle").textContent=m.subtitle;$("#composerInput").placeholder=m.placeholder;$("#composerSendText").textContent=m.send;$("#composerStatus").textContent="FLUX Kontext Dev · готово к редактированию";$(".image-settings").style.display="flex";$("#videoOptions").classList.remove("show");document.querySelectorAll("[data-mode]").forEach(x=>x.classList.toggle("active",x.dataset.mode==="images"));if(!$("#canvas .result-grid")) renderImageLibrary();$("#composerInput").focus();syncInput()}
 async function downloadImage(url,format="jpeg"){
  try{
   const response=await fetch(url,{mode:"cors"});if(!response.ok)throw new Error("DOWNLOAD_HTTP_"+response.status);
@@ -386,11 +386,11 @@ function showLoading(){
   let grid=c.querySelector(".result-grid");
   if(!grid){c.innerHTML='<div class="result-grid"></div>';grid=c.querySelector(".result-grid")}
   const old=c.querySelector(".generation-loading");if(old)old.remove();
-  const selectedModel=$("#composerModel")?.value||"FLUX Dev";
-  const card=document.createElement("div");card.className="generation-loading";
+  const selectedModel=referenceImage?"FLUX Kontext Dev":($("#composerModel")?.value||"FLUX Dev");
+  const card=document.createElement("div");card.className="generation-loading"+(referenceImage?" has-upload":" no-upload");
   card.dataset.model=selectedModel;
-  card.innerHTML='<div class="generation-progress"><div class="progress-circle is-active"><span class="progress-percent">0%</span></div><div class="progress-copy"><b>Генерация изображения</b><span class="progress-model"></span></div></div>';
-  card.querySelector(".progress-model").textContent=selectedModel+" · запрос выполняется";
+  card.innerHTML='<div class="generation-progress"><div class="progress-circle is-active"><span class="progress-percent"></span></div><div class="progress-copy"><b>Генерация изображения</b><span class="progress-model"></span></div></div>';
+  card.querySelector(".progress-model").textContent=referenceImage?selectedModel+" · загрузка файла…":selectedModel+" · генерация…";
   c.insertBefore(card,grid);return;
  }
  c.innerHTML='<div class="loading-state"><div class="spinner"></div><b>Готовим видео…</b><span>Запрос отправлен в видеодвижок Miya.</span></div>';
@@ -408,7 +408,8 @@ async function generateImage(prompt){
  const ring=loader?.querySelector(".progress-circle");
  const percent=ring?.querySelector(".progress-percent");
  const modelName=referenceImage?"FLUX Kontext Dev":"FLUX Dev";
- $("#composerStatus").textContent=modelName+" · загрузка запроса…";
+ const hasFileUpload=Boolean(referenceImage);
+ $("#composerStatus").textContent=hasFileUpload?modelName+" · загрузка файла…":modelName+" · генерация…";
  try{
   const payload={
    prompt,
@@ -419,13 +420,8 @@ async function generateImage(prompt){
    else payload.imageUrl=referenceImage;
   }
   const body=JSON.stringify({
-   mode:"image",
-   provider:"legacy-flux",
-   prompt,
-   model:modelName,
-   ratio:$("#composerRatio").value,
-   outputFormat:"png",
-   options:referenceImage?payload:{}
+   mode:"image",provider:"legacy-flux",prompt,model:modelName,
+   ratio:$("#composerRatio").value,outputFormat:"png",options:referenceImage?payload:{}
   });
   const data=await new Promise((resolve,reject)=>{
    const xhr=new XMLHttpRequest();
@@ -433,19 +429,20 @@ async function generateImage(prompt){
    xhr.setRequestHeader("Content-Type","application/json");
    xhr.setRequestHeader("Accept","application/json");
    xhr.upload.onprogress=e=>{
-    if(!e.lengthComputable)return;
+    if(!hasFileUpload||!e.lengthComputable)return;
     const p=Math.max(0,Math.min(100,Math.round(e.loaded/e.total*100)));
-    if(ring){
-      ring.classList.remove("is-active");
-      ring.style.setProperty("--progress",p+"%");
-    }
+    if(ring){ring.classList.remove("is-active");ring.style.setProperty("--progress",p+"%");}
     if(percent)percent.textContent=p+"%";
-    if($("#composerStatus"))$("#composerStatus").textContent=modelName+" · загрузка "+p+"%";
+    if($("#composerStatus"))$("#composerStatus").textContent=modelName+" · загрузка файла "+p+"%";
    };
    xhr.upload.onload=()=>{
-    if(ring)ring.classList.add("is-active");
-    if(percent)percent.textContent="";
-    if($("#composerStatus"))$("#composerStatus").textContent=modelName+" · генерация…";
+    if(!hasFileUpload)return;
+    if(ring){ring.classList.remove("is-active");ring.style.setProperty("--progress","100%");}
+    if(percent)percent.textContent="100%";
+    const modelLabel=loader?.querySelector(".progress-model");
+    if(modelLabel)modelLabel.textContent=modelName+" · файл загружен · генерация…";
+    if($("#composerStatus"))$("#composerStatus").textContent=modelName+" · файл загружен · генерация…";
+    requestAnimationFrame(()=>{if(ring)ring.classList.add("is-active")});
    };
    xhr.onerror=()=>reject(new Error("Не удалось соединиться с сервером генерации"));
    xhr.ontimeout=()=>reject(new Error("Сервер генерации не ответил вовремя"));
@@ -453,24 +450,23 @@ async function generateImage(prompt){
     let result={};
     try{result=xhr.responseText?JSON.parse(xhr.responseText):{}}catch{}
     if(xhr.status>=200&&xhr.status<300&&result.imageUrl)resolve(result);
-    else reject(new Error(result.message||result.error||("Генерация не выполнена (HTTP "+xhr.status+")")));
+    else{
+      const detail=result.message||result.error||("Генерация не выполнена (HTTP "+xhr.status+")");
+      reject(new Error(detail));
+    }
    };
    xhr.timeout=60000;
    xhr.send(body);
   });
   const actualModel=data.model||modelName;
   if(loader){
-   if(ring){
-    ring.classList.remove("is-active");
-    ring.style.setProperty("--progress","100%");
-   }
+   if(ring){ring.classList.remove("is-active");ring.style.setProperty("--progress","100%");}
    if(percent)percent.textContent="100%";
    const modelLabel=loader.querySelector(".progress-model");
    if(modelLabel)modelLabel.textContent=actualModel+" · готово";
   }
   showImage(data.imageUrl,prompt,actualModel);
-  $("#composerInput").value="";
-  syncInput();
+  $("#composerInput").value="";syncInput();
   $("#composerModel").value=referenceImage?"FLUX Kontext Dev":"FLUX Dev";
   $("#composerStatus").textContent=actualModel+" · готово";
   setTimeout(()=>$("#canvas .generation-loading")?.remove(),350);
@@ -478,9 +474,7 @@ async function generateImage(prompt){
   $("#canvas .generation-loading")?.remove();
   toast(e.message||"Ошибка генерации");
   $("#composerStatus").textContent=modelName+" · ошибка";
- }finally{
-  $("#composerSend").disabled=false;
- }
+ }finally{$("#composerSend").disabled=false;}
 }
 function addChatMessage(text,isUser,image=""){
  let stream=$("#canvas .chat-stream");
