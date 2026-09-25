@@ -669,4 +669,23 @@ if(chatNavWrap){chatNavWrap.addEventListener("mouseleave",()=>{chatMenuSuppresse
 document.addEventListener("click",e=>{if(!e.target.closest(".chat-history-row"))resetChatMenus()});
 document.addEventListener("click",e=>{
  if(!e.target.closest(".media-actions")) document.querySelectorAll(".media-action-menu.open").forEach(x=>x.classList.remove("open"));
-});
+}); $("#composerTrash")?.addEventListener("click",()=>{
+   $("#composerInput").value="";
+   clearComposerAttachment();
+   syncInput();
+   $("#composerInput").focus();
+   $("#composerStatus").textContent=modes[mode]?.status||"Готово";
+ });
+ $("#composerAttachmentRemove")?.addEventListener("click",()=>clearComposerAttachment());
+ $("#improve")?.addEventListener("click",improveComposerPrompt);
+ $("#copyPrompt")?.addEventListener("click",copyComposerPrompt);
+ $("#videoImprove")?.addEventListener("click",improveComposerPrompt);
+ $("#videoCopyPrompt")?.addEventListener("click",copyComposerPrompt);
+ $("#videoTrash")?.addEventListener("click",()=>{
+   $("#composerInput").value="";
+   clearComposerAttachment();
+   syncInput();
+   $("#composerInput").focus();
+   $("#composerStatus").textContent=modes.video.status;
+ });
+
