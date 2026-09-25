@@ -92,7 +92,7 @@
           <option>FLUX Dev</option>
           <option>FLUX Kontext Dev</option>
         </select>
-        <select class="select-pill" id="composerRatio" aria-label="Соотношение сторон"><option>16:9</option><option>9:16</option><option>1:1</option></select>
+        <select class="select-pill" id="composerRatio" aria-label="Соотношение сторон"><option>auto</option><option>16:9</option><option>9:16</option><option>1:1</option></select>
         <span class="composer-spacer"></span>
         <button class="improve" id="improve">✦ Улучшить промпт</button>
       </div>
@@ -100,6 +100,7 @@
         <select class="select-pill" id="videoModel"><option>LTX 2.3</option><option>LTX 2.5 Free</option></select>
         <select class="select-pill" id="videoDuration"><option>5 сек</option><option>8 сек</option><option>10 сек</option></select>
         <select class="select-pill" id="videoRatio"><option>16:9</option><option>9:16</option><option>1:1</option></select>
+        <button class="composer-trash video-trash" id="videoTrash" type="button" title="Стереть промт" aria-label="Стереть промт"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M9 7V4h6v3M7 7l1 13h8l1-13M10 11v5M14 11v5"/></svg></button>
         <button class="pill active-pill" id="audioToggle">Audio</button>
       </div>
       <div class="composer-status"><span class="status-dot"></span><span id="composerStatus">AI Chat готов</span><span class="status-right">Enter — отправить · Shift + Enter — новая строка</span></div>
