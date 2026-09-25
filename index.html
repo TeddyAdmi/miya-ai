@@ -27,12 +27,14 @@
       </div>
 
       <div class="side-label">РАЗДЕЛЫ</div>
-      <button class="side-btn side-menu-toggle active" id="chatMenuToggle" type="button" aria-expanded="true">
-        <span class="ico">◉</span><b>AI Chat</b><em id="chatMenuArrow">⌄</em>
-      </button>
-      <div class="side-submenu" id="chatSubmenu">
-        <button class="side-subbtn" id="newChatBtn" type="button"><span>＋</span><b>Новый чат</b></button>
-        <div class="chat-history-mini" id="chatHistoryMini"></div>
+      <div class="chat-nav-wrap">
+        <button class="side-btn side-menu-toggle" id="chatMenuToggle" type="button" aria-expanded="false">
+          <span class="ico">◉</span><b>AI Chat</b><em id="chatMenuArrow">→</em>
+        </button>
+        <div class="side-submenu" id="chatSubmenu">
+          <button class="side-subbtn" id="newChatBtn" type="button"><span>＋</span><b>Новый чат</b></button>
+          <div class="chat-history-mini" id="chatHistoryMini"></div>
+        </div>
       </div>
 
       <button class="side-btn" data-mode="images" type="button"><span class="ico">▧</span><b>Картинки</b></button>
