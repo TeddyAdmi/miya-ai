@@ -1214,3 +1214,77 @@ body.image-viewer-open{overflow:hidden!important}
 body.light .composer-trash:hover{background:#edf3f9!important;color:#182436!important}
 /* Hide the previous right-side clear control if an older cached build contains it. */
 .composer-clear{display:none!important}
+
+/* Prompt controls: attachment plus and erase are stacked vertically. */
+.composer-left-actions{
+  flex:0 0 38px!important;
+  width:38px!important;
+  display:flex!important;
+  flex-direction:column!important;
+  align-items:center!important;
+  justify-content:center!important;
+  gap:1px!important;
+}
+.composer-left-actions .attach,
+.composer-left-actions .composer-trash{
+  flex:0 0 19px!important;
+  width:38px!important;
+  height:19px!important;
+  min-height:19px!important;
+  padding:0!important;
+  display:grid!important;
+  place-items:center!important;
+  border:0!important;
+  background:transparent!important;
+  border-radius:7px!important;
+  color:var(--muted)!important;
+}
+.composer-left-actions .attach{font-size:20px!important;line-height:1!important}
+.composer-left-actions .composer-trash svg{
+  width:14px!important;
+  height:14px!important;
+  fill:none!important;
+  stroke:currentColor!important;
+  stroke-width:1.8!important;
+  stroke-linecap:round!important;
+  stroke-linejoin:round!important;
+}
+.composer-left-actions .attach:hover,
+.composer-left-actions .composer-trash:hover{
+  background:rgba(120,150,190,.12)!important;
+  color:inherit!important;
+}
+body.light .composer-left-actions .attach:hover,
+body.light .composer-left-actions .composer-trash:hover{
+  background:#edf3f9!important;
+  color:#182436!important;
+}
+.emoji-row button{
+  font-size:15px!important;
+  padding:2px!important;
+  width:25px!important;
+  height:25px!important;
+  line-height:1!important;
+}
+.starter-row{
+  grid-template-columns:1fr 1fr!important;
+  gap:5px!important;
+}
+.starter-row button{
+  min-width:0!important;
+  width:100%!important;
+  min-height:32px!important;
+  height:32px!important;
+  padding:5px 7px!important;
+  overflow:hidden!important;
+  white-space:nowrap!important;
+  text-overflow:ellipsis!important;
+  font-size:10px!important;
+  line-height:1.2!important;
+}
+@media(max-width:800px){
+ .composer-left-actions{flex-basis:34px!important;width:34px!important}
+ .composer-left-actions .attach,.composer-left-actions .composer-trash{width:34px!important}
+ .emoji-row button{font-size:14px!important;width:23px!important;height:23px!important}
+ .starter-row button{font-size:9px!important;padding:5px 6px!important}
+}
