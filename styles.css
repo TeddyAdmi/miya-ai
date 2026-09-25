@@ -519,3 +519,19 @@ body.light .workspace:after{
 .chat-history-actions button:hover{background:rgba(120,150,190,.14);color:inherit}
 body.light .chat-history-actions button:hover{background:#edf3f9}
 .chat-history-mini{overflow-x:hidden}
+
+
+/* Truthful generation state: no fabricated percentage; the ring animates while the API request is actually pending. */
+.progress-circle.is-active{background:conic-gradient(#a96cff 0 25%,rgba(120,145,175,.2) 25% 100%);animation:progress-spin 1s linear infinite}
+.progress-circle.is-active::before{content:"";position:absolute;inset:4px;border-radius:50%;background:#07182b}
+.progress-circle.is-active .progress-percent{font-size:0}
+.progress-circle.is-active .progress-percent::after{content:"";width:10px;height:10px;display:block;border:2px solid rgba(255,255,255,.28);border-top-color:#fff;border-radius:50%;animation:spin .7s linear infinite}
+@keyframes progress-spin{to{transform:rotate(360deg)}}
+body.light .progress-circle.is-active{background:conic-gradient(#8758d8 0 25%,#dce5ee 25% 100%)}
+body.light .progress-circle.is-active::before{background:#fff}
+
+/* Library empty state uses the same wall-like section treatment as every other room. */
+.library-empty{padding:0!important;text-align:center}
+.library-empty .hero-mark{display:none!important}
+.library-empty h2{font-size:29px!important;margin:10px 0 7px!important}
+.library-empty p{font-size:12px!important;line-height:1.5}
