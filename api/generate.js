@@ -220,7 +220,7 @@ async function handler(req, res) {
 
       for (let attempt = 0; attempt < 3; attempt++) {
         const controller = new AbortController();
-        const timeout = setTimeout(() => controller.abort(), 56000);
+        const timeout = setTimeout(() => controller.abort(), 58000);
 
         try {
           response = await fetch(endpoint, {
