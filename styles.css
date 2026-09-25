@@ -1466,3 +1466,80 @@ html,body{overflow-y:auto!important;overflow-x:hidden!important}
   scroll-behavior:auto!important;
   padding-bottom:190px!important;
 }
+
+
+/* Chat workspace scroll model: fixed left sidebar + one scrollbar for the right workspace. */
+html,body{
+  width:100%;
+  height:100%;
+  overflow:hidden!important;
+}
+.main{
+  width:100%;
+  height:100dvh!important;
+  min-height:100dvh!important;
+  display:flex!important;
+  overflow:hidden!important;
+}
+.sidebar{
+  position:relative!important;
+  flex:0 0 205px!important;
+  width:205px!important;
+  height:100dvh!important;
+  min-height:100dvh!important;
+  overflow:hidden!important;
+}
+.workspace{
+  flex:1 1 auto!important;
+  width:auto!important;
+  min-width:0!important;
+  height:100dvh!important;
+  min-height:100dvh!important;
+  overflow-x:hidden!important;
+  overflow-y:auto!important;
+  overscroll-behavior:contain!important;
+  scrollbar-width:thin!important;
+  scrollbar-color:#245c8f transparent!important;
+}
+.workspace::-webkit-scrollbar{width:7px;height:0}
+.workspace::-webkit-scrollbar-track{background:transparent}
+.workspace::-webkit-scrollbar-thumb{background:#245c8f;border-radius:10px}
+.workspace::-webkit-scrollbar-thumb:hover{background:#367db5}
+.workspace::-webkit-scrollbar-corner{background:transparent}
+.canvas{
+  height:auto!important;
+  min-height:100%!important;
+  overflow:visible!important;
+}
+.chat-stream{
+  width:min(820px,100%)!important;
+  height:auto!important;
+  max-height:none!important;
+  min-height:0!important;
+  overflow:visible!important;
+  overflow-y:visible!important;
+  padding-bottom:220px!important;
+  margin:0 auto!important;
+}
+.chat-room{
+  width:100%!important;
+  max-width:920px!important;
+  margin:0 auto!important;
+}
+.composer-wrap{
+  position:fixed!important;
+  left:205px!important;
+  right:0!important;
+  bottom:0!important;
+}
+@media(max-width:800px){
+  html,body{overflow:hidden!important}
+  .sidebar{display:none!important}
+  .workspace{
+    width:100%!important;
+    height:100dvh!important;
+    min-height:100dvh!important;
+    overflow-y:auto!important;
+  }
+  .composer-wrap{left:0!important}
+}
