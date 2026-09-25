@@ -221,7 +221,7 @@ async function handler(req, res) {
     for (let endpointIndex = 0; endpointIndex < endpoints.length; endpointIndex++) {
       const endpoint = endpoints[endpointIndex];
       const controller = new AbortController();
-      const timeout = setTimeout(() => controller.abort(), isImageToImage ? 50000 : 58000);
+      const timeout = setTimeout(() => controller.abort(), isImageToImage ? 58000 : 58000);
 
       try {
         response = await fetch(endpoint, {
@@ -256,7 +256,7 @@ async function handler(req, res) {
             ok: false,
             error: "FLUX_TIMEOUT",
             message: isImageToImage
-              ? "Flux Kontext Dev не завершил генерацию за 50 секунд."
+              ? "Flux Kontext Dev не завершил генерацию за 58 секунд."
               : "Flux Dev не завершил генерацию за 58 секунд."
           });
         }
