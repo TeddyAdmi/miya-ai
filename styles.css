@@ -767,3 +767,90 @@ body.light .chat-history-menu button:last-child:hover{
 
 /* Every section gets a fresh canvas; image mode opens its library, not stale tool output. */
 .canvas{position:relative}
+
+
+/* Final chat history layout: no scrollbar, five recent chats, actions pinned to the far right. */
+.chat-history-mini{
+  overflow:visible!important;
+  max-height:none!important;
+  height:auto!important;
+  scrollbar-width:none!important;
+}
+.chat-history-mini::-webkit-scrollbar{display:none!important}
+.chat-history-row{
+  width:100%!important;
+  box-sizing:border-box!important;
+  display:flex!important;
+  align-items:center!important;
+  position:relative!important;
+  gap:0!important;
+  min-height:40px!important;
+}
+.chat-history-mini-item{
+  flex:1 1 auto!important;
+  width:auto!important;
+  min-width:0!important;
+  box-sizing:border-box!important;
+  padding:9px 8px!important;
+  font-size:12px!important;
+}
+.chat-history-more{
+  flex:0 0 34px!important;
+  width:34px!important;
+  height:34px!important;
+  margin-left:auto!important;
+  margin-right:2px!important;
+  opacity:0!important;
+  visibility:hidden!important;
+  display:grid!important;
+  place-items:center!important;
+  font-size:22px!important;
+}
+.chat-history-row:hover .chat-history-more,
+.chat-history-row.menu-open .chat-history-more{
+  opacity:1!important;
+  visibility:visible!important;
+}
+.chat-history-menu{
+  right:2px!important;
+  left:auto!important;
+  top:calc(100% - 1px)!important;
+  width:190px!important;
+  z-index:2000!important;
+}
+.chat-history-menu .rename-label{
+  padding:5px 8px 2px!important;
+  color:var(--muted)!important;
+  font-size:10px!important;
+  font-weight:600!important;
+}
+.chat-history-menu .chat-rename-input{
+  width:100%!important;
+  height:34px!important;
+  box-sizing:border-box!important;
+  padding:0 9px!important;
+  border:1px solid var(--line)!important;
+  border-radius:7px!important;
+  outline:none!important;
+  background:rgba(255,255,255,.06)!important;
+  color:inherit!important;
+  font:inherit!important;
+  font-size:12px!important;
+}
+.chat-history-menu .chat-rename-input:focus{
+  border-color:#8b6bda!important;
+  box-shadow:0 0 0 2px rgba(139,107,218,.14)!important;
+}
+.chat-history-menu .chat-rename-save,
+.chat-history-menu .chat-rename-cancel{
+  height:34px!important;
+}
+body.light .chat-history-menu .chat-rename-input{
+  background:#f5f7fa!important;
+  color:#182436!important;
+  border-color:#d6e0eb!important;
+}
+body.light .chat-history-menu .rename-label{color:#71859a!important}
+
+/* Do not let chat submenu create a page/column scrollbar. */
+.chat-nav-wrap,.side-submenu{overflow:visible!important}
