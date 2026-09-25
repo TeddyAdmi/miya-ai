@@ -1167,3 +1167,50 @@ body.light .media-action-menu{
   }
   .composer-clear span{display:none!important}
 }
+
+/* Full-screen image viewer */
+body.image-viewer-open{overflow:hidden!important}
+.image-viewer-modal{
+ position:fixed!important;inset:0!important;z-index:100000!important;
+ display:none!important;background:rgba(0,0,0,.88)!important;
+}
+.image-viewer-modal.open{display:flex!important;align-items:center!important;justify-content:center!important}
+.image-viewer-backdrop{position:absolute;inset:0;background:rgba(0,0,0,.72);backdrop-filter:blur(8px)}
+.image-viewer-stage{
+ position:relative;z-index:1;width:100vw;height:100vh;
+ display:flex;align-items:center;justify-content:center;
+ overflow:hidden;
+}
+.image-viewer-image{
+ max-width:94vw;max-height:94vh;width:auto;height:auto;
+ object-fit:contain;border-radius:4px;
+ transform-origin:center center;
+ transition:transform .18s ease;
+ box-shadow:0 20px 80px rgba(0,0,0,.55);
+}
+.image-viewer-controls{
+ position:absolute;right:22px;top:22px;display:flex;gap:8px;z-index:3;
+}
+.image-viewer-controls button{
+ width:42px;height:42px;border:1px solid rgba(255,255,255,.20);
+ border-radius:10px;background:rgba(20,27,38,.88);color:#fff;
+ font-size:25px;line-height:1;cursor:pointer;
+ box-shadow:0 8px 28px rgba(0,0,0,.28);
+}
+.image-viewer-controls button:hover{background:rgba(40,48,62,.96)}
+.image-viewer-close{font-size:27px!important}
+@media(max-width:800px){
+ .image-viewer-controls{right:12px;top:12px}
+ .image-viewer-controls button{width:38px;height:38px}
+}
+/* Prompt trash sits directly under the plus attachment button. */
+.composer-trash{
+ flex:0 0 38px!important;width:38px!important;height:38px!important;
+ display:grid!important;place-items:center!important;
+ border:0!important;background:transparent!important;color:var(--muted)!important;
+ border-radius:9px!important;font-size:18px!important;cursor:pointer!important;
+}
+.composer-trash:hover{background:rgba(120,150,190,.12)!important;color:inherit!important}
+body.light .composer-trash:hover{background:#edf3f9!important;color:#182436!important}
+/* Hide the previous right-side clear control if an older cached build contains it. */
+.composer-clear{display:none!important}
