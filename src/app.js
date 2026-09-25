@@ -223,6 +223,27 @@ function showDownloadMenu(item,anchor){
  const r=anchor.getBoundingClientRect();menu.style.left=Math.min(window.innerWidth-menu.offsetWidth-8,Math.max(8,r.right-menu.offsetWidth))+"px";menu.style.top=Math.min(window.innerHeight-menu.offsetHeight-8,r.bottom+7)+"px";
  setTimeout(()=>document.addEventListener("click",()=>menu.remove(),{once:true}),0);
 }
+function confirmDeleteMedia(item,card){
+ let modal=$("#deleteConfirmModal");
+ if(!modal){
+  modal=document.createElement("div");
+  modal.id="deleteConfirmModal";
+  modal.className="delete-confirm-modal";
+  modal.innerHTML='<div class="delete-confirm-backdrop"></div><div class="delete-confirm-dialog" role="dialog" aria-modal="true" aria-labelledby="deleteConfirmTitle"><div class="delete-confirm-loader"><div class="delete-confirm-ring"><span class="delete-confirm-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M9 7V4h6v3M7 7l1 13h8l1-13M10 11v5M14 11v5"/></svg></span></div></div><div class="delete-confirm-copy"><div class="delete-confirm-eyebrow">MIYA STUDIO</div><h3 id="deleteConfirmTitle">Удалить материал?</h3><p>Это действие удалит выбранный материал из истории и библиотеки.</p></div><div class="delete-confirm-actions"><button type="button" class="delete-confirm-cancel">Отмена</button><button type="button" class="delete-confirm-submit"><span class="action-svg"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M9 7V4h6v3M7 7l1 13h8l1-13"/></svg></span><span>Удалить</span></button></div></div></div>';
+  document.body.appendChild(modal);
+  const close=()=>modal.classList.remove("open");
+  modal.querySelector(".delete-confirm-backdrop").onclick=close;
+  modal.querySelector(".delete-confirm-cancel").onclick=close;
+  modal.querySelector(".delete-confirm-submit").onclick=()=>{
+    const target=modal.__deleteTarget;
+    close();
+    if(target)deleteMedia(target.item,target.card);
+  };
+ }
+ modal.__deleteTarget={item,card};
+ modal.classList.add("open");
+ requestAnimationFrame(()=>modal.querySelector(".delete-confirm-cancel")?.focus());
+}
 async function deleteMedia(item,card){
  const items=getLibrary().filter(x=>x.id!==item.id);
  try{localStorage.setItem(LIB_KEY,JSON.stringify(items))}catch{}
@@ -309,10 +330,10 @@ function buildMediaCard(item,{video=false}={}){
   const promptBtn=document.createElement("button");promptBtn.innerHTML='<span class="action-icon action-svg"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 4h12v16H6z"/><path d="M9 8h6M9 12h6M9 16h4"/></svg></span><span>Промт</span>';promptBtn.onclick=e=>{e.stopPropagation();showPrompt(item)};
   const editBtn=document.createElement("button");editBtn.innerHTML='<span class="action-icon action-svg"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m4 16.5-.8 3.3 3.3-.8L18.7 6.8a2.2 2.2 0 0 0-3.1-3.1L4 16.5Z"/><path d="m14.2 5.8 4 4"/></svg></span><span>Редактировать</span>';editBtn.onclick=async e=>{e.stopPropagation();openEditor(await mediaItemToReference(item))};
   const downloadBtn=document.createElement("button");downloadBtn.innerHTML='<span class="action-icon action-svg"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4v11M8 11l4 4 4-4M5 19h14"/></svg></span><span>Скачать</span>';downloadBtn.onclick=e=>{e.stopPropagation();showDownloadMenu(item,downloadBtn)};
-  const deleteBtn=document.createElement("button");deleteBtn.innerHTML='<span class="action-icon action-svg"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M9 7V4h6v3M7 7l1 13h8l1-13M10 11v5M14 11v5"/></svg></span><span>Удалить</span>';deleteBtn.onclick=e=>{e.stopPropagation();if(window.confirm("Удалить это изображение?"))deleteMedia(item,card)};
+  const deleteBtn=document.createElement("button");deleteBtn.innerHTML='<span class="action-icon action-svg"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M9 7V4h6v3M7 7l1 13h8l1-13M10 11v5M14 11v5"/></svg></span><span>Удалить</span>';deleteBtn.onclick=e=>{e.stopPropagation();confirmDeleteMedia(item,card)};
   menu.append(promptBtn,editBtn,downloadBtn,deleteBtn);
  }else{
-  const deleteBtn=document.createElement("button");deleteBtn.innerHTML='<span class="action-icon">⌫</span><span>Удалить</span>';deleteBtn.onclick=e=>{e.stopPropagation();if(window.confirm("Удалить это изображение?"))deleteMedia(item,card)};menu.append(deleteBtn);
+  const deleteBtn=document.createElement("button");deleteBtn.innerHTML='<span class="action-icon">⌫</span><span>Удалить</span>';deleteBtn.onclick=e=>{e.stopPropagation();confirmDeleteMedia(item,card)};menu.append(deleteBtn);
  }
  more.onclick=e=>{e.stopPropagation();document.querySelectorAll(".media-action-menu.open").forEach(x=>x!==menu&&x.classList.remove("open"));menu.classList.toggle("open")};
  actions.append(more,menu);card.appendChild(actions);return card;
