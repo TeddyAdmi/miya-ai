@@ -20,10 +20,13 @@ export default async function handler(req, res) {
       }
 
       const messages = Array.isArray(body.messages) ? body.messages : [];
-      const model =
+      const requestedModel =
         typeof body.model === "string" && body.model.trim()
           ? body.model.trim()
           : "gemini-3.8-flash";
+      const modelsToTry = [requestedModel, "gemini-3.5-flash"].filter(
+        (value, index, list) => list.indexOf(value) === index
+      );
 
       const contents = messages
         .filter(
@@ -55,38 +58,46 @@ export default async function handler(req, res) {
         return res.status(400).json({ error: "A user message is required" });
       }
 
-      const response = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(
-          model
-        )}:generateContent?key=${encodeURIComponent(apiKey)}`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            systemInstruction: {
-              parts: [
-                {
-                  text: "Ты Miya — дружелюбный AI-помощник внутри Miya AI Studio. Отвечай на русском, если пользователь пишет по-русски. Помогай с текстами, идеями, сценариями, промптами, изображениями и видео. Не утверждай, что ты можешь выполнить действие, если оно не подключено."
-                }
-              ]
-            },
-            contents,
-            generationConfig: {
-              thinkingConfig: { thinkingLevel: "low" },
-              maxOutputTokens: 2048
-            }
-          })
-        }
-      );
-
-      const data = await response.json().catch(() => ({}));
+      let response;
+      let data = {};
+      let model = requestedModel;
+      for (const candidate of modelsToTry) {
+        model = candidate;
+        response = await fetch(
+          `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(
+            candidate
+          )}:generateContent?key=${encodeURIComponent(apiKey)}`,
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              systemInstruction: {
+                parts: [
+                  {
+                    text: "Ты Miya — дружелюбный AI-помощник внутри Miya AI Studio. Отвечай на русском, если пользователь пишет по-русски. Помогай с текстами, идеями, сценариями, промптами, изображениями и видео. Если пользователь прикрепил изображение, анализируй его содержимое и отвечай на вопрос по нему."
+                  }
+                ]
+              },
+              contents,
+              generationConfig: {
+                thinkingConfig: { thinkingLevel: "low" },
+                maxOutputTokens: 2048
+              }
+            })
+          }
+        );
+        data = await response.json().catch(() => ({}));
+        if (response.ok) break;
+        if (![429, 500, 502, 503, 504].includes(response.status)) break;
+      }
 
       if (!response.ok) {
-        return res.status(response.status).json({
+        return res.status(502).json({
           error:
             data?.error?.message ||
             data?.message ||
-            `Gemini API error: HTTP ${response.status}`
+            `Gemini API error: HTTP ${response.status}`,
+          upstreamStatus: response.status
         });
       }
 
