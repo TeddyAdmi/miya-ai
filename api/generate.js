@@ -12,111 +12,130 @@ async function handler(req, res) {
       typeof req.body === "string" ? JSON.parse(req.body) : (req.body || {});
 
     if (body.mode === "chat") {
-      const apiKey = process.env.GEMINI_API_KEY;
-      if (!apiKey) {
-        return res.status(500).json({
-          error: "GEMINI_API_KEY is not configured",
-          message: "Добавь GEMINI_API_KEY в Vercel Environment Variables."
-        });
-      }
-
       const messages = Array.isArray(body.messages) ? body.messages : [];
-      const requestedModel =
-        typeof body.model === "string" && body.model.trim()
-          ? body.model.trim()
-          : "gemini-3.8-flash";
-      const modelsToTry = [requestedModel, "gemini-3.6-flash", "gemini-3.5-flash"].filter(
-        (value, index, list) => list.indexOf(value) === index
-      );
-
-      const contents = messages
+      const cleanMessages = messages
         .filter(
           m =>
             m &&
             (m.role === "user" || m.role === "assistant") &&
             typeof m.content === "string"
         )
-        .map(m => {
-          const parts = [{ text: m.content.slice(0, 12000) }];
-          if (m.role === "user" && typeof m.image === "string" && m.image.startsWith("data:image/")) {
-            const match = m.image.match(/^data:(image\/[a-zA-Z0-9.+-]+);base64,(.+)$/);
-            if (match && match[2].length <= 20 * 1024 * 1024) {
-              parts.unshift({
-                inline_data: {
-                  mime_type: match[1],
-                  data: match[2]
-                }
-              });
-            }
-          }
-          return {
-            role: m.role === "assistant" ? "model" : "user",
-            parts
-          };
-        });
+        .map(m => ({
+          role: m.role,
+          content: m.content.slice(0, 12000)
+        }));
 
-      if (!contents.length || contents[contents.length - 1].role !== "user") {
+      if (!cleanMessages.length || cleanMessages[cleanMessages.length - 1].role !== "user") {
         return res.status(400).json({ error: "A user message is required" });
       }
 
-      let response;
-      let data = {};
-      let model = requestedModel;
-      for (const candidate of modelsToTry) {
-        model = candidate;
-        response = await fetch(
-          `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(
-            candidate
-          )}:generateContent?key=${encodeURIComponent(apiKey)}`,
-          {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              systemInstruction: {
-                parts: [
-                  {
-                    text: "Ты Miya — дружелюбный AI-помощник внутри Miya AI Studio. Отвечай на русском, если пользователь пишет по-русски. Помогай с текстами, идеями, сценариями, промптами, изображениями и видео. Если пользователь прикрепил изображение, анализируй его содержимое и отвечай на вопрос по нему."
-                  }
-                ]
-              },
-              contents,
-              generationConfig: {
-                thinkingConfig: { thinkingLevel: "low" },
-                maxOutputTokens: 2048
-              }
-            })
-          }
+      const requestedModel =
+        typeof body.model === "string" && body.model.trim()
+          ? body.model.trim()
+          : "gemini-3.8-flash";
+
+      // Gemini is used when a key is configured. Otherwise use the free
+      // no-key text endpoint so Miya Chat works without paid credentials.
+      const apiKey = process.env.GEMINI_API_KEY;
+      if (apiKey) {
+        const modelsToTry = [requestedModel, "gemini-3.6-flash", "gemini-3.5-flash"].filter(
+          (value, index, list) => list.indexOf(value) === index
         );
-        data = await response.json().catch(() => ({}));
-        if (response.ok) break;
-        if (![429, 500, 502, 503, 504].includes(response.status)) break;
+
+        const contents = cleanMessages.map(m => ({
+          role: m.role === "assistant" ? "model" : "user",
+          parts: [{ text: m.content }]
+        }));
+
+        let response;
+        let data = {};
+        let model = requestedModel;
+
+        for (const candidate of modelsToTry) {
+          model = candidate;
+          response = await fetch(
+            `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(candidate)}:generateContent?key=${encodeURIComponent(apiKey)}`,
+            {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                systemInstruction: {
+                  parts: [{
+                    text: "Ты Miya — дружелюбный AI-помощник внутри Miya AI Studio. Отвечай на русском, если пользователь пишет по-русски. Помогай с текстами, идеями, сценариями, промптами, изображениями и видео."
+                  }]
+                },
+                contents,
+                generationConfig: {
+                  thinkingConfig: { thinkingLevel: "low" },
+                  maxOutputTokens: 2048
+                }
+              })
+            }
+          );
+          data = await response.json().catch(() => ({}));
+          if (response.ok) break;
+          if (![429, 500, 502, 503, 504].includes(response.status)) break;
+        }
+
+        if (response?.ok) {
+          const text = data?.candidates?.[0]?.content?.parts
+            ?.map(part => part?.text || "")
+            .join("")
+            .trim();
+
+          if (text) {
+            return res.status(200).json({
+              ok: true,
+              mode: "chat",
+              text,
+              model,
+              provider: "Gemini",
+              usage: data?.usageMetadata || null
+            });
+          }
+        }
       }
 
-      if (!response.ok) {
+      // Free fallback: no API key and no payment required.
+      const transcript = cleanMessages
+        .slice(-12)
+        .map(m => (m.role === "assistant" ? "Miya: " : "Пользователь: ") + m.content)
+        .join("\\n");
+
+      const system =
+        "Ты Miya, дружелюбный AI-помощник внутри Miya AI Studio. " +
+        "Отвечай на русском, если пользователь пишет по-русски. " +
+        "Помогай с текстами, идеями, сценариями, промптами, изображениями и видео. " +
+        "Отвечай полезно и по существу.";
+
+      const fallbackUrl =
+        "https://text.pollinations.ai/" +
+        encodeURIComponent(system + "\\n\\n" + transcript) +
+        "?model=openai&private=true";
+
+      const fallbackResponse = await fetch(fallbackUrl, {
+        method: "GET",
+        headers: { Accept: "text/plain" }
+      });
+
+      const fallbackText = (await fallbackResponse.text()).trim();
+
+      if (!fallbackResponse.ok || !fallbackText) {
         return res.status(502).json({
-          error:
-            data?.error?.message ||
-            data?.message ||
-            `Gemini API error: HTTP ${response.status}`,
-          upstreamStatus: response.status
+          ok: false,
+          error: "CHAT_UPSTREAM_FAILED",
+          message: "Бесплатный AI-сервис чата временно недоступен.",
+          upstreamStatus: fallbackResponse.status
         });
-      }
-
-      const text = data?.candidates?.[0]?.content?.parts
-        ?.map(part => part?.text || "")
-        .join("")
-        .trim();
-
-      if (!text) {
-        return res.status(502).json({ error: "Gemini returned an empty response" });
       }
 
       return res.status(200).json({
         ok: true,
         mode: "chat",
-        text,
-        model,
-        usage: data?.usageMetadata || null
+        text: fallbackText,
+        model: "openai",
+        provider: "Free Text",
+        usage: null
       });
     }
 
