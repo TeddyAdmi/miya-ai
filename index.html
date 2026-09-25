@@ -30,7 +30,7 @@
       <div class="side-label">РАЗДЕЛЫ</div>
       <div class="chat-nav-wrap" id="chatNavWrap">
         <button class="side-btn side-menu-toggle" id="chatMenuToggle" type="button" aria-expanded="false">
-          <span class="ico">◉</span><b>AI Chat</b><em id="chatMenuArrow">→</em>
+          <span class="ico icon-chat" aria-hidden="true"></span><b>AI Chat</b><em id="chatMenuArrow">→</em>
         </button>
         <div class="side-submenu" id="chatSubmenu">
           <button class="side-subbtn" id="newChatBtn" type="button"><span>＋</span><b>Новый чат</b></button>
@@ -38,16 +38,16 @@
         </div>
       </div>
 
-      <button class="side-btn" data-mode="images" type="button"><span class="ico">▧</span><b>Картинки</b></button>
-      <button class="side-btn" data-mode="video" type="button"><span class="ico">▶</span><b>Видео</b></button>
+      <button class="side-btn" data-mode="images" type="button"><span class="ico icon-image" aria-hidden="true"></span><b>Картинки</b></button>
+      <button class="side-btn" data-mode="video" type="button"><span class="ico icon-video" aria-hidden="true"></span><b>Видео</b></button>
 
       <div class="side-label tools-label">ИНСТРУМЕНТЫ</div>
-      <button class="tool-btn" data-tool="improve"><span>✦</span>Улучшить промпт</button>
-      <button class="tool-btn" data-tool="history"><span>◷</span>История</button>
-      <button class="tool-btn" data-tool="library"><span>▱</span>Библиотека</button>
+      <button class="tool-btn" data-tool="improve"><span class="nav-icon icon-spark" aria-hidden="true"></span>Улучшить промпт</button>
+      <button class="tool-btn" data-tool="history"><span class="nav-icon icon-history" aria-hidden="true"></span>История</button>
+      <button class="tool-btn" data-tool="library"><span class="nav-icon icon-library" aria-hidden="true"></span>Библиотека</button>
 
       <div class="sidebar-spacer"></div>
-      <button class="side-user" id="profileButton"><span>M</span><div><b>Miya User</b><small>0 PKOIN</small></div><i>⋯</i></button>
+      <button class="side-user" id="profileButton"><span class="profile-icon" aria-hidden="true">M</span><div><b>Miya User</b><small>0 PKOIN</small></div><i class="icon-more" aria-hidden="true"></i></button>
     </aside>
 
     <section class="workspace" id="workspace">
@@ -62,7 +62,7 @@
     </section>
   </main>
 
-  <button class="floating-theme" id="themeToggle" title="Тема" aria-label="Переключить тему">☼</button>
+  <button class="floating-theme" id="themeToggle" title="Тема" aria-label="Переключить тему"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/></svg></button>
 
   <section class="composer-wrap">
     <div class="composer" id="composer">
@@ -75,7 +75,7 @@
           <button type="button" id="composerAttachmentRemove" title="Удалить изображение">×</button>
         </div>
         <textarea id="composerInput" rows="1" maxlength="4000" placeholder="Напиши сообщение..."></textarea>
-        <button class="composer-emoji" id="composerEmoji" type="button" title="Смайлики и идеи" aria-label="Смайлики и идеи">☺</button>
+        <button class="composer-emoji" id="composerEmoji" type="button" title="Смайлики и идеи" aria-label="Смайлики и идеи"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8.5"/><path d="M9 10h.01M15 10h.01M8.5 14c1.8 2 5.2 2 7 0"/></svg></button>
         <button class="mic" id="composerMic" type="button" title="Голосовой ввод" aria-label="Начать голосовой ввод">
           <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 14.5a3.5 3.5 0 0 0 3.5-3.5V6a3.5 3.5 0 0 0-7 0v5a3.5 3.5 0 0 0 3.5 3.5Z"/><path d="M19 11a7 7 0 0 1-14 0"/><path d="M12 18v3M8 21h8"/></svg>
         </button>
@@ -83,7 +83,7 @@
           <div class="emoji-row"><button type="button" data-emoji="😀">😀</button><button type="button" data-emoji="😂">😂</button><button type="button" data-emoji="😍">😍</button><button type="button" data-emoji="🤔">🤔</button><button type="button" data-emoji="🔥">🔥</button><button type="button" data-emoji="✨">✨</button><button type="button" data-emoji="❤️">❤️</button><button type="button" data-emoji="🚀">🚀</button></div>
           <div class="starter-row" id="starterRow"></div>
         </div>
-        <button class="send" id="composerSend"><span>✦</span><span id="composerSendText">Отправить</span></button>
+        <button class="send" id="composerSend"><span class="send-icon icon-arrow-up" aria-hidden="true"></span><span id="composerSendText">Отправить</span></button>
       </div>
       <div class="composer-options image-settings" id="composerOptions">
         <select class="select-pill" id="composerModel" aria-label="Модель">
@@ -117,9 +117,9 @@
 
   <input id="referenceInput" type="file" accept="image/*" hidden>
   <nav class="mobile-tabs">
-    <button class="active" data-mode="chat">◉<small>AI Chat</small></button>
-    <button data-mode="images">▧<small>Картинки</small></button>
-    <button data-mode="video">▶<small>Видео</small></button>
+    <button class="active" data-mode="chat"><span class="nav-icon icon-chat" aria-hidden="true"></span><small>AI Chat</small></button>
+    <button data-mode="images"><span class="nav-icon icon-image" aria-hidden="true"></span><small>Картинки</small></button>
+    <button data-mode="video"><span class="nav-icon icon-video" aria-hidden="true"></span><small>Видео</small></button>
   </nav>
 </div>
 <script type="module" src="/src/app.js"></script>
