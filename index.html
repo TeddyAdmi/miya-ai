@@ -66,8 +66,12 @@
   <section class="composer-wrap">
     <div class="composer" id="composer">
       <div class="composer-input-row">
-        <button class="attach" id="composerAttach" title="Добавить изображение">＋</button>
-        <button class="composer-trash" id="composerTrash" type="button" title="Очистить промт" aria-label="Очистить промт">⌫</button>
+        <div class="composer-left-actions">
+          <button class="attach" id="composerAttach" title="Добавить изображение">＋</button>
+          <button class="composer-trash" id="composerTrash" type="button" title="Стереть промт" aria-label="Стереть промт">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M9 7V4h6v3M7 7l1 13h8l1-13M10 11v5M14 11v5"/></svg>
+          </button>
+        </div>
         <div class="composer-attachment" id="composerAttachment" hidden>
           <img id="composerAttachmentImage" alt="Прикреплённое изображение">
           <button type="button" id="composerAttachmentRemove" title="Удалить изображение">×</button>
@@ -79,12 +83,7 @@
         </button>
         <div class="emoji-panel" id="emojiPanel" aria-label="Смайлики и идеи">
           <div class="emoji-row"><button type="button" data-emoji="😀">😀</button><button type="button" data-emoji="😂">😂</button><button type="button" data-emoji="😍">😍</button><button type="button" data-emoji="🤔">🤔</button><button type="button" data-emoji="🔥">🔥</button><button type="button" data-emoji="✨">✨</button><button type="button" data-emoji="❤️">❤️</button><button type="button" data-emoji="🚀">🚀</button></div>
-          <div class="starter-row">
-            <button type="button" data-chat-starter="Придумай мне что-нибудь неожиданное 😏">🎲 Удиви меня</button>
-            <button type="button" data-chat-starter="Давай сыграем в игру 🎮">🎮 Поиграем</button>
-            <button type="button" data-chat-starter="Задай мне интересный вопрос 🤔">💬 Вопрос дня</button>
-            <button type="button" data-chat-starter="Помоги мне придумать безумную идею 🔥">🔥 Безумная идея</button>
-          </div>
+          <div class="starter-row" id="starterRow"></div>
         </div>
         <button class="send" id="composerSend"><span>✦</span><span id="composerSendText">Отправить</span></button>
       </div>
