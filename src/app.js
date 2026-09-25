@@ -54,7 +54,12 @@ function renderChatHistoryMini(){
      e.preventDefault();e.stopPropagation();
      const wasOpen=row.classList.contains("menu-open");
      resetChatMenus();
-     if(!wasOpen)row.classList.add("menu-open");
+     if(!wasOpen){
+       row.classList.add("menu-open");
+       const rect=more.getBoundingClientRect();
+       menu.style.left=Math.round(rect.right+8)+"px";
+       menu.style.top=Math.round(rect.top+rect.height/2)+"px";
+     }
    };
 
    const menu=document.createElement("div");menu.className="chat-history-menu";
@@ -109,7 +114,11 @@ function closeChatFlyout(){
 }
 function resetChatMenus(){
  document.querySelectorAll(".chat-history-row.menu-open").forEach(x=>x.classList.remove("menu-open"));
- $("#chatSubmenu")?.querySelector(".chat-history-menu.rename-open")?.classList.remove("rename-open");
+ document.querySelectorAll(".chat-history-menu").forEach(menu=>{
+   menu.classList.remove("rename-open");
+   menu.style.left="";
+   menu.style.top="";
+ });
 }
 function openSavedChat(id){
  const chat=getChats().find(x=>x.id===id);if(!chat)return;
@@ -375,7 +384,11 @@ function setMode(next,render=true){
 }
 const chatMenuToggle=$("#chatMenuToggle");
 if(chatMenuToggle){
- chatMenuToggle.addEventListener("click",()=>setMode("chat"));
+ chatMenuToggle.addEventListener("click",()=>{
+   resetChatMenus();
+   renderChatHistoryMini();
+   setMode("chat");
+ });
 }
 document.querySelectorAll("[data-mode]").forEach(b=>b.addEventListener("click",()=>setMode(b.dataset.mode)));
 $("#composerInput").addEventListener("input",syncInput);
