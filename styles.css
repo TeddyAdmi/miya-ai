@@ -933,3 +933,44 @@ body.light .starter-row button{background:#f5f7fa!important}
   visibility:hidden!important;
   pointer-events:none!important;
 }
+
+
+/* Chat action menu: keep the history list compact, but let the three-dot menu escape the flyout. */
+.chat-nav-wrap .side-submenu{
+  overflow:visible!important;
+}
+.chat-nav-wrap .chat-history-mini{
+  overflow-y:visible!important;
+  overflow-x:visible!important;
+  max-height:none!important;
+}
+.chat-nav-wrap .chat-history-menu{
+  left:calc(100% + 8px)!important;
+  right:auto!important;
+  top:50%!important;
+  transform:translateY(-50%) translateX(-3px)!important;
+}
+.chat-nav-wrap .chat-history-row.menu-open .chat-history-menu{
+  transform:translateY(-50%) translateX(0)!important;
+}
+.chat-nav-wrap .chat-history-row.pinned .chat-history-mini-item,
+.chat-nav-wrap .chat-history-row.pinned:hover .chat-history-mini-item{
+  margin-right:36px!important;
+  width:auto!important;
+  background:rgba(112,82,205,.18)!important;
+  border-left:3px solid #8064c8!important;
+  border-radius:7px!important;
+}
+.chat-nav-wrap .chat-history-row:not(.pinned):hover .chat-history-mini-item{
+  margin-right:36px!important;
+  width:auto!important;
+  background:rgba(120,150,190,.08)!important;
+  border-radius:7px!important;
+}
+.chat-nav-wrap .chat-history-more{
+  position:absolute!important;
+  right:2px!important;
+  top:50%!important;
+  transform:translateY(-50%)!important;
+  z-index:4!important;
+}
