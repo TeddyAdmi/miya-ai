@@ -1621,3 +1621,8 @@ body.light .delete-confirm-ring::before{background:#fff}
 .library-title,.system-row,.system-title,.side-label{
   line-height:1.25!important;
 }
+
+/* fullscreen image viewer: drag + polished SVG controls */
+.image-viewer-controls button{display:flex!important;align-items:center!important;justify-content:center!important;padding:0!important}
+.image-viewer-controls button svg{width:19px!important;height:19px!important;fill:none!important;stroke:currentColor!important;stroke-width:1.8!important;stroke-linecap:round!important;stroke-linejoin:round!important}
+.image-viewer-image{touch-action:none!important;user-select:none!important;-webkit-user-drag:none!important}
