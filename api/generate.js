@@ -145,6 +145,7 @@ async function handler(req, res) {
     }
 
     const ratio = typeof body.ratio === "string" ? body.ratio : "1:1";
+    const requestedModel = typeof body.model === "string" ? body.model.trim() : "";
     const options =
       body.options && typeof body.options === "object" ? body.options : {};
 
@@ -153,7 +154,18 @@ async function handler(req, res) {
     const imageBase64 =
       typeof options.imageBase64 === "string" ? options.imageBase64.trim() : "";
 
-    const isImageToImage = Boolean(imageUrl || imageBase64);
+    // The selected model is authoritative. Flux Dev is text-to-image only;
+    // Flux Kontext Dev is the image-to-image editor. This prevents a stale
+    // reference image from silently routing a new Dev generation to /api/pti.
+    const wantsKontext = /kontext/i.test(requestedModel);
+    const isImageToImage = wantsKontext && Boolean(imageUrl || imageBase64);
+    if (wantsKontext && !isImageToImage) {
+      return res.status(400).json({
+        ok: false,
+        error: "KONTEXT_SOURCE_REQUIRED",
+        message: "Для Flux Kontext Dev нужно загрузить исходное изображение."
+      });
+    }
     const endpointPath = isImageToImage ? "/api/pti" : "/api/tti";
     const endpoints = [
       "https://ahm7xmakki.com" + endpointPath,
@@ -168,7 +180,7 @@ async function handler(req, res) {
     const payload = {
       prompt,
       ratio: isImageToImage && ratio === "1:1" ? "auto" : ratio,
-      ...(copies > 1 && !isImageToImage ? { copies } : {})
+      ...(copies > 1 && !isImageToImage ? { copies, count: copies } : {})
     };
 
     if (imageUrl) {
