@@ -537,18 +537,19 @@ $("#composerTrash")?.addEventListener("click",()=>{
   syncInput();
   $("#composerInput").focus();
   $("#composerStatus").textContent=modes[mode]?.status||"Готово";
-};
-$("#composerAttachmentRemove").onclick=()=>clearComposerAttachment();
-$("#copyPrompt").onclick=copyComposerPrompt;
-$("#videoCopyPrompt").onclick=copyComposerPrompt;
-$("#videoImprove").onclick=improveComposerPrompt;
-$("#videoTrash").onclick=()=>{
+});
+$("#composerAttachmentRemove")?.addEventListener("click",()=>clearComposerAttachment());
+$("#improve")?.addEventListener("click",improveComposerPrompt);
+$("#copyPrompt")?.addEventListener("click",copyComposerPrompt);
+$("#videoImprove")?.addEventListener("click",improveComposerPrompt);
+$("#videoCopyPrompt")?.addEventListener("click",copyComposerPrompt);
+$("#videoTrash")?.addEventListener("click",()=>{
   $("#composerInput").value="";
   clearComposerAttachment();
   syncInput();
   $("#composerInput").focus();
   $("#composerStatus").textContent=modes.video.status;
-};
+});
 $("#referenceInput").onchange=e=>{
  const file=e.target.files?.[0];if(!file)return;
  const reader=new FileReader();
