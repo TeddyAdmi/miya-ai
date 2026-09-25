@@ -758,7 +758,8 @@ document.querySelectorAll("[data-tool]").forEach(b=>b.onclick=()=>{
    referenceImage=null;try{sessionStorage.removeItem("miyaReferenceImage")}catch{};setComposerAttachment("");$("#composerInput").value="";syncInput();
    mode="images";
    const m=modes.images;
-   $("#workspaceEyebrow").textContent=m.eyebrow;$("#workspaceTitle").textContent="";$("#workspaceSubtitle").textContent="";
+   const wall=tool==="history"?{eyebrow:"MIYA HISTORY · MEDIA",title:"История",subtitle:"Твои созданные изображения и видео в одном месте."}:{eyebrow:"MIYA LIBRARY · MEDIA",title:"Библиотека",subtitle:"Сохраняй, просматривай и редактируй созданные материалы."};
+   $("#workspaceEyebrow").textContent=wall.eyebrow;$("#workspaceTitle").textContent=wall.title;$("#workspaceSubtitle").textContent=wall.subtitle;
    $(".image-settings").style.display="none";$("#videoOptions").classList.remove("show");
    renderLibrary("images");
  }
