@@ -299,7 +299,8 @@ function openImageViewer(item){
  }
  const img=modal.querySelector(".image-viewer-image");
  img.src=item.url;
- resolveMediaUrl(item).then(url=>{if(url&&modal.classList.contains("open"))img.src=url});
+ resolveMediaUrl(item).then(url=>{if(url&&modal.classList.contains("open"))img.src=url}).catch(()=>{});
+ img.onerror=()=>{img.alt="Изображение недоступно"};
  img.dataset.zoom="1";
  img.style.transform="scale(1)";
  modal.querySelector(".image-viewer-zoom").textContent="＋";
@@ -323,6 +324,11 @@ function buildMediaCard(item,{video=false}={}){
  if(video){media.controls=true;media.playsInline=true;media.src=item.url}
  else{media.onerror=()=>{media.alt="Miya AI Studio";card.classList.add("media-load-error")};resolveMediaUrl(item).then(url=>{if(url)media.src=url})}
  card.appendChild(media);
+ if(!video){
+  media.style.cursor="zoom-in";
+  media.title="Открыть изображение";
+  media.addEventListener("click",e=>{e.stopPropagation();openImageViewer(item)});
+ }
  const actions=document.createElement("div");actions.className="media-actions";
  const more=document.createElement("button");more.className="media-action media-more";more.title="Действия";more.setAttribute("aria-label","Действия");more.innerHTML='<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="5" cy="12" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="19" cy="12" r="1.5"/></svg>';
  const menu=document.createElement("div");menu.className="media-action-menu";
