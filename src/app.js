@@ -25,25 +25,70 @@ function renderChatHistoryMini(){
  const chats=getChats().sort((x,y)=>Number(Boolean(y.pinned))-Number(Boolean(x.pinned))||(y.updatedAt||0)-(x.updatedAt||0));
  box.innerHTML="";
  chats.forEach(chat=>{
-   const row=document.createElement("div");row.className="chat-history-row";
-   const b=document.createElement("button");b.className="chat-history-mini-item";b.type="button";
+   const row=document.createElement("div");
+   row.className="chat-history-row"+(chat.pinned?" pinned":"");
+
+   const b=document.createElement("button");
+   b.className="chat-history-mini-item";b.type="button";
    b.textContent=chat.title||"Новый чат";b.title=chat.title||"Новый чат";
-   b.onclick=()=>{
-     mode="chat";chatMessages=chat.messages.slice();window.__miyaChatId=chat.id;chatStarted=true;
-     setMode("chat");const c=$("#canvas");c.innerHTML='<div class="chat-stream"></div>';
-     chatMessages.forEach(m=>addChatMessage(m.content,m.role==="user",m.image||""));
-     $("#composerInput").focus();
+   b.onclick=e=>{e.preventDefault();e.stopPropagation();openSavedChat(chat.id)};
+
+   const more=document.createElement("button");
+   more.className="chat-history-more";more.type="button";
+   more.title="Действия чата";more.setAttribute("aria-label","Действия чата");more.textContent="⋯";
+   more.onclick=e=>{
+     e.preventDefault();e.stopPropagation();
+     document.querySelectorAll(".chat-history-row.menu-open").forEach(x=>{if(x!==row)x.classList.remove("menu-open")});
+     row.classList.toggle("menu-open");
+   };
+
+   const menu=document.createElement("div");menu.className="chat-history-menu";
+   const pin=document.createElement("button");pin.type="button";
+   pin.innerHTML="<span class=\"menu-icon\">"+(chat.pinned?"★":"☆")+"</span><span>"+(chat.pinned?"Открепить":"Закрепить")+"</span>";
+   pin.onclick=e=>{
+     e.preventDefault();e.stopPropagation();
+     const all=getChats(),item=all.find(x=>x.id===chat.id);
+     if(item){item.pinned=!item.pinned;localStorage.setItem(CHAT_KEY,JSON.stringify(all));renderChatHistoryMini()}
+   };
+   const rename=document.createElement("button");rename.type="button";
+   rename.innerHTML='<span class="menu-icon">✎</span><span>Переименовать</span>';
+   rename.onclick=e=>{
+     e.preventDefault();e.stopPropagation();
+     const name=prompt("Название чата:",chat.title||"Новый чат");
+     if(name&&name.trim()){
+       const all=getChats(),item=all.find(x=>x.id===chat.id);
+       if(item){item.title=name.trim().slice(0,60);localStorage.setItem(CHAT_KEY,JSON.stringify(all));renderChatHistoryMini()}
+     }
+   };
+   const del=document.createElement("button");del.type="button";
+   del.innerHTML='<span class="menu-icon">×</span><span>Удалить</span>';
+   del.onclick=e=>{
+     e.preventDefault();e.stopPropagation();
+     const all=getChats().filter(x=>x.id!==chat.id);
+     localStorage.setItem(CHAT_KEY,JSON.stringify(all));
+     if(window.__miyaChatId===chat.id){window.__miyaChatId=null;chatMessages=[];chatStarted=false;showEmpty()}
      renderChatHistoryMini();
    };
-   const actions=document.createElement("div");actions.className="chat-history-actions";
-   const pin=document.createElement("button");pin.type="button";pin.title=chat.pinned?"Открепить":"Закрепить";pin.textContent=chat.pinned?"★":"☆";
-   pin.onclick=e=>{e.stopPropagation();const all=getChats();const item=all.find(x=>x.id===chat.id);if(item){item.pinned=!item.pinned;localStorage.setItem(CHAT_KEY,JSON.stringify(all));renderChatHistoryMini()}};
-   const rename=document.createElement("button");rename.type="button";rename.title="Переименовать";rename.textContent="✎";
-   rename.onclick=e=>{e.stopPropagation();const name=prompt("Название чата:",chat.title||"Новый чат");if(name&&name.trim()){const all=getChats();const item=all.find(x=>x.id===chat.id);if(item){item.title=name.trim().slice(0,60);localStorage.setItem(CHAT_KEY,JSON.stringify(all));renderChatHistoryMini()}}};
-   const del=document.createElement("button");del.type="button";del.title="Удалить";del.textContent="×";
-   del.onclick=e=>{e.stopPropagation();const all=getChats().filter(x=>x.id!==chat.id);localStorage.setItem(CHAT_KEY,JSON.stringify(all));if(window.__miyaChatId===chat.id){window.__miyaChatId=null;chatMessages=[];chatStarted=false;showEmpty()}renderChatHistoryMini()};
-   actions.append(pin,rename,del);row.append(b,actions);box.appendChild(row);
+   menu.append(pin,rename,del);
+   row.append(b,more,menu);
+   box.appendChild(row);
  });
+}
+
+function openSavedChat(id){
+ const chat=getChats().find(x=>x.id===id);if(!chat)return;
+ mode="chat";
+ chatMessages=chat.messages.map(m=>({...m}));
+ window.__miyaChatId=chat.id;
+ chatStarted=true;
+ referenceImage=null;
+ setComposerAttachment("");
+ setMode("chat",false);
+ const c=$("#canvas");
+ c.innerHTML='<div class="chat-stream"></div>';
+ chatMessages.forEach(m=>addChatMessage(m.content,m.role==="user",m.image||""));
+ renderChatHistoryMini();
+ requestAnimationFrame(()=>$("#composerInput")?.focus());
 }
 
 const LIB_KEY="miyaLibrary";
@@ -158,14 +203,14 @@ function bindChatUI(){
  if(newChat)newChat.onclick=(e)=>{
    e.preventDefault();e.stopPropagation();
    mode="chat";chatStarted=false;chatMessages=[];window.__miyaChatId=null;
-   setMode("chat");
+   clearComposerAttachment();
+   setMode("chat",false);
    $("#canvas").innerHTML=modeHero();
    $("#composerInput").value="";
-   clearComposerAttachment();
    syncInput();
    $("#composerStatus").textContent="AI Chat готов";
-   $("#composerInput").focus();
    renderChatHistoryMini();
+   requestAnimationFrame(()=>requestAnimationFrame(()=>$("#composerInput")?.focus()));
  };
  Array.from(document.querySelectorAll("[data-chat-prompt]")).forEach(b=>b.onclick=()=>{
    $("#composerInput").value=b.dataset.chatPrompt||"";
@@ -270,18 +315,29 @@ async function requestChat(){
    $("#composerSend").disabled=false;
  }
 }
-function setMode(next){
+function setMode(next,render=true){
  mode=next;const m=modes[next];
  $("#workspaceEyebrow").textContent=m.eyebrow;$("#workspaceTitle").textContent=m.title;$("#workspaceSubtitle").textContent=m.subtitle;
  $("#composerInput").placeholder=m.placeholder;$("#composerSendText").textContent=m.send;$("#composerStatus").textContent=m.status;
  $(".image-settings").style.display=next==="images"?"flex":"none";$("#videoOptions").classList.toggle("show",next==="video");
- $("[data-mode]").forEach(x=>x.classList.toggle("active",x.dataset.mode===next)); $("#chatSubmenu .side-subbtn").forEach(x=>x.classList.remove("active"));
+ $("[data-mode]").forEach(x=>x.classList.toggle("active",x.dataset.mode===next));
+ $("#chatSubmenu .side-subbtn").forEach(x=>x.classList.remove("active"));
  $("#chatMenuToggle")?.classList.toggle("active",next==="chat");
  if($("#chatSubmenu")?.classList.contains("collapsed"))$("#chatSubmenu").classList.remove("collapsed");
  if($("#chatMenuToggle")){$("#chatMenuToggle").classList.remove("collapsed");$("#chatMenuToggle").setAttribute("aria-expanded","true")}
  if($("#chatMenuArrow"))$("#chatMenuArrow").textContent="→";
- if(next==="images"){ renderImageLibrary(); $("#composerModel").value=referenceImage?"FLUX Kontext Dev":"FLUX Dev"; $("#composerRatio").value="16:9" }
- if(next!=="images")showEmpty();syncInput()
+ if(!render){syncInput();return}
+ const canvas=$("#canvas");
+ if(canvas)canvas.innerHTML="";
+ if(next==="images"){
+   referenceImage=referenceImage||null;
+   renderImageLibrary();
+   $("#composerModel").value=referenceImage?"FLUX Kontext Dev":"FLUX Dev";
+   $("#composerRatio").value="16:9";
+ }else{
+   showEmpty();
+ }
+ syncInput()
 }
 const chatMenuToggle=$("#chatMenuToggle");
 if(chatMenuToggle){
@@ -326,11 +382,17 @@ $("#improve").onclick=()=>{
 };
 $("#themeToggle").onclick=()=>{document.body.classList.toggle("light");$("#themeToggle").textContent=document.body.classList.contains("light")?"☾":"☼"};
 $("#profileButton").onclick=()=>toast("Профиль Miya User · 0 PKOIN");
-$$("[data-tool]").forEach(b=>b.onclick=()=>{
+$("[data-tool]").forEach(b=>b.onclick=()=>{
  const tool=b.dataset.tool;
- if(tool==="upload")$("#referenceInput").click();
- else if(tool==="improve")$("#improve").click();
- else if(tool==="history"||tool==="library"){renderLibrary()}
+ if(tool==="upload"){$("#referenceInput").click();return}
+ if(tool==="improve"){$("#improve").click();return}
+ if(tool==="history"||tool==="library"){
+   mode="chat";
+   $("[data-mode]").forEach(x=>x.classList.remove("active"));
+   $("#chatMenuToggle")?.classList.remove("active");
+   $("#canvas").innerHTML="";
+   renderLibrary();
+ }
 });
 setMode("chat");
 renderChatHistoryMini();
