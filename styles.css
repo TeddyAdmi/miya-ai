@@ -1449,3 +1449,20 @@ body.light .mini-badge{color:#526a84}
 .floating-theme svg{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.7;stroke-linecap:round}
 .composer-emoji svg{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.7;stroke-linecap:round}
 .mobile-tabs .nav-icon{width:18px;height:18px;margin:0 auto 2px}.mobile-tabs .nav-icon::before{width:18px;height:18px}
+
+
+/* Chat uses the workspace/page scrollbar only — no nested scroll container */
+html,body{overflow-y:auto!important;overflow-x:hidden!important}
+.workspace{overflow:visible!important;min-height:100vh}
+.canvas{overflow:visible!important;height:auto!important;min-height:calc(100vh - 90px)!important}
+.chat-stream{
+  width:min(820px,100%)!important;
+  height:auto!important;
+  max-height:none!important;
+  min-height:0!important;
+  overflow:visible!important;
+  overflow-y:visible!important;
+  overscroll-behavior:auto!important;
+  scroll-behavior:auto!important;
+  padding-bottom:190px!important;
+}
