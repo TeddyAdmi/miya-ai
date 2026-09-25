@@ -386,9 +386,11 @@ function showLoading(){
   let grid=c.querySelector(".result-grid");
   if(!grid){c.innerHTML='<div class="result-grid"></div>';grid=c.querySelector(".result-grid")}
   const old=c.querySelector(".generation-loading");if(old)old.remove();
+  const selectedModel=$("#composerModel")?.value||"FLUX Dev";
   const card=document.createElement("div");card.className="generation-loading";
-  card.dataset.model=$("#composerModel")?.value||"FLUX Dev";
-  card.innerHTML='<div class="generation-progress"><div class="progress-circle"><span class="progress-percent">0%</span></div><div class="progress-copy"><b>Генерация изображения</b><span class="progress-model">FLUX Dev · запрос выполняется</span></div></div>';
+  card.dataset.model=selectedModel;
+  card.innerHTML='<div class="generation-progress"><div class="progress-circle is-active"><span class="progress-percent">0%</span></div><div class="progress-copy"><b>Генерация изображения</b><span class="progress-model"></span></div></div>';
+  card.querySelector(".progress-model").textContent=selectedModel+" · запрос выполняется";
   c.insertBefore(card,grid);return;
  }
  c.innerHTML='<div class="loading-state"><div class="spinner"></div><b>Готовим видео…</b><span>Запрос отправлен в видеодвижок Miya.</span></div>';
@@ -398,22 +400,87 @@ function showImage(url,prompt="",model="FLUX Dev"){
  const c=$("#canvas");let grid=c.querySelector(".result-grid");
  if(!grid){c.innerHTML='<div class="result-grid"></div>';grid=c.querySelector(".result-grid")}
  const card=buildMediaCard(item);grid.prepend(card);
- $("#composerStatus").textContent="FLUX Dev · Image ready";
+ $("#composerStatus").textContent=model+" · готово";
 }
 async function generateImage(prompt){
  showLoading();$("#composerSend").disabled=true;
- const loader=$("#canvas .generation-loading"),ring=loader?.querySelector(".progress-circle");
- let progress=0; const progressTimer=setInterval(()=>{progress=Math.min(progress+Math.max(2,Math.round((96-progress)/18)),96);if(ring)ring.style.setProperty("--progress",progress+"%");if(ring)ring.querySelector(".progress-percent").textContent=progress+"%"},700);$("#composerStatus").textContent=referenceImage?"FLUX Kontext Dev · генерация…":"FLUX Dev · генерация…";
+ const loader=$("#canvas .generation-loading");
+ const ring=loader?.querySelector(".progress-circle");
+ const percent=ring?.querySelector(".progress-percent");
+ const modelName=referenceImage?"FLUX Kontext Dev":"FLUX Dev";
+ $("#composerStatus").textContent=modelName+" · загрузка запроса…";
  try{
-  
-  const payload={prompt,ratio:referenceImage?($("#composerRatio").value==="1:1"?"auto":$("#composerRatio").value):$("#composerRatio").value};
-  if(referenceImage){if(referenceImage.startsWith("data:image/"))payload.imageBase64=referenceImage;else payload.imageUrl=referenceImage}
-  const endpoint="/api/generate";
-  const response=await fetch(endpoint,{method:"POST",headers:{"Content-Type":"application/json","Accept":"application/json"},body:JSON.stringify({mode:"image",provider:"legacy-flux",prompt,model:$("#composerModel").value.trim(),ratio:$("#composerRatio").value,outputFormat:"png",options:referenceImage?payload:{} }),signal:AbortSignal.timeout(60000)});
-  const data=await response.json().catch(()=>({}));
-  if(!response.ok||!data.imageUrl)throw new Error(data.message||data.error||"Не удалось получить изображение");
-  const actualModel=data.model||"FLUX Dev"; const modelLabel2=loader?.querySelector(".progress-model"); if(modelLabel2)modelLabel2.textContent=actualModel+" · ответ получен"; $("#canvas .generation-loading")?.remove();showImage(data.imageUrl,prompt,actualModel);$("#composerInput").value="";syncInput();$("#composerModel").value=referenceImage?"FLUX Kontext Dev":"FLUX Dev";$("#composerStatus").textContent="FLUX Dev · Image ready";
- }catch(e){toast(e.message||"Ошибка генерации")}finally{$("#canvas .generation-loading")?.remove();$("#composerSend").disabled=false}
+  const payload={
+   prompt,
+   ratio:referenceImage?($("#composerRatio").value==="1:1"?"auto":$("#composerRatio").value):$("#composerRatio").value
+  };
+  if(referenceImage){
+   if(referenceImage.startsWith("data:image/"))payload.imageBase64=referenceImage;
+   else payload.imageUrl=referenceImage;
+  }
+  const body=JSON.stringify({
+   mode:"image",
+   provider:"legacy-flux",
+   prompt,
+   model:modelName,
+   ratio:$("#composerRatio").value,
+   outputFormat:"png",
+   options:referenceImage?payload:{}
+  });
+  const data=await new Promise((resolve,reject)=>{
+   const xhr=new XMLHttpRequest();
+   xhr.open("POST","/api/generate",true);
+   xhr.setRequestHeader("Content-Type","application/json");
+   xhr.setRequestHeader("Accept","application/json");
+   xhr.upload.onprogress=e=>{
+    if(!e.lengthComputable)return;
+    const p=Math.max(0,Math.min(100,Math.round(e.loaded/e.total*100)));
+    if(ring){
+      ring.classList.remove("is-active");
+      ring.style.setProperty("--progress",p+"%");
+    }
+    if(percent)percent.textContent=p+"%";
+    if($("#composerStatus"))$("#composerStatus").textContent=modelName+" · загрузка "+p+"%";
+   };
+   xhr.upload.onload=()=>{
+    if(ring)ring.classList.add("is-active");
+    if(percent)percent.textContent="";
+    if($("#composerStatus"))$("#composerStatus").textContent=modelName+" · генерация…";
+   };
+   xhr.onerror=()=>reject(new Error("Не удалось соединиться с сервером генерации"));
+   xhr.ontimeout=()=>reject(new Error("Сервер генерации не ответил вовремя"));
+   xhr.onload=()=>{
+    let result={};
+    try{result=xhr.responseText?JSON.parse(xhr.responseText):{}}catch{}
+    if(xhr.status>=200&&xhr.status<300&&result.imageUrl)resolve(result);
+    else reject(new Error(result.message||result.error||("Генерация не выполнена (HTTP "+xhr.status+")")));
+   };
+   xhr.timeout=60000;
+   xhr.send(body);
+  });
+  const actualModel=data.model||modelName;
+  if(loader){
+   if(ring){
+    ring.classList.remove("is-active");
+    ring.style.setProperty("--progress","100%");
+   }
+   if(percent)percent.textContent="100%";
+   const modelLabel=loader.querySelector(".progress-model");
+   if(modelLabel)modelLabel.textContent=actualModel+" · готово";
+  }
+  showImage(data.imageUrl,prompt,actualModel);
+  $("#composerInput").value="";
+  syncInput();
+  $("#composerModel").value=referenceImage?"FLUX Kontext Dev":"FLUX Dev";
+  $("#composerStatus").textContent=actualModel+" · готово";
+  setTimeout(()=>$("#canvas .generation-loading")?.remove(),350);
+ }catch(e){
+  $("#canvas .generation-loading")?.remove();
+  toast(e.message||"Ошибка генерации");
+  $("#composerStatus").textContent=modelName+" · ошибка";
+ }finally{
+  $("#composerSend").disabled=false;
+ }
 }
 function addChatMessage(text,isUser,image=""){
  let stream=$("#canvas .chat-stream");
