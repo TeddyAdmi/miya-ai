@@ -573,8 +573,31 @@ $("#improve").onclick=()=>{
 };
 const emojiButton=$("#composerEmoji");
 const emojiPanel=$("#emojiPanel");
+const starterIdeas=[
+  ["🎲","Придумай неожиданный сюжет для короткого видео"],
+  ["🎬","Создай кинематографичную сцену с сильной атмосферой"],
+  ["💡","Предложи необычную идею для AI-контента"],
+  ["🧠","Задай мне вопрос, который заставит задуматься"],
+  ["🚀","Придумай идею, которая может стать вирусной"],
+  ["🎨","Предложи стиль для эффектного изображения"],
+  ["📖","Придумай короткую историю с неожиданной концовкой"],
+  ["🐾","Придумай забавную сцену с необычным героем"],
+  ["🌌","Создай фантастическую концепцию для изображения"],
+  ["🎮","Придумай простую игру для короткого ролика"],
+  ["✨","Предложи свежую идею, которую редко используют"],
+  ["🔥","Придумай смелую и необычную концепцию"]
+];
+function shuffleIdeas(){
+ const row=$("#starterRow");if(!row)return;
+ const pool=[...starterIdeas];
+ for(let i=pool.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[pool[i],pool[j]]=[pool[j],pool[i]]}
+ row.innerHTML="";
+ pool.slice(0,4).forEach(([icon,text])=>{
+   const b=document.createElement("button");b.type="button";b.dataset.chatStarter=text;b.title=text;b.textContent=icon+" "+text;row.appendChild(b);
+ });
+}
 if(emojiButton&&emojiPanel){
- emojiButton.onclick=e=>{e.preventDefault();e.stopPropagation();emojiPanel.classList.toggle("open");};
+ emojiButton.onclick=e=>{e.preventDefault();e.stopPropagation();if(!emojiPanel.classList.contains("open"))shuffleIdeas();emojiPanel.classList.toggle("open");};
  emojiPanel.addEventListener("click",e=>{
    const btn=e.target.closest("[data-emoji]");
    const prompt=e.target.closest("[data-chat-starter]");
@@ -603,6 +626,7 @@ document.querySelectorAll("[data-tool]").forEach(b=>b.onclick=()=>{
  }
 });
 renderChatHistoryMini();
+shuffleIdeas();
 setMode("chat");
 renderChatHistoryMini();
 
