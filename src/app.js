@@ -341,21 +341,21 @@ function syncInput(){const i=$("#composerInput");if(!i)return;i.style.height="au
 function modeHero(){
  if(mode==="chat") return `<div class="studio-room clean-canvas chat-room">
    <div class="chat-welcome section-welcome">
-     <div class="hero-mark">✦</div><div class="mini-badge">MIYA CHAT</div>
+     <div class="hero-mark"><span class="nav-icon icon-spark" aria-hidden="true"></span></div><div class="mini-badge">MIYA CHAT</div>
      <h2>Общайся с Miya</h2>
      <p>Задавай вопросы, придумывай идеи, создавай промпты и работай с контентом.</p>
    </div>
  </div>`;
  if(mode==="images") return `<div class="studio-room clean-canvas">
    <div class="chat-welcome section-welcome">
-     <div class="hero-mark image">▧</div><div class="mini-badge">MIYA IMAGES</div>
+     <div class="hero-mark image"><span class="nav-icon icon-image" aria-hidden="true"></span></div><div class="mini-badge">MIYA IMAGES</div>
      <h2>Создавай изображения</h2>
      <p>Создавай новые изображения или редактируй исходники с помощью AI.</p>
    </div>
  </div>`;
  return `<div class="studio-room clean-canvas">
    <div class="chat-welcome section-welcome">
-     <div class="hero-mark video">▶</div><div class="mini-badge">MIYA VIDEO</div>
+     <div class="hero-mark video"><span class="nav-icon icon-video" aria-hidden="true"></span></div><div class="mini-badge">MIYA VIDEO</div>
      <h2>Создавай видео</h2>
      <p>Создавай видео из текста или оживляй загруженные изображения.</p>
    </div>
@@ -542,7 +542,7 @@ function addChatMessage(text,isUser,image=""){
  if(image){const preview=document.createElement("img");preview.className="chat-image-attachment";preview.src=image;preview.alt="Прикреплённое изображение";content.insertBefore(preview,bubble)}
  if(!isUser){
    const actions=document.createElement("div");actions.className="chat-actions";
-   actions.innerHTML='<button title="Копировать">Копировать</button><button title="Повторить">Повторить</button><button title="Создать изображение">▧ Изображение</button><button title="Создать видео">▶ Видео</button>';
+   actions.innerHTML='<button title="Копировать">Копировать</button><button title="Повторить"><span class="nav-icon icon-history"></span>Повторить</button><button title="Создать изображение"><span class="nav-icon icon-image"></span>Изображение</button><button title="Создать видео"><span class="nav-icon icon-video"></span>Видео</button>';
    actions.querySelector('[title="Копировать"]').onclick=()=>navigator.clipboard?.writeText(text).then(()=>toast("Скопировано"));
    actions.querySelector('[title="Создать изображение"]').onclick=()=>{setMode("images");$("#composerInput").value=text;syncInput();$("#composerInput").focus()};
    actions.querySelector('[title="Создать видео"]').onclick=()=>{setMode("video");$("#composerInput").value=text;syncInput();$("#composerInput").focus()};
