@@ -1074,8 +1074,11 @@ body.light .library-tab.active{background:#ecebff;color:#48449a;border-color:#c9
 .media-prompt-dialog{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:min(620px,calc(100vw - 32px));max-height:min(520px,calc(100vh - 40px));display:flex;flex-direction:column;border:1px solid var(--line);border-radius:14px;background:var(--panel);box-shadow:0 24px 80px rgba(0,0,0,.4);overflow:hidden}
 .media-prompt-head{height:50px;display:flex;align-items:center;justify-content:space-between;padding:0 14px;border-bottom:1px solid var(--line)}
 .media-prompt-head b{font-size:13px}
-.media-prompt-close{width:30px;height:30px;border-radius:7px;background:transparent;color:var(--muted);font-size:20px}
-.media-prompt-close:hover{background:rgba(120,150,190,.12);color:inherit}
+.media-prompt-head-actions{display:flex;align-items:center;gap:4px}
+.media-prompt-copy,.media-prompt-close{width:30px;height:30px;border:0;border-radius:7px;background:transparent;color:var(--muted);display:grid;place-items:center;cursor:pointer}
+.media-prompt-copy svg{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.media-prompt-copy:hover,.media-prompt-close:hover{background:rgba(120,150,190,.12);color:inherit}
+.media-prompt-copy.copied{color:#8bd6ff}
 .media-prompt-body{padding:18px;overflow:auto;white-space:pre-wrap;word-break:break-word;font-size:13px;line-height:1.65;color:var(--text)}
 body.light .media-prompt-dialog{background:#fff;border-color:#d6e0eb;box-shadow:0 24px 70px rgba(30,55,85,.22)}
 body.light .media-prompt-head{border-color:#d6e0eb}
