@@ -285,7 +285,16 @@ function openImageViewer(item){
  modal.classList.add("open");
  document.body.classList.add("image-viewer-open");
 }
-async function mediaItemToReference(item){\n try{\n  const cached=await getCachedMedia(item.id);\n  if(cached?.blob){\n   return await new Promise((resolve,reject)=>{const reader=new FileReader();reader.onload=()=>resolve(String(reader.result||""));reader.onerror=()=>reject(reader.error);reader.readAsDataURL(cached.blob)})\n  }\n }catch{}\n return item.url;\n}\nfunction buildMediaCard(item,{video=false}={}){
+async function mediaItemToReference(item){
+ try{
+  const cached=await getCachedMedia(item.id);
+  if(cached?.blob){
+   return await new Promise((resolve,reject)=>{const reader=new FileReader();reader.onload=()=>resolve(String(reader.result||""));reader.onerror=()=>reject(reader.error);reader.readAsDataURL(cached.blob)})
+  }
+ }catch{}
+ return item.url;
+}
+function buildMediaCard(item,{video=false}={}){
  const card=document.createElement("div");card.className="media-card";
  const media=video?document.createElement("video"):document.createElement("img");
  media.alt=video?"Miya AI Studio":"Miya AI Studio";
