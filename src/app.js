@@ -124,7 +124,7 @@ function resetChatMenus(){
 function resetChatFlyoutScroll(){const el=$("#chatSubmenu");if(el)requestAnimationFrame(()=>{el.scrollTop=0;el.scrollLeft=0})}
 function openSavedChat(id){
  const chat=getChats().find(x=>x.id===id);if(!chat)return;
- chatMenuSuppressed=true;$("#chatSubmenu")?.classList.add("suppressed");resetChatMenus();
+ chatMenuSuppressed=true;$("#chatSubmenu")?.classList.add("suppressed");resetChatMenus();resetChatFlyoutScroll();$("#chatMenuToggle")?.setAttribute("aria-expanded","false");
  mode="chat";chatMessages=chat.messages.map(m=>({...m}));window.__miyaChatId=chat.id;chatStarted=true;
  restoreReferenceImage();setMode("chat",false);
  const c=$("#canvas");c.innerHTML='<div class="chat-stream"></div>';
@@ -503,6 +503,8 @@ if(chatMenuToggle){
    renderChatHistoryMini();
    resetChatFlyoutScroll();
    setMode("chat");
+   closeChatFlyout();
+   requestAnimationFrame(()=>$("#composerInput")?.focus());
  });
 }
 document.querySelectorAll("[data-mode]").forEach(b=>b.addEventListener("click",()=>setMode(b.dataset.mode)));
@@ -517,6 +519,18 @@ $("#composerSend").addEventListener("click",async()=>{
  setTimeout(()=>{toast("Видео-задача подготовлена. LTX endpoint подключим следующим шагом.");showEmpty();$("#composerStatus").textContent=modes.video.status},500)
 });
 $("#composerAttach").onclick=()=>$("#referenceInput").click();
+function copyComposerPrompt(){
+ const value=$("#composerInput")?.value||"";
+ if(!value.trim()){toast("Промт пуст");return}
+ if(navigator.clipboard?.writeText) navigator.clipboard.writeText(value).then(()=>toast("Промт скопирован")).catch(()=>toast("Не удалось скопировать промт"));
+ else toast("Копирование недоступно в этом браузере");
+}
+function improveComposerPrompt(){
+ const i=$("#composerInput");if(!i)return;
+ if(i.value.trim())i.value=i.value.trim()+", cinematic composition, professional lighting, realistic textures, highly detailed, premium quality";
+ else toast("Сначала введи промпт");
+ syncInput();
+}
 $("#composerTrash").onclick=()=>{
   $("#composerInput").value="";
   clearComposerAttachment();
@@ -525,6 +539,9 @@ $("#composerTrash").onclick=()=>{
   $("#composerStatus").textContent=modes[mode]?.status||"Готово";
 };
 $("#composerAttachmentRemove").onclick=()=>clearComposerAttachment();
+$("#copyPrompt").onclick=copyComposerPrompt;
+$("#videoCopyPrompt").onclick=copyComposerPrompt;
+$("#videoImprove").onclick=improveComposerPrompt;
 $("#videoTrash").onclick=()=>{
   $("#composerInput").value="";
   clearComposerAttachment();
@@ -580,9 +597,11 @@ $("#composerMic").onclick=()=>{
  };
  r.start();
 };
-$("#improve").onclick=()=>{
+$("#improve").onclick=improveComposerPrompt; /* keep image improve behavior */
+/* legacy handler replaced above */
+/* 
  const i=$("#composerInput");if(i.value.trim())i.value=i.value.trim()+", cinematic composition, professional lighting, realistic textures, highly detailed, premium quality";else toast("Сначала введи промпт");syncInput()
-};
+}; */
 const emojiButton=$("#composerEmoji");
 const emojiPanel=$("#emojiPanel");
 const starterIdeas=[
