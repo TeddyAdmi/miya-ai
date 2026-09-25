@@ -1086,3 +1086,29 @@ body.light .media-prompt-head{border-color:#d6e0eb}
  .library-tab{height:30px;padding:0 12px;font-size:10px}
  .media-prompt-body{font-size:12px}
 }
+
+/* Media actions: compact three-dot menu */
+.media-actions{top:8px;right:8px;opacity:1!important;transform:none!important}
+.media-more{position:relative;z-index:5;width:31px!important;height:31px!important;border-radius:8px!important;font-size:17px!important;line-height:1!important;background:rgba(5,18,34,.88)!important}
+.media-action-menu{position:absolute;top:38px;right:0;min-width:156px;padding:5px;border:1px solid var(--line);border-radius:10px;background:rgba(7,24,43,.98);box-shadow:0 15px 40px rgba(0,0,0,.38);backdrop-filter:blur(16px);display:none;z-index:20}
+.media-action-menu.open{display:block}
+.media-action-menu button{width:100%;height:34px;display:flex;align-items:center;gap:9px;padding:0 10px;border-radius:7px;background:transparent;color:#dcecff;text-align:left;font-size:9px;font-weight:700}
+.media-action-menu button:hover{background:#172d4a;color:#fff}
+.media-action-menu .action-icon{width:18px;text-align:center;font-size:13px;color:#b77cff}
+.media-action-menu button:last-child:hover{background:#5a2030}
+body.light .media-more{background:rgba(255,255,255,.96)!important;color:#34465c}
+body.light .media-action-menu{background:#fff;border-color:#d6e0eb;box-shadow:0 15px 40px rgba(30,55,85,.2)}
+body.light .media-action-menu button{color:#34465c}
+body.light .media-action-menu button:hover{background:#edf3f9;color:#182436}
+body.light .media-action-menu button:last-child:hover{background:#f9e8ed}
+.media-load-error::after{content:"Miya AI Studio";position:absolute;inset:0;display:grid;place-items:center;color:var(--muted);font-size:10px;font-weight:700;background:rgba(7,24,43,.72)}
+body.light .media-load-error::after{background:rgba(255,255,255,.82);color:#66788d}
+.media-menu{position:fixed;z-index:10001;min-width:105px;padding:5px;border:1px solid var(--line);border-radius:9px;background:var(--panel);box-shadow:0 14px 40px rgba(0,0,0,.35)}
+.media-menu button{width:100%;height:30px;border-radius:6px;background:transparent;color:var(--text);display:flex;align-items:center;gap:8px;padding:0 9px;font-size:9px;text-align:left}
+.media-menu button:hover{background:var(--surface2)}
+.media-menu-icon{width:15px;text-align:center}
+@media(max-width:800px){
+ .media-actions{top:6px;right:6px}
+ .media-more{width:27px!important;height:27px!important;font-size:15px!important}
+ .media-action-menu{top:33px;min-width:145px}
+}
