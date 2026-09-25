@@ -146,51 +146,69 @@ export default async function handler(req, res) {
     if (imageUrl) payload.imageUrl = imageUrl;
     if (imageBase64) payload.imageBase64 = imageBase64;
 
+    if (isImageToImage && imageBase64) {
+      const match = imageBase64.match(/^data:image\/[^;]+;base64,(.+)$/i);
+      if (!match) {
+        return res.status(400).json({ ok: false, error: "INVALID_IMAGE_BASE64" });
+      }
+      const approxBytes = Math.ceil(match[1].length * 3 / 4);
+      if (approxBytes > 3.5 * 1024 * 1024) {
+        return res.status(413).json({
+          ok: false,
+          error: "SOURCE_IMAGE_TOO_LARGE",
+          message: "Исходное изображение слишком большое. PixelSter принимает изображения до 3.5 MB."
+        });
+      }
+    }
+
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), 58000);
     let response;
+    let raw = "";
+    let data = {};
     try {
-      response = await fetch(endpoint, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "Accept": "application/json"
-      },
-      body: JSON.stringify(payload),
-      signal: controller.signal
-      });
+      for (let attempt = 0; attempt < 3; attempt++) {
+        response = await fetch(endpoint, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "Accept": "application/json"
+          },
+          body: JSON.stringify(payload),
+          signal: controller.signal
+        });
+        raw = await response.text();
+        try {
+          data = raw ? JSON.parse(raw) : {};
+        } catch {
+          data = {};
+        }
+
+        if (response.ok && data?.success !== false) break;
+        if (![429, 500, 502, 503, 504].includes(response.status) || attempt === 2) break;
+        await new Promise(resolve => setTimeout(resolve, 700 * (attempt + 1)));
+      }
     } catch (error) {
       if (error?.name === "AbortError") {
-        return res.status(504).json({ ok: false, error: "FLUX_TIMEOUT", message: isImageToImage ? "Flux Kontext Dev did not finish within 58 seconds. The free PixelSter upstream timed out." : "Flux Dev did not finish within 58 seconds. The free PixelSter upstream timed out." });
+        return res.status(504).json({
+          ok: false,
+          error: "FLUX_TIMEOUT",
+          message: isImageToImage
+            ? "Flux Kontext Dev не завершил генерацию за 58 секунд."
+            : "Flux Dev не завершил генерацию за 58 секунд."
+        });
       }
       throw error;
     } finally {
       clearTimeout(timeout);
     }
 
-    const raw = await response.text();
-
-    let data = {};
-    try {
-      data = raw ? JSON.parse(raw) : {};
-    } catch {
-      return res.status(502).json({
-        ok: false,
-        error: "FLUX_NON_JSON_RESPONSE",
-        upstreamStatus: response.status,
-        upstreamContentType: response.headers.get("content-type") || "",
-        upstreamBody: raw.slice(0, 500)
-      });
-    }
-
     if (!response.ok || data?.success === false) {
       return res.status(502).json({
         ok: false,
-        error: String(
-          data?.error ||
-          data?.message ||
-          `FLUX_HTTP_${response.status}`
-        )
+        error: String(data?.error || data?.message || `FLUX_HTTP_${response.status}`),
+        upstreamStatus: response.status,
+        upstreamBody: raw.slice(0, 500)
       });
     }
 
