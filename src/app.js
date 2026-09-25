@@ -64,7 +64,7 @@ function renderChatHistoryMini(){
 
    const menu=document.createElement("div");menu.className="chat-history-menu";
    const pin=document.createElement("button");pin.type="button";
-   pin.innerHTML='<span class="menu-icon">'+(chat.pinned?"★":"☆")+'</span><span>'+(chat.pinned?"Открепить":"Закрепить")+'</span>';
+   pin.innerHTML='<span class="menu-icon menu-svg"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 4h8l-1 7 3 3H6l3-3-1-7Z"/><path d="M12 14v6"/></svg></span><span>'+(chat.pinned?"Открепить":"Закрепить")+'</span>';
    pin.onclick=e=>{
      e.preventDefault();e.stopPropagation();
      const all=getChats(),item=all.find(x=>x.id===chat.id);
@@ -72,14 +72,14 @@ function renderChatHistoryMini(){
    };
 
    const rename=document.createElement("button");rename.type="button";
-   rename.innerHTML='<span class="menu-icon">✎</span><span>Переименовать</span>';
+   rename.innerHTML='<span class="menu-icon menu-svg"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m4 16.5-.8 3.3 3.3-.8L18.7 6.8a2.2 2.2 0 0 0-3.1-3.1L4 16.5Z"/><path d="m14.2 5.8 4 4"/></svg></span><span>Переименовать</span>';
    rename.onclick=e=>{
      e.preventDefault();e.stopPropagation();
      menu.classList.add("rename-open");menu.innerHTML="";
      const label=document.createElement("div");label.className="rename-label";label.textContent="Название чата";
      const input=document.createElement("input");input.className="chat-rename-input";input.value=chat.title||"Новый чат";input.maxLength=60;
-     const save=document.createElement("button");save.type="button";save.className="chat-rename-save";save.innerHTML='<span class="menu-icon">✓</span><span>Сохранить</span>';
-     const cancel=document.createElement("button");cancel.type="button";cancel.className="chat-rename-cancel";cancel.innerHTML='<span class="menu-icon">×</span><span>Отмена</span>';
+     const save=document.createElement("button");save.type="button";save.className="chat-rename-save";save.innerHTML='<span class="menu-icon menu-svg"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12 4 4L19 6"/></svg></span><span>Сохранить</span>';
+     const cancel=document.createElement("button");cancel.type="button";cancel.className="chat-rename-cancel";cancel.innerHTML='<span class="menu-icon menu-svg"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m7 7 10 10M17 7 7 17"/></svg></span><span>Отмена</span>';
      const commit=()=>{
        const name=input.value.trim();if(!name)return input.focus();
        const all=getChats(),item=all.find(x=>x.id===chat.id);
@@ -94,7 +94,7 @@ function renderChatHistoryMini(){
    };
 
    const del=document.createElement("button");del.type="button";
-   del.innerHTML='<span class="menu-icon">×</span><span>Удалить</span>';
+   del.innerHTML='<span class="menu-icon menu-svg"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M9 7V4h6v3M7 7l1 13h8l1-13M10 11v5M14 11v5"/></svg></span><span>Удалить</span>';
    del.onclick=e=>{
      e.preventDefault();e.stopPropagation();
      const all=getChats().filter(x=>x.id!==chat.id);persistChats(all);
@@ -215,7 +215,7 @@ function showDownloadMenu(item,anchor){
  closeMediaMenus();
  const menu=document.createElement("div");menu.className="media-menu open";
  [["jpeg","JPEG"],["png","PNG"],["webp","WEBP"]].forEach(([fmt,label])=>{
-  const b=document.createElement("button");b.type="button";b.innerHTML='<span class="media-menu-icon">⇩</span><span>'+label+'</span>';
+  const b=document.createElement("button");b.type="button";b.innerHTML='<span class="media-menu-icon action-svg"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4v11M8 11l4 4 4-4M5 19h14"/></svg></span><span>'+label+'</span>';
   b.onclick=e=>{e.stopPropagation();menu.remove();downloadImage(item.url,fmt)};menu.appendChild(b);
  });
  document.body.appendChild(menu);
@@ -293,13 +293,13 @@ function buildMediaCard(item,{video=false}={}){
  else{media.onerror=()=>{media.alt="Miya AI Studio";card.classList.add("media-load-error")};resolveMediaUrl(item).then(url=>{if(url)media.src=url})}
  card.appendChild(media);
  const actions=document.createElement("div");actions.className="media-actions";
- const more=document.createElement("button");more.className="media-action media-more";more.title="Действия";more.setAttribute("aria-label","Действия");more.textContent="⋯";
+ const more=document.createElement("button");more.className="media-action media-more";more.title="Действия";more.setAttribute("aria-label","Действия");more.innerHTML='<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="5" cy="12" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="19" cy="12" r="1.5"/></svg>';
  const menu=document.createElement("div");menu.className="media-action-menu";
  if(!video){
-  const promptBtn=document.createElement("button");promptBtn.innerHTML='<span class="action-icon">⌘</span><span>Промт</span>';promptBtn.onclick=e=>{e.stopPropagation();showPrompt(item)};
-  const editBtn=document.createElement("button");editBtn.innerHTML='<span class="action-icon">✦</span><span>Редактировать</span>';editBtn.onclick=e=>{e.stopPropagation();openEditor(item.url)};
-  const downloadBtn=document.createElement("button");downloadBtn.innerHTML='<span class="action-icon">⇩</span><span>Скачать</span>';downloadBtn.onclick=e=>{e.stopPropagation();showDownloadMenu(item,downloadBtn)};
-  const deleteBtn=document.createElement("button");deleteBtn.innerHTML='<span class="action-icon">⌫</span><span>Удалить</span>';deleteBtn.onclick=e=>{e.stopPropagation();deleteMedia(item,card)};
+  const promptBtn=document.createElement("button");promptBtn.innerHTML='<span class="action-icon action-svg"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 4h12v16H6z"/><path d="M9 8h6M9 12h6M9 16h4"/></svg></span><span>Промт</span>';promptBtn.onclick=e=>{e.stopPropagation();showPrompt(item)};
+  const editBtn=document.createElement("button");editBtn.innerHTML='<span class="action-icon action-svg"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m4 16.5-.8 3.3 3.3-.8L18.7 6.8a2.2 2.2 0 0 0-3.1-3.1L4 16.5Z"/><path d="m14.2 5.8 4 4"/></svg></span><span>Редактировать</span>';editBtn.onclick=e=>{e.stopPropagation();openEditor(item.url)};
+  const downloadBtn=document.createElement("button");downloadBtn.innerHTML='<span class="action-icon action-svg"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4v11M8 11l4 4 4-4M5 19h14"/></svg></span><span>Скачать</span>';downloadBtn.onclick=e=>{e.stopPropagation();showDownloadMenu(item,downloadBtn)};
+  const deleteBtn=document.createElement("button");deleteBtn.innerHTML='<span class="action-icon action-svg"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M9 7V4h6v3M7 7l1 13h8l1-13M10 11v5M14 11v5"/></svg></span><span>Удалить</span>';deleteBtn.onclick=e=>{e.stopPropagation();deleteMedia(item,card)};
   menu.append(promptBtn,editBtn,downloadBtn,deleteBtn);
  }else{
   const deleteBtn=document.createElement("button");deleteBtn.innerHTML='<span class="action-icon">⌫</span><span>Удалить</span>';deleteBtn.onclick=e=>{e.stopPropagation();deleteMedia(item,card)};menu.append(deleteBtn);
@@ -397,7 +397,7 @@ function showLoading(){
   card.dataset.model=selectedModel;
   card.innerHTML='<div class="generation-progress"><div class="progress-circle is-active"><span class="progress-percent"></span></div><div class="progress-copy"><b>Генерация изображения</b><span class="progress-model"></span></div></div>';
   card.querySelector(".progress-model").textContent=referenceImage?selectedModel+" · загрузка файла…":selectedModel+" · генерация…";
-  c.insertBefore(card,grid);return;
+  grid.prepend(card);return;
  }
  c.innerHTML='<div class="loading-state"><div class="spinner"></div><b>Готовим видео…</b><span>Запрос отправлен в видеодвижок Miya.</span></div>';
 }
@@ -416,7 +416,7 @@ async function generateImage(prompt){
  const modelName=referenceImage?"FLUX Kontext Dev":"FLUX Dev";
  const hasFileUpload=Boolean(referenceImage);
  const composerProgress=$("#composerProgress");
- let fakeProgress=hasFileUpload?18:8;
+ let fakeProgress=0;
  let fakeTimer=null;
  const setProgress=(p)=>{
   const value=Math.max(0,Math.min(99,Math.round(p)));
@@ -428,9 +428,9 @@ async function generateImage(prompt){
   setProgress(fakeProgress);
   fakeTimer=setInterval(()=>{
    // Deliberately slow down near the end so the UI never pretends generation is finished.
-   const remaining=96-fakeProgress;
+   const remaining=92-fakeProgress;
    const step=remaining>45?Math.random()*7+2:remaining>18?Math.random()*3+1:Math.random()*0.8+0.2;
-   fakeProgress=Math.min(96,fakeProgress+step);
+   fakeProgress=Math.min(92,fakeProgress+step);
    setProgress(fakeProgress);
    if($("#composerStatus"))$("#composerStatus").textContent=modelName+" · генерация…";
   },900);
