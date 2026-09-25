@@ -14,16 +14,8 @@ async function handler(req, res) {
     if (body.mode === "chat") {
       const messages = Array.isArray(body.messages) ? body.messages : [];
       const cleanMessages = messages
-        .filter(
-          m =>
-            m &&
-            (m.role === "user" || m.role === "assistant") &&
-            typeof m.content === "string"
-        )
-        .map(m => ({
-          role: m.role,
-          content: m.content.slice(0, 12000)
-        }));
+        .filter(m => m && (m.role === "user" || m.role === "assistant") && typeof m.content === "string")
+        .map(m => ({ role: m.role, content: m.content.slice(0, 12000) }));
 
       if (!cleanMessages.length || cleanMessages[cleanMessages.length - 1].role !== "user") {
         return res.status(400).json({ error: "A user message is required" });
@@ -34,8 +26,6 @@ async function handler(req, res) {
           ? body.model.trim()
           : "gemini-3.8-flash";
 
-      // Gemini is used when a key is configured. Otherwise use the free
-      // no-key text endpoint so Miya Chat works without paid credentials.
       const apiKey = process.env.GEMINI_API_KEY;
       if (apiKey) {
         const modelsToTry = [requestedModel, "gemini-3.6-flash", "gemini-3.5-flash"].filter(
@@ -78,29 +68,20 @@ async function handler(req, res) {
         }
 
         if (response?.ok) {
-          const text = data?.candidates?.[0]?.content?.parts
-            ?.map(part => part?.text || "")
-            .join("")
-            .trim();
-
+          const text = data?.candidates?.[0]?.content?.parts?.map(part => part?.text || "").join("").trim();
           if (text) {
             return res.status(200).json({
-              ok: true,
-              mode: "chat",
-              text,
-              model,
-              provider: "Gemini",
-              usage: data?.usageMetadata || null
+              ok: true, mode: "chat", text, model,
+              provider: "Gemini", usage: data?.usageMetadata || null
             });
           }
         }
       }
 
-      // Free fallback: no API key and no payment required.
       const transcript = cleanMessages
         .slice(-12)
         .map(m => (m.role === "assistant" ? "Miya: " : "Пользователь: ") + m.content)
-        .join("\\n");
+        .join("\n");
 
       const system =
         "Ты Miya, дружелюбный AI-помощник внутри Miya AI Studio. " +
@@ -110,7 +91,7 @@ async function handler(req, res) {
 
       const fallbackUrl =
         "https://text.pollinations.ai/" +
-        encodeURIComponent(system + "\\n\\n" + transcript) +
+        encodeURIComponent(system + "\n\n" + transcript) +
         "?model=openai&private=true";
 
       const fallbackResponse = await fetch(fallbackUrl, {
@@ -122,43 +103,31 @@ async function handler(req, res) {
 
       if (!fallbackResponse.ok || !fallbackText) {
         return res.status(502).json({
-          ok: false,
-          error: "CHAT_UPSTREAM_FAILED",
+          ok: false, error: "CHAT_UPSTREAM_FAILED",
           message: "Бесплатный AI-сервис чата временно недоступен.",
           upstreamStatus: fallbackResponse.status
         });
       }
 
       return res.status(200).json({
-        ok: true,
-        mode: "chat",
-        text: fallbackText,
-        model: "openai",
-        provider: "Free Text",
-        usage: null
+        ok: true, mode: "chat", text: fallbackText,
+        model: "openai", provider: "Free Text", usage: null
       });
     }
 
     const prompt = typeof body.prompt === "string" ? body.prompt.trim() : "";
-    if (!prompt) {
-      return res.status(400).json({ ok: false, error: "PROMPT_REQUIRED" });
-    }
+    if (!prompt) return res.status(400).json({ ok: false, error: "PROMPT_REQUIRED" });
 
     const ratio = typeof body.ratio === "string" ? body.ratio : "1:1";
     const requestedModel = typeof body.model === "string" ? body.model.trim() : "";
-    const options =
-      body.options && typeof body.options === "object" ? body.options : {};
+    const options = body.options && typeof body.options === "object" ? body.options : {};
 
-    const imageUrl =
-      typeof options.imageUrl === "string" ? options.imageUrl.trim() : "";
-    const imageBase64 =
-      typeof options.imageBase64 === "string" ? options.imageBase64.trim() : "";
+    const imageUrl = typeof options.imageUrl === "string" ? options.imageUrl.trim() : "";
+    const imageBase64 = typeof options.imageBase64 === "string" ? options.imageBase64.trim() : "";
 
-    // The selected model is authoritative. Flux Dev is text-to-image only;
-    // Flux Kontext Dev is the image-to-image editor. This prevents a stale
-    // reference image from silently routing a new Dev generation to /api/pti.
     const wantsKontext = /kontext/i.test(requestedModel);
     const isImageToImage = wantsKontext && Boolean(imageUrl || imageBase64);
+
     if (wantsKontext && !isImageToImage) {
       return res.status(400).json({
         ok: false,
@@ -166,6 +135,7 @@ async function handler(req, res) {
         message: "Для Flux Kontext Dev нужно загрузить исходное изображение."
       });
     }
+
     const endpointPath = isImageToImage ? "/api/pti" : "/api/tti";
     const endpoints = [
       "https://ahm7xmakki.com" + endpointPath,
@@ -184,12 +154,11 @@ async function handler(req, res) {
     };
 
     if (imageUrl) {
-      // PixelSter's image-to-image endpoint is documented around uploaded image data.
-      // Convert library/remote URLs to base64 server-side instead of forwarding imageUrl.
       const sourceResponse = await fetch(imageUrl, {
         method: "GET",
         headers: { Accept: "image/*" }
       });
+
       if (!sourceResponse.ok) {
         return res.status(400).json({
           ok: false,
@@ -197,6 +166,7 @@ async function handler(req, res) {
           message: "Не удалось получить исходное изображение для редактирования (HTTP " + sourceResponse.status + ")."
         });
       }
+
       const sourceBuffer = Buffer.from(await sourceResponse.arrayBuffer());
       if (sourceBuffer.length > 3.5 * 1024 * 1024) {
         return res.status(413).json({
@@ -205,23 +175,29 @@ async function handler(req, res) {
           message: "Исходное изображение слишком большое. PixelSter принимает изображения до 3.5 MB."
         });
       }
+
       const contentType = sourceResponse.headers.get("content-type") || "image/jpeg";
       const mime = /^image\/(jpeg|png|webp)$/i.test(contentType)
         ? contentType.split(";")[0]
         : "image/jpeg";
+
       payload.imageBase64 = "data:" + mime + ";base64," + sourceBuffer.toString("base64");
     }
-    if (imageBase64) {
-      payload.imageBase64 = imageBase64;
-      // Keep the conventional field used by the PixelSter upload UI as well.
-      payload.image = imageBase64;
-    }
 
-    if (isImageToImage && imageBase64) {
-      const match = imageBase64.match(/^data:image\/[^;]+;base64,(.+)$/i);
+    if (imageBase64) payload.imageBase64 = imageBase64;
+
+    if (isImageToImage) {
+      const sourceData = payload.imageBase64 || "";
+      const match = sourceData.match(/^data:image\/[^;]+;base64,(.+)$/i);
+
       if (!match) {
-        return res.status(400).json({ ok: false, error: "INVALID_IMAGE_BASE64" });
+        return res.status(400).json({
+          ok: false,
+          error: "INVALID_IMAGE_BASE64",
+          message: "Исходное изображение должно быть передано как data:image/...;base64,..."
+        });
       }
+
       const approxBytes = Math.ceil(match[1].length * 3 / 4);
       if (approxBytes > 3.5 * 1024 * 1024) {
         return res.status(413).json({
@@ -230,90 +206,66 @@ async function handler(req, res) {
           message: "Исходное изображение слишком большое. PixelSter принимает изображения до 3.5 MB."
         });
       }
+
+      payload.imageBase64 = sourceData;
     }
 
-    let response;
+    let response = null;
     let raw = "";
     let data = {};
     let lastNetworkError = null;
-    const payloadVariants = isImageToImage && imageBase64
-      ? [
-          { ...payload, image: undefined },
-          { prompt, ratio: payload.ratio, image: imageBase64 },
-          { prompt, ratio: payload.ratio, imageBase64 }
-        ].map(item => {
-          const clean = { ...item };
-          if (clean.image === undefined) delete clean.image;
-          return clean;
-        })
-      : [payload];
 
-    for (const endpoint of endpoints) {
-      let endpointSucceeded = false;
+    // One generation request per hostname. The previous implementation
+    // retried 3 payload variants x 3 times, which could create nine
+    // upstream jobs for one click and trigger fair-use throttling.
+    for (let endpointIndex = 0; endpointIndex < endpoints.length; endpointIndex++) {
+      const endpoint = endpoints[endpointIndex];
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), isImageToImage ? 50000 : 58000);
 
-      for (let variantIndex = 0; variantIndex < payloadVariants.length && !endpointSucceeded; variantIndex++) {
-        const activePayload = payloadVariants[variantIndex];
-        for (let attempt = 0; attempt < 3; attempt++) {
-        const controller = new AbortController();
-        const timeout = setTimeout(() => controller.abort(), 58000);
+      try {
+        response = await fetch(endpoint, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Accept: "application/json"
+          },
+          body: JSON.stringify(payload),
+          signal: controller.signal
+        });
 
+        raw = await response.text();
         try {
-          response = await fetch(endpoint, {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-              "Accept": "application/json"
-            },
-            body: JSON.stringify(activePayload),
-            signal: controller.signal
+          data = raw ? JSON.parse(raw) : {};
+        } catch {
+          data = {};
+        }
+
+        if (response.ok && data?.success !== false) break;
+
+        if (endpointIndex < endpoints.length - 1 && [429, 500, 502, 503, 504].includes(response.status)) {
+          continue;
+        }
+
+        break;
+      } catch (error) {
+        lastNetworkError = error;
+
+        if (error?.name === "AbortError") {
+          return res.status(504).json({
+            ok: false,
+            error: "FLUX_TIMEOUT",
+            message: isImageToImage
+              ? "Flux Kontext Dev не завершил генерацию за 50 секунд."
+              : "Flux Dev не завершил генерацию за 58 секунд."
           });
-
-          raw = await response.text();
-          try {
-            data = raw ? JSON.parse(raw) : {};
-          } catch {
-            data = {};
-          }
-
-          if (response.ok && data?.success !== false) {
-            endpointSucceeded = true;
-            break;
-          }
-
-          if (![429, 500, 502, 503, 504].includes(response.status) || attempt === 2) {
-            break;
-          }
-
-          await new Promise(resolve => setTimeout(resolve, 700 * (attempt + 1)));
-        } catch (error) {
-          lastNetworkError = error;
-
-          if (error?.name === "AbortError") {
-            return res.status(504).json({
-              ok: false,
-              error: "FLUX_TIMEOUT",
-              message: isImageToImage
-                ? "Flux Kontext Dev не завершил генерацию за 56 секунд."
-                : "Flux Dev не завершил генерацию за 56 секунд."
-            });
-          }
-
-          break;
-        } finally {
-          clearTimeout(timeout);
         }
-        }
+
+        if (endpointIndex < endpoints.length - 1) continue;
+        break;
+      } finally {
+        clearTimeout(timeout);
       }
-
-      if (endpointSucceeded) break;
-
-      // If the first PixelSter hostname is unreachable from the Vercel runtime,
-      // try the www hostname before returning a server error.
-      if (lastNetworkError && endpoint !== endpoints[endpoints.length - 1]) {
-        continue;
-      }
-
-      break;
     }
 
     if (lastNetworkError && (!response || !response.ok)) {
@@ -337,22 +289,11 @@ async function handler(req, res) {
       });
     }
 
-    if (
-      !data?.imageUrl ||
-      typeof data.imageUrl !== "string" ||
-      !/^https?:\/\//i.test(data.imageUrl)
-    ) {
-      return res.status(502).json({
-        ok: false,
-        error: "FLUX_IMAGE_URL_MISSING",
-        providerResponse: data
-      });
-    }
-
     const imageUrls = Array.isArray(data?.imageUrls)
       ? data.imageUrls.filter(url => typeof url === "string" && /^https?:\/\//i.test(url))
       : Array.isArray(data?.images)
-        ? data.images.map(item => typeof item === "string" ? item : item?.imageUrl).filter(url => typeof url === "string" && /^https?:\/\//i.test(url))
+        ? data.images.map(item => typeof item === "string" ? item : item?.imageUrl)
+            .filter(url => typeof url === "string" && /^https?:\/\//i.test(url))
         : data?.imageUrl
           ? [data.imageUrl]
           : [];
@@ -383,7 +324,6 @@ async function handler(req, res) {
     });
   } catch (error) {
     console.error("Miya FLUX:", error);
-
     return res.status(500).json({
       ok: false,
       error: "GENERATION_ERROR",
