@@ -322,7 +322,7 @@ function toast(message){
  t.textContent=message;t.classList.add("show");clearTimeout(window.__toast);
  window.__toast=setTimeout(()=>t.classList.remove("show"),2600)
 }
-function syncInput(){const i=$("#composerInput");if(!i)return;i.style.height="auto";i.style.height=Math.min(120,Math.max(42,i.scrollHeight))+"px"}
+function syncInput(){const i=$("#composerInput");if(!i)return;i.style.height="auto";i.style.height=Math.min(120,Math.max(42,i.scrollHeight))+"px";const emoji=$("#composerEmoji");if(emoji)emoji.style.display=mode==="chat"?"":"none"}
 function modeHero(){
  if(mode==="chat") return `<div class="studio-room clean-canvas chat-room">
    <div class="chat-welcome section-welcome">
