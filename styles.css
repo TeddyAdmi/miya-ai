@@ -1040,3 +1040,18 @@ body.light .chat-nav-wrap .chat-history-row.pinned .chat-history-mini-item{
 .chat-nav-wrap .chat-history-row.menu-open .chat-history-menu{
   transform:translateY(-50%)!important;
 }
+
+/* Requested-only fixes */
+.workspace-head .eyebrow{display:none!important}
+.workspace-head{padding-top:4px!important;padding-bottom:2px!important}
+.canvas{padding-top:0!important}
+.chat-nav-wrap .chat-history-row:not(.pinned):hover{background:rgba(120,150,190,.10)!important}
+.chat-nav-wrap .chat-history-row:not(.pinned):hover .chat-history-mini-item{margin-right:0!important;width:auto!important;background:transparent!important}
+body.light .chat-nav-wrap .chat-history-row:not(.pinned):hover{background:rgba(120,150,190,.58)!important}
+body.light .chat-nav-wrap .chat-history-row:not(.pinned):hover .chat-history-mini-item{background:transparent!important;color:#182436!important}
+.generation-loading{color:#edf5ff!important}
+.generation-loading .progress-copy b{color:#edf5ff!important}
+.generation-loading .progress-model{color:#89a9c8!important}
+body.light .generation-loading{color:#29394d!important;background:linear-gradient(135deg,rgba(245,248,252,.96),rgba(233,240,248,.92))!important}
+body.light .generation-loading .progress-copy b{color:#29394d!important}
+body.light .generation-loading .progress-model{color:#71859a!important}
