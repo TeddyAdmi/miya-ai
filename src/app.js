@@ -36,7 +36,7 @@ function renderChatHistoryMini(){
  const box=$("#chatHistoryMini");if(!box)return;
  const chats=getChats()
   .sort((a,b)=>Number(Boolean(b.pinned))-Number(Boolean(a.pinned))||(b.updatedAt||0)-(a.updatedAt||0))
-  .slice(0,5);
+  .slice(0,10);
  box.innerHTML="";
  chats.forEach(chat=>{
    const row=document.createElement("div");
@@ -52,8 +52,9 @@ function renderChatHistoryMini(){
    more.className="chat-history-more";more.type="button";more.title="Действия чата";more.setAttribute("aria-label","Действия чата");more.textContent="⋯";
    more.onclick=e=>{
      e.preventDefault();e.stopPropagation();
-     document.querySelectorAll(".chat-history-row.menu-open").forEach(x=>{if(x!==row)x.classList.remove("menu-open")});
-     row.classList.toggle("menu-open");
+     const wasOpen=row.classList.contains("menu-open");
+     resetChatMenus();
+     if(!wasOpen)row.classList.add("menu-open");
    };
 
    const menu=document.createElement("div");menu.className="chat-history-menu";
@@ -102,12 +103,17 @@ function renderChatHistoryMini(){
 function closeChatFlyout(){
  chatMenuSuppressed=true;
  $("#chatSubmenu")?.classList.add("suppressed");
+ $("#chatSubmenu")?.querySelectorAll(".menu-open").forEach(x=>x.classList.remove("menu-open"));
  $("#chatMenuToggle")?.setAttribute("aria-expanded","false");
  setTimeout(()=>$("#composerInput")?.focus(),0);
 }
+function resetChatMenus(){
+ document.querySelectorAll(".chat-history-row.menu-open").forEach(x=>x.classList.remove("menu-open"));
+ $("#chatSubmenu")?.querySelector(".chat-history-menu.rename-open")?.classList.remove("rename-open");
+}
 function openSavedChat(id){
  const chat=getChats().find(x=>x.id===id);if(!chat)return;
- chatMenuSuppressed=false;$("#chatSubmenu")?.classList.remove("suppressed");
+ chatMenuSuppressed=true;$("#chatSubmenu")?.classList.add("suppressed");resetChatMenus();
  mode="chat";chatMessages=chat.messages.map(m=>({...m}));window.__miyaChatId=chat.id;chatStarted=true;
  referenceImage=null;setComposerAttachment("");setMode("chat",false);
  const c=$("#canvas");c.innerHTML='<div class="chat-stream"></div>';
@@ -227,11 +233,12 @@ function bindChatUI(){
  const newChat=$("#newChatBtn");
  if(newChat)newChat.onclick=(e)=>{
    e.preventDefault();e.stopPropagation();
+   resetChatMenus();
    mode="chat";chatStarted=false;chatMessages=[];window.__miyaChatId=null;
    clearComposerAttachment();
-   setMode("chat",false);
-   $("#canvas").innerHTML=modeHero();
    $("#composerInput").value="";
+   $("#canvas").innerHTML=modeHero();
+   setMode("chat",false);
    syncInput();
    $("#composerStatus").textContent="AI Chat готов";
    renderChatHistoryMini();
@@ -464,3 +471,6 @@ renderChatHistoryMini();
 
 const chatNavWrap=$("#chatNavWrap")||$(".chat-nav-wrap");
 if(chatNavWrap){chatNavWrap.addEventListener("mouseleave",()=>{chatMenuSuppressed=false;$("#chatSubmenu")?.classList.remove("suppressed");$("#chatMenuToggle")?.setAttribute("aria-expanded","false")})}
+
+// Keep chat action menus from becoming sticky when the pointer leaves the flyout.
+document.addEventListener("click",e=>{if(!e.target.closest(".chat-history-row"))resetChatMenus()});
