@@ -155,15 +155,17 @@ function bindChatUI(){
  // chat prompt binding uses a real NodeList-to-array conversion
  if(mode!=="chat")return;
  const newChat=$("#newChatBtn");
- if(newChat)newChat.onclick=()=>{
-   chatStarted=false;
-   chatMessages=[];window.__miyaChatId=null;
+ if(newChat)newChat.onclick=(e)=>{
+   e.preventDefault();e.stopPropagation();
+   mode="chat";chatStarted=false;chatMessages=[];window.__miyaChatId=null;
+   setMode("chat");
    $("#canvas").innerHTML=modeHero();
-   bindChatUI();
    $("#composerInput").value="";
+   clearComposerAttachment();
    syncInput();
+   $("#composerStatus").textContent="AI Chat готов";
    $("#composerInput").focus();
-   $("#composerStatus").textContent="AI Chat готов"; renderChatHistoryMini();
+   renderChatHistoryMini();
  };
  Array.from(document.querySelectorAll("[data-chat-prompt]")).forEach(b=>b.onclick=()=>{
    $("#composerInput").value=b.dataset.chatPrompt||"";
