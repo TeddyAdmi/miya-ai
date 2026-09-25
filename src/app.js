@@ -521,6 +521,13 @@ $("#composerTrash").onclick=()=>{
   $("#composerStatus").textContent=modes[mode]?.status||"Готово";
 };
 $("#composerAttachmentRemove").onclick=()=>clearComposerAttachment();
+$("#videoTrash").onclick=()=>{
+  $("#composerInput").value="";
+  clearComposerAttachment();
+  syncInput();
+  $("#composerInput").focus();
+  $("#composerStatus").textContent=modes.video.status;
+};
 $("#referenceInput").onchange=e=>{
  const file=e.target.files?.[0];if(!file)return;
  const reader=new FileReader();
