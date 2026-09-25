@@ -1672,3 +1672,35 @@ body.light .delete-confirm-ring::before{background:#fff}
     padding:0 2px 12px!important;
   }
 }
+
+
+/* Final fullscreen viewer controls: SVG only, no text glyphs. */
+.image-viewer-controls button{
+  display:grid!important;
+  place-items:center!important;
+  padding:0!important;
+  font-size:0!important;
+}
+.image-viewer-controls button svg{
+  width:20px!important;
+  height:20px!important;
+  fill:none!important;
+  stroke:currentColor!important;
+  stroke-width:1.8!important;
+  stroke-linecap:round!important;
+  stroke-linejoin:round!important;
+}
+.image-viewer-controls button:hover{
+  transform:translateY(-1px);
+  border-color:rgba(184,132,255,.7);
+  box-shadow:0 10px 30px rgba(0,0,0,.34),0 0 0 1px rgba(184,132,255,.12) inset;
+}
+.image-viewer-close svg{width:19px!important;height:19px!important}
+@media(max-width:800px){
+  .image-viewer-controls button svg{width:18px!important;height:18px!important}
+}
+
+/* The chat's newest bubble must remain visually attached to the composer edge. */
+.chat-canvas .chat-stream{
+  padding-bottom:10px!important;
+}
