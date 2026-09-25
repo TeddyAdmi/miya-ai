@@ -549,6 +549,7 @@ document.querySelectorAll("[data-tool]").forEach(b=>b.onclick=()=>{
    $("#chatSubmenu")?.classList.add("suppressed");
    document.querySelectorAll("[data-mode]").forEach(x=>x.classList.remove("active"));
    $("#chatMenuToggle")?.classList.remove("active");
+   referenceImage=null;try{sessionStorage.removeItem("miyaReferenceImage")}catch{};setComposerAttachment("");$("#composerInput").value="";syncInput();
    mode="images";
    const m=modes.images;
    $("#workspaceEyebrow").textContent=m.eyebrow;$("#workspaceTitle").textContent="Библиотека Miya";$("#workspaceSubtitle").textContent="Сохранённые изображения и видео";
