@@ -1306,3 +1306,19 @@ body.light .composer-options .composer-trash:hover{
 .video-options .video-trash svg{width:16px!important;height:16px!important;fill:none!important;stroke:currentColor!important;stroke-width:1.8!important;stroke-linecap:round!important;stroke-linejoin:round!important}
 .video-options .video-trash:hover{background:rgba(120,150,190,.12)!important;color:inherit!important}
 body.light .video-options .video-trash:hover{background:#edf3f9!important;color:#182436!important}
+
+/* Prompt copy controls match the compact improve/trash buttons. */
+.composer-copy{
+  flex:0 0 38px!important;width:38px!important;height:38px!important;
+  padding:0!important;display:grid!important;place-items:center!important;
+  border:0!important;background:transparent!important;color:var(--muted)!important;
+  border-radius:9px!important;cursor:pointer!important;
+}
+.composer-copy svg{
+  width:16px!important;height:16px!important;fill:none!important;
+  stroke:currentColor!important;stroke-width:1.8!important;
+  stroke-linecap:round!important;stroke-linejoin:round!important;
+}
+.composer-copy:hover{background:rgba(120,150,190,.12)!important;color:inherit!important}
+body.light .composer-copy:hover{background:#edf3f9!important;color:#182436!important}
+.composer-emoji:not(.chat-only){display:none!important}
