@@ -1288,3 +1288,35 @@ body.light .composer-left-actions .composer-trash:hover{
  .emoji-row button{font-size:14px!important;width:23px!important;height:23px!important}
  .starter-row button{font-size:9px!important;padding:5px 6px!important}
 }
+
+/* Trash aligns with the image model controls row. */
+.composer-options .composer-trash{
+  flex:0 0 38px!important;
+  width:38px!important;
+  height:38px!important;
+  padding:0!important;
+  display:grid!important;
+  place-items:center!important;
+  border:0!important;
+  background:transparent!important;
+  color:var(--muted)!important;
+  border-radius:9px!important;
+  cursor:pointer!important;
+}
+.composer-options .composer-trash svg{
+  width:16px!important;
+  height:16px!important;
+  fill:none!important;
+  stroke:currentColor!important;
+  stroke-width:1.8!important;
+  stroke-linecap:round!important;
+  stroke-linejoin:round!important;
+}
+.composer-options .composer-trash:hover{
+  background:rgba(120,150,190,.12)!important;
+  color:inherit!important;
+}
+body.light .composer-options .composer-trash:hover{
+  background:#edf3f9!important;
+  color:#182436!important;
+}
