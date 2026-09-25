@@ -131,7 +131,11 @@ function openSavedChat(id){
  const c=$("#canvas");c.innerHTML='<div class="chat-stream"></div>';
  chatMessages.forEach(m=>addChatMessage(m.content,m.role==="user",m.image||""));
  renderChatHistoryMini();
- requestAnimationFrame(()=>$("#composerInput")?.focus());
+ requestAnimationFrame(()=>{
+   const workspace=$("#workspace");
+   if(workspace)workspace.scrollTo({top:workspace.scrollHeight,behavior:"auto"});
+   $("#composerInput")?.focus();
+ });
 }
 
 const LIB_KEY="miyaLibrary";
@@ -448,6 +452,10 @@ function bindQuickCards(){
  const u=$("#uploadFeature");if(u)u.onclick=()=>$("#referenceInput").click();
  const vi=$("#videoImageFeature");if(vi)vi.onclick=()=>$("#referenceInput").click();
 }
+function scrollImagesToTop(){
+ const workspace=$("#workspace");
+ if(workspace)requestAnimationFrame(()=>workspace.scrollTo({top:0,behavior:"smooth"}));
+}
 function showLoading(){
  const c=$("#canvas");
  if(mode==="images"){
@@ -459,7 +467,7 @@ function showLoading(){
   card.dataset.model=selectedModel;
   card.innerHTML='<div class="generation-progress"><div class="progress-circle is-active"><span class="progress-percent"></span></div><div class="progress-copy"><b>Генерация изображения</b><span class="progress-model"></span></div></div>';
   card.querySelector(".progress-model").textContent=referenceImage?selectedModel+" · загрузка файла…":selectedModel+" · генерация…";
-  grid.prepend(card);return;
+  grid.prepend(card);scrollImagesToTop();return;
  }
  c.innerHTML='<div class="loading-state"><div class="spinner"></div><b>Готовим видео…</b><span>Запрос отправлен в видеодвижок Miya.</span></div>';
 }
