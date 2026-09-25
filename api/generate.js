@@ -134,9 +134,11 @@ export default async function handler(req, res) {
       typeof options.imageBase64 === "string" ? options.imageBase64.trim() : "";
 
     const isImageToImage = Boolean(imageUrl || imageBase64);
-    const endpoint = isImageToImage
-      ? "https://ahm7xmakki.com/api/pti"
-      : "https://ahm7xmakki.com/api/tti";
+    const endpointPath = isImageToImage ? "/api/pti" : "/api/tti";
+    const endpoints = [
+      "https://ahm7xmakki.com" + endpointPath,
+      "https://www.ahm7xmakki.com" + endpointPath
+    ];
 
     const payload = {
       prompt,
@@ -188,46 +190,83 @@ export default async function handler(req, res) {
       }
     }
 
-    const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 58000);
     let response;
     let raw = "";
     let data = {};
-    try {
-      for (let attempt = 0; attempt < 3; attempt++) {
-        response = await fetch(endpoint, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            "Accept": "application/json"
-          },
-          body: JSON.stringify(payload),
-          signal: controller.signal
-        });
-        raw = await response.text();
-        try {
-          data = raw ? JSON.parse(raw) : {};
-        } catch {
-          data = {};
-        }
+    let lastNetworkError = null;
 
-        if (response.ok && data?.success !== false) break;
-        if (![429, 500, 502, 503, 504].includes(response.status) || attempt === 2) break;
-        await new Promise(resolve => setTimeout(resolve, 700 * (attempt + 1)));
+    for (const endpoint of endpoints) {
+      let endpointSucceeded = false;
+
+      for (let attempt = 0; attempt < 3; attempt++) {
+        const controller = new AbortController();
+        const timeout = setTimeout(() => controller.abort(), 56000);
+
+        try {
+          response = await fetch(endpoint, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              "Accept": "application/json"
+            },
+            body: JSON.stringify(payload),
+            signal: controller.signal
+          });
+
+          raw = await response.text();
+          try {
+            data = raw ? JSON.parse(raw) : {};
+          } catch {
+            data = {};
+          }
+
+          if (response.ok && data?.success !== false) {
+            endpointSucceeded = true;
+            break;
+          }
+
+          if (![429, 500, 502, 503, 504].includes(response.status) || attempt === 2) {
+            break;
+          }
+
+          await new Promise(resolve => setTimeout(resolve, 700 * (attempt + 1)));
+        } catch (error) {
+          lastNetworkError = error;
+
+          if (error?.name === "AbortError") {
+            return res.status(504).json({
+              ok: false,
+              error: "FLUX_TIMEOUT",
+              message: isImageToImage
+                ? "Flux Kontext Dev не завершил генерацию за 56 секунд."
+                : "Flux Dev не завершил генерацию за 56 секунд."
+            });
+          }
+
+          break;
+        } finally {
+          clearTimeout(timeout);
+        }
       }
-    } catch (error) {
-      if (error?.name === "AbortError") {
-        return res.status(504).json({
-          ok: false,
-          error: "FLUX_TIMEOUT",
-          message: isImageToImage
-            ? "Flux Kontext Dev не завершил генерацию за 58 секунд."
-            : "Flux Dev не завершил генерацию за 58 секунд."
-        });
+
+      if (endpointSucceeded) break;
+
+      // If the first PixelSter hostname is unreachable from the Vercel runtime,
+      // try the www hostname before returning a server error.
+      if (lastNetworkError && endpoint !== endpoints[endpoints.length - 1]) {
+        continue;
       }
-      throw error;
-    } finally {
-      clearTimeout(timeout);
+
+      break;
+    }
+
+    if (lastNetworkError && (!response || !response.ok)) {
+      return res.status(502).json({
+        ok: false,
+        error: "FLUX_UPSTREAM_UNREACHABLE",
+        message: "Сервер Miya не смог подключиться к PixelSter. Попробована резервная точка API.",
+        detail: lastNetworkError?.message || "Upstream connection failed"
+      });
     }
 
     if (!response.ok || data?.success === false) {
@@ -261,7 +300,7 @@ export default async function handler(req, res) {
       meta: {
         transport: "http-json",
         free: true,
-        endpoint: isImageToImage ? "/api/pti" : "/api/tti",
+        endpoint: endpointPath,
         edit: isImageToImage
       }
     });
