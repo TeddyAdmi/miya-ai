@@ -143,7 +143,34 @@ export default async function handler(req, res) {
       ratio: isImageToImage && ratio === "1:1" ? "auto" : ratio
     };
 
-    if (imageUrl) payload.imageUrl = imageUrl;
+    if (imageUrl) {
+      // PixelSter's image-to-image endpoint is documented around uploaded image data.
+      // Convert library/remote URLs to base64 server-side instead of forwarding imageUrl.
+      const sourceResponse = await fetch(imageUrl, {
+        method: "GET",
+        headers: { Accept: "image/*" }
+      });
+      if (!sourceResponse.ok) {
+        return res.status(400).json({
+          ok: false,
+          error: "SOURCE_IMAGE_FETCH_FAILED",
+          message: "Не удалось получить исходное изображение для редактирования (HTTP " + sourceResponse.status + ")."
+        });
+      }
+      const sourceBuffer = Buffer.from(await sourceResponse.arrayBuffer());
+      if (sourceBuffer.length > 3.5 * 1024 * 1024) {
+        return res.status(413).json({
+          ok: false,
+          error: "SOURCE_IMAGE_TOO_LARGE",
+          message: "Исходное изображение слишком большое. PixelSter принимает изображения до 3.5 MB."
+        });
+      }
+      const contentType = sourceResponse.headers.get("content-type") || "image/jpeg";
+      const mime = /^image\\/(jpeg|png|webp)$/i.test(contentType)
+        ? contentType.split(";")[0]
+        : "image/jpeg";
+      payload.imageBase64 = "data:" + mime + ";base64," + sourceBuffer.toString("base64");
+    }
     if (imageBase64) payload.imageBase64 = imageBase64;
 
     if (isImageToImage && imageBase64) {
