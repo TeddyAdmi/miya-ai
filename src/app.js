@@ -22,7 +22,7 @@ function saveCurrentChat(){
 }
 function renderChatHistoryMini(){
  const box=$("#chatHistoryMini");if(!box)return;
- const chats=getChats().sort((x,y)=>Number(Boolean(y.pinned))-Number(Boolean(x.pinned))||(y.updatedAt||0)-(x.updatedAt||0));
+ const chats=getChats().sort((a,b)=>Number(Boolean(b.pinned))-Number(Boolean(a.pinned))||(b.updatedAt||0)-(a.updatedAt||0)).slice(0,5);
  box.innerHTML="";
  chats.forEach(chat=>{
    const row=document.createElement("div");
@@ -34,8 +34,7 @@ function renderChatHistoryMini(){
    b.onclick=e=>{e.preventDefault();e.stopPropagation();openSavedChat(chat.id)};
 
    const more=document.createElement("button");
-   more.className="chat-history-more";more.type="button";
-   more.title="Действия чата";more.setAttribute("aria-label","Действия чата");more.textContent="⋯";
+   more.className="chat-history-more";more.type="button";more.title="Действия чата";more.textContent="⋯";
    more.onclick=e=>{
      e.preventDefault();e.stopPropagation();
      document.querySelectorAll(".chat-history-row.menu-open").forEach(x=>{if(x!==row)x.classList.remove("menu-open")});
@@ -50,16 +49,30 @@ function renderChatHistoryMini(){
      const all=getChats(),item=all.find(x=>x.id===chat.id);
      if(item){item.pinned=!item.pinned;localStorage.setItem(CHAT_KEY,JSON.stringify(all));renderChatHistoryMini()}
    };
+
    const rename=document.createElement("button");rename.type="button";
    rename.innerHTML='<span class="menu-icon">✎</span><span>Переименовать</span>';
    rename.onclick=e=>{
      e.preventDefault();e.stopPropagation();
-     const name=prompt("Название чата:",chat.title||"Новый чат");
-     if(name&&name.trim()){
+     menu.classList.add("rename-open");
+     menu.innerHTML="";
+     const label=document.createElement("div");label.className="rename-label";label.textContent="Название чата";
+     const input=document.createElement("input");input.className="chat-rename-input";input.value=chat.title||"Новый чат";input.maxLength=60;
+     const save=document.createElement("button");save.type="button";save.className="chat-rename-save";save.innerHTML='<span class="menu-icon">✓</span><span>Сохранить</span>';
+     const cancel=document.createElement("button");cancel.type="button";cancel.className="chat-rename-cancel";cancel.innerHTML='<span class="menu-icon">×</span><span>Отмена</span>';
+     const commit=()=>{
+       const name=input.value.trim();if(!name)return input.focus();
        const all=getChats(),item=all.find(x=>x.id===chat.id);
-       if(item){item.title=name.trim().slice(0,60);localStorage.setItem(CHAT_KEY,JSON.stringify(all));renderChatHistoryMini()}
-     }
+       if(item){item.title=name.slice(0,60);localStorage.setItem(CHAT_KEY,JSON.stringify(all))}
+       renderChatHistoryMini();
+     };
+     save.onclick=e=>{e.stopPropagation();commit()};
+     cancel.onclick=e=>{e.stopPropagation();renderChatHistoryMini()};
+     input.onkeydown=e=>{if(e.key==="Enter"){e.preventDefault();commit()}if(e.key==="Escape"){e.preventDefault();renderChatHistoryMini()}};
+     menu.append(label,input,save,cancel);
+     requestAnimationFrame(()=>{input.focus();input.select()});
    };
+
    const del=document.createElement("button");del.type="button";
    del.innerHTML='<span class="menu-icon">×</span><span>Удалить</span>';
    del.onclick=e=>{
@@ -70,22 +83,15 @@ function renderChatHistoryMini(){
      renderChatHistoryMini();
    };
    menu.append(pin,rename,del);
-   row.append(b,more,menu);
-   box.appendChild(row);
+   row.append(b,more,menu);box.appendChild(row);
  });
 }
 
 function openSavedChat(id){
  const chat=getChats().find(x=>x.id===id);if(!chat)return;
- mode="chat";
- chatMessages=chat.messages.map(m=>({...m}));
- window.__miyaChatId=chat.id;
- chatStarted=true;
- referenceImage=null;
- setComposerAttachment("");
- setMode("chat",false);
- const c=$("#canvas");
- c.innerHTML='<div class="chat-stream"></div>';
+ mode="chat";chatMessages=chat.messages.map(m=>({...m}));window.__miyaChatId=chat.id;chatStarted=true;
+ referenceImage=null;setComposerAttachment("");setMode("chat",false);
+ const c=$("#canvas");c.innerHTML='<div class="chat-stream"></div>';
  chatMessages.forEach(m=>addChatMessage(m.content,m.role==="user",m.image||""));
  renderChatHistoryMini();
  requestAnimationFrame(()=>$("#composerInput")?.focus());
