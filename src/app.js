@@ -427,25 +427,25 @@ async function generateImage(prompt){
  const composerProgress=$("#composerProgress");
  let fakeProgress=0;
  let fakeTimer=null;
- let processing=false;
  const setProgress=(p)=>{
-  const value=Math.max(0,Math.min(100,Math.round(p)));
+  const value=Math.max(0,Math.min(99,Math.round(p)));
   if(ring){ring.classList.remove("is-active");ring.style.setProperty("--progress",value+"%");}
   if(percent)percent.textContent=value+"%";
   if(composerProgress)composerProgress.textContent=value+"%";
  };
- const startProgress=()=>{
-  setProgress(0);
+ const startFakeProgress=()=>{
+  setProgress(fakeProgress);
   fakeTimer=setInterval(()=>{
-   if(processing)return;
-   const remaining=88-fakeProgress;
-   const step=remaining>45?Math.random()*5+1:remaining>18?Math.random()*2+0.7:Math.random()*0.5+0.15;
-   fakeProgress=Math.min(88,fakeProgress+step);
+   // Deliberately slow down near the end so the UI never pretends generation is finished.
+   const remaining=92-fakeProgress;
+   const step=remaining>45?Math.random()*7+2:remaining>18?Math.random()*3+1:Math.random()*0.8+0.2;
+   fakeProgress=Math.min(92,fakeProgress+step);
    setProgress(fakeProgress);
+   if($("#composerStatus"))$("#composerStatus").textContent=modelName+" · генерация…";
   },900);
  };
- startProgress();
- $("#composerStatus").textContent=hasFileUpload?modelName+" · подготовка изображения…":modelName+" · генерация…";
+ startFakeProgress();
+ $("#composerStatus").textContent=hasFileUpload?modelName+" · загрузка файла…":modelName+" · генерация…";
  try{
   const payload={
    prompt,
@@ -455,51 +455,36 @@ async function generateImage(prompt){
    if(referenceImage.startsWith("data:image/"))payload.imageBase64=referenceImage;
    else payload.imageUrl=referenceImage;
   }
-
-  // Image generation/editing goes directly to PixelSter in the browser.
-  // This avoids Vercel's ~60s serverless timeout when Flux Kontext is still processing.
-  const endpoint=referenceImage
-    ?"https://ahm7xmakki.com/api/pti"
-    :"https://ahm7xmakki.com/api/tti";
-  const directBody=referenceImage
-    ?{prompt:payload.prompt,ratio:payload.ratio,imageBase64:payload.imageBase64}
-    :{prompt:payload.prompt,ratio:payload.ratio};
-
-  if(referenceImage&&!payload.imageBase64){
-   // Old library entries without an IndexedDB copy still use the Miya proxy.
-   // New uploads and recent generations use the direct browser path above.
-   throw new Error("SOURCE_IMAGE_PROXY");
-  }
-
-  processing=true;
-  if(fakeTimer){clearInterval(fakeTimer);fakeTimer=null;}
-  fakeProgress=0;
-  setProgress(0);
-  const modelLabel=loader?.querySelector(".progress-model");
-  if(modelLabel)modelLabel.textContent=modelName+" · AI обрабатывает изображение…";
-  $("#composerStatus").textContent=modelName+" · AI обрабатывает изображение…";
-  requestAnimationFrame(()=>{if(ring)ring.classList.add("is-active")});
-
+  const body=JSON.stringify({
+   mode:"image",provider:"legacy-flux",prompt,model:modelName,
+   ratio:$("#composerRatio").value,outputFormat:"png",options:referenceImage?payload:{}
+  });
   const data=await new Promise((resolve,reject)=>{
    const xhr=new XMLHttpRequest();
-   xhr.open("POST",endpoint,true);
+   xhr.open("POST","/api/generate",true);
    xhr.setRequestHeader("Content-Type","application/json");
    xhr.setRequestHeader("Accept","application/json");
    xhr.upload.onprogress=e=>{
     if(!hasFileUpload||!e.lengthComputable)return;
     const p=Math.max(0,Math.min(100,Math.round(e.loaded/e.total*100)));
-    if(p<100){
-      fakeProgress=p;
-      setProgress(p);
-      if($("#composerStatus"))$("#composerStatus").textContent=modelName+" · загрузка файла "+p+"%";
-    }
+    fakeProgress=p;
+    setProgress(p);
+    if($("#composerStatus"))$("#composerStatus").textContent=modelName+" · загрузка файла "+p+"%";
    };
    xhr.upload.onload=()=>{
     if(!hasFileUpload)return;
-    if($("#composerStatus"))$("#composerStatus").textContent=modelName+" · AI обрабатывает изображение…";
+    fakeProgress=100;
+    setProgress(100);
+    const modelLabel=loader?.querySelector(".progress-model");
+    if(modelLabel)modelLabel.textContent=modelName+" · файл загружен · генерация…";
+    if($("#composerStatus"))$("#composerStatus").textContent=modelName+" · файл загружен · генерация…";
+    if(fakeTimer){clearInterval(fakeTimer);fakeTimer=null;}
+    fakeProgress=72;
+    setProgress(fakeProgress);
+    requestAnimationFrame(()=>{if(ring)ring.classList.add("is-active")});
    };
-   xhr.onerror=()=>reject(new Error("PixelSter не отвечает. Проверь соединение с бесплатным FLUX API."));
-   xhr.ontimeout=()=>reject(new Error("Flux Kontext Dev не ответил вовремя."));
+   xhr.onerror=()=>reject(new Error("Не удалось соединиться с сервером генерации"));
+   xhr.ontimeout=()=>reject(new Error("Сервер генерации не ответил вовремя"));
    xhr.onload=()=>{
     let result={};
     try{result=xhr.responseText?JSON.parse(xhr.responseText):{}}catch{}
@@ -509,15 +494,15 @@ async function generateImage(prompt){
       reject(new Error(detail));
     }
    };
-   xhr.timeout=180000;
-   xhr.send(JSON.stringify(directBody));
+   xhr.timeout=60000;
+   xhr.send(body);
   });
-
   const actualModel=data.model||modelName;
+  if(fakeTimer){clearInterval(fakeTimer);fakeTimer=null;}
   if(loader){
    setProgress(100);
-   const label=loader.querySelector(".progress-model");
-   if(label)label.textContent=actualModel+" · готово";
+   const modelLabel=loader.querySelector(".progress-model");
+   if(modelLabel)modelLabel.textContent=actualModel+" · готово";
   }
   showImage(data.imageUrl,prompt,actualModel);
   $("#composerInput").value="";syncInput();
@@ -526,34 +511,15 @@ async function generateImage(prompt){
   if(composerProgress)composerProgress.textContent="100%";
   setTimeout(()=>$("#canvas .generation-loading")?.remove(),350);
  }catch(e){
-  if(e?.message==="SOURCE_IMAGE_PROXY"){
-   // Fall back to the existing server route only for external library URLs.
-   // This path may still hit the Vercel timeout, but fresh/local images never do.
-   try{
-    const body=JSON.stringify({
-     mode:"image",provider:"legacy-flux",prompt,model:modelName,
-     ratio:$("#composerRatio").value,outputFormat:"png",
-     options:{prompt,ratio:$("#composerRatio").value,imageUrl:referenceImage}
-    });
-    const response=await fetch("/api/generate",{method:"POST",headers:{"Content-Type":"application/json","Accept":"application/json"},body,signal:AbortSignal.timeout(60000)});
-    const data=await response.json().catch(()=>({}));
-    if(!response.ok||!data.imageUrl)throw new Error(data.message||data.error||("Генерация не выполнена (HTTP "+response.status+")"));
-    if(fakeTimer){clearInterval(fakeTimer);fakeTimer=null;}
-    showImage(data.imageUrl,prompt,data.model||modelName);
-    $("#composerInput").value="";syncInput();
-    $("#composerStatus").textContent=(data.model||modelName)+" · готово";
-    return;
-   }catch(proxyError){throw proxyError}
-  }
   if(fakeTimer){clearInterval(fakeTimer);fakeTimer=null;}
   $("#canvas .generation-loading")?.remove();
   if(composerProgress)composerProgress.textContent="";
   toast(e.message||"Ошибка генерации");
   $("#composerStatus").textContent=modelName+" · ошибка";
  }finally{
-  if(fakeTimer){clearInterval(fakeTimer);fakeTimer=null;}
   $("#composerSend").disabled=false;
- }
+  if(fakeTimer){clearInterval(fakeTimer);fakeTimer=null;}
+}
 }
 function addChatMessage(text,isUser,image=""){
  let stream=$("#canvas .chat-stream");
