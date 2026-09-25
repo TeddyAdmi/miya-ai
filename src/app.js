@@ -481,7 +481,7 @@ async function generateImage(prompt){
     if(modelLabel)modelLabel.textContent=modelName+" · файл загружен · генерация…";
     if($("#composerStatus"))$("#composerStatus").textContent=modelName+" · файл загружен · генерация…";
     if(fakeTimer){clearInterval(fakeTimer);fakeTimer=null;}
-    fakeProgress=72;
+    fakeProgress=Math.max(fakeProgress,72);
     setProgress(fakeProgress);
     requestAnimationFrame(()=>{if(ring)ring.classList.add("is-active")});
    };
