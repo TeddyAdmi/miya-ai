@@ -269,7 +269,7 @@ export default async function handler(req, res) {
       });
     }
 
-    if (!response.ok || data?.success === false) {
+    if (!response || !response.ok || data?.success === false) {
       return res.status(502).json({
         ok: false,
         error: String(data?.error || data?.message || `FLUX_HTTP_${response.status}`),
@@ -309,7 +309,9 @@ export default async function handler(req, res) {
 
     return res.status(500).json({
       ok: false,
-      error: error?.message || "GENERATION_ERROR"
+      error: "GENERATION_ERROR",
+      message: error?.message || "Не удалось выполнить запрос генерации.",
+      detail: String(error?.stack || "").slice(0, 1200)
     });
   }
 }
