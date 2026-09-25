@@ -236,11 +236,24 @@ async function handler(req, res) {
     let raw = "";
     let data = {};
     let lastNetworkError = null;
+    const payloadVariants = isImageToImage && imageBase64
+      ? [
+          { ...payload, image: undefined },
+          { prompt, ratio: payload.ratio, image: imageBase64 },
+          { prompt, ratio: payload.ratio, imageBase64 }
+        ].map(item => {
+          const clean = { ...item };
+          if (clean.image === undefined) delete clean.image;
+          return clean;
+        })
+      : [payload];
 
     for (const endpoint of endpoints) {
       let endpointSucceeded = false;
 
-      for (let attempt = 0; attempt < 3; attempt++) {
+      for (let variantIndex = 0; variantIndex < payloadVariants.length && !endpointSucceeded; variantIndex++) {
+        const activePayload = payloadVariants[variantIndex];
+        for (let attempt = 0; attempt < 3; attempt++) {
         const controller = new AbortController();
         const timeout = setTimeout(() => controller.abort(), 58000);
 
@@ -251,7 +264,7 @@ async function handler(req, res) {
               "Content-Type": "application/json",
               "Accept": "application/json"
             },
-            body: JSON.stringify(payload),
+            body: JSON.stringify(activePayload),
             signal: controller.signal
           });
 
@@ -288,6 +301,7 @@ async function handler(req, res) {
           break;
         } finally {
           clearTimeout(timeout);
+        }
         }
       }
 
