@@ -548,7 +548,7 @@ function addChatMessage(text,isUser,image=""){
    actions.querySelector('[title="Создать видео"]').onclick=()=>{setMode("video");$("#composerInput").value=text;syncInput();$("#composerInput").focus()};
    content.appendChild(actions);
  }
- row.append(av,content);stream.appendChild(row);stream.scrollTop=stream.scrollHeight;
+ row.append(av,content);stream.appendChild(row);const workspace=$("#workspace");if(workspace)requestAnimationFrame(()=>workspace.scrollTo({top:workspace.scrollHeight,behavior:"smooth"}));
  chatStarted=true;
 }
 async function requestChat(){
