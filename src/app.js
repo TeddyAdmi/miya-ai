@@ -409,6 +409,27 @@ async function generateImage(prompt){
  const percent=ring?.querySelector(".progress-percent");
  const modelName=referenceImage?"FLUX Kontext Dev":"FLUX Dev";
  const hasFileUpload=Boolean(referenceImage);
+ const composerProgress=$("#composerProgress");
+ let fakeProgress=hasFileUpload?18:8;
+ let fakeTimer=null;
+ const setProgress=(p)=>{
+  const value=Math.max(0,Math.min(99,Math.round(p)));
+  if(ring){ring.classList.remove("is-active");ring.style.setProperty("--progress",value+"%");}
+  if(percent)percent.textContent=value+"%";
+  if(composerProgress)composerProgress.textContent=value+"%";
+ };
+ const startFakeProgress=()=>{
+  setProgress(fakeProgress);
+  fakeTimer=setInterval(()=>{
+   // Deliberately slow down near the end so the UI never pretends generation is finished.
+   const remaining=96-fakeProgress;
+   const step=remaining>45?Math.random()*7+2:remaining>18?Math.random()*3+1:Math.random()*0.8+0.2;
+   fakeProgress=Math.min(96,fakeProgress+step);
+   setProgress(fakeProgress);
+   if($("#composerStatus"))$("#composerStatus").textContent=modelName+" · генерация…";
+  },900);
+ };
+ startFakeProgress();
  $("#composerStatus").textContent=hasFileUpload?modelName+" · загрузка файла…":modelName+" · генерация…";
  try{
   const payload={
@@ -431,17 +452,20 @@ async function generateImage(prompt){
    xhr.upload.onprogress=e=>{
     if(!hasFileUpload||!e.lengthComputable)return;
     const p=Math.max(0,Math.min(100,Math.round(e.loaded/e.total*100)));
-    if(ring){ring.classList.remove("is-active");ring.style.setProperty("--progress",p+"%");}
-    if(percent)percent.textContent=p+"%";
+    fakeProgress=p;
+    setProgress(p);
     if($("#composerStatus"))$("#composerStatus").textContent=modelName+" · загрузка файла "+p+"%";
    };
    xhr.upload.onload=()=>{
     if(!hasFileUpload)return;
-    if(ring){ring.classList.remove("is-active");ring.style.setProperty("--progress","100%");}
-    if(percent)percent.textContent="100%";
+    fakeProgress=100;
+    setProgress(100);
     const modelLabel=loader?.querySelector(".progress-model");
     if(modelLabel)modelLabel.textContent=modelName+" · файл загружен · генерация…";
     if($("#composerStatus"))$("#composerStatus").textContent=modelName+" · файл загружен · генерация…";
+    if(fakeTimer){clearInterval(fakeTimer);fakeTimer=null;}
+    fakeProgress=72;
+    setProgress(fakeProgress);
     requestAnimationFrame(()=>{if(ring)ring.classList.add("is-active")});
    };
    xhr.onerror=()=>reject(new Error("Не удалось соединиться с сервером генерации"));
@@ -459,9 +483,9 @@ async function generateImage(prompt){
    xhr.send(body);
   });
   const actualModel=data.model||modelName;
+  if(fakeTimer){clearInterval(fakeTimer);fakeTimer=null;}
   if(loader){
-   if(ring){ring.classList.remove("is-active");ring.style.setProperty("--progress","100%");}
-   if(percent)percent.textContent="100%";
+   setProgress(100);
    const modelLabel=loader.querySelector(".progress-model");
    if(modelLabel)modelLabel.textContent=actualModel+" · готово";
   }
@@ -469,12 +493,18 @@ async function generateImage(prompt){
   $("#composerInput").value="";syncInput();
   $("#composerModel").value=referenceImage?"FLUX Kontext Dev":"FLUX Dev";
   $("#composerStatus").textContent=actualModel+" · готово";
+  if(composerProgress)composerProgress.textContent="100%";
   setTimeout(()=>$("#canvas .generation-loading")?.remove(),350);
  }catch(e){
+  if(fakeTimer){clearInterval(fakeTimer);fakeTimer=null;}
   $("#canvas .generation-loading")?.remove();
+  if(composerProgress)composerProgress.textContent="";
   toast(e.message||"Ошибка генерации");
   $("#composerStatus").textContent=modelName+" · ошибка";
- }finally{$("#composerSend").disabled=false;}
+ }finally{
+  $("#composerSend").disabled=false;
+  if(fakeTimer){clearInterval(fakeTimer);fakeTimer=null;}
+}
 }
 function addChatMessage(text,isUser,image=""){
  let stream=$("#canvas .chat-stream");
