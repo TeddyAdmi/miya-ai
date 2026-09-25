@@ -1575,3 +1575,49 @@ body.light .delete-confirm-ring::before{background:#fff}
 .delete-confirm-submit:hover{background:#dc2626;transform:translateY(-1px)}
 .delete-confirm-submit .action-svg svg{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
 @keyframes miyaDeleteIn{from{opacity:0;transform:translateY(8px) scale(.98)}to{opacity:1;transform:none}}
+
+/* Final chat positioning: the newest message sits immediately above the fixed composer. */
+.chat-stream{
+  min-height:calc(100dvh - 190px)!important;
+  height:auto!important;
+  max-height:none!important;
+  display:flex!important;
+  flex-direction:column!important;
+  justify-content:flex-end!important;
+  gap:0!important;
+  padding-top:18px!important;
+  padding-bottom:220px!important;
+}
+.chat-stream .chat-row{flex:0 0 auto!important}
+@media(max-width:800px){
+  .chat-stream{
+    min-height:calc(100dvh - 225px)!important;
+    padding-bottom:205px!important;
+  }
+}
+
+/* Chat/media action menus: compact typography matching section labels. */
+.chat-history-menu button,
+.media-action-menu button,
+.media-menu button{
+  font-size:10px!important;
+  line-height:1.2!important;
+  letter-spacing:0!important;
+}
+.chat-history-menu{min-width:150px!important}
+.chat-history-menu button{min-height:32px!important;padding:6px 9px!important;gap:7px!important}
+.chat-history-menu .menu-icon{width:16px!important;height:16px!important;flex-basis:16px!important}
+.chat-history-menu .menu-svg svg{width:14px!important;height:14px!important}
+.media-action-menu{min-width:160px!important;padding:5px!important}
+.media-action-menu button{min-height:32px!important;padding:6px 9px!important;border-radius:9px!important;font-weight:650!important}
+.media-action-menu .action-icon{width:17px!important;height:17px!important;flex-basis:17px!important}
+.media-action-menu .action-svg svg{width:15px!important;height:15px!important}
+.media-menu{min-width:120px!important;padding:5px!important}
+.media-menu button{min-height:30px!important;padding:5px 8px!important}
+
+/* Keep text controls visually consistent in height without changing the established sizes. */
+.side-btn,.tool-btn,.select-pill,.send,.composer-status,.improve,.pill,
+.chat-bubble,.workspace-head p,.room-intro p,.feature-card small,.quick-card small,
+.library-title,.system-row,.system-title,.side-label{
+  line-height:1.25!important;
+}
