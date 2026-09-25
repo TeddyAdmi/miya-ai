@@ -578,18 +578,44 @@ async function requestChat(){
  status.textContent="Miya думает…";
  $("#composerSend").disabled=true;
  try{
-   const response=await fetch("/api/generate",{
-     method:"POST",
-     headers:{"Content-Type":"application/json","Accept":"application/json"},
-     body:JSON.stringify({mode:"chat",model:"gemini-3.8-flash",messages:chatMessages}),
-     signal:AbortSignal.timeout(90000)
-   });
-   const data=await response.json().catch(()=>({}));
-   if(!response.ok||!data.text) throw new Error(data.message||data.error||"Не удалось получить ответ Miya");
-   chatMessages.push({role:"assistant",content:data.text});
-   addChatMessage(data.text,false);
+   let answer="";
+   let providerLabel="Miya AI";
+
+   // Primary chat transport: Puter.js. It is keyless on the app side,
+   // so Miya does not need a paid API key or a server-side text provider.
+   if(window.puter?.ai?.chat){
+     const response=await window.puter.ai.chat([
+       {
+         role:"system",
+         content:"Ты Miya — дружелюбный AI-помощник внутри Miya AI Studio. Отвечай на русском, если пользователь пишет по-русски. Помогай с текстами, идеями, сценариями, промптами, изображениями и видео. Отвечай полезно и по существу."
+       },
+       ...chatMessages.slice(-12).map(m=>({role:m.role,content:m.content}))
+     ],{model:"google/gemini-3.8-flash",max_tokens:2048});
+     answer=typeof response==="string"
+       ? response.trim()
+       : String(response?.message?.content||response?.text||response?.content||"").trim();
+     providerLabel="Miya · Gemini";
+   }
+
+   // Server fallback remains available if Puter is unavailable.
+   if(!answer){
+     const response=await fetch("/api/generate",{
+       method:"POST",
+       headers:{"Content-Type":"application/json","Accept":"application/json"},
+       body:JSON.stringify({mode:"chat",model:"gemini-3.8-flash",messages:chatMessages}),
+       signal:AbortSignal.timeout(90000)
+     });
+     const data=await response.json().catch(()=>({}));
+     if(!response.ok||!data.text) throw new Error(data.message||data.error||"Не удалось получить ответ Miya");
+     answer=String(data.text).trim();
+     providerLabel="Miya · Free Text";
+   }
+
+   if(!answer)throw new Error("Miya не вернула текст ответа");
+   chatMessages.push({role:"assistant",content:answer});
+   addChatMessage(answer,false);
    saveCurrentChat();
-   status.textContent="Miya · Gemini";
+   status.textContent=providerLabel;
  }catch(e){
    toast(e.message||"Ошибка AI Chat");
    status.textContent="AI Chat · ошибка";
