@@ -593,3 +593,177 @@ body.light .chat-history-menu{background:#fff!important;border-color:#d6e0eb!imp
 body.light .chat-history-menu button{color:#52667b!important}
 body.light .chat-history-menu button:hover{background:#edf3f9!important;color:#182436!important}
 body.light .chat-history-menu button:last-child:hover{background:#fff0f3!important}
+
+
+/* Final chat actions: visible three-dot control and labeled menu. */
+.chat-history-row{
+  position:relative!important;
+  display:flex!important;
+  align-items:center!important;
+  width:100%!important;
+  min-height:40px!important;
+  gap:2px!important;
+}
+.chat-history-mini-item{
+  flex:1!important;
+  min-width:0!important;
+  height:38px!important;
+  padding:8px 10px!important;
+  font-size:12px!important;
+  line-height:1.2!important;
+  font-weight:600!important;
+}
+.chat-history-more{
+  width:34px!important;
+  height:34px!important;
+  flex:0 0 34px!important;
+  display:grid!important;
+  place-items:center!important;
+  padding:0!important;
+  border:0!important;
+  border-radius:7px!important;
+  background:transparent!important;
+  color:var(--muted)!important;
+  font-size:22px!important;
+  line-height:1!important;
+  opacity:0!important;
+  visibility:hidden!important;
+  cursor:pointer!important;
+}
+.chat-history-row:hover .chat-history-more,
+.chat-history-row.menu-open .chat-history-more{
+  opacity:1!important;
+  visibility:visible!important;
+}
+.chat-history-more:hover{
+  background:rgba(120,150,190,.16)!important;
+  color:inherit!important;
+}
+.chat-history-menu{
+  position:absolute!important;
+  right:0!important;
+  top:calc(100% - 1px)!important;
+  width:190px!important;
+  padding:6px!important;
+  display:flex!important;
+  flex-direction:column!important;
+  gap:3px!important;
+  background:rgba(7,22,40,.99)!important;
+  border:1px solid var(--line)!important;
+  border-radius:10px!important;
+  box-shadow:0 16px 40px rgba(0,0,0,.38)!important;
+  opacity:0!important;
+  visibility:hidden!important;
+  pointer-events:none!important;
+  transform:translateY(-2px)!important;
+  transition:opacity .1s ease,visibility .1s ease,transform .1s ease!important;
+  z-index:1000!important;
+}
+.chat-history-row.menu-open .chat-history-menu{
+  opacity:1!important;
+  visibility:visible!important;
+  pointer-events:auto!important;
+  transform:translateY(0)!important;
+}
+.chat-history-menu button{
+  width:100%!important;
+  height:38px!important;
+  padding:0 10px!important;
+  display:flex!important;
+  align-items:center!important;
+  gap:10px!important;
+  border:0!important;
+  border-radius:7px!important;
+  background:transparent!important;
+  color:#c6d4e3!important;
+  font-size:12px!important;
+  font-weight:600!important;
+  text-align:left!important;
+  cursor:pointer!important;
+}
+.chat-history-menu .menu-icon{
+  width:20px!important;
+  flex:0 0 20px!important;
+  display:inline-grid!important;
+  place-items:center!important;
+  font-size:16px!important;
+  line-height:1!important;
+}
+.chat-history-menu button:hover{
+  background:#102b48!important;
+  color:#fff!important;
+}
+.chat-history-menu button:last-child:hover{
+  background:rgba(180,70,100,.18)!important;
+}
+.chat-history-row.pinned .chat-history-mini-item{
+  background:rgba(112,82,205,.18)!important;
+  color:#fff!important;
+  border-left:3px solid #a96cff!important;
+}
+body.light .chat-history-row.pinned .chat-history-mini-item{
+  background:#eeeaff!important;
+  color:#4d438f!important;
+  border-left-color:#8064c8!important;
+}
+body.light .chat-history-menu{
+  background:#fff!important;
+  border-color:#d6e0eb!important;
+  box-shadow:0 16px 40px rgba(30,55,85,.18)!important;
+}
+body.light .chat-history-menu button{
+  color:#52667b!important;
+}
+body.light .chat-history-menu button:hover{
+  background:#edf3f9!important;
+  color:#182436!important;
+}
+body.light .chat-history-menu button:last-child:hover{
+  background:#fff0f3!important;
+}
+
+/* Readability pass: larger text throughout the interface. */
+.side-label{font-size:12px!important}
+.side-btn{font-size:14px!important}
+.side-btn .ico{font-size:16px!important}
+.side-btn em{font-size:14px!important}
+.tool-btn{font-size:13px!important}
+.side-brand b{font-size:24px!important}
+.side-brand small{font-size:11px!important}
+.system-title{font-size:12px!important}
+.system-row{font-size:12px!important}
+.system-row b{font-size:11px!important}
+.side-user b{font-size:13px!important}
+.side-user small{font-size:11px!important}
+.workspace-head h1{font-size:30px!important}
+.workspace-head p{font-size:14px!important}
+.eyebrow,.mini-badge{font-size:11px!important}
+.chat-room .section-welcome h2,.studio-room .section-welcome h2{font-size:31px!important}
+.chat-room .section-welcome p,.studio-room .section-welcome p{font-size:14px!important}
+.results-head h3{font-size:19px!important}
+.library-title{font-size:13px!important}
+.composer textarea{font-size:16px!important}
+.select-pill{font-size:12px!important}
+.improve{font-size:11px!important}
+.composer-status{font-size:11px!important}
+.send{font-size:13px!important}
+.side-subbtn{font-size:13px!important}
+.chat-bubble{font-size:14px!important}
+.chat-actions button{font-size:10px!important}
+.progress-copy b{font-size:11px!important}
+.progress-model{font-size:9px!important}
+@media(max-width:800px){
+ .side-btn{font-size:13px!important}
+ .side-label{font-size:11px!important}
+ .workspace-head h1{font-size:24px!important}
+ .workspace-head p{font-size:12px!important}
+ .chat-room .section-welcome h2,.studio-room .section-welcome h2{font-size:25px!important}
+ .chat-room .section-welcome p,.studio-room .section-welcome p{font-size:12px!important}
+ .composer textarea{font-size:14px!important}
+ .chat-bubble{font-size:13px!important}
+ .chat-history-mini-item{font-size:11px!important}
+ .chat-history-menu button{font-size:11px!important}
+}
+
+/* Every section gets a fresh canvas; image mode opens its library, not stale tool output. */
+.canvas{position:relative}
