@@ -233,8 +233,14 @@ function showPrompt(item){
  let modal=$("#mediaPromptModal");
  if(!modal){
   modal=document.createElement("div");modal.id="mediaPromptModal";modal.className="media-prompt-modal";
-  modal.innerHTML='<div class="media-prompt-backdrop"></div><div class="media-prompt-dialog" role="dialog" aria-modal="true"><div class="media-prompt-head"><b>Промт изображения</b><button type="button" class="media-prompt-close" aria-label="Закрыть">×</button></div><div class="media-prompt-body"></div></div>';
+  modal.innerHTML='<div class="media-prompt-backdrop"></div><div class="media-prompt-dialog" role="dialog" aria-modal="true"><div class="media-prompt-head"><b>Промт изображения</b><div class="media-prompt-head-actions"><button type="button" class="media-prompt-copy" aria-label="Скопировать промт" title="Скопировать промт"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M15 9V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v7a2 2 0 0 0 2 2h3"/></svg></button><button type="button" class="media-prompt-close" aria-label="Закрыть" title="Закрыть">×</button></div></div><div class="media-prompt-body"></div></div>';
   document.body.appendChild(modal);
+  modal.querySelector(".media-prompt-copy").onclick=async()=>{
+   const value=modal.querySelector(".media-prompt-body")?.textContent||"";
+   if(!value.trim())return;
+   try{await navigator.clipboard.writeText(value);toast("Промт скопирован");}
+   catch{toast("Не удалось скопировать промт");}
+  };
   modal.querySelector(".media-prompt-close").onclick=()=>modal.classList.remove("open");
   modal.querySelector(".media-prompt-backdrop").onclick=()=>modal.classList.remove("open");
  }
