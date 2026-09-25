@@ -854,3 +854,39 @@ body.light .chat-history-menu .rename-label{color:#71859a!important}
 
 /* Do not let chat submenu create a page/column scrollbar. */
 .chat-nav-wrap,.side-submenu{overflow:visible!important}
+
+
+/* Final chat persistence, switching and composer interaction pass. */
+.chat-history-mini{display:flex!important;flex-direction:column!important;overflow:visible!important;max-height:none!important;height:auto!important}
+.chat-history-row{background:transparent!important;border-radius:7px!important}
+.chat-history-row.pinned,
+.chat-history-row.pinned:hover{background:transparent!important}
+.chat-history-row.pinned .chat-history-mini-item{background:rgba(112,82,205,.18)!important}
+.chat-history-row.pinned .chat-history-more{background:transparent!important;color:var(--muted)!important}
+.chat-history-row:hover .chat-history-mini-item{background:rgba(120,150,190,.08)!important}
+.chat-history-row.pinned:hover .chat-history-mini-item{background:rgba(112,82,205,.18)!important}
+.chat-history-more{margin-left:auto!important;position:relative!important;z-index:2!important}
+.chat-history-menu{right:-2px!important}
+.chat-nav-wrap .side-submenu.suppressed{opacity:0!important;visibility:hidden!important;pointer-events:none!important}
+.composer-input-row{position:relative!important}
+.composer-emoji,.mic{flex:0 0 38px!important;width:38px!important;height:38px!important;display:grid!important;place-items:center!important;border:0!important;background:transparent!important;color:var(--muted)!important;border-radius:9px!important;cursor:pointer!important}
+.composer-emoji{font-size:22px!important}
+.composer-emoji:hover,.mic:hover{background:rgba(120,150,190,.12)!important;color:inherit!important}
+.mic svg{width:20px!important;height:20px!important;fill:none!important;stroke:currentColor!important;stroke-width:1.8!important;stroke-linecap:round!important;stroke-linejoin:round!important}
+.mic.recording{color:#b56cff!important;background:rgba(181,108,255,.14)!important;animation:voice-pulse 1.2s ease-in-out infinite!important}
+.mic.recording svg{filter:drop-shadow(0 0 5px rgba(181,108,255,.55))}
+@keyframes voice-pulse{50%{transform:scale(1.06)}}
+.emoji-panel{position:absolute!important;right:78px!important;bottom:calc(100% + 10px)!important;width:300px!important;padding:10px!important;border:1px solid var(--line)!important;border-radius:14px!important;background:rgba(7,22,40,.98)!important;box-shadow:0 18px 50px rgba(0,0,0,.35)!important;opacity:0!important;visibility:hidden!important;pointer-events:none!important;transform:translateY(5px)!important;transition:.12s ease!important;z-index:5000!important}
+.emoji-panel.open{opacity:1!important;visibility:visible!important;pointer-events:auto!important;transform:none!important}
+.emoji-row{display:flex!important;gap:4px!important;justify-content:space-between!important;margin-bottom:9px!important}
+.emoji-row button{border:0!important;background:transparent!important;font-size:20px!important;padding:4px!important;border-radius:7px!important;cursor:pointer!important}
+.emoji-row button:hover{background:rgba(255,255,255,.08)!important}
+.starter-row{display:grid!important;grid-template-columns:1fr 1fr!important;gap:6px!important}
+.starter-row button{min-height:34px!important;padding:6px 8px!important;border:1px solid var(--line)!important;border-radius:8px!important;background:rgba(255,255,255,.04)!important;color:inherit!important;text-align:left!important;font-size:11px!important;cursor:pointer!important}
+.starter-row button:hover{background:rgba(120,150,190,.12)!important}
+body.light .emoji-panel{background:#fff!important;box-shadow:0 18px 50px rgba(30,55,85,.18)!important}
+body.light .starter-row button{background:#f5f7fa!important}
+@media(max-width:800px){
+ .emoji-panel{right:52px!important;width:min(300px,calc(100vw - 28px))!important}
+ .composer-emoji,.mic{width:34px!important;height:34px!important;flex-basis:34px!important}
+}
