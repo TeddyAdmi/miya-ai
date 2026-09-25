@@ -486,7 +486,7 @@ function setMode(next,render=true){
    referenceImage=referenceImage||null;
    renderImageLibrary();
    $("#composerModel").value=referenceImage?"FLUX Kontext Dev":"FLUX Dev";
-   $("#composerRatio").value="16:9";
+   $("#composerRatio").value="auto";
  }else{
    showEmpty();
  }
