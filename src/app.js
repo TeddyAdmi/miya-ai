@@ -124,7 +124,7 @@ function openSavedChat(id){
  const chat=getChats().find(x=>x.id===id);if(!chat)return;
  chatMenuSuppressed=true;$("#chatSubmenu")?.classList.add("suppressed");resetChatMenus();
  mode="chat";chatMessages=chat.messages.map(m=>({...m}));window.__miyaChatId=chat.id;chatStarted=true;
- referenceImage=null;setComposerAttachment("");setMode("chat",false);
+ restoreReferenceImage();setMode("chat",false);
  const c=$("#canvas");c.innerHTML='<div class="chat-stream"></div>';
  chatMessages.forEach(m=>addChatMessage(m.content,m.role==="user",m.image||""));
  renderChatHistoryMini();
@@ -132,7 +132,7 @@ function openSavedChat(id){
 }
 
 const LIB_KEY="miyaLibrary";
-function getLibrary(){try{return JSON.parse(localStorage.getItem(LIB_KEY)||"[]").filter(x=>x&&typeof x.url==="string"&&!x.url.includes("access.vheer.com/results/"))}catch{return[]}}
+function getLibrary(){try{return JSON.parse(localStorage.getItem(LIB_KEY)||"[]").filter(x=>x&&typeof x.url==="string")}catch{return[]}}
 const MEDIA_DB="miyaMediaCache";
 function openMediaDB(){
  return new Promise((resolve,reject)=>{
@@ -305,7 +305,7 @@ async function generateImage(prompt){
   const response=await fetch(endpoint,{method:"POST",headers:{"Content-Type":"application/json","Accept":"application/json"},body:JSON.stringify({mode:"image",provider:"legacy-flux",prompt,model:$("#composerModel").value.trim(),ratio:$("#composerRatio").value,outputFormat:"png",options:referenceImage?payload:{} }),signal:AbortSignal.timeout(60000)});
   const data=await response.json().catch(()=>({}));
   if(!response.ok||!data.imageUrl)throw new Error(data.message||data.error||"Не удалось получить изображение");
-  const actualModel=data.model||"FLUX Dev"; const modelLabel2=loader?.querySelector(".progress-model"); if(modelLabel2)modelLabel2.textContent=actualModel+" · ответ получен"; $("#canvas .generation-loading")?.remove();showImage(data.imageUrl);$("#composerInput").value="";syncInput();clearComposerAttachment();$("#composerModel").value="FLUX Dev";$("#composerStatus").textContent="FLUX Dev · Image ready";
+  const actualModel=data.model||"FLUX Dev"; const modelLabel2=loader?.querySelector(".progress-model"); if(modelLabel2)modelLabel2.textContent=actualModel+" · ответ получен"; $("#canvas .generation-loading")?.remove();showImage(data.imageUrl);$("#composerInput").value="";syncInput();$("#composerModel").value=referenceImage?"FLUX Kontext Dev":"FLUX Dev";$("#composerStatus").textContent="FLUX Dev · Image ready";
  }catch(e){toast(e.message||"Ошибка генерации")}finally{$("#canvas .generation-loading")?.remove();$("#composerSend").disabled=false}
 }
 function addChatMessage(text,isUser,image=""){
@@ -356,8 +356,9 @@ async function requestChat(){
    $("#composerSend").disabled=false;
  }
 }
+function restoreReferenceImage(){try{referenceImage=referenceImage||sessionStorage.getItem("miyaReferenceImage")||""}catch{};setComposerAttachment(referenceImage||"")}
 function setMode(next,render=true){
- mode=next;const m=modes[next];
+ restoreReferenceImage();mode=next;const m=modes[next];
  $("#workspaceEyebrow").textContent=m.eyebrow;$("#workspaceTitle").textContent=m.title;$("#workspaceSubtitle").textContent=m.subtitle;
  $("#composerInput").placeholder=m.placeholder;$("#composerSendText").textContent=m.send;$("#composerStatus").textContent=m.status;
  $(".image-settings").style.display=next==="images"?"flex":"none";$("#videoOptions").classList.toggle("show",next==="video");
@@ -407,7 +408,7 @@ $("#referenceInput").onchange=e=>{
  const file=e.target.files?.[0];if(!file)return;
  const reader=new FileReader();
  reader.onload=()=>{
-  referenceImage=String(reader.result||"");setComposerAttachment(referenceImage);
+  referenceImage=String(reader.result||"");try{sessionStorage.setItem("miyaReferenceImage",referenceImage)}catch{};setComposerAttachment(referenceImage);
   if(mode==="images"){
     $("#composerModel").value="FLUX Kontext Dev";
     $("#composerStatus").textContent="Flux Kontext Dev · готово к редактированию";
