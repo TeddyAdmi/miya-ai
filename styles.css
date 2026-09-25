@@ -1487,7 +1487,7 @@ html,body{
   width:205px!important;
   height:100dvh!important;
   min-height:100dvh!important;
-  overflow:hidden!important;
+  overflow:visible!important;
 }
 .workspace{
   flex:1 1 auto!important;
