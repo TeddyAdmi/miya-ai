@@ -452,3 +452,43 @@ body.light .workspace:before{display:none!important}
   background:#081a2d;
 }
 body.light .chat-image-attachment{background:#eef3f8;border-color:#d8e2ed}
+
+/* Final chat flyout behavior: stable, no jump, no active chat highlight */
+.side-menu-toggle{position:relative!important}
+.side-submenu{
+  left:calc(100% + 1px)!important;
+  top:0!important;
+  transform:none!important;
+  transition:opacity .12s ease,visibility .12s ease!important;
+  margin:0!important;
+}
+.side-menu-toggle:hover + .side-submenu,
+.side-submenu:hover{
+  opacity:1!important;
+  visibility:visible!important;
+  pointer-events:auto!important;
+  transform:none!important;
+}
+.chat-history-mini-item,
+.chat-history-mini-item:hover,
+.chat-history-mini-item.active{
+  background:transparent!important;
+  color:inherit!important;
+  border-color:transparent!important;
+  box-shadow:none!important;
+}
+.side-subbtn.active,
+.side-subbtn.active:hover{
+  background:transparent!important;
+  color:inherit!important;
+  border-color:transparent!important;
+  box-shadow:none!important;
+}
+.workspace:before,
+.workspace:after,
+body.light .workspace:before,
+body.light .workspace:after{
+  display:none!important;
+  content:none!important;
+  background-image:none!important;
+}
