@@ -355,8 +355,7 @@ function setMode(next,render=true){
  $$("[data-mode]").forEach(x=>x.classList.toggle("active",x.dataset.mode===next));
  $$("#chatSubmenu .side-subbtn").forEach(x=>x.classList.remove("active"));
  $("#chatMenuToggle")?.classList.toggle("active",next==="chat");
- if($("#chatSubmenu")?.classList.contains("collapsed"))$("#chatSubmenu").classList.remove("collapsed");
- if($("#chatMenuToggle")){$("#chatMenuToggle").classList.remove("collapsed");$("#chatMenuToggle").setAttribute("aria-expanded","true")}
+ if(!chatMenuSuppressed){\n   if($("#chatSubmenu")?.classList.contains("collapsed"))$("#chatSubmenu").classList.remove("collapsed");\n   if($("#chatMenuToggle")){$("#chatMenuToggle").classList.remove("collapsed");$("#chatMenuToggle").setAttribute("aria-expanded","true")}\n }
  if($("#chatMenuArrow"))$("#chatMenuArrow").textContent="→";
  if(!render){syncInput();return}
  const canvas=$("#canvas");
@@ -375,7 +374,7 @@ const chatMenuToggle=$("#chatMenuToggle");
 if(chatMenuToggle){
  chatMenuToggle.addEventListener("click",()=>setMode("chat"));
 }
-$$$("[data-mode]").forEach(b=>b.addEventListener("click",()=>setMode(b.dataset.mode)));
+$$("[data-mode]").forEach(b=>b.addEventListener("click",()=>setMode(b.dataset.mode)));
 $("#composerInput").addEventListener("input",syncInput);
 $("#composerInput").addEventListener("keydown",e=>{if(e.key==="Enter"&&!e.shiftKey){e.preventDefault();$("#composerSend").click()}});
 $("#composerSend").addEventListener("click",async()=>{
