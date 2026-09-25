@@ -174,7 +174,7 @@ function clearComposerAttachment(){
  setComposerAttachment("");
  if(mode==="images"&&$("#composerModel")) $("#composerModel").value="FLUX Dev";
 }
-function openEditor(url){referenceImage=url;setComposerAttachment(url);mode="images";$("#composerModel").value="FLUX Kontext Dev";const m=modes.images;$("#workspaceEyebrow").textContent=m.eyebrow;$("#workspaceTitle").textContent=m.title;$("#workspaceSubtitle").textContent=m.subtitle;$("#composerInput").placeholder=m.placeholder;$("#composerSendText").textContent=m.send;$("#composerStatus").textContent="Flux Kontext Dev · готово к редактированию";$(".image-settings").style.display="flex";$("#videoOptions").classList.remove("show");$$("[data-mode]").forEach(x=>x.classList.toggle("active",x.dataset.mode==="images"));if(!$("#canvas .result-grid")) renderImageLibrary();$("#composerInput").focus();syncInput()}
+function openEditor(url){referenceImage=url;setComposerAttachment(url);mode="images";$("#composerModel").value="FLUX Kontext Dev";const m=modes.images;$("#workspaceEyebrow").textContent=m.eyebrow;$("#workspaceTitle").textContent=m.title;$("#workspaceSubtitle").textContent=m.subtitle;$("#composerInput").placeholder=m.placeholder;$("#composerSendText").textContent=m.send;$("#composerStatus").textContent="Flux Kontext Dev · готово к редактированию";$(".image-settings").style.display="flex";$("#videoOptions").classList.remove("show");$$$("[data-mode]").forEach(x=>x.classList.toggle("active",x.dataset.mode==="images"));if(!$("#canvas .result-grid")) renderImageLibrary();$("#composerInput").focus();syncInput()}
 async function downloadImage(url){
  try{
   const response=await fetch(url,{mode:"cors"});
@@ -352,8 +352,8 @@ function setMode(next,render=true){
  $("#workspaceEyebrow").textContent=m.eyebrow;$("#workspaceTitle").textContent=m.title;$("#workspaceSubtitle").textContent=m.subtitle;
  $("#composerInput").placeholder=m.placeholder;$("#composerSendText").textContent=m.send;$("#composerStatus").textContent=m.status;
  $(".image-settings").style.display=next==="images"?"flex":"none";$("#videoOptions").classList.toggle("show",next==="video");
- $("[data-mode]").forEach(x=>x.classList.toggle("active",x.dataset.mode===next));
- $("#chatSubmenu .side-subbtn").forEach(x=>x.classList.remove("active"));
+ $$("[data-mode]").forEach(x=>x.classList.toggle("active",x.dataset.mode===next));
+ $$("#chatSubmenu .side-subbtn").forEach(x=>x.classList.remove("active"));
  $("#chatMenuToggle")?.classList.toggle("active",next==="chat");
  if($("#chatSubmenu")?.classList.contains("collapsed"))$("#chatSubmenu").classList.remove("collapsed");
  if($("#chatMenuToggle")){$("#chatMenuToggle").classList.remove("collapsed");$("#chatMenuToggle").setAttribute("aria-expanded","true")}
@@ -375,7 +375,7 @@ const chatMenuToggle=$("#chatMenuToggle");
 if(chatMenuToggle){
  chatMenuToggle.addEventListener("click",()=>setMode("chat"));
 }
-$$("[data-mode]").forEach(b=>b.addEventListener("click",()=>setMode(b.dataset.mode)));
+$$$("[data-mode]").forEach(b=>b.addEventListener("click",()=>setMode(b.dataset.mode)));
 $("#composerInput").addEventListener("input",syncInput);
 $("#composerInput").addEventListener("keydown",e=>{if(e.key==="Enter"&&!e.shiftKey){e.preventDefault();$("#composerSend").click()}});
 $("#composerSend").addEventListener("click",async()=>{
@@ -452,13 +452,13 @@ if(emojiButton&&emojiPanel){
 }
 $("#themeToggle").onclick=()=>{document.body.classList.toggle("light");$("#themeToggle").textContent=document.body.classList.contains("light")?"☾":"☼"};
 $("#profileButton").onclick=()=>toast("Профиль Miya User · 0 PKOIN");
-$("[data-tool]").forEach(b=>b.onclick=()=>{
+$$("[data-tool]").forEach(b=>b.onclick=()=>{
  const tool=b.dataset.tool;
  if(tool==="upload"){$("#referenceInput").click();return}
  if(tool==="improve"){$("#improve").click();return}
  if(tool==="history"||tool==="library"){
    mode="chat";
-   $("[data-mode]").forEach(x=>x.classList.remove("active"));
+   $$("[data-mode]").forEach(x=>x.classList.remove("active"));
    $("#chatMenuToggle")?.classList.remove("active");
    $("#canvas").innerHTML="";
    renderLibrary();
