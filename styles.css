@@ -890,3 +890,46 @@ body.light .starter-row button{background:#f5f7fa!important}
  .emoji-panel{right:52px!important;width:min(300px,calc(100vw - 28px))!important}
  .composer-emoji,.mic{width:34px!important;height:34px!important;flex-basis:34px!important}
 }
+
+
+/* Final chat history behavior: ten chats, compact vertical scroll without horizontal shifting. */
+.chat-history-mini{
+  max-height:390px!important;
+  overflow-y:auto!important;
+  overflow-x:hidden!important;
+  scrollbar-width:thin!important;
+  scrollbar-color:rgba(150,170,195,.35) transparent!important;
+  padding-right:2px!important;
+  box-sizing:border-box!important;
+}
+.chat-history-mini::-webkit-scrollbar{width:5px!important}
+.chat-history-mini::-webkit-scrollbar-track{background:transparent!important}
+.chat-history-mini::-webkit-scrollbar-thumb{background:rgba(150,170,195,.35)!important;border-radius:99px!important}
+.chat-history-row{width:100%!important;box-sizing:border-box!important}
+.chat-history-mini-item{min-width:0!important;flex:1 1 auto!important}
+.chat-history-more{flex:0 0 34px!important;width:34px!important;margin-left:auto!important;position:relative!important;z-index:3!important}
+.chat-history-row.pinned .chat-history-mini-item{background:rgba(112,82,205,.18)!important}
+.chat-history-row.pinned .chat-history-more{background:transparent!important}
+.chat-history-row.pinned:hover .chat-history-more,
+.chat-history-row.menu-open .chat-history-more{background:transparent!important}
+.chat-history-row.pinned:hover .chat-history-mini-item{background:rgba(112,82,205,.18)!important}
+
+/* Chat action menu opens to the RIGHT of the chat row, not underneath it. */
+.chat-history-menu{
+  left:calc(100% + 8px)!important;
+  right:auto!important;
+  top:50%!important;
+  transform:translateY(-50%) translateX(-3px)!important;
+  width:190px!important;
+}
+.chat-history-row.menu-open .chat-history-menu{
+  transform:translateY(-50%) translateX(0)!important;
+}
+/* Suppression wins over the hover rule so New Chat really closes the flyout. */
+.chat-nav-wrap .side-submenu.suppressed,
+.chat-nav-wrap:hover .side-submenu.suppressed,
+.chat-nav-wrap .side-menu-toggle:hover + .side-submenu.suppressed{
+  opacity:0!important;
+  visibility:hidden!important;
+  pointer-events:none!important;
+}
