@@ -279,19 +279,44 @@ function openImageViewer(item){
   modal=document.createElement("div");
   modal.id="imageViewerModal";
   modal.className="image-viewer-modal";
-  modal.innerHTML='<div class="image-viewer-backdrop"></div><div class="image-viewer-stage"><img class="image-viewer-image" alt="Miya AI Studio"><div class="image-viewer-controls"><button type="button" class="image-viewer-zoom" aria-label="Увеличить масштаб">＋</button><button type="button" class="image-viewer-close" aria-label="Закрыть">×</button></div></div>';
+  modal.innerHTML='<div class="image-viewer-backdrop"></div><div class="image-viewer-stage"><img class="image-viewer-image" alt="Miya AI Studio" draggable="false"><div class="image-viewer-controls"><button type="button" class="image-viewer-zoom" aria-label="Увеличить" title="Увеличить"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.8" cy="10.8" r="6.3"/><path d="m16 16 4.2 4.2M10.8 7.7v6.2M7.7 10.8h6.2"/></svg></button><button type="button" class="image-viewer-close" aria-label="Закрыть" title="Закрыть"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18"/></svg></button></div></div>';
   document.body.appendChild(modal);
   modal.querySelector(".image-viewer-backdrop").onclick=closeImageViewer;
   modal.querySelector(".image-viewer-close").onclick=closeImageViewer;
-  modal.querySelector(".image-viewer-zoom").onclick=()=>{
-    const img=modal.querySelector(".image-viewer-image");
-    const current=Number(img.dataset.zoom||"1");
-    const next=current>=3?1:Math.min(3,Math.round((current+.5)*10)/10);
-    img.dataset.zoom=String(next);
-    img.style.transform="scale("+next+")";
-    modal.querySelector(".image-viewer-zoom").textContent=next>=3?"−":"＋";
-    modal.querySelector(".image-viewer-zoom").title=next>=3?"Уменьшить":"Увеличить";
+  const stage=modal.querySelector(".image-viewer-stage");
+  const zoomButton=modal.querySelector(".image-viewer-zoom");
+  const img=modal.querySelector(".image-viewer-image");
+  const applyTransform=()=>{
+    const z=Number(img.dataset.zoom||"1"),x=Number(img.dataset.panX||"0"),y=Number(img.dataset.panY||"0");
+    img.style.transform="translate3d("+x+"px,"+y+"px,0) scale("+z+")";
+    img.style.cursor=z>1?"grab":"default";
   };
+  const setZoom=(z)=>{
+    const next=Math.max(1,Math.min(3,z));
+    img.dataset.zoom=String(next);
+    if(next===1){img.dataset.panX="0";img.dataset.panY="0"}
+    applyTransform();
+    zoomButton.innerHTML=next>1?'<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.8" cy="10.8" r="6.3"/><path d="m16 16 4.2 4.2M7.7 10.8h6.2"/></svg>':'<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.8" cy="10.8" r="6.3"/><path d="m16 16 4.2 4.2M10.8 7.7v6.2M7.7 10.8h6.2"/></svg>';
+    zoomButton.title=next>1?"Сбросить масштаб":"Увеличить";
+  };
+  zoomButton.onclick=()=>setZoom(Number(img.dataset.zoom||"1")>=3?1:Number(img.dataset.zoom||"1")+.5);
+  let dragging=false,startX=0,startY=0,baseX=0,baseY=0;
+  img.addEventListener("pointerdown",ev=>{
+    if(Number(img.dataset.zoom||"1")<=1)return;
+    dragging=true;startX=ev.clientX;startY=ev.clientY;baseX=Number(img.dataset.panX||"0");baseY=Number(img.dataset.panY||"0");
+    img.setPointerCapture?.(ev.pointerId);img.style.cursor="grabbing";ev.preventDefault();
+  });
+  img.addEventListener("pointermove",ev=>{
+    if(!dragging)return;
+    img.dataset.panX=String(baseX+ev.clientX-startX);img.dataset.panY=String(baseY+ev.clientY-startY);applyTransform();
+  });
+  const stopDrag=ev=>{if(!dragging)return;dragging=false;try{img.releasePointerCapture?.(ev.pointerId)}catch{};if(Number(img.dataset.zoom||"1")>1)img.style.cursor="grab"};
+  img.addEventListener("pointerup",stopDrag);img.addEventListener("pointercancel",stopDrag);
+  stage.addEventListener("wheel",ev=>{
+    if(!modal.classList.contains("open"))return;
+    ev.preventDefault();
+    setZoom(Number(img.dataset.zoom||"1")+(ev.deltaY<0?.5:-.5));
+  });
   document.addEventListener("keydown",e=>{
     if(!$("#imageViewerModal")?.classList.contains("open"))return;
     if(e.key==="Escape")closeImageViewer();
