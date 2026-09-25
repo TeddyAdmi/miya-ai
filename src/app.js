@@ -531,7 +531,7 @@ function improveComposerPrompt(){
  else toast("Сначала введи промпт");
  syncInput();
 }
-$("#composerTrash").onclick=()=>{
+$("#composerTrash")?.addEventListener("click",()=>{
   $("#composerInput").value="";
   clearComposerAttachment();
   syncInput();
