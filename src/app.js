@@ -455,9 +455,11 @@ async function generateImage(prompt){
    if(referenceImage.startsWith("data:image/"))payload.imageBase64=referenceImage;
    else payload.imageUrl=referenceImage;
   }
+  const requestedCount=Math.max(1,Math.min(4,Number($("#composerCount").value)||1));
   const body=JSON.stringify({
    mode:"image",provider:"legacy-flux",prompt,model:modelName,
-   ratio:$("#composerRatio").value,outputFormat:"png",options:referenceImage?payload:{}
+   ratio:$("#composerRatio").value,outputFormat:"png",copies:requestedCount,
+   options:referenceImage?payload:{}
   });
   const data=await new Promise((resolve,reject)=>{
    const xhr=new XMLHttpRequest();
@@ -504,7 +506,11 @@ async function generateImage(prompt){
    const modelLabel=loader.querySelector(".progress-model");
    if(modelLabel)modelLabel.textContent=actualModel+" · готово";
   }
-  showImage(data.imageUrl,prompt,actualModel);
+  const generatedUrls=Array.isArray(data.imageUrls)&&data.imageUrls.length
+   ? data.imageUrls
+   : data.imageUrl?[data.imageUrl]:[];
+  if(!generatedUrls.length)throw new Error("Сервер не вернул готовое изображение");
+  generatedUrls.forEach((url)=>showImage(url,prompt,actualModel));
   $("#composerInput").value="";syncInput();
   $("#composerModel").value=referenceImage?"FLUX Kontext Dev":"FLUX Dev";
   $("#composerStatus").textContent=actualModel+" · готово";
