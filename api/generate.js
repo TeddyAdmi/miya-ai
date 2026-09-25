@@ -24,7 +24,7 @@ export default async function handler(req, res) {
         typeof body.model === "string" && body.model.trim()
           ? body.model.trim()
           : "gemini-3.8-flash";
-      const modelsToTry = [requestedModel, "gemini-3.5-flash"].filter(
+      const modelsToTry = [requestedModel, "gemini-3.6-flash", "gemini-3.5-flash"].filter(
         (value, index, list) => list.indexOf(value) === index
       );
 
