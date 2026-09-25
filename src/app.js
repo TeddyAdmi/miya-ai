@@ -107,6 +107,7 @@ function renderChatHistoryMini(){
 }
 function closeChatFlyout(){
  chatMenuSuppressed=true;
+ resetChatFlyoutScroll();
  $("#chatSubmenu")?.classList.add("suppressed");
  $("#chatSubmenu")?.querySelectorAll(".menu-open").forEach(x=>x.classList.remove("menu-open"));
  $("#chatMenuToggle")?.setAttribute("aria-expanded","false");
@@ -120,6 +121,7 @@ function resetChatMenus(){
    menu.style.top="";
  });
 }
+function resetChatFlyoutScroll(){const el=$("#chatSubmenu");if(el)requestAnimationFrame(()=>{el.scrollTop=0;el.scrollLeft=0})}
 function openSavedChat(id){
  const chat=getChats().find(x=>x.id===id);if(!chat)return;
  chatMenuSuppressed=true;$("#chatSubmenu")?.classList.add("suppressed");resetChatMenus();
@@ -184,22 +186,41 @@ function clearComposerAttachment(){
  if(mode==="images"&&$("#composerModel")) $("#composerModel").value="FLUX Dev";
 }
 function openEditor(url){referenceImage=url;try{sessionStorage.setItem("miyaReferenceImage",referenceImage)}catch{};setComposerAttachment(url);mode="images";$("#composerModel").value="FLUX Kontext Dev";const m=modes.images;$("#workspaceEyebrow").textContent=m.eyebrow;$("#workspaceTitle").textContent=m.title;$("#workspaceSubtitle").textContent=m.subtitle;$("#composerInput").placeholder=m.placeholder;$("#composerSendText").textContent=m.send;$("#composerStatus").textContent="Flux Kontext Dev · готово к редактированию";$(".image-settings").style.display="flex";$("#videoOptions").classList.remove("show");document.querySelectorAll("[data-mode]").forEach(x=>x.classList.toggle("active",x.dataset.mode==="images"));if(!$("#canvas .result-grid")) renderImageLibrary();$("#composerInput").focus();syncInput()}
-async function downloadImage(url){
+async function downloadImage(url,format="jpeg"){
  try{
-  const response=await fetch(url,{mode:"cors"});
-  if(!response.ok)throw new Error("DOWNLOAD_HTTP_"+response.status);
-  const blob=await response.blob();
-  const objectUrl=URL.createObjectURL(blob);
-  const a=document.createElement("a");
-  a.href=objectUrl;
-  a.download="miya-image.png";
-  document.body.appendChild(a);a.click();a.remove();
-  setTimeout(()=>URL.revokeObjectURL(objectUrl),1000);
- }catch{
-  const a=document.createElement("a");
-  a.href=url;a.download="miya-image.png";a.target="_blank";
-  document.body.appendChild(a);a.click();a.remove();
- }
+  const response=await fetch(url,{mode:"cors"});if(!response.ok)throw new Error("DOWNLOAD_HTTP_"+response.status);
+  const sourceBlob=await response.blob();
+  let blob=sourceBlob,ext=format,mime="image/jpeg";
+  if(format!=="jpeg"){
+   mime=format==="webp"?"image/webp":"image/png";ext=format;
+  }
+  if(format!=="jpeg"||sourceBlob.type!=="image/jpeg"){
+   const bitmap=await createImageBitmap(sourceBlob);
+   const canvas=document.createElement("canvas");canvas.width=bitmap.width;canvas.height=bitmap.height;
+   const ctx=canvas.getContext("2d");
+   if(format==="jpeg"){ctx.fillStyle="#fff";ctx.fillRect(0,0,canvas.width,canvas.height)}
+   ctx.drawImage(bitmap,0,0);bitmap.close();
+   blob=await new Promise(resolve=>canvas.toBlob(resolve,mime,.95));
+  }
+  if(window.showSaveFilePicker){
+   const handle=await window.showSaveFilePicker({suggestedName:"miya-image."+ext,types:[{description:"Image",accept:{[mime]:["."+ext]}}]});
+   const writable=await handle.createWritable();await writable.write(blob);await writable.close();
+  }else{
+   const objectUrl=URL.createObjectURL(blob);const a=document.createElement("a");a.href=objectUrl;a.download="miya-image."+ext;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(objectUrl),1000);
+  }
+ }catch(e){if(e?.name!=="AbortError")toast("Не удалось сохранить изображение")}
+}
+function closeMediaMenus(){document.querySelectorAll(".media-menu.open").forEach(x=>x.classList.remove("open"))}
+function showDownloadMenu(item,anchor){
+ closeMediaMenus();
+ const menu=document.createElement("div");menu.className="media-menu open";
+ [["jpeg","JPEG"],["png","PNG"],["webp","WEBP"]].forEach(([fmt,label])=>{
+  const b=document.createElement("button");b.type="button";b.innerHTML='<span class="media-menu-icon">⇩</span><span>'+label+'</span>';
+  b.onclick=e=>{e.stopPropagation();menu.remove();downloadImage(item.url,fmt)};menu.appendChild(b);
+ });
+ document.body.appendChild(menu);
+ const r=anchor.getBoundingClientRect();menu.style.left=Math.min(window.innerWidth-menu.offsetWidth-8,Math.max(8,r.right-menu.offsetWidth))+"px";menu.style.top=Math.min(window.innerHeight-menu.offsetHeight-8,r.bottom+7)+"px";
+ setTimeout(()=>document.addEventListener("click",()=>menu.remove(),{once:true}),0);
 }
 async function deleteMedia(item,card){
  const items=getLibrary().filter(x=>x.id!==item.id);
@@ -223,21 +244,24 @@ function showPrompt(item){
 function buildMediaCard(item,{video=false}={}){
  const card=document.createElement("div");card.className="media-card";
  const media=video?document.createElement("video"):document.createElement("img");
- media.alt=video?"Miya generated video":"Miya generated image";
- if(video){media.controls=true;media.playsInline=true;media.src=item.url}else{media.onerror=()=>card.classList.add("media-load-error");resolveMediaUrl(item).then(url=>{if(url)media.src=url})}
+ media.alt=video?"Miya AI Studio":"Miya AI Studio";
+ if(video){media.controls=true;media.playsInline=true;media.src=item.url}
+ else{media.onerror=()=>{media.alt="Miya AI Studio";card.classList.add("media-load-error")};resolveMediaUrl(item).then(url=>{if(url)media.src=url})}
  card.appendChild(media);
  const actions=document.createElement("div");actions.className="media-actions";
+ const more=document.createElement("button");more.className="media-action media-more";more.title="Действия";more.setAttribute("aria-label","Действия");more.textContent="⋯";
+ const menu=document.createElement("div");menu.className="media-action-menu";
  if(!video){
-  const promptBtn=document.createElement("button");promptBtn.className="media-action";promptBtn.title="Промт";promptBtn.textContent="P";promptBtn.onclick=()=>showPrompt(item);
-  const editBtn=document.createElement("button");editBtn.className="media-action";editBtn.title="Редактировать";editBtn.textContent="✦";editBtn.onclick=()=>openEditor(item.url);
-  const downloadBtn=document.createElement("button");downloadBtn.className="media-action";downloadBtn.title="Скачать";downloadBtn.textContent="↓";downloadBtn.onclick=()=>downloadImage(item.url);
-  const deleteBtn=document.createElement("button");deleteBtn.className="media-action delete-action";deleteBtn.title="Удалить";deleteBtn.textContent="×";deleteBtn.onclick=()=>deleteMedia(item,card);
-  actions.append(promptBtn,editBtn,downloadBtn,deleteBtn);
+  const promptBtn=document.createElement("button");promptBtn.innerHTML='<span class="action-icon">⌘</span><span>Промт</span>';promptBtn.onclick=e=>{e.stopPropagation();showPrompt(item)};
+  const editBtn=document.createElement("button");editBtn.innerHTML='<span class="action-icon">✦</span><span>Редактировать</span>';editBtn.onclick=e=>{e.stopPropagation();openEditor(item.url)};
+  const downloadBtn=document.createElement("button");downloadBtn.innerHTML='<span class="action-icon">⇩</span><span>Скачать</span>';downloadBtn.onclick=e=>{e.stopPropagation();showDownloadMenu(item,downloadBtn)};
+  const deleteBtn=document.createElement("button");deleteBtn.innerHTML='<span class="action-icon">⌫</span><span>Удалить</span>';deleteBtn.onclick=e=>{e.stopPropagation();deleteMedia(item,card)};
+  menu.append(promptBtn,editBtn,downloadBtn,deleteBtn);
  }else{
-  const deleteBtn=document.createElement("button");deleteBtn.className="media-action delete-action";deleteBtn.title="Удалить";deleteBtn.textContent="×";deleteBtn.onclick=()=>deleteMedia(item,card);
-  actions.append(deleteBtn);
+  const deleteBtn=document.createElement("button");deleteBtn.innerHTML='<span class="action-icon">⌫</span><span>Удалить</span>';deleteBtn.onclick=e=>{e.stopPropagation();deleteMedia(item,card)};menu.append(deleteBtn);
  }
- card.appendChild(actions);return card;
+ more.onclick=e=>{e.stopPropagation();document.querySelectorAll(".media-action-menu.open").forEach(x=>x!==menu&&x.classList.remove("open"));menu.classList.toggle("open")};
+ actions.append(more,menu);card.appendChild(actions);return card;
 }
 function renderImageLibrary(){
  const c=$("#canvas"),items=getLibrary().filter(x=>x.type==="image");
@@ -403,7 +427,9 @@ async function requestChat(){
 }
 function restoreReferenceImage(){try{referenceImage=referenceImage||sessionStorage.getItem("miyaReferenceImage")||""}catch{};setComposerAttachment(referenceImage||"")}
 function setMode(next,render=true){
- restoreReferenceImage();mode=next;const m=modes[next];
+ const changedSection=next!==mode;
+ if(changedSection){referenceImage=null;try{sessionStorage.removeItem("miyaReferenceImage")}catch{};setComposerAttachment("");$("#composerInput").value="";syncInput()}
+ mode=next;const m=modes[next];
  $("#workspaceEyebrow").textContent=m.eyebrow;$("#workspaceTitle").textContent=m.title;$("#workspaceSubtitle").textContent=m.subtitle;
  $("#composerInput").placeholder=m.placeholder;$("#composerSendText").textContent=m.send;$("#composerStatus").textContent=m.status;
  $(".image-settings").style.display=next==="images"?"flex":"none";$("#videoOptions").classList.toggle("show",next==="video");
@@ -433,6 +459,7 @@ if(chatMenuToggle){
  chatMenuToggle.addEventListener("click",()=>{
    resetChatMenus();
    renderChatHistoryMini();
+   resetChatFlyoutScroll();
    setMode("chat");
  });
 }
