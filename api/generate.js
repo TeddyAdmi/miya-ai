@@ -262,16 +262,17 @@ async function handler(req, res) {
     if (isImageToImage) {
       const sourceData = payload.imageBase64 || "";
       const match = sourceData.match(/^data:image\/[^;]+;base64,(.+)$/i);
+      const rawBase64 = match ? match[1].replace(/\s+/g,"") : sourceData.replace(/^base64,/i,"").replace(/\s+/g,"");
 
-      if (!match) {
+      if (!rawBase64 || rawBase64.length < 100) {
         return res.status(400).json({
           ok: false,
           error: "INVALID_IMAGE_BASE64",
-          message: "Исходное изображение должно быть передано как data:image/...;base64,..."
+          message: "PixelSter не получил корректное исходное изображение."
         });
       }
 
-      const approxBytes = Math.ceil(match[1].length * 3 / 4);
+      const approxBytes = Math.ceil(rawBase64.length * 3 / 4);
       if (approxBytes > 3.5 * 1024 * 1024) {
         return res.status(413).json({
           ok: false,
@@ -280,7 +281,9 @@ async function handler(req, res) {
         });
       }
 
-      payload.imageBase64 = sourceData;
+      // Proven PixelSter /pti contract: raw base64, without the data-URI prefix.
+      payload.imageBase64 = rawBase64;
+      payload.prompt = String(prompt).trim() + "\n\nSTRICT IMAGE EDIT:\n- Use the supplied image as the exact source image.\n- Preserve the original subject, identity, anatomy, clothing, pose, camera angle and environment unless explicitly asked to change them.\n- Make only the requested modification.\n- Return one coherent natural image, not a collage.";
     }
 
     let response = null;
@@ -293,11 +296,13 @@ async function handler(req, res) {
     // upstream jobs for one click and trigger fair-use throttling.
     for (let endpointIndex = 0; endpointIndex < endpoints.length; endpointIndex++) {
       const endpoint = endpoints[endpointIndex];
-      const controller = new AbortController();
-      const timeout = setTimeout(() => controller.abort(), isImageToImage ? 58000 : 58000);
+      const maxAttempts = isImageToImage ? 3 : 1;
+      for (let attempt = 0; attempt < maxAttempts; attempt++) {
+        const controller = new AbortController();
+        const timeout = setTimeout(() => controller.abort(), 58000);
 
-      try {
-        response = await fetch(endpoint, {
+        try {
+          response = await fetch(endpoint, {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
@@ -314,14 +319,14 @@ async function handler(req, res) {
           data = {};
         }
 
-        if (response.ok && data?.success !== false) break;
+          if (response.ok && data?.success !== false) break;
 
-        if (endpointIndex < endpoints.length - 1 && [429, 500, 502, 503, 504].includes(response.status)) {
-          continue;
-        }
-
-        break;
-      } catch (error) {
+          if ([408,429,500,502,503,504].includes(response.status) && attempt < maxAttempts-1) {
+            await new Promise(resolve=>setTimeout(resolve,1000*(attempt+1)));
+            continue;
+          }
+          break;
+        } catch (error) {
         lastNetworkError = error;
 
         if (error?.name === "AbortError") {
@@ -334,11 +339,17 @@ async function handler(req, res) {
           });
         }
 
-        if (endpointIndex < endpoints.length - 1) continue;
-        break;
-      } finally {
-        clearTimeout(timeout);
+          if (attempt < maxAttempts-1) {
+            await new Promise(resolve=>setTimeout(resolve,1000*(attempt+1)));
+            continue;
+          }
+          if (endpointIndex < endpoints.length - 1) continue;
+          break;
+        } finally {
+          clearTimeout(timeout);
+        }
       }
+      if (response?.ok && data?.success !== false) break;
     }
 
     if (lastNetworkError && (!response || !response.ok)) {
