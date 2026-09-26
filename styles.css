@@ -1740,3 +1740,8 @@ body.light .delete-confirm-ring::before{background:#fff}
   overflow:visible!important;
 }
 .chat-canvas .chat-stream .chat-row{flex:0 0 auto!important}
+
+/* Final chat boundary: keep a visible 12px gap above the fixed prompt container. */
+.chat-canvas .chat-stream{
+  padding-bottom:calc(var(--chat-composer-height,180px) + 12px)!important;
+}
