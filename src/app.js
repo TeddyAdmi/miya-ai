@@ -359,7 +359,7 @@ function buildMediaCard(item,{video=false}={}){
   media.addEventListener("click",e=>{e.stopPropagation();openImageViewer(item)});
  }
  const actions=document.createElement("div");actions.className="media-actions";
- const more=document.createElement("button");more.className="media-action media-more";more.title="Действия";more.setAttribute("aria-label","Действия");more.innerHTML='<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="5" cy="12" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="19" cy="12" r="1.5"/></svg>';
+ const more=document.createElement("button");more.className="media-action media-more";more.removeAttribute("title");more.setAttribute("aria-label","Действия");more.innerHTML='<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="5" cy="12" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="19" cy="12" r="1.5"/></svg>';
  const menu=document.createElement("div");menu.className="media-action-menu";
  if(!video){
   const promptBtn=document.createElement("button");promptBtn.innerHTML='<span class="action-icon action-svg"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 4h12v16H6z"/><path d="M9 8h6M9 12h6M9 16h4"/></svg></span><span>Промт</span>';promptBtn.onclick=e=>{e.stopPropagation();showPrompt(item)};
@@ -470,19 +470,19 @@ function scrollChatToLatest(behavior="smooth"){
  const workspace=$("#workspace");
  const composer=document.querySelector(".composer");
  const latest=workspace?.querySelector(".chat-stream .chat-row:last-child");
- if(!workspace||!composer||!latest)return;
+ const stream=workspace?.querySelector(".chat-stream");
+ if(!workspace||!composer||!latest||!stream)return;
  requestAnimationFrame(()=>{
-   requestAnimationFrame(()=>{
-     const wr=workspace.getBoundingClientRect();
-     const cr=composer.getBoundingClientRect();
-     const lr=latest.getBoundingClientRect();
-     const gap=10;
-     // Align the bottom edge of the newest message with the top edge
-     // of the composer, leaving a small readable breathing room.
-     const target=workspace.scrollTop+(lr.bottom-(cr.top-gap));
-     const max=Math.max(0,workspace.scrollHeight-workspace.clientHeight);
-     workspace.scrollTo({top:Math.max(0,Math.min(max,target)),behavior});
-   });
+  requestAnimationFrame(()=>{
+   const height=Math.ceil(composer.getBoundingClientRect().height||0);
+   stream.style.setProperty("--chat-composer-height",Math.max(1,height)+"px");
+   const cr=composer.getBoundingClientRect();
+   const lr=latest.getBoundingClientRect();
+   const gap=10;
+   const target=workspace.scrollTop+(lr.bottom-(cr.top-gap));
+   const max=Math.max(0,workspace.scrollHeight-workspace.clientHeight);
+   workspace.scrollTo({top:Math.max(0,Math.min(max,target)),behavior});
+  });
  });
 }
 function showLoading(){
