@@ -469,17 +469,17 @@ function scrollImagesToTop(){
 }
 function scrollChatToLatest(behavior="smooth"){
  const workspace=$("#workspace");
- const composer=document.querySelector(".composer");
+ const composer=document.querySelector(".composer-wrap");
  const latest=workspace?.querySelector(".chat-stream .chat-row:last-child");
  const stream=workspace?.querySelector(".chat-stream");
  if(!workspace||!composer||!latest||!stream)return;
  requestAnimationFrame(()=>{
   requestAnimationFrame(()=>{
-   const height=Math.ceil(composer.getBoundingClientRect().height||0);
-   stream.style.setProperty("--chat-composer-height",Math.max(1,height)+"px");
    const cr=composer.getBoundingClientRect();
+   const height=Math.max(1,Math.ceil(window.innerHeight-cr.top));
+   stream.style.setProperty("--chat-composer-height",height+"px");
    const lr=latest.getBoundingClientRect();
-   const gap=10;
+   const gap=12;
    const target=workspace.scrollTop+(lr.bottom-(cr.top-gap));
    const max=Math.max(0,workspace.scrollHeight-workspace.clientHeight);
    workspace.scrollTo({top:Math.max(0,Math.min(max,target)),behavior});
@@ -667,11 +667,11 @@ async function requestChat(){
      const transcript=chatMessages.slice(-12).map(m=>(m.role==="assistant"?"Miya: ":"Пользователь: ")+m.content).join("\n");
      const multimodalPrompt=systemText+"\n\nКонтекст диалога:\n"+transcript+"\n\nПоследний запрос пользователя:\n"+String(latest?.content||"");
      const response=chatAttachmentFile
-       ? await window.puter.ai.chat(multimodalPrompt,chatAttachmentFile,{model:"google/gemini-3.8-flash",max_tokens:2048})
+       ? await window.puter.ai.chat(multimodalPrompt,chatAttachmentFile,false,{model:"google/gemini-3.8-flash",max_tokens:2048})
        : await window.puter.ai.chat([
            {role:"system",content:systemText},
            ...chatMessages.slice(-12).map(m=>({role:m.role,content:m.content}))
-         ],{model:"google/gemini-3.8-flash",max_tokens:2048});
+         ],false,{model:"google/gemini-3.8-flash",max_tokens:2048});
      answer=typeof response==="string"
        ? response.trim()
        : String(response?.message?.content||response?.text||response?.content||"").trim();
