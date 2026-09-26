@@ -1785,3 +1785,28 @@ body.light .delete-confirm-ring::before{background:#fff}
  .image-viewer-next{right:10px!important}
  .image-viewer-nav svg{width:21px!important;height:21px!important}
 }
+
+
+/* FINAL TYPOGRAPHY: unified readable UI text. Keep display headings larger; normalize controls, labels and menus. */
+body{font-size:14px}
+.side-label,.side-btn,.tool-btn,.system-title,.system-row,.side-user b,.side-user small,
+.workspace-head p,.eyebrow,.mini-badge,.room-intro p,.feature-card b,.quick-card b,
+.library-title,.select-pill,.improve,.composer-status,.send,.chat-history-mini-item,
+.chat-history-menu button,.media-action-menu button,.media-menu button,
+.starter-row button,.library-tab,.chat-actions button{font-size:12px!important}
+.composer textarea{font-size:13px!important}
+.chat-bubble{font-size:13px!important}
+.generation-loading b{font-size:14px!important}
+.generation-loading span{font-size:12px!important}
+.media-action::after{font-size:13px!important;font-weight:700!important;padding:6px 9px!important}
+.media-action-menu button,.media-menu button,.chat-history-menu button{font-size:12px!important}
+@media(max-width:800px){
+  .side-label,.side-btn,.tool-btn,.system-title,.system-row,.side-user b,.side-user small,
+  .workspace-head p,.eyebrow,.mini-badge,.room-intro p,.feature-card b,.quick-card b,
+  .library-title,.select-pill,.improve,.composer-status,.send,.chat-history-mini-item,
+  .chat-history-menu button,.media-action-menu button,.media-menu button,.starter-row button,
+  .library-tab,.chat-actions button{font-size:12px!important}
+  .composer textarea{font-size:13px!important}
+  .chat-bubble{font-size:13px!important}
+  .media-action::after{font-size:13px!important}
+}
