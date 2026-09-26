@@ -759,7 +759,7 @@ async function generateMotionVideo(prompt){
  $("#composerStatus").textContent="PixelSter Motion Synthesis · генерация…";
  try{
    const durationText=String($("#videoDuration")?.value||"5 сек");
-   const durationMatch=durationText.match(/\\d+/);
+   const durationMatch=durationText.match(/\d+/);
    const duration=Math.max(5,Math.min(20,Number(durationMatch?.[0]||5)));
    const ratioValue=String($("#videoRatio")?.value||"auto");
    const ratio=["auto","9:16","16:9"].includes(ratioValue)?ratioValue:"auto";
@@ -825,7 +825,7 @@ async function generateVideo(prompt){
      inputImage=handleFile(file);
    }
    const durationText=String($("#videoDuration")?.value||"3 сек");
-   const durationMatch=durationText.match(/\\d+/);
+   const durationMatch=durationText.match(/\d+/);
    const duration=Math.max(1,Math.min(10,Number(durationMatch?.[0]||3)));
    const ratio=String($("#videoRatio")?.value||"16:9");
    let width=1536,height=1024;
@@ -942,6 +942,7 @@ $("#improve")?.addEventListener("click",improveComposerPrompt);
 $("#copyPrompt")?.addEventListener("click",copyComposerPrompt);
 $("#videoImprove")?.addEventListener("click",improveComposerPrompt);
 $("#videoCopyPrompt")?.addEventListener("click",copyComposerPrompt);
+$("#videoModel")?.addEventListener("change",()=>{ const model=$("#videoModel").value; $("#composerStatus").textContent=model==="PixelSter Motion Synthesis"?"PixelSter Motion Synthesis · резервная модель":"LTX-2.3 Distilled · Free ZeroGPU"; });
 $("#videoTrash")?.addEventListener("click",()=>{
   $("#composerInput").value="";
   clearComposerAttachment();
