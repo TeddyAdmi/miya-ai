@@ -1,7 +1,7 @@
 const modes={
  chat:{title:"Твоя AI-комната",eyebrow:"AI CHAT · MIYA",subtitle:"Общайся с Miya, придумывай идеи и управляй созданием контента.",placeholder:"Напиши сообщение...",send:"Отправить",status:"AI Chat готов"},
  images:{title:"Картинки",eyebrow:"IMAGE STUDIO · FLUX",subtitle:"Создавай изображения с нуля или загружай исходник и описывай изменения.",placeholder:"Опиши картинку или что изменить в загруженном изображении...",send:"Создать",status:"FLUX Dev · Image generation & editing"},
- video:{title:"Видео",eyebrow:"VIDEO STUDIO · MOTION",subtitle:"Оживляй изображение с помощью бесплатной Motion Synthesis модели.",placeholder:"Опиши движение, камеру и стиль видео...",send:"Создать видео",status:"Motion Synthesis · Video generation"}
+ video:{title:"Видео",eyebrow:"VIDEO STUDIO · LTX-2.3",subtitle:"Создавай короткие видео по сцене, действиям и движению — со звуком.",placeholder:"Опиши сцену, действия персонажей, движение камеры и атмосферу...",send:"Создать видео",status:"LTX-2.3 Distilled · Free ZeroGPU"}
 };
 const $=s=>document.querySelector(s);
 let mode="chat",referenceImage=null,chatAttachmentFile=null,chatMessages=[];
@@ -749,52 +749,61 @@ async function requestChat(){
 }
 async function generateVideo(prompt){
  const source=referenceImage||"";
- if(!source){
-   toast("Для видео сначала добавь изображение");
-   $("#composerStatus").textContent="Motion Synthesis · нужно изображение";
-   $("#referenceInput")?.click();
-   return;
- }
  showLoading();
  $("#composerSend").disabled=true;
- $("#composerStatus").textContent="Motion Synthesis · генерация видео…";
- const modelName="Motion Synthesis";
- const durationText=String($("#videoDuration")?.value||"5 сек");
- const durationMatch=durationText.match(/\\d+/);
- const duration=Math.max(5,Math.min(20,Number(durationMatch?.[0]||5)));
- const ratio=String($("#videoRatio")?.value||"auto");
+ $("#composerStatus").textContent="LTX-2.3 · подготовка бесплатной генерации…";
  try{
-   const response=await fetch("/api/generate",{
-     method:"POST",
-     headers:{"Content-Type":"application/json","Accept":"application/json"},
-     body:JSON.stringify({
-       mode:"video",
-       provider:"pixelster",
-       model:modelName,
-       prompt,
-       ratio,
-       duration,
-       options:{imageBase64:source}
-     }),
-     signal:AbortSignal.timeout(60000)
-   });
-   const data=await response.json().catch(()=>({}));
-   if(!response.ok||!data.videoUrl){
-     throw new Error(data.message||data.error||"Видео не было создано");
+   if(!window.__miyaLtxClient){
+     $("#composerStatus").textContent="LTX-2.3 · подключение к Free ZeroGPU…";
+     const mod=await import("https://esm.sh/@gradio/client@1.15.0");
+     window.__miyaLtxClient=await mod.Client.connect("Lightricks/LTX-2-3");
+     window.__miyaLtxHandleFile=mod.handle_file;
    }
-   const item=saveMedia("video",data.videoUrl,prompt,modelName);
+   const client=window.__miyaLtxClient;
+   const handleFile=window.__miyaLtxHandleFile;
+   let inputImage=null;
+   if(source){
+     const blob=await fetch(source).then(r=>r.blob());
+     const file=new File([blob],"miya-reference.png",{type:blob.type||"image/png"});
+     inputImage=handleFile(file);
+   }
+   const durationText=String($("#videoDuration")?.value||"3 сек");
+   const durationMatch=durationText.match(/\\d+/);
+   const duration=Math.max(1,Math.min(10,Number(durationMatch?.[0]||3)));
+   const ratio=String($("#videoRatio")?.value||"16:9");
+   let width=1536,height=1024;
+   if(ratio==="9:16"){width=1024;height=1536}
+   else if(ratio==="1:1"){width=1024;height=1024}
+   const result=await client.predict("/generate_video",[
+     inputImage,
+     prompt,
+     duration,
+     true,
+     Math.floor(Math.random()*2147483647),
+     true,
+     height,
+     width
+   ]);
+   const raw=result?.data?.[0];
+   const videoUrl=typeof raw==="string"
+     ? raw
+     : String(raw?.url||raw?.path||raw?.data||"");
+   if(!videoUrl) throw new Error("LTX-2.3 не вернул готовое видео");
+   const item=saveMedia("video",videoUrl,prompt,"LTX-2.3 Distilled");
    $("#canvas").innerHTML="";
    renderLibrary("videos");
-   $("#composerStatus").textContent="Motion Synthesis · готово";
+   $("#composerStatus").textContent="LTX-2.3 · видео + звук готовы";
    toast("Видео создано");
-   if(item) scrollImagesToTop();
+   if(item)scrollImagesToTop();
  }catch(e){
-   $("#composerStatus").textContent="Motion Synthesis · ошибка";
-   toast(e.message||"Не удалось создать видео");
+   console.error("LTX-2.3 video generation failed",e);
+   $("#composerStatus").textContent="LTX-2.3 · ошибка";
+   toast(e?.message||"Не удалось создать видео");
  }finally{
    $("#composerSend").disabled=false;
  }
 }
+
 function restoreReferenceImage(){try{referenceImage=referenceImage||sessionStorage.getItem("miyaReferenceImage")||""}catch{};setComposerAttachment(referenceImage||"")}
 function setVideoRatioDefault(){
  const el=$("#videoRatio"); if(el) el.value=referenceImage?"auto":"16:9";
@@ -806,7 +815,7 @@ function setMode(next,render=true){
  $("#workspaceEyebrow").textContent=m.eyebrow;$("#workspaceTitle").textContent=m.title;$("#workspaceSubtitle").textContent=m.subtitle;
  $("#composerInput").placeholder=m.placeholder;$("#composerSendText").textContent=m.send;$("#composerStatus").textContent=m.status;
  $(".image-settings").style.display=next==="images"?"flex":"none";$("#videoOptions").classList.toggle("show",next==="video");
- if(next==="video"){ setVideoRatioDefault(); if($("#videoModel"))$("#videoModel").value="Motion Synthesis"; }
+ if(next==="video"){ setVideoRatioDefault(); if($("#videoModel"))$("#videoModel").value="LTX-2.3 Distilled"; }
  document.querySelectorAll("[data-mode]").forEach(x=>x.classList.toggle("active",x.dataset.mode===next));
  document.querySelectorAll("#chatSubmenu .side-subbtn").forEach(x=>x.classList.remove("active"));
  $("#chatMenuToggle")?.classList.toggle("active",next==="chat");
@@ -894,9 +903,9 @@ $("#referenceInput").onchange=e=>{
     $("#composerRatio").value="auto";
     $("#composerStatus").textContent="Flux Kontext Dev · готово к редактированию";
   }else if(mode==="video"){
-    $("#videoModel").value="Motion Synthesis";
+    $("#videoModel").value="LTX-2.3 Distilled";
     $("#videoRatio").value="auto";
-    $("#composerStatus").textContent="Motion Synthesis · изображение готово";
+    $("#composerStatus").textContent="LTX-2.3 · изображение готово";
   }else{
     $("#composerStatus").textContent="Изображение прикреплено · можно спросить Miya о фото";
   }
