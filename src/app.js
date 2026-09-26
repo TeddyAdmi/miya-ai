@@ -1064,6 +1064,7 @@ function setMode(next,render=true){
  }else{
    showEmpty();
  }
+ requestAnimationFrame(()=>$("#workspace")?.scrollTo({top:0,behavior:"auto"}));
  syncInput()
 }
 const chatMenuToggle=$("#chatMenuToggle");
@@ -1227,6 +1228,7 @@ document.querySelectorAll("[data-tool]").forEach(b=>b.onclick=()=>{
    $("#workspaceEyebrow").textContent=wall.eyebrow;$("#workspaceTitle").textContent=wall.title;$("#workspaceSubtitle").textContent=wall.subtitle;
    $(".image-settings").style.display="none";$("#videoOptions").classList.remove("show");
    renderLibrary("images");
+   requestAnimationFrame(()=>$("#workspace")?.scrollTo({top:0,behavior:"auto"}));
  }
 });
 renderChatHistoryMini();

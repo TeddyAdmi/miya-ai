@@ -1910,3 +1910,6 @@ body.light .chat-selection-actions button{background:#f4f6fa}
  .media-action-menu{max-height:230px!important}
  .image-viewer-controls button{flex-basis:36px!important}
 }
+
+.media-card:has(.media-action-menu.open){z-index:100!important}
+.media-action-menu.open{z-index:101!important}
