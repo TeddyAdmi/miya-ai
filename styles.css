@@ -1810,3 +1810,37 @@ body{font-size:14px}
   .chat-bubble{font-size:13px!important}
   .media-action::after{font-size:13px!important}
 }
+
+/* Modern media action hover card */
+.media-action[data-tooltip]::after{
+  content:attr(data-tooltip);right:0;top:calc(100% + 8px);
+  min-width:154px;max-width:220px;padding:9px 12px;
+  border:1px solid rgba(151,116,255,.32);border-radius:11px;
+  background:rgba(12,20,34,.96);color:#eef4ff;font-size:11px;line-height:1.25;
+  font-weight:700;white-space:normal;text-align:left;
+  box-shadow:0 16px 38px rgba(0,0,0,.35),0 0 0 1px rgba(255,255,255,.03) inset;
+  backdrop-filter:blur(18px) saturate(140%);opacity:0;pointer-events:none;
+  transform:translateY(-4px) scale(.98);transform-origin:top right;
+  transition:opacity .16s ease,transform .16s ease;z-index:40;
+}
+.media-action[data-tooltip]:hover::after{opacity:1;transform:translateY(0) scale(1)}
+.media-action-menu{min-width:226px!important;padding:7px!important;border-radius:13px!important;box-shadow:0 18px 48px rgba(0,0,0,.42),0 0 0 1px rgba(255,255,255,.03) inset!important}
+.media-action-menu button{min-height:38px!important;height:auto!important;padding:8px 10px!important;font-size:11px!important;line-height:1.2!important;white-space:nowrap!important}
+.media-action-menu .action-icon{width:20px!important;flex:0 0 20px!important}
+body.light .media-action[data-tooltip]::after{background:rgba(255,255,255,.98);color:#253449;border-color:#d7cfff;box-shadow:0 16px 38px rgba(30,55,85,.20)}
+
+/* Useful AI response actions */
+.chat-actions{gap:6px!important;margin-top:7px!important;opacity:1!important}
+.chat-actions button{display:inline-flex!important;align-items:center!important;gap:5px!important;background:transparent!important;border:1px solid transparent!important;color:#7189a5!important;font-size:10px!important;line-height:1!important;padding:6px 8px!important;border-radius:7px!important}
+.chat-actions button:hover{background:rgba(133,98,230,.10)!important;border-color:rgba(145,112,245,.20)!important;color:#cbbcff!important}
+.action-mini-icon{font-size:11px;line-height:1;color:currentColor}
+body.light .chat-actions button{color:#687b91!important}
+body.light .chat-actions button:hover{background:#f1edff!important;border-color:#ddd5ff!important;color:#594aa0!important}
+
+/* Video progress */
+.video-generation-loading{min-height:150px!important}
+.video-generation-loading .progress-copy{max-width:min(320px,calc(100% - 58px))}
+.video-generation-loading .progress-copy b,.video-generation-loading .progress-model{overflow-wrap:anywhere!important;word-break:break-word!important;white-space:normal!important}
+.video-generation-loading .progress-copy b{font-size:12px!important;line-height:1.25!important}
+.video-generation-loading .progress-model{font-size:10px!important;line-height:1.35!important}
+@media(max-width:800px){.media-action[data-tooltip]::after{min-width:138px;max-width:190px;font-size:10px}.media-action-menu{min-width:210px!important}.media-action-menu button{font-size:10px!important}}
