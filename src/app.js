@@ -829,6 +829,127 @@ async function requestChat(){
    $("#composerSend").disabled=false;
  }
 }
+async function generateMotionVideo(prompt){
+ const source=referenceImage||"";
+ if(!source){
+   toast("PixelSter Motion Synthesis требует исходное изображение");
+   $("#composerStatus").textContent="PixelSter · нужно исходное изображение";
+   return;
+ }
+ showLoading();
+ $("#composerSend").disabled=true;
+ const model="PixelSter Motion Synthesis";
+ const stopProgress=startVideoProgress(model);
+ $("#composerStatus").textContent=model+" · генерация…";
+ try{
+   const durationText=String($("#videoDuration")?.value||"5 сек");
+   const duration=Math.max(5,Math.min(20,Number(durationText.match(/\d+/)?.[0]||5)));
+   const ratioValue=String($("#videoRatio")?.value||"auto");
+   const ratio=["auto","9:16","16:9"].includes(ratioValue)?ratioValue:"auto";
+   const motionPrompt=[
+     "IMAGE-TO-VIDEO MOTION SYNTHESIS. FOLLOW THE USER'S MOTION REQUEST EXACTLY.",
+     "The visible subject in the supplied image is the ONLY main character. Do not introduce any human, animal, creature or other character that is not already present in the source image.",
+     "Do not invent a person, assistant, bystander, handler, rider, photographer or background character.",
+     "The requested action has higher priority than generic cinematic motion. Do not substitute zooming, panning, idle movement or camera shake for the requested action.",
+     "Execute multiple actions in the exact written order as one continuous timeline.",
+     "Start the requested action immediately and make the action unmistakably visible.",
+     "If the user says an animal runs away, the SAME animal must visibly run away; do not replace it with another subject.",
+     "If the user says an animal growls/roars/turns/looks/attacks, animate that SAME animal's body, head, mouth and movement.",
+     "If the user requests a roar, growl, bark or other sound, preserve that sound request for the final audio track and do not replace it with music.",
+     "ABSOLUTELY NO HUMANS OR UNREQUESTED CHARACTERS. Do not create a person even briefly in the background.",
+
+     "Preserve identity, species, face, anatomy, clothing/fur, scale, lighting and the original environment unless the user explicitly requests a change.",
+     "Keep the camera stable unless the user explicitly requests camera movement.",
+     "Do not add water, rain, droplets, smoke, fire, particles, extra people, animals, vehicles, props, text or environmental effects unless explicitly requested.",
+     "USER MOTION REQUEST:",
+     prompt
+   ].join("\n");
+   const payload={prompt:motionPrompt,ratio,duration,imageBase64:source.replace(/^data:image\/[^;]+;base64,/i,"")};
+   const fallback=await fetch("/api/generate",{
+     method:"POST",
+     headers:{"Content-Type":"application/json","Accept":"application/json"},
+     body:JSON.stringify({mode:"video",provider:"pixelster-motion",model,prompt:motionPrompt,ratio,duration,options:{imageBase64:source}}),
+     signal:AbortSignal.timeout(115000)
+   });
+   const data=await fallback.json().catch(()=>({}));
+   if(!fallback.ok||!data?.videoUrl)throw new Error(data?.message||data?.error||"PixelSter не вернул видео");
+   let finalVideoUrl=String(data.videoUrl);
+   try{
+     updateVideoProgress(model,92,"добавляю звук…");
+     finalVideoUrl=await muxPixelSterAudio(finalVideoUrl,prompt,duration,(p,label)=>updateVideoProgress(model,p,label));
+   }catch(audioError){
+     console.warn("PixelSter audio mux failed; keeping provider MP4",audioError);
+     updateVideoProgress(model,96,"видео готово · звук недоступен");
+   }
+   stopProgress();
+   updateVideoProgress(model,100,finalVideoUrl===String(data.videoUrl)?"видео готово":"видео + звук готовы");
+   const item=saveMedia("video",finalVideoUrl,prompt,model+(finalVideoUrl!==String(data.videoUrl)?" · Video + Audio":""));
+   removeGenerationLoading();
+   renderVideoLibrary();
+   if(item)scrollImagesToTop();
+   toast(finalVideoUrl!==String(data.videoUrl)?"PixelSter: видео + звук созданы":"PixelSter: видео создано");
+ }catch(e){
+   stopProgress();removeGenerationLoading();
+   console.error("PixelSter Motion Synthesis failed",e);
+   $("#composerStatus").textContent=model+" · ошибка";
+   toast(e?.message||"Не удалось создать видео");
+ }finally{$("#composerSend").disabled=false}
+}
+
+async function generateVideo(prompt){
+ const selectedModel=String($("#videoModel")?.value||"LTX-2.3 Distilled");
+ if(selectedModel==="PixelSter Motion Synthesis") return generateMotionVideo(prompt);
+ const source=referenceImage||"";
+ showLoading();$("#composerSend").disabled=true;
+ const stopProgress=startVideoProgress("LTX-2.3 Distilled");
+ try{
+   const durationText=String($("#videoDuration")?.value||"5 сек");
+   const duration=Math.max(1,Math.min(10,Number(durationText.match(/\d+/)?.[0]||5)));
+   const ratio=String($("#videoRatio")?.value||"16:9");
+   const ratioValue=["auto","9:16","16:9","1:1"].includes(ratio)?ratio:"16:9";
+   const effectiveRatio=ratioValue==="auto"?(source?"16:9":"16:9"):ratioValue;
+   const actionPrompt=[
+     "Create one continuous cinematic shot from the user's request.",
+     "Execute every requested action literally, visibly and in the exact order written.",
+     "Start the first requested action immediately; do not replace subject movement with camera movement.",
+     "Preserve the reference subject identity, face, clothing, anatomy, scale and starting composition unless the user explicitly asks for a change.",
+     "Spatial instructions are literal: 'on the pillow' means physically resting on the pillow; 'on the table' means physically on the table; 'inside' means inside; 'behind' means behind; 'next to' means beside; 'left corner' and 'right corner' mean the visible composition corners.",
+     "When a specific surface is named, identify that exact surface and place the requested object relative to it. Never move it to the center just for convenience.",
+     "If a subject travels or the user specifies a new distance/location, visibly change the surrounding environment consistently while preserving the subject.",
+     "Keep motion physically coherent and continuous. No teleporting, sliding, frozen subjects, accidental extra characters or duplicate objects.",
+     "Do not add water, rain, droplets, sand, smoke, fog, fire, dust, particles, extra people, vehicles, props or text unless explicitly requested.",
+     "Use natural synchronized audio generated by LTX-2.3 when available: dialogue, footsteps, impacts, ambience and requested music should match the visible action.",
+     "USER REQUEST:",
+     prompt
+   ].join("\n");
+   updateVideoProgress("LTX-2.3 Distilled",8,"отправляю запрос…");
+   const response=await fetch("/api/generate",{
+     method:"POST",
+     headers:{"Content-Type":"application/json","Accept":"application/json"},
+     body:JSON.stringify({
+       mode:"video",
+       provider:"ltx23",
+       model:"LTX-2.3 Distilled",
+       prompt:actionPrompt,
+       ratio:effectiveRatio,
+       duration,
+       options:{imageBase64:source}
+     })
+   });
+   const data=await response.json().catch(()=>({}));
+   if(!response.ok||!data?.videoUrl)throw new Error(data?.message||data?.error||"LTX-2.3 не вернул готовый MP4");
+   const videoUrl=String(data.videoUrl);
+   updateVideoProgress("LTX-2.3 Distilled",100,"видео + звук готовы");
+   const item=saveMedia("video",videoUrl,prompt,"LTX-2.3 Distilled · Video + Audio");
+   stopProgress();removeGenerationLoading();renderVideoLibrary();
+   if(item)scrollImagesToTop();
+   toast("LTX-2.3: видео + звук созданы");
+ }catch(e){
+   stopProgress();removeGenerationLoading();console.error("LTX-2.3 video generation failed",e);
+   $("#composerProgress").textContent="";$("#composerStatus").textContent="LTX-2.3 Distilled · ошибка · можно повторить";toast(e?.message||"Не удалось создать видео");
+ }finally{$("#composerSend").disabled=false}
+}
+
 function restoreReferenceImage(){try{referenceImage=referenceImage||sessionStorage.getItem("miyaReferenceImage")||""}catch{};setComposerAttachment(referenceImage||"")}
 function setVideoRatioDefault(){
  const el=$("#videoRatio"); if(el) el.value="16:9";
