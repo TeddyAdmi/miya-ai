@@ -126,7 +126,7 @@ function resetChatFlyoutScroll(){const el=$("#chatSubmenu");if(el)requestAnimati
 function openSavedChat(id){
  const chat=getChats().find(x=>x.id===id);if(!chat)return;
  chatMenuSuppressed=true;$("#chatSubmenu")?.classList.add("suppressed");resetChatMenus();resetChatFlyoutScroll();$("#chatMenuToggle")?.setAttribute("aria-expanded","false");
- mode="chat";chatMessages=chat.messages.map(m=>({...m}));window.__miyaChatId=chat.id;chatStarted=true;
+ mode="chat";chatMessages=chat.messages.map(m=>({...m}));window.__miyaChatId=chat.id;
  restoreReferenceImage();setMode("chat",false);
  const c=$("#canvas");c.classList.add("chat-canvas");c.innerHTML='<div class="chat-stream"></div>';
  chatMessages.forEach(m=>addChatMessage(m.content,m.role==="user",m.image||""));
@@ -473,7 +473,7 @@ function bindChatUI(){
  if(newChat)newChat.onclick=(e)=>{
    e.preventDefault();e.stopPropagation();
    resetChatMenus();
-   mode="chat";chatStarted=false;chatMessages=[];window.__miyaChatId=null;
+   mode="chat";chatMessages=[];window.__miyaChatId=null;
    clearComposerAttachment();
    $("#composerInput").value="";
    $("#canvas").innerHTML=modeHero();
