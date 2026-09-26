@@ -1913,3 +1913,30 @@ body.light .chat-selection-actions button{background:#f4f6fa}
 
 .media-card:has(.media-action-menu.open){z-index:100!important}
 .media-action-menu.open{z-index:101!important}
+
+/* Prompt field: the textarea is the full editable surface. Right-click anywhere inside it
+   keeps Firefox's native Copy/Paste menu available, including the far-right edge. */
+.composer-input-row{position:relative!important}
+.composer textarea{
+  width:100%!important;
+  min-width:0!important;
+  user-select:text!important;
+  -moz-user-select:text!important;
+  -webkit-user-select:text!important;
+  cursor:text!important;
+}
+.composer textarea:focus{cursor:text!important}
+
+/* Media must preserve the generated video's real aspect ratio. The card is only a
+   presentation frame; it never stretches a 16:9 source to fill it. */
+.video-result-grid .media-card video,
+.library-media-grid .media-card video{
+  width:100%!important;
+  height:100%!important;
+  max-width:100%!important;
+  max-height:100%!important;
+  object-fit:contain!important;
+  display:block!important;
+  background:#030913!important;
+}
+.media-card.media-load-error{display:none!important}
