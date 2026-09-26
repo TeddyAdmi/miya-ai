@@ -339,7 +339,21 @@ async function handler(req, res) {
 
       // Proven PixelSter /pti contract: raw base64, without the data-URI prefix.
       payload.imageBase64 = rawBase64;
-      payload.prompt = String(prompt).trim() + "\n\nSTRICT IMAGE EDIT:\n- Use the supplied image as the exact source image.\n- Preserve the original subject, identity, anatomy, clothing, pose, camera angle and environment unless explicitly asked to change them.\n- Make only the requested modification.\n- Return one coherent natural image, not a collage.";
+      payload.prompt = [
+        "EDIT THE PROVIDED IMAGE — DO NOT CREATE A DIFFERENT SCENE.",
+        "Use the supplied image as the exact source image.",
+        "Preserve identity, face, anatomy, clothing, visual style, lighting, camera framing and environment unless the user explicitly asks to change that element.",
+        "Apply the user's requested change literally and visibly.",
+        "ADD means add exactly the requested object or feature.",
+        "REMOVE means remove exactly the requested object or feature.",
+        "CHANGE LOCATION means replace the background/location while keeping the subject.",
+        "CHANGE POSE means visibly change the subject's body position or direction.",
+        "Do not substitute a similar object. Do not invent an unrelated change. Do not ignore the requested edit.",
+        "Return one coherent natural image, not a collage.",
+        "",
+        "USER EDIT REQUEST:",
+        String(prompt).trim()
+      ].join("\n");
     }
 
     let response = null;
