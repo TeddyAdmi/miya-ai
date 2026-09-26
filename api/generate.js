@@ -209,6 +209,7 @@ async function handler(req, res) {
       });
     }
 
+    // PixelSter native API. The proven working implementation in the old Miya/Bastyon project used /api/tti and /api/pti.
     const endpointPath = isImageToImage ? "/api/pti" : "/api/tti";
     const endpoints = [
       "https://ahm7xmakki.com" + endpointPath,
