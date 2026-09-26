@@ -188,6 +188,61 @@ async function handler(req, res) {
       });
     }
 
+    if (body.mode === "video") {
+      const prompt = typeof body.prompt === "string" ? body.prompt.trim() : "";
+      if (!prompt) return res.status(400).json({ ok: false, error: "PROMPT_REQUIRED" });
+
+      const options = body.options && typeof body.options === "object" ? body.options : {};
+      const imageBase64 = typeof options.imageBase64 === "string" ? options.imageBase64.trim() : "";
+      if (!imageBase64) return res.status(400).json({ ok: false, error: "VIDEO_SOURCE_REQUIRED", message: "Для Motion Synthesis нужно исходное изображение." });
+
+      const commaIndex = imageBase64.indexOf(",");
+      const rawBase64 = (commaIndex >= 0 ? imageBase64.slice(commaIndex + 1) : imageBase64)
+        .replace(/^base64,/i, "").replace(/\\s+/g, "");
+      if (!rawBase64 || rawBase64.length < 100) return res.status(400).json({ ok: false, error: "INVALID_VIDEO_SOURCE", message: "Исходное изображение для видео некорректно." });
+
+      const approxBytes = Math.ceil(rawBase64.length * 3 / 4);
+      if (approxBytes > 3.5 * 1024 * 1024) return res.status(413).json({ ok: false, error: "VIDEO_SOURCE_TOO_LARGE", message: "Исходное изображение слишком большое. Максимум 3.5 MB." });
+
+      const ratioValue = typeof body.ratio === "string" ? body.ratio : "auto";
+      const allowedRatios = new Set(["auto","9:16","16:9"]);
+      const ratio = allowedRatios.has(ratioValue) ? ratioValue : "auto";
+      const requestedDuration = Number(body.duration ?? 5);
+      const duration = Number.isFinite(requestedDuration) ? Math.max(5, Math.min(20, Math.round(requestedDuration))) : 5;
+      const payload = { prompt, ratio, duration, imageBase64: rawBase64 };
+      const endpoints = ["https://ahm7xmakki.com/api/ptv","https://www.ahm7xmakki.com/api/ptv"];
+      let response = null, raw = "", data = {}, lastNetworkError = null;
+
+      for (let endpointIndex = 0; endpointIndex < endpoints.length; endpointIndex++) {
+        const endpoint = endpoints[endpointIndex];
+        for (let attempt = 0; attempt < 2; attempt++) {
+          const controller = new AbortController();
+          const timeout = setTimeout(() => controller.abort(), 58000);
+          try {
+            response = await fetch(endpoint, { method:"POST", headers:{"Content-Type":"application/json",Accept:"application/json"}, body:JSON.stringify(payload), signal:controller.signal });
+            raw = await response.text();
+            try { data = raw ? JSON.parse(raw) : {}; } catch { data = {}; }
+            if (response.ok && data?.success !== false) break;
+            if ([408,429,500,502,503,504].includes(response.status) && attempt === 0) { await new Promise(resolve => setTimeout(resolve,1200)); continue; }
+            break;
+          } catch (error) {
+            lastNetworkError = error;
+            if (error?.name === "AbortError") return res.status(504).json({ ok:false, error:"VIDEO_TIMEOUT", message:"Motion Synthesis не завершил видео за 58 секунд." });
+            if (attempt === 0) { await new Promise(resolve => setTimeout(resolve,1200)); continue; }
+            break;
+          } finally { clearTimeout(timeout); }
+        }
+        if (response?.ok && data?.success !== false) break;
+      }
+
+      if (lastNetworkError && (!response || !response.ok)) return res.status(502).json({ ok:false, error:"VIDEO_UPSTREAM_UNREACHABLE", message:"Не удалось подключиться к бесплатному Motion Synthesis API.", detail:lastNetworkError?.message || "Upstream connection failed" });
+      if (!response || !response.ok || data?.success === false) return res.status(502).json({ ok:false, error:String(data?.error || data?.message || `VIDEO_HTTP_${response?.status || "UNKNOWN"}`), message:"Motion Synthesis не вернул видео.", upstreamStatus:response?.status || null, upstreamBody:raw.slice(0,1000) });
+
+      const videoUrl = typeof data?.videoUrl === "string" && /^https?:\/\//i.test(data.videoUrl) ? data.videoUrl : "";
+      if (!videoUrl) return res.status(502).json({ ok:false, error:"VIDEO_URL_MISSING", providerResponse:data });
+      return res.status(200).json({ ok:true, mode:"video", status:"completed", provider:"PixelSter", model:"Motion Synthesis", videoUrl, meta:{ transport:"http-json", free:true, endpoint:"/api/ptv", duration, ratio } });
+    }
+
     const prompt = typeof body.prompt === "string" ? body.prompt.trim() : "";
     if (!prompt) return res.status(400).json({ ok: false, error: "PROMPT_REQUIRED" });
 
