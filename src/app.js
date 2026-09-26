@@ -539,7 +539,9 @@ async function generateImage(prompt){
  try{
   const payload={
    prompt,
-   ratio:referenceImage?($("#composerRatio").value==="1:1"?"auto":$("#composerRatio").value):$("#composerRatio").value
+   // Kontext is more reliable with PixelSter's native "auto" sizing when
+   // an image comes from history/library; keep explicit ratio for fresh T2I.
+   ratio:referenceImage?"auto":$("#composerRatio").value
   };
   if(referenceImage){
    if(referenceImage.startsWith("data:image/"))payload.imageBase64=referenceImage;
@@ -582,7 +584,11 @@ async function generateImage(prompt){
     try{result=xhr.responseText?JSON.parse(xhr.responseText):{}}catch{}
     if(xhr.status>=200&&xhr.status<300&&result.imageUrl)resolve(result);
     else{
-      const detail=result.message||result.error||("Генерация не выполнена (HTTP "+xhr.status+")");
+      let detail=result.message||result.error||("Генерация не выполнена (HTTP "+xhr.status+")");
+      if(result.upstreamBody){
+       const rawUpstream=String(result.upstreamBody).replace(/\\s+/g," ").trim();
+       if(rawUpstream) detail += " · "+rawUpstream.slice(0,220);
+      }
       reject(new Error(detail));
     }
    };
