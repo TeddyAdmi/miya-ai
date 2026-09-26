@@ -148,11 +148,14 @@ function openMediaDB(){
 }
 async function cacheMedia(id,url){
  try{
-  const db=await openMediaDB();if(!db)return;
-  const response=await fetch(url,{mode:"cors"});if(!response.ok)return;
+  const db=await openMediaDB();if(!db)return false;
+  const response=await fetch(url,{mode:"cors",cache:"no-store"});
+  if(!response.ok)return false;
   const blob=await response.blob();
+  if(!blob.size)return false;
   await new Promise((resolve,reject)=>{const tx=db.transaction("media","readwrite");tx.objectStore("media").put({id,blob,url,createdAt:Date.now()});tx.oncomplete=resolve;tx.onerror=()=>reject(tx.error)});
- }catch{}
+  return true;
+ }catch{return false}
 }
 async function getCachedMedia(id){
  try{
@@ -170,6 +173,13 @@ function saveMedia(type,url,prompt="",model=""){
  }
  cacheMedia(id,url);
  return item;
+}
+function removeBrokenMediaItem(item,card){
+ try{
+  const items=getLibrary().filter(x=>x.id!==item.id);
+  localStorage.setItem(LIB_KEY,JSON.stringify(items));
+ }catch{}
+ if(card){card.classList.add("media-load-error");card.remove();}
 }
 async function resolveMediaUrl(item){
  const cached=await getCachedMedia(item.id);
@@ -412,8 +422,19 @@ function buildMediaCard(item,{video=false}={}){
  const card=document.createElement("div");card.className="media-card";
  const media=video?document.createElement("video"):document.createElement("img");
  media.alt=video?"Miya AI Studio":"Miya AI Studio";
- if(video){media.controls=true;media.playsInline=true;media.src=item.url}
- else{media.onerror=()=>{media.alt="Miya AI Studio";card.classList.add("media-load-error")};resolveMediaUrl(item).then(url=>{if(url)media.src=url})}
+ let mediaFailed=false;
+ const handleMediaFailure=()=>{
+   if(mediaFailed)return;
+   mediaFailed=true;
+   removeBrokenMediaItem(item,card);
+ };
+ media.addEventListener("error",handleMediaFailure);
+ if(video){
+   media.controls=true;media.playsInline=true;media.preload="metadata";
+   resolveMediaUrl(item).then(url=>{if(url)media.src=url});
+ }else{
+   resolveMediaUrl(item).then(url=>{if(url)media.src=url});
+ }
  card.appendChild(media);
  if(!video){
   media.style.cursor="zoom-in";
@@ -444,7 +465,7 @@ function openVideoFromImage(url){
  $("#workspaceEyebrow").textContent=m.eyebrow;$("#workspaceTitle").textContent=m.title;$("#workspaceSubtitle").textContent=m.subtitle;
  $("#composerInput").placeholder=m.placeholder;$("#composerSendText").textContent=m.send;$("#composerStatus").textContent="LTX-2.3 Distilled · изображение готово";
  $(".image-settings").style.display="none";$("#videoOptions").classList.add("show");
- $("#videoModel").value="LTX-2.3 Distilled";$("#videoRatio").value="auto";
+ $("#videoModel").value="LTX-2.3 Distilled";$("#videoRatio").value="16:9";
  document.querySelectorAll("[data-mode]").forEach(x=>x.classList.toggle("active",x.dataset.mode==="video"));
  $("#chatMenuToggle")?.classList.remove("active");$("#chatSubmenu")?.classList.add("suppressed");
  setComposerAttachment(referenceImage);renderVideoLibrary();syncInput();$("#composerInput").focus();
@@ -852,26 +873,36 @@ function removeGenerationLoading(){
  const loader=$("#canvas .generation-loading");
  if(loader)loader.remove();
 }
-function startVideoProgress(model){
+function updateVideoProgress(model,value,label=""){
+ const v=Math.max(0,Math.min(100,Math.round(value)));
  const loader=$("#canvas .video-generation-loading");
  const ring=loader?.querySelector(".progress-circle");
  const percent=loader?.querySelector(".progress-percent");
  const copy=loader?.querySelector(".progress-model");
+ const bar=loader?.querySelector(".generation-progress-bar span");
+ if(ring)ring.style.setProperty("--progress",v+"%");
+ if(percent)percent.textContent=v+"%";
+ if(bar)bar.style.width=v+"%";
+ if(copy)copy.textContent=model+(label?" · "+label:"");
+ const status=$("#composerStatus"),progress=$("#composerProgress");
+ if(status)status.textContent=model+(label?" · "+label:"");
+ if(progress)progress.textContent=v+"%";
+}
+function startVideoProgress(model){
  let value=4;
- if(copy)copy.textContent=model+" · запуск видеодвижка…";
- if(ring)ring.style.setProperty("--progress",value+"%");
- const bar=loader?.querySelector(".generation-progress-bar span");if(bar)bar.style.width=value+"%";
- if(percent)percent.textContent=value+"%";
+ updateVideoProgress(model,value,"запуск видеодвижка…");
  const timer=setInterval(()=>{
-   if(!document.body.contains(loader)){clearInterval(timer);return}
+   const loader=$("#canvas .video-generation-loading");
+   if(!loader||!document.body.contains(loader)){clearInterval(timer);return}
    const remaining=92-value;
    const step=remaining>50?Math.random()*5+1.5:remaining>20?Math.random()*2.4+.5:Math.random()*.55+.15;
    value=Math.min(92,value+step);
-   if(ring)ring.style.setProperty("--progress",value+"%");
-   const bar=loader?.querySelector(".generation-progress-bar span");if(bar)bar.style.width=Math.round(value)+"%";
-   if(percent)percent.textContent=Math.round(value)+"%";
+   updateVideoProgress(model,value,"генерация…");
  },850);
- return ()=>clearInterval(timer);
+ return (finalValue=null,label="")=>{
+   clearInterval(timer);
+   if(finalValue!==null)updateVideoProgress(model,finalValue,label);
+ };
 }
 
 let miyaFfmpegPromise=null;
@@ -962,14 +993,16 @@ async function generateMotionVideo(prompt){
      data=await fallback.json().catch(()=>({}));
      if(!fallback.ok||!data?.videoUrl)throw new Error(data?.message||data?.error||lastError?.message||"PixelSter не вернул видео");
    }
-   $("#composerStatus").textContent=model+" · добавляю звук…";
-   const finalVideoUrl=await muxPixelSterAudio(data.videoUrl,prompt,duration,(p,label)=>{
-    const v=Math.max(4,Math.min(100,Math.round(p))),loader=$("#canvas .video-generation-loading"),ring=loader?.querySelector(".progress-circle"),percent=loader?.querySelector(".progress-percent"),bar=loader?.querySelector(".generation-progress-bar span"),copy=loader?.querySelector(".progress-model");
-    if(ring)ring.style.setProperty("--progress",v+"%");if(percent)percent.textContent=v+"%";if(bar)bar.style.width=v+"%";if(copy)copy.textContent=model+" · "+label;if($("#composerProgress"))$("#composerProgress").textContent=v+"%";
-   });
-   const item=saveMedia("video",finalVideoUrl,prompt,model+" · Video + Audio");
-   stopProgress();removeGenerationLoading();renderVideoLibrary();
-   $("#composerStatus").textContent=model+" · видео + звук готовы";$("#composerProgress").textContent="100%";toast("Видео со звуком создано");
+   // PixelSter has already returned a complete MP4. Do not block the result on optional
+   // browser FFmpeg/audio post-processing: Firefox/CSP can prevent the WASM worker from loading.
+   // The original video is therefore saved immediately and generation is released for the next job.
+   stopProgress();
+   updateVideoProgress(model,100,"видео готово");
+   const item=saveMedia("video",String(data.videoUrl),prompt,model);
+   removeGenerationLoading();
+   renderVideoLibrary();
+   if(item)scrollImagesToTop();
+   toast("Видео создано");
    if(item)scrollImagesToTop();
  }catch(e){
    stopProgress();removeGenerationLoading();
@@ -985,45 +1018,48 @@ async function generateVideo(prompt){
  const source=referenceImage||"";
  showLoading();$("#composerSend").disabled=true;
  const stopProgress=startVideoProgress("LTX-2.3 Distilled");
- $("#composerStatus").textContent="LTX-2.3 Distilled · подготовка видео + звука…";
  try{
    const durationText=String($("#videoDuration")?.value||"5 сек");
    const duration=Math.max(1,Math.min(10,Number(durationText.match(/\d+/)?.[0]||5)));
    const ratio=String($("#videoRatio")?.value||"16:9");
    const ratioValue=["auto","9:16","16:9","1:1"].includes(ratio)?ratio:"16:9";
+   const effectiveRatio=ratioValue==="auto"?(source?"16:9":"16:9"):ratioValue;
    const actionPrompt=[
-     "Create the requested action immediately and visibly.",
-     "Follow the user's actions in the exact order they are written. If several actions are requested, treat them as sequential beats in one continuous shot.",
-     "Do not substitute camera movement for subject movement. Keep the subject physically performing the requested action.",
-     "Preserve the reference subject identity and appearance. Add no unrequested effects.",
-     "Generate synchronized natural audio matching the visible actions, ambience and any explicitly requested music.",
+     "Create one continuous cinematic shot from the user's request.",
+     "Execute every requested action literally, visibly and in the exact order written.",
+     "Start the first requested action immediately; do not replace subject movement with camera movement.",
+     "Preserve the reference subject identity, face, clothing, anatomy, scale and starting composition unless the user explicitly asks for a change.",
+     "Spatial instructions are literal: 'on the pillow' means physically resting on the pillow; 'on the table' means physically on the table; 'inside' means inside; 'behind' means behind; 'next to' means beside; 'left corner' and 'right corner' mean the visible composition corners.",
+     "When a specific surface is named, identify that exact surface and place the requested object relative to it. Never move it to the center just for convenience.",
+     "If a subject travels or the user specifies a new distance/location, visibly change the surrounding environment consistently while preserving the subject.",
+     "Keep motion physically coherent and continuous. No teleporting, sliding, frozen subjects, accidental extra characters or duplicate objects.",
+     "Do not add water, rain, droplets, sand, smoke, fog, fire, dust, particles, extra people, vehicles, props or text unless explicitly requested.",
+     "Use natural synchronized audio generated by LTX-2.3 when available: dialogue, footsteps, impacts, ambience and requested music should match the visible action.",
      "USER REQUEST:",
      prompt
    ].join("\n");
-   let data=null,lastError=null;
-   try{
-     const mod=await import("https://esm.sh/@gradio/client@2.7.0");
-     window.__miyaLtxClient=await mod.Client.connect("Lightricks/LTX-2-3");
-     const client=window.__miyaLtxClient,handleFile=mod.handle_file;
-     let inputImage=null;
-     if(source){const blob=await fetch(source).then(r=>r.blob());inputImage=handleFile(new File([blob],"miya-reference.png",{type:blob.type||"image/png"}))}
-     let width=1536,height=1024;
-     if(ratioValue==="9:16"){width=1024;height=1536}else if(ratioValue==="1:1"){width=1024;height=1024}
-     const result=await client.predict("/generate_video",[inputImage,actionPrompt,duration,false,Math.floor(Math.random()*2147483647),true,height,width]);
-     const raw=result?.data?.[0],videoUrl=typeof raw==="string"?raw:String(raw?.url||raw?.path||raw?.data||"");
-     if(!videoUrl)throw new Error("LTX-2.3 не вернул готовый MP4");
-     data={videoUrl};
-   }catch(e){
-     lastError=e;console.warn("LTX browser transport failed; using Miya server transport",e);
-     const fallback=await fetch("/api/generate",{method:"POST",headers:{"Content-Type":"application/json","Accept":"application/json"},body:JSON.stringify({mode:"video",provider:"ltx23",model:"LTX-2.3 Distilled",prompt:actionPrompt,ratio:ratioValue,duration,options:{imageBase64:source}}),signal:AbortSignal.timeout(59000)});
-     data=await fallback.json().catch(()=>({}));
-     if(!fallback.ok||!data?.videoUrl)throw new Error(data?.message||data?.error||lastError?.message||"LTX-2.3 не вернул видео");
-   }
-   const videoUrl=String(data.videoUrl||"");if(!videoUrl)throw new Error("LTX-2.3 не вернул готовый MP4");
+   updateVideoProgress("LTX-2.3 Distilled",8,"отправляю запрос…");
+   const response=await fetch("/api/generate",{
+     method:"POST",
+     headers:{"Content-Type":"application/json","Accept":"application/json"},
+     body:JSON.stringify({
+       mode:"video",
+       provider:"ltx23",
+       model:"LTX-2.3 Distilled",
+       prompt:actionPrompt,
+       ratio:effectiveRatio,
+       duration,
+       options:{imageBase64:source}
+     })
+   });
+   const data=await response.json().catch(()=>({}));
+   if(!response.ok||!data?.videoUrl)throw new Error(data?.message||data?.error||"LTX-2.3 не вернул готовый MP4");
+   const videoUrl=String(data.videoUrl);
+   updateVideoProgress("LTX-2.3 Distilled",100,"видео + звук готовы");
    const item=saveMedia("video",videoUrl,prompt,"LTX-2.3 Distilled · Video + Audio");
    stopProgress();removeGenerationLoading();renderVideoLibrary();
-   $("#composerStatus").textContent="LTX-2.3 Distilled · видео + звук готовы";$("#composerProgress").textContent="100%";toast("Видео со звуком создано");
    if(item)scrollImagesToTop();
+   toast("LTX-2.3: видео + звук созданы");
  }catch(e){
    stopProgress();removeGenerationLoading();console.error("LTX-2.3 video generation failed",e);
    $("#composerProgress").textContent="";$("#composerStatus").textContent="LTX-2.3 Distilled · ошибка · можно повторить";toast(e?.message||"Не удалось создать видео");
@@ -1080,6 +1116,17 @@ if(chatMenuToggle){
 }
 document.querySelectorAll("[data-mode]").forEach(b=>b.addEventListener("click",()=>setMode(b.dataset.mode)));
 $("#composerInput").addEventListener("input",syncInput);
+$("#composerInput").addEventListener("contextmenu",e=>{
+  // Firefox shows Paste/Copy for the focused textarea. Keep the whole prompt
+  // area editable even when the user opens the menu at its far right edge.
+  e.currentTarget.focus();
+  if(typeof e.clientX==="number"&&typeof e.clientY==="number"){
+    try{
+      const pos=document.caretPositionFromPoint?.(e.clientX,e.clientY);
+      if(pos?.offsetNode===e.currentTarget)e.currentTarget.setSelectionRange(pos.offset,pos.offset);
+    }catch{}
+  }
+});
 $("#composerInput").addEventListener("keydown",e=>{if(e.key==="Enter"&&!e.shiftKey){e.preventDefault();$("#composerSend").click()}});
 $("#composerSend").addEventListener("click",async()=>{
  const value=$("#composerInput").value.trim();
