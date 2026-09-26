@@ -1704,3 +1704,24 @@ body.light .delete-confirm-ring::before{background:#fff}
 .chat-canvas .chat-stream{
   padding-bottom:10px!important;
 }
+
+
+/* FINAL: chat messages are hard-anchored to the fixed composer edge. */
+.chat-canvas{--chat-composer-gap:10px}
+.chat-canvas .chat-room{min-height:calc(100dvh - 10px)!important;padding:0!important}
+.chat-canvas .chat-stream{
+  min-height:calc(100dvh - var(--chat-composer-height,180px) - var(--chat-composer-gap))!important;
+  height:auto!important;max-height:none!important;
+  padding:0 4px var(--chat-composer-gap)!important;
+  margin:0 auto!important;display:flex!important;flex-direction:column!important;
+  justify-content:flex-end!important;gap:10px!important;overflow:visible!important;
+}
+.chat-canvas .chat-stream .chat-row{flex:0 0 auto!important}
+@media(max-width:800px){
+ .chat-canvas .chat-room{min-height:calc(100dvh - 8px)!important}
+ .chat-canvas .chat-stream{
+  min-height:calc(100dvh - var(--chat-composer-height,190px) - var(--chat-composer-gap))!important;
+  padding:0 2px var(--chat-composer-gap)!important;
+ }
+}
+.media-more[title]{position:relative!important}
