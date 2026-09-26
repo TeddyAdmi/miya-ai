@@ -4,7 +4,7 @@ const modes={
  video:{title:"Видео",eyebrow:"VIDEO STUDIO · LTX",subtitle:"Создавай видео из текста или оживляй загруженные изображения.",placeholder:"Опиши сцену, движение и стиль видео...",send:"Создать видео",status:"LTX · Video generation"}
 };
 const $=s=>document.querySelector(s),$$=s=>[...document.querySelectorAll(s)];
-let mode="chat",referenceImage=null,chatStarted=false,chatMessages=[];
+let mode="chat",referenceImage=null,chatAttachmentFile=null,chatStarted=false,chatMessages=[];
 const CHAT_KEY="miyaChats";
 let chatMenuSuppressed=false;
 function getChats(){
@@ -184,6 +184,7 @@ function setComposerAttachment(url){
 }
 function clearComposerAttachment(){
  referenceImage=null;
+ chatAttachmentFile=null;
  setComposerAttachment("");
  if(mode==="images"&&$("#composerModel")) $("#composerModel").value="FLUX Dev";
 }
@@ -661,13 +662,16 @@ async function requestChat(){
    // Primary chat transport: Puter.js. It is keyless on the app side,
    // so Miya does not need a paid API key or a server-side text provider.
    if(window.puter?.ai?.chat){
-     const response=await window.puter.ai.chat([
-       {
-         role:"system",
-         content:"Ты Miya — дружелюбный AI-помощник внутри Miya AI Studio. Отвечай на русском, если пользователь пишет по-русски. Помогай с текстами, идеями, сценариями, промптами, изображениями и видео. Отвечай полезно и по существу."
-       },
-       ...chatMessages.slice(-12).map(m=>({role:m.role,content:m.content}))
-     ],{model:"google/gemini-3.8-flash",max_tokens:2048});
+     const systemText="Ты Miya — дружелюбный AI-помощник внутри Miya AI Studio. Отвечай на русском, если пользователь пишет по-русски. Помогай с текстами, идеями, сценариями, промптами, изображениями и видео. Если к сообщению прикреплено изображение, обязательно проанализируй его и опирайся на него в ответе.";
+     const latest=chatMessages[chatMessages.length-1];
+     const transcript=chatMessages.slice(-12).map(m=>(m.role==="assistant"?"Miya: ":"Пользователь: ")+m.content).join("\n");
+     const multimodalPrompt=systemText+"\n\nКонтекст диалога:\n"+transcript+"\n\nПоследний запрос пользователя:\n"+String(latest?.content||"");
+     const response=chatAttachmentFile
+       ? await window.puter.ai.chat(multimodalPrompt,chatAttachmentFile,{model:"google/gemini-3.8-flash",max_tokens:2048})
+       : await window.puter.ai.chat([
+           {role:"system",content:systemText},
+           ...chatMessages.slice(-12).map(m=>({role:m.role,content:m.content}))
+         ],{model:"google/gemini-3.8-flash",max_tokens:2048});
      answer=typeof response==="string"
        ? response.trim()
        : String(response?.message?.content||response?.text||response?.content||"").trim();
@@ -752,7 +756,7 @@ $("#composerSend").addEventListener("click",async()=>{
  const value=$("#composerInput").value.trim();
  if(!value){toast(mode==="chat"?"Напиши сообщение":mode==="video"?"Опиши видео":"Опиши, что создать или изменить");return}
  if(mode==="images"){await generateImage(value);return}
- if(mode==="chat"){const attachedImage=referenceImage;chatMessages.push({role:"user",content:value,image:attachedImage||""});addChatMessage(value,true,attachedImage||"");$("#composerInput").value="";syncInput();saveCurrentChat();await requestChat();return}
+ if(mode==="chat"){const attachedImage=referenceImage;const attachedFile=chatAttachmentFile;chatMessages.push({role:"user",content:value,image:attachedImage||""});addChatMessage(value,true,attachedImage||"");$("#composerInput").value="";syncInput();saveCurrentChat();await requestChat();chatAttachmentFile=null;clearComposerAttachment();return}
  showLoading();$("#composerStatus").textContent="LTX · Request prepared";
  setTimeout(()=>{toast("Видео-задача подготовлена. LTX endpoint подключим следующим шагом.");showEmpty();$("#composerStatus").textContent=modes.video.status},500)
 });
@@ -790,6 +794,7 @@ $("#videoTrash")?.addEventListener("click",()=>{
 });
 $("#referenceInput").onchange=e=>{
  const file=e.target.files?.[0];if(!file)return;
+ if(mode==="chat") chatAttachmentFile=file;
  const reader=new FileReader();
  reader.onload=()=>{
   referenceImage=String(reader.result||"");try{sessionStorage.setItem("miyaReferenceImage",referenceImage)}catch{};setComposerAttachment(referenceImage);
