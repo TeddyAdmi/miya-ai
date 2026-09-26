@@ -829,6 +829,42 @@ async function requestChat(){
    $("#composerSend").disabled=false;
  }
 }
+function removeGenerationLoading(){
+ const loader=$("#canvas .generation-loading");
+ if(loader)loader.remove();
+}
+function updateVideoProgress(model,value,label=""){
+ const v=Math.max(0,Math.min(100,Math.round(value)));
+ const loader=$("#canvas .video-generation-loading");
+ const ring=loader?.querySelector(".progress-circle");
+ const percent=loader?.querySelector(".progress-percent");
+ const copy=loader?.querySelector(".progress-model");
+ const bar=loader?.querySelector(".generation-progress-bar span");
+ if(ring)ring.style.setProperty("--progress",v+"%");
+ if(percent)percent.textContent=v+"%";
+ if(bar)bar.style.width=v+"%";
+ if(copy)copy.textContent=model+(label?" · "+label:"");
+ const status=$("#composerStatus"),progress=$("#composerProgress");
+ if(status)status.textContent=model+(label?" · "+label:"");
+ if(progress)progress.textContent=v+"%";
+}
+function startVideoProgress(model){
+ let value=4;
+ updateVideoProgress(model,value,"запуск видеодвижка…");
+ const timer=setInterval(()=>{
+   const loader=$("#canvas .video-generation-loading");
+   if(!loader||!document.body.contains(loader)){clearInterval(timer);return}
+   const remaining=92-value;
+   const step=remaining>50?Math.random()*5+1.5:remaining>20?Math.random()*2.4+.5:Math.random()*.55+.15;
+   value=Math.min(92,value+step);
+   updateVideoProgress(model,value,"генерация…");
+ },850);
+ return (finalValue=null,label="")=>{
+   clearInterval(timer);
+   if(finalValue!==null)updateVideoProgress(model,finalValue,label);
+ };
+}
+
 async function generateMotionVideo(prompt){
  const source=referenceImage||"";
  if(!source){

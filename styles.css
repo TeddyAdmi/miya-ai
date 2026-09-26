@@ -1975,13 +1975,13 @@ body.light .chat-selection-actions button{background:#f4f6fa}
 /* Video prompt tools use the exact same icon treatment as image prompt tools. */
 .video-options .video-tool.improve{
   background:transparent!important;
-  color:var(--purple)!important;
+  color:#f4f7ff!important;
   border:0!important;
   width:38px!important;height:38px!important;
   padding:0!important;
   display:grid!important;place-items:center!important;
 }
-body.light .video-options .video-tool.improve{color:var(--purple2)!important}
-.video-options .video-tool.improve svg{width:17px!important;height:17px!important}
+body.light .video-options .video-tool.improve{color:#6550d8!important}
+.video-options .video-tool.improve svg{width:17px!important;height:17px!important;fill:currentColor!important;color:inherit!important}
 .video-options .video-tool.improve:hover{background:rgba(167,92,255,.10)!important;color:#c58aff!important}
 body.light .video-options .video-tool.improve:hover{background:#f0eaff!important;color:#6550d8!important}
