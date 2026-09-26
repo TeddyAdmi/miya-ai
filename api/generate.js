@@ -223,16 +223,38 @@ async function handler(req, res) {
           inputImage,
           prompt,
           duration,
-          true,
+          false,
           Math.floor(Math.random()*2147483647),
           true,
           height,
           width
         ]);
-        const raw=result?.data?.[0];
-        const videoUrl=typeof raw==="string"?raw:String(raw?.url||raw?.path||raw?.data||"");
-        if(!videoUrl||!/^https?:\/\//i.test(videoUrl)) {
-          return res.status(502).json({ok:false,error:"LTX_VIDEO_URL_MISSING",message:"LTX-2.3 не вернул готовый MP4.",providerResponse:result});
+
+        // Gradio's FileData shape can vary between Space/SDK versions.
+        // Walk the returned object instead of assuming data[0].url.
+        const findVideoUrl=(value,seen=new Set())=>{
+          if(value==null)return "";
+          if(typeof value==="string"){
+            return /^https?:\/\//i.test(value)&&/\.(mp4|webm|mov)(?:[?#].*)?$/i.test(value)
+              ? value : "";
+          }
+          if(typeof value!=="object"||seen.has(value))return "";
+          seen.add(value);
+          const preferred=["url","videoUrl","video_url","path","file","data","value"];
+          for(const key of preferred){
+            const found=findVideoUrl(value[key],seen);
+            if(found)return found;
+          }
+          for(const key of Object.keys(value)){
+            const found=findVideoUrl(value[key],seen);
+            if(found)return found;
+          }
+          return "";
+        };
+        const videoUrl=findVideoUrl(result?.data)||findVideoUrl(result);
+        if(!videoUrl) {
+          console.error("LTX-2.3 returned no public video URL",result);
+          return res.status(502).json({ok:false,error:"LTX_VIDEO_URL_MISSING",message:"LTX-2.3 не вернул доступный MP4.",providerResponse:result});
         }
         return res.status(200).json({
           ok:true,mode:"video",status:"completed",provider:"Lightricks",
