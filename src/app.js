@@ -281,12 +281,52 @@ function openImageViewer(item){
   modal=document.createElement("div");
   modal.id="imageViewerModal";
   modal.className="image-viewer-modal";
-  modal.innerHTML='<div class="image-viewer-backdrop"></div><div class="image-viewer-stage"><img class="image-viewer-image" alt="Miya AI Studio" draggable="false"><div class="image-viewer-controls"><button type="button" class="image-viewer-zoom" aria-label="Увеличить" title="Увеличить"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 3H3v5M16 3h5v5M8 21H3v-5M21 16v5h-5"/><path d="M12 8v8M8 12h8"/></svg></button><button type="button" class="image-viewer-close" aria-label="Закрыть" title="Закрыть"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8.5"/><path d="m9 9 6 6M15 9l-6 6"/></svg></button></div></div>';
+  modal.innerHTML='<div class="image-viewer-backdrop"></div><div class="image-viewer-stage">
+<img class="image-viewer-image" alt="Miya AI Studio" draggable="false">
+<button type="button" class="image-viewer-nav image-viewer-prev" aria-label="Предыдущее изображение" title="Предыдущее изображение"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m14.5 5-7 7 7 7"/><path d="M8 12h10"/></svg></button>
+<button type="button" class="image-viewer-nav image-viewer-next" aria-label="Следующее изображение" title="Следующее изображение"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m9.5 5 7 7-7 7"/><path d="M16 12H6"/></svg></button>
+<div class="image-viewer-controls"><button type="button" class="image-viewer-zoom" aria-label="Увеличить" title="Увеличить"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 3H3v5M16 3h5v5M8 21H3v-5M21 16v5h-5"/><path d="M12 8v8M8 12h8"/></svg></button><button type="button" class="image-viewer-close" aria-label="Закрыть" title="Закрыть"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8.5"/><path d="m9 9 6 6M15 9l-6 6"/></svg></button></div></div>';
   document.body.appendChild(modal);
   modal.querySelector(".image-viewer-backdrop").onclick=closeImageViewer;
   modal.querySelector(".image-viewer-close").onclick=closeImageViewer;
   const stage=modal.querySelector(".image-viewer-stage");
+  const prevButton=modal.querySelector(".image-viewer-prev");
+  const nextButton=modal.querySelector(".image-viewer-next");
   const zoomButton=modal.querySelector(".image-viewer-zoom");
+  const getViewerItems=()=>getLibrary().filter(x=>x.type==="image");
+  const updateViewerNav=()=>{
+    const items=getViewerItems();
+    const currentId=modal.dataset.viewerItemId||"";
+    const index=items.findIndex(x=>x.id===currentId);
+    const hasPrev=index>0,hasNext=index>=0&&index<items.length-1;
+    prevButton.hidden=!hasPrev; nextButton.hidden=!hasNext;
+    prevButton.disabled=!hasPrev; nextButton.disabled=!hasNext;
+  };
+  const showViewerItem=(nextItem)=>{
+    if(!nextItem)return;
+    modal.dataset.viewerItemId=nextItem.id;
+    const viewerImg=modal.querySelector(".image-viewer-image");
+    viewerImg.src=nextItem.url;
+    viewerImg.dataset.zoom="1";viewerImg.dataset.panX="0";viewerImg.dataset.panY="0";
+    viewerImg.style.transform="translate3d(0,0,0) scale(1)";
+    viewerImg.style.cursor="default";
+    const z=modal.querySelector(".image-viewer-zoom");
+    z.innerHTML='<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 3H3v5M16 3h5v5M8 21H3v-5M21 16v5h-5"/><path d="M12 8v8M8 12h8"/></svg>';
+    z.title="Увеличить";
+    resolveMediaUrl(nextItem).then(url=>{
+      if(url&&modal.classList.contains("open")&&modal.dataset.viewerItemId===nextItem.id)viewerImg.src=url;
+    }).catch(()=>{});
+    updateViewerNav();
+  };
+  const moveViewer=(direction)=>{
+    const items=getViewerItems();
+    const index=items.findIndex(x=>x.id===modal.dataset.viewerItemId);
+    if(index<0)return;
+    const next=items[index+direction];
+    if(next)showViewerItem(next);
+  };
+  prevButton.onclick=()=>moveViewer(-1);
+  nextButton.onclick=()=>moveViewer(1);
   const img=modal.querySelector(".image-viewer-image");
   const applyTransform=()=>{
     const z=Number(img.dataset.zoom||"1"),x=Number(img.dataset.panX||"0"),y=Number(img.dataset.panY||"0");
@@ -322,11 +362,14 @@ function openImageViewer(item){
   document.addEventListener("keydown",e=>{
     if(!$("#imageViewerModal")?.classList.contains("open"))return;
     if(e.key==="Escape")closeImageViewer();
+    else if(e.key==="ArrowLeft")moveViewer(-1);
+    else if(e.key==="ArrowRight")moveViewer(1);
   });
  }
  const img=modal.querySelector(".image-viewer-image");
+ modal.dataset.viewerItemId=item.id;
  img.src=item.url;
- resolveMediaUrl(item).then(url=>{if(url&&modal.classList.contains("open"))img.src=url}).catch(()=>{});
+ resolveMediaUrl(item).then(url=>{if(url&&modal.classList.contains("open")&&modal.dataset.viewerItemId===item.id)img.src=url}).catch(()=>{});
  img.onerror=()=>{img.alt="Изображение недоступно"};
  img.dataset.zoom="1";
  img.dataset.panX="0";
@@ -335,6 +378,7 @@ function openImageViewer(item){
  zoomControl.innerHTML='<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 3H3v5M16 3h5v5M8 21H3v-5M21 16v5h-5"/><path d="M12 8v8M8 12h8"/></svg>';
  zoomControl.title="Увеличить";
  img.style.transform="translate3d(0,0,0) scale(1)";
+ updateViewerNav();
  modal.classList.add("open");
  document.body.classList.add("image-viewer-open");
 }
