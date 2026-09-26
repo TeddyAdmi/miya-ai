@@ -1068,7 +1068,7 @@ async function generateVideo(prompt){
 
 function restoreReferenceImage(){try{referenceImage=referenceImage||sessionStorage.getItem("miyaReferenceImage")||""}catch{};setComposerAttachment(referenceImage||"")}
 function setVideoRatioDefault(){
- const el=$("#videoRatio"); if(el) el.value=referenceImage?"auto":"16:9";
+ const el=$("#videoRatio"); if(el) el.value="16:9";
 }
 function setMode(next,render=true){
  const changedSection=next!==mode;
