@@ -1,7 +1,7 @@
 const modes={
  chat:{title:"Твоя AI-комната",eyebrow:"AI CHAT · MIYA",subtitle:"Общайся с Miya, придумывай идеи и управляй созданием контента.",placeholder:"Напиши сообщение...",send:"Отправить",status:"AI Chat готов"},
  images:{title:"Картинки",eyebrow:"IMAGE STUDIO · FLUX",subtitle:"Создавай изображения с нуля или загружай исходник и описывай изменения.",placeholder:"Опиши картинку или что изменить в загруженном изображении...",send:"Создать",status:"FLUX Dev · Image generation & editing"},
- video:{title:"Видео",eyebrow:"VIDEO STUDIO · LTX",subtitle:"Создавай видео из текста или оживляй загруженные изображения.",placeholder:"Опиши сцену, движение и стиль видео...",send:"Создать видео",status:"LTX · Video generation"}
+ video:{title:"Видео",eyebrow:"VIDEO STUDIO · MOTION",subtitle:"Оживляй изображение с помощью бесплатной Motion Synthesis модели.",placeholder:"Опиши движение, камеру и стиль видео...",send:"Создать видео",status:"Motion Synthesis · Video generation"}
 };
 const $=s=>document.querySelector(s);
 let mode="chat",referenceImage=null,chatAttachmentFile=null,chatMessages=[];
@@ -747,6 +747,54 @@ async function requestChat(){
    $("#composerSend").disabled=false;
  }
 }
+async function generateVideo(prompt){
+ const source=referenceImage||"";
+ if(!source){
+   toast("Для видео сначала добавь изображение");
+   $("#composerStatus").textContent="Motion Synthesis · нужно изображение";
+   $("#referenceInput")?.click();
+   return;
+ }
+ showLoading();
+ $("#composerSend").disabled=true;
+ $("#composerStatus").textContent="Motion Synthesis · генерация видео…";
+ const modelName="Motion Synthesis";
+ const durationText=String($("#videoDuration")?.value||"5 сек");
+ const durationMatch=durationText.match(/\\d+/);
+ const duration=Math.max(5,Math.min(20,Number(durationMatch?.[0]||5)));
+ const ratio=String($("#videoRatio")?.value||"auto");
+ try{
+   const response=await fetch("/api/generate",{
+     method:"POST",
+     headers:{"Content-Type":"application/json","Accept":"application/json"},
+     body:JSON.stringify({
+       mode:"video",
+       provider:"pixelster",
+       model:modelName,
+       prompt,
+       ratio,
+       duration,
+       options:{imageBase64:source}
+     }),
+     signal:AbortSignal.timeout(60000)
+   });
+   const data=await response.json().catch(()=>({}));
+   if(!response.ok||!data.videoUrl){
+     throw new Error(data.message||data.error||"Видео не было создано");
+   }
+   const item=saveMedia("video",data.videoUrl,prompt,modelName);
+   $("#canvas").innerHTML="";
+   renderLibrary("videos");
+   $("#composerStatus").textContent="Motion Synthesis · готово";
+   toast("Видео создано");
+   if(item) scrollImagesToTop();
+ }catch(e){
+   $("#composerStatus").textContent="Motion Synthesis · ошибка";
+   toast(e.message||"Не удалось создать видео");
+ }finally{
+   $("#composerSend").disabled=false;
+ }
+}
 function restoreReferenceImage(){try{referenceImage=referenceImage||sessionStorage.getItem("miyaReferenceImage")||""}catch{};setComposerAttachment(referenceImage||"")}
 function setVideoRatioDefault(){
  const el=$("#videoRatio"); if(el) el.value=referenceImage?"auto":"16:9";
@@ -758,7 +806,7 @@ function setMode(next,render=true){
  $("#workspaceEyebrow").textContent=m.eyebrow;$("#workspaceTitle").textContent=m.title;$("#workspaceSubtitle").textContent=m.subtitle;
  $("#composerInput").placeholder=m.placeholder;$("#composerSendText").textContent=m.send;$("#composerStatus").textContent=m.status;
  $(".image-settings").style.display=next==="images"?"flex":"none";$("#videoOptions").classList.toggle("show",next==="video");
- if(next==="video") setVideoRatioDefault();
+ if(next==="video"){ setVideoRatioDefault(); if($("#videoModel"))$("#videoModel").value="Motion Synthesis"; }
  document.querySelectorAll("[data-mode]").forEach(x=>x.classList.toggle("active",x.dataset.mode===next));
  document.querySelectorAll("#chatSubmenu .side-subbtn").forEach(x=>x.classList.remove("active"));
  $("#chatMenuToggle")?.classList.toggle("active",next==="chat");
@@ -799,9 +847,9 @@ $("#composerSend").addEventListener("click",async()=>{
  const value=$("#composerInput").value.trim();
  if(!value){toast(mode==="chat"?"Напиши сообщение":mode==="video"?"Опиши видео":"Опиши, что создать или изменить");return}
  if(mode==="images"){await generateImage(value);return}
+ if(mode==="video"){await generateVideo(value);return}
  if(mode==="chat"){const attachedImage=referenceImage;const attachedFile=chatAttachmentFile;chatMessages.push({role:"user",content:value,image:attachedImage||""});addChatMessage(value,true,attachedImage||"");$("#composerInput").value="";syncInput();saveCurrentChat();await requestChat();chatAttachmentFile=null;clearComposerAttachment();return}
- showLoading();$("#composerStatus").textContent="LTX · Request prepared";
- setTimeout(()=>{toast("Видео-задача подготовлена. LTX endpoint подключим следующим шагом.");showEmpty();$("#composerStatus").textContent=modes.video.status},500)
+ showLoading();await generateVideo(value)
 });
 $("#composerAttach").onclick=()=>$("#referenceInput").click();
 function copyComposerPrompt(){
@@ -845,6 +893,10 @@ $("#referenceInput").onchange=e=>{
     $("#composerModel").value="FLUX Kontext Dev";
     $("#composerRatio").value="auto";
     $("#composerStatus").textContent="Flux Kontext Dev · готово к редактированию";
+  }else if(mode==="video"){
+    $("#videoModel").value="Motion Synthesis";
+    $("#videoRatio").value="auto";
+    $("#composerStatus").textContent="Motion Synthesis · изображение готово";
   }else{
     $("#composerStatus").textContent="Изображение прикреплено · можно спросить Miya о фото";
   }
