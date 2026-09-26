@@ -747,7 +747,64 @@ async function requestChat(){
    $("#composerSend").disabled=false;
  }
 }
+async function generateMotionVideo(prompt){
+ const source=referenceImage||"";
+ if(!source){
+   toast("PixelSter Motion Synthesis требует исходное изображение");
+   $("#composerStatus").textContent="PixelSter · нужно исходное изображение";
+   return;
+ }
+ showLoading();
+ $("#composerSend").disabled=true;
+ $("#composerStatus").textContent="PixelSter Motion Synthesis · генерация…";
+ try{
+   const durationText=String($("#videoDuration")?.value||"5 сек");
+   const durationMatch=durationText.match(/\\d+/);
+   const duration=Math.max(5,Math.min(20,Number(durationMatch?.[0]||5)));
+   const ratioValue=String($("#videoRatio")?.value||"auto");
+   const ratio=["auto","9:16","16:9"].includes(ratioValue)?ratioValue:"auto";
+   const motionPrompt=[
+     "Animate the provided image as a coherent short video.",
+     "Prioritize visible subject actions and physical motion described by the user; do not rely on camera movement alone.",
+     "Preserve the identity, appearance, clothing, environment, composition and main objects from the source image.",
+     "Keep motion continuous, natural and temporally consistent.",
+     "User motion direction:",
+     prompt
+   ].join(" ");
+   const response=await fetch("/api/generate",{
+     method:"POST",
+     headers:{"Content-Type":"application/json","Accept":"application/json"},
+     body:JSON.stringify({
+       mode:"video",
+       provider:"pixelster-motion",
+       model:"PixelSter Motion Synthesis",
+       prompt:motionPrompt,
+       ratio,
+       duration,
+       options:{imageBase64:source}
+     }),
+     signal:AbortSignal.timeout(65000)
+   });
+   const data=await response.json().catch(()=>({}));
+   if(!response.ok||!data.videoUrl)throw new Error(data.message||data.error||"PixelSter не вернул видео");
+   const item=saveMedia("video",data.videoUrl,prompt,"PixelSter Motion Synthesis");
+   $("#canvas").innerHTML="";
+   renderLibrary("videos");
+   $("#composerStatus").textContent="PixelSter Motion Synthesis · видео готово";
+   toast("Видео создано");
+   if(item)scrollImagesToTop();
+ }catch(e){
+   console.error("PixelSter Motion Synthesis failed",e);
+   $("#composerStatus").textContent="PixelSter · ошибка";
+   toast(e?.message||"Не удалось создать видео");
+ }finally{
+   $("#composerSend").disabled=false;
+ }
+}
+
 async function generateVideo(prompt){
+ const selectedModel=String($("#videoModel")?.value||"LTX-2.3 Distilled");
+ if(selectedModel==="PixelSter Motion Synthesis") return generateMotionVideo(prompt);
  const source=referenceImage||"";
  showLoading();
  $("#composerSend").disabled=true;
@@ -815,7 +872,7 @@ function setMode(next,render=true){
  $("#workspaceEyebrow").textContent=m.eyebrow;$("#workspaceTitle").textContent=m.title;$("#workspaceSubtitle").textContent=m.subtitle;
  $("#composerInput").placeholder=m.placeholder;$("#composerSendText").textContent=m.send;$("#composerStatus").textContent=m.status;
  $(".image-settings").style.display=next==="images"?"flex":"none";$("#videoOptions").classList.toggle("show",next==="video");
- if(next==="video"){ setVideoRatioDefault(); if($("#videoModel"))$("#videoModel").value="LTX-2.3 Distilled"; }
+ if(next==="video"){ setVideoRatioDefault(); if($("#videoModel")&&!$("#videoModel").value)$("#videoModel").value="LTX-2.3 Distilled"; }
  document.querySelectorAll("[data-mode]").forEach(x=>x.classList.toggle("active",x.dataset.mode===next));
  document.querySelectorAll("#chatSubmenu .side-subbtn").forEach(x=>x.classList.remove("active"));
  $("#chatMenuToggle")?.classList.toggle("active",next==="chat");
@@ -905,7 +962,7 @@ $("#referenceInput").onchange=e=>{
   }else if(mode==="video"){
     $("#videoModel").value="LTX-2.3 Distilled";
     $("#videoRatio").value="auto";
-    $("#composerStatus").textContent="LTX-2.3 · изображение готово";
+    $("#composerStatus").textContent=($("#videoModel")?.value==="PixelSter Motion Synthesis"?"PixelSter Motion Synthesis · изображение готово":"LTX-2.3 · изображение готово");
   }else{
     $("#composerStatus").textContent="Изображение прикреплено · можно спросить Miya о фото";
   }
