@@ -1940,3 +1940,48 @@ body.light .chat-selection-actions button{background:#f4f6fa}
   background:#030913!important;
 }
 .media-card.media-load-error{display:none!important}
+
+/* Generation popups: every label must stay inside the compact glass window. */
+.generation-loading{
+  overflow:hidden!important;
+  min-width:0!important;
+}
+.generation-progress{
+  min-width:0!important;
+  overflow:hidden!important;
+}
+.progress-copy{
+  min-width:0!important;
+  max-width:calc(100% - 54px)!important;
+  overflow:hidden!important;
+}
+.generation-loading .progress-copy b,
+.generation-loading .progress-model{
+  display:block!important;
+  max-width:100%!important;
+  overflow:hidden!important;
+  text-overflow:ellipsis!important;
+  white-space:nowrap!important;
+}
+.generation-loading .progress-copy b{font-size:8px!important;line-height:1.15!important}
+.generation-loading .progress-model{font-size:7px!important;line-height:1.2!important}
+.generation-loading .progress-circle{width:38px!important;height:38px!important;flex-basis:38px!important}
+.generation-loading .progress-circle .progress-percent{font-size:8px!important}
+@media(max-width:800px){
+  .generation-loading{width:225px!important;height:64px!important;padding:0 10px!important}
+  .generation-loading .progress-copy b{font-size:8px!important}
+  .generation-loading .progress-model{font-size:6.5px!important}
+}
+/* Video prompt tools use the exact same icon treatment as image prompt tools. */
+.video-options .video-tool.improve{
+  background:transparent!important;
+  color:var(--purple)!important;
+  border:0!important;
+  width:38px!important;height:38px!important;
+  padding:0!important;
+  display:grid!important;place-items:center!important;
+}
+body.light .video-options .video-tool.improve{color:var(--purple2)!important}
+.video-options .video-tool.improve svg{width:17px!important;height:17px!important}
+.video-options .video-tool.improve:hover{background:rgba(167,92,255,.10)!important;color:#c58aff!important}
+body.light .video-options .video-tool.improve:hover{background:#f0eaff!important;color:#6550d8!important}
