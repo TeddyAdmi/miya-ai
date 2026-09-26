@@ -81,6 +81,34 @@ async function handler(req, res) {
         }
       }
 
+      if (chatImageBase64) {
+        try {
+          const visionResponse = await fetch("https://www.ahm7xmakki.com/api/imgchat", {
+            method: "POST",
+            headers: { "Content-Type": "application/json", Accept: "application/json" },
+            body: JSON.stringify({
+              image: chatImageBase64,
+              userPrompt: cleanMessages[cleanMessages.length - 1].content,
+              messages: cleanMessages.slice(-12).map(m => ({
+                type: m.role === "assistant" ? "ai" : "user",
+                content: m.content
+              }))
+            }),
+            signal: AbortSignal.timeout(30000)
+          });
+          const visionData = await visionResponse.json().catch(() => ({}));
+          const visionText = String(visionData?.response || visionData?.text || visionData?.message || "").trim();
+          if (visionResponse.ok && visionText) {
+            return res.status(200).json({
+              ok: true, mode: "chat", text: visionText,
+              model: "VisionChat", provider: "Free Vision", usage: null
+            });
+          }
+        } catch (visionError) {
+          console.warn("VisionChat failed:", visionError?.message || visionError);
+        }
+      }
+
       const transcript = cleanMessages
         .slice(-12)
         .map(m => (m.role === "assistant" ? "Miya: " : "Пользователь: ") + m.content)
@@ -223,16 +251,29 @@ async function handler(req, res) {
           inputImage,
           prompt,
           duration,
-          true,
+          false,
           Math.floor(Math.random()*2147483647),
           true,
           height,
           width
         ]);
-        const raw=result?.data?.[0];
-        const videoUrl=typeof raw==="string"?raw:String(raw?.url||raw?.path||raw?.data||"");
+        const candidates=[];
+        const collect=(value,depth=0)=>{
+          if(value==null||depth>6)return;
+          if(typeof value==="string"){
+            if(/^https?:\/\//i.test(value))candidates.push(value);
+            else if(/^\//.test(value))candidates.push("https://lightricks-ltx-2-3.hf.space"+value);
+            return;
+          }
+          if(Array.isArray(value)){value.forEach(v=>collect(v,depth+1));return;}
+          if(typeof value==="object"){
+            for(const key of ["url","videoUrl","video_url","path","data","file","value"])collect(value[key],depth+1);
+          }
+        };
+        collect(result?.data);
+        const videoUrl=candidates.find(url=>/\.mp4(?:$|[?#])/i.test(url))||candidates[0]||"";
         if(!videoUrl||!/^https?:\/\//i.test(videoUrl)) {
-          return res.status(502).json({ok:false,error:"LTX_VIDEO_URL_MISSING",message:"LTX-2.3 не вернул готовый MP4.",providerResponse:result});
+          return res.status(502).json({ok:false,error:"LTX_VIDEO_URL_MISSING",message:"LTX-2.3 не вернул доступный MP4.",providerResponse:result});
         }
         return res.status(200).json({
           ok:true,mode:"video",status:"completed",provider:"Lightricks",
@@ -274,7 +315,7 @@ async function handler(req, res) {
         const endpoint = endpoints[endpointIndex];
         for (let attempt = 0; attempt < 2; attempt++) {
           const controller = new AbortController();
-          const timeout = setTimeout(() => controller.abort(), 58000);
+          const timeout = setTimeout(() => controller.abort(), 110000);
           try {
             response = await fetch(endpoint, { method:"POST", headers:{"Content-Type":"application/json",Accept:"application/json"}, body:JSON.stringify(payload), signal:controller.signal });
             raw = await response.text();
@@ -437,7 +478,7 @@ async function handler(req, res) {
       const maxAttempts = isImageToImage ? 3 : 1;
       for (let attempt = 0; attempt < maxAttempts; attempt++) {
         const controller = new AbortController();
-        const timeout = setTimeout(() => controller.abort(), 58000);
+        const timeout = setTimeout(() => controller.abort(), 110000);
 
         try {
           response = await fetch(endpoint, {

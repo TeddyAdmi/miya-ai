@@ -714,30 +714,7 @@ async function generateImage(prompt){
    xhr.send(body);
   });
 ;
-  if(hasFileUpload){
-   try{
-    const directPayload={
-      prompt,
-      ratio:"auto",
-      imageBase64:String(payload.imageBase64||"").replace(/^data:image\/[^;]+;base64,/i,"")
-    };
-    const direct=await fetch("https://ahm7xmakki.com/api/pti",{
-      method:"POST",
-      headers:{"Content-Type":"application/json","Accept":"application/json"},
-      body:JSON.stringify(directPayload),
-      signal:AbortSignal.timeout(120000)
-    });
-    const directData=await direct.json().catch(()=>({}));
-    if(!direct.ok||!directData?.imageUrl)throw new Error(directData?.message||directData?.error||"PixelSter HTTP "+direct.status);
-    data=directData;
-    data.model="Flux Kontext Dev";
-   }catch(directError){
-    console.warn("Direct PixelSter Kontext request failed, falling back to Miya API",directError);
-    data=await requestThroughMiyaApi();
-   }
-  }else{
-   data=await requestThroughMiyaApi();
-  }
+  data=await requestThroughMiyaApi();
   const actualModel=data.model||modelName;
   if(fakeTimer){clearInterval(fakeTimer);fakeTimer=null;}
   if(loader){
@@ -825,264 +802,33 @@ async function requestChat(){
  status.textContent="Miya думает…";
  $("#composerSend").disabled=true;
  try{
-   let answer="";
-   let providerLabel="Miya AI";
-
-   // Primary chat transport: Puter.js. It is keyless on the app side,
-   // so Miya does not need a paid API key or a server-side text provider.
-   if(window.puter?.ai?.chat){
-     const systemText="Ты Miya — дружелюбный AI-помощник внутри Miya AI Studio. Отвечай на русском, если пользователь пишет по-русски. Помогай с текстами, идеями, сценариями, промптами, изображениями и видео. Если к сообщению прикреплено изображение, обязательно проанализируй его и опирайся на него в ответе.";
-     const latest=chatMessages[chatMessages.length-1];
-     const transcript=chatMessages.slice(-12).map(m=>(m.role==="assistant"?"Miya: ":"Пользователь: ")+m.content).join("\n");
-     const multimodalPrompt=systemText+"\n\nКонтекст диалога:\n"+transcript+"\n\nПоследний запрос пользователя:\n"+String(latest?.content||"");
-     const response=chatAttachmentFile
-       ? await window.puter.ai.chat(multimodalPrompt,chatAttachmentFile,false,{model:"google/gemini-3.8-flash",max_tokens:2048})
-       : await window.puter.ai.chat([
-           {role:"system",content:systemText},
-           ...chatMessages.slice(-12).map(m=>({role:m.role,content:m.content}))
-         ],false,{model:"google/gemini-3.8-flash",max_tokens:2048});
-     answer=typeof response==="string"
-       ? response.trim()
-       : String(response?.message?.content||response?.text||response?.content||"").trim();
-     providerLabel="Miya · Gemini";
-   }
-
-   // Server fallback remains available if Puter is unavailable.
-   if(!answer){
-     const response=await fetch("/api/generate",{
-       method:"POST",
-       headers:{"Content-Type":"application/json","Accept":"application/json"},
-       body:JSON.stringify({mode:"chat",model:"gemini-3.8-flash",messages:chatMessages,imageBase64:referenceImage||""}),
-       signal:AbortSignal.timeout(90000)
-     });
-     const data=await response.json().catch(()=>({}));
-     if(!response.ok||!data.text) throw new Error(data.message||data.error||"Не удалось получить ответ Miya");
-     answer=String(data.text).trim();
-     providerLabel="Miya · Free Text";
-   }
-
-   if(!answer)throw new Error("Miya не вернула текст ответа");
-   chatMessages.push({role:"assistant",content:answer});
-   addChatMessage(answer,false);
-   saveCurrentChat();
-   status.textContent=providerLabel;
- }catch(e){
-   toast(e.message||"Ошибка AI Chat");
-   status.textContent="AI Chat · ошибка";
- }finally{
-   $("#composerSend").disabled=false;
- }
-}
-function removeGenerationLoading(){
- const loader=$("#canvas .generation-loading");
- if(loader)loader.remove();
-}
-function updateVideoProgress(model,value,label=""){
- const v=Math.max(0,Math.min(100,Math.round(value)));
- const loader=$("#canvas .video-generation-loading");
- const ring=loader?.querySelector(".progress-circle");
- const percent=loader?.querySelector(".progress-percent");
- const copy=loader?.querySelector(".progress-model");
- const bar=loader?.querySelector(".generation-progress-bar span");
- if(ring)ring.style.setProperty("--progress",v+"%");
- if(percent)percent.textContent=v+"%";
- if(bar)bar.style.width=v+"%";
- if(copy)copy.textContent=model+(label?" · "+label:"");
- const status=$("#composerStatus"),progress=$("#composerProgress");
- if(status)status.textContent=model+(label?" · "+label:"");
- if(progress)progress.textContent=v+"%";
-}
-function startVideoProgress(model){
- let value=4;
- updateVideoProgress(model,value,"запуск видеодвижка…");
- const timer=setInterval(()=>{
-   const loader=$("#canvas .video-generation-loading");
-   if(!loader||!document.body.contains(loader)){clearInterval(timer);return}
-   const remaining=92-value;
-   const step=remaining>50?Math.random()*5+1.5:remaining>20?Math.random()*2.4+.5:Math.random()*.55+.15;
-   value=Math.min(92,value+step);
-   updateVideoProgress(model,value,"генерация…");
- },850);
- return (finalValue=null,label="")=>{
-   clearInterval(timer);
-   if(finalValue!==null)updateVideoProgress(model,finalValue,label);
- };
-}
-
-let miyaFfmpegPromise=null;
-async function getMiyaFfmpeg(){
- if(miyaFfmpegPromise)return miyaFfmpegPromise;
- miyaFfmpegPromise=(async()=>{
-  if(!window.FFmpegWASM?.FFmpeg)throw new Error("FFmpeg не загрузился");
-  const ffmpeg=new window.FFmpegWASM.FFmpeg(),base=window.__MIYA_FFMPEG_CORE_BASE;
-  const toBlobURL=async(url,type)=>{
-    const response=await fetch(url,{mode:"cors",cache:"force-cache"});
-    if(!response.ok)throw new Error("FFmpeg asset HTTP "+response.status);
-    return URL.createObjectURL(new Blob([await response.arrayBuffer()],{type}));
-  };
-  const workerLoadURL=await toBlobURL(window.__MIYA_FFMPEG_WORKER,"text/javascript");
-  const coreURL=await toBlobURL(base+"/ffmpeg-core.js","text/javascript");
-  const wasmURL=await toBlobURL(base+"/ffmpeg-core.wasm","application/wasm");
-  await ffmpeg.load({workerLoadURL,coreURL,wasmURL});
-  return ffmpeg;
- })();
- try{return await miyaFfmpegPromise}catch(e){miyaFfmpegPromise=null;throw e}
-}
-function miyaWav(samples,sr=44100){
- const buf=new ArrayBuffer(44+samples.length*2),v=new DataView(buf),put=(o,s)=>{for(let i=0;i<s.length;i++)v.setUint8(o+i,s.charCodeAt(i))};
- put(0,"RIFF");v.setUint32(4,36+samples.length*2,true);put(8,"WAVE");put(12,"fmt ");v.setUint32(16,16,true);v.setUint16(20,1,true);v.setUint16(22,1,true);v.setUint32(24,sr,true);v.setUint32(28,sr*2,true);v.setUint16(32,2,true);v.setUint16(34,16,true);put(36,"data");v.setUint32(40,samples.length*2,true);
- for(let i=0;i<samples.length;i++){const n=Math.max(-1,Math.min(1,samples[i]));v.setInt16(44+i*2,n<0?n*32768:n*32767,true)}return new Blob([buf],{type:"audio/wav"});
-}
-function synthMiyaAudio(prompt,duration){
- const text=String(prompt||"").toLowerCase(),energetic=/(энерг|энергич|быстр|танц|dance|energetic|upbeat|music|музык|ритм|хаотич)/i.test(text);
- const car=/(машин|авто|car|drive|ехал|уехал|двигател|engine)/i.test(text),door=/(двер|door|открыла|открыл|закрыл)/i.test(text),steps=/(ид[её]|ход|walk|беж|run|улиц|street)/i.test(text);
- const sr=44100,total=Math.max(1,Math.ceil(duration*sr)),out=new Float32Array(total);
- const state={v:2166136261};for(const c of text){state.v=Math.imul(state.v^c.charCodeAt(0),16777619)};const rnd=()=>{let x=state.v;x^=x<<13;x^=x>>>17;x^=x<<5;state.v=x>>>0;return (x>>>0)/4294967296};
- const add=(at,len,fn,a)=>{const s=Math.max(0,Math.floor(at*sr)),e=Math.min(total,s+Math.floor(len*sr));for(let i=s;i<e;i++)out[i]+=fn((i-s)/sr)*a};
- const kick=t=>add(t,.2,u=>Math.sin(2*Math.PI*(120-75*u/.2)*u)*Math.exp(-22*u),energetic?.34:.22);
- const hat=t=>add(t,.07,u=>(rnd()*2-1)*Math.exp(-70*u),energetic?.055:.028);
- const snare=t=>add(t,.16,u=>(rnd()*2-1)*Math.exp(-24*u),energetic?.13:.06);
- const bass=(t,f)=>add(t,.28,u=>Math.sin(2*Math.PI*(f-7*u)*u)*Math.exp(-7*u),energetic?.12:.055);
- const beat=energetic?.46:.62;
- for(let t=0;t<duration;t+=beat){kick(t);if(t+beat/2<duration)snare(t+beat/2);for(let h=t;h<t+beat&&h<duration;h+=beat/2)hat(h);bass(t,[55,62,65,49][Math.floor(t/beat)%4])}
- if(steps)for(let t=.2;t<duration;t+=.62)add(t,.13,u=>Math.sin(2*Math.PI*90*u)*Math.exp(-22*u),.09);
- if(door)add(Math.min(duration-.25,Math.max(.35,duration*.38)),.3,u=>(rnd()*2-1)*Math.exp(-15*u),.18);
- if(car)add(Math.max(.2,duration*.15),duration*.7,u=>Math.sin(2*Math.PI*(58+25*u)*u)*.06,.7);
- const fade=Math.min(.3,duration/4);for(let i=0;i<total;i++){const t=i/sr,e=Math.max(0,Math.min(1,t/fade,(duration-t)/fade));out[i]=Math.tanh(out[i]*1.2)*e*.8}
- return miyaWav(out,sr);
-}
-async function muxPixelSterAudio(videoUrl,prompt,duration,onProgress){
- const r=await fetch(videoUrl,{mode:"cors",cache:"no-store"});if(!r.ok)throw new Error("PixelSter MP4 недоступен для добавления звука (HTTP "+r.status+")");
- const videoBlob=await r.blob();if(!videoBlob.size)throw new Error("PixelSter вернул пустой MP4");
- onProgress?.(8,"получаю готовое видео");const audioBlob=synthMiyaAudio(prompt,duration);onProgress?.(16,"создаю бесплатную аудиодорожку");
- const ffmpeg=await getMiyaFfmpeg(),token="miya_"+Date.now(),input=token+".mp4",audio=token+".wav",output=token+"_sound.mp4";
- await ffmpeg.writeFile(input,new Uint8Array(await videoBlob.arrayBuffer()));await ffmpeg.writeFile(audio,new Uint8Array(await audioBlob.arrayBuffer()));
- const progress=({progress})=>onProgress?.(20+Math.round(Math.max(0,Math.min(1,progress))*78),"объединяю видео и звук");ffmpeg.on("progress",progress);
- try{await ffmpeg.exec(["-i",input,"-i",audio,"-map","0:v:0","-map","1:a:0","-c:v","copy","-c:a","aac","-b:a","160k","-shortest","-movflags","+faststart",output])}finally{ffmpeg.off("progress",progress)}
- const data=await ffmpeg.readFile(output);await Promise.all([ffmpeg.deleteFile(input).catch(()=>{}),ffmpeg.deleteFile(audio).catch(()=>{}),ffmpeg.deleteFile(output).catch(()=>{})]);
- onProgress?.(100,"видео со звуком готово");return URL.createObjectURL(new Blob([data.buffer],{type:"video/mp4"}));
-}
-async function generateMotionVideo(prompt){
- const source=referenceImage||"";
- if(!source){
-   toast("PixelSter Motion Synthesis требует исходное изображение");
-   $("#composerStatus").textContent="PixelSter · нужно исходное изображение";
-   return;
- }
- showLoading();
- $("#composerSend").disabled=true;
- const model="PixelSter Motion Synthesis";
- const stopProgress=startVideoProgress(model);
- $("#composerStatus").textContent=model+" · генерация…";
- try{
-   const durationText=String($("#videoDuration")?.value||"5 сек");
-   const duration=Math.max(5,Math.min(20,Number(durationText.match(/\d+/)?.[0]||5)));
-   const ratioValue=String($("#videoRatio")?.value||"auto");
-   const ratio=["auto","9:16","16:9"].includes(ratioValue)?ratioValue:"auto";
-   const motionPrompt=[
-     "IMAGE-TO-VIDEO MOTION SYNTHESIS. FOLLOW THE USER'S MOTION REQUEST EXACTLY.",
-     "The visible subject in the supplied image is the ONLY main character. Do not introduce any human, animal, creature or other character that is not already present in the source image.",
-     "Do not invent a person, assistant, bystander, handler, rider, photographer or background character.",
-     "The requested action has higher priority than generic cinematic motion. Do not substitute zooming, panning, idle movement or camera shake for the requested action.",
-     "Execute multiple actions in the exact written order as one continuous timeline.",
-     "Start the requested action immediately and make the action unmistakably visible.",
-     "If the user says an animal runs away, the SAME animal must visibly run away; do not replace it with another subject.",
-     "If the user says an animal growls/roars/turns/looks/attacks, animate that SAME animal's body, head, mouth and movement.",
-     "Preserve identity, species, face, anatomy, clothing/fur, scale, lighting and the original environment unless the user explicitly requests a change.",
-     "Keep the camera stable unless the user explicitly requests camera movement.",
-     "Do not add water, rain, droplets, smoke, fire, particles, extra people, animals, vehicles, props, text or environmental effects unless explicitly requested.",
-     "USER MOTION REQUEST:",
-     prompt
-   ].join("\n");
-   const payload={prompt:motionPrompt,ratio,duration,imageBase64:source.replace(/^data:image\/[^;]+;base64,/i,"")};
-   let data=null,lastError=null;
-   try{
-     const direct=await fetch("https://ahm7xmakki.com/api/ptv",{method:"POST",headers:{"Content-Type":"application/json","Accept":"application/json"},body:JSON.stringify(payload),signal:AbortSignal.timeout(120000)});
-     data=await direct.json().catch(()=>({}));
-     if(!direct.ok||!data?.videoUrl)throw new Error(data?.message||data?.error||"PixelSter HTTP "+direct.status);
-   }catch(e){
-     lastError=e;
-     const fallback=await fetch("/api/generate",{method:"POST",headers:{"Content-Type":"application/json","Accept":"application/json"},body:JSON.stringify({mode:"video",provider:"pixelster-motion",model,prompt:motionPrompt,ratio,duration,options:{imageBase64:source}}),signal:AbortSignal.timeout(59000)});
-     data=await fallback.json().catch(()=>({}));
-     if(!fallback.ok||!data?.videoUrl)throw new Error(data?.message||data?.error||lastError?.message||"PixelSter не вернул видео");
-   }
-   let finalVideoUrl=String(data.videoUrl);
-   try{
-     updateVideoProgress(model,92,"добавляю звук…");
-     finalVideoUrl=await muxPixelSterAudio(finalVideoUrl,prompt,duration,(p,label)=>updateVideoProgress(model,p,label));
-   }catch(audioError){
-     console.warn("PixelSter audio mux failed; keeping provider MP4",audioError);
-     updateVideoProgress(model,96,"видео готово · звук недоступен");
-   }
-   stopProgress();
-   updateVideoProgress(model,100,finalVideoUrl===String(data.videoUrl)?"видео готово":"видео + звук готовы");
-   const item=saveMedia("video",finalVideoUrl,prompt,model+(finalVideoUrl!==String(data.videoUrl)?" · Video + Audio":""));
-   removeGenerationLoading();
-   renderVideoLibrary();
-   if(item)scrollImagesToTop();
-   toast(finalVideoUrl!==String(data.videoUrl)?"PixelSter: видео + звук созданы":"PixelSter: видео создано");
- }catch(e){
-   stopProgress();removeGenerationLoading();
-   console.error("PixelSter Motion Synthesis failed",e);
-   $("#composerStatus").textContent=model+" · ошибка";
-   toast(e?.message||"Не удалось создать видео");
- }finally{$("#composerSend").disabled=false}
-}
-
-async function generateVideo(prompt){
- const selectedModel=String($("#videoModel")?.value||"LTX-2.3 Distilled");
- if(selectedModel==="PixelSter Motion Synthesis") return generateMotionVideo(prompt);
- const source=referenceImage||"";
- showLoading();$("#composerSend").disabled=true;
- const stopProgress=startVideoProgress("LTX-2.3 Distilled");
- try{
-   const durationText=String($("#videoDuration")?.value||"5 сек");
-   const duration=Math.max(1,Math.min(10,Number(durationText.match(/\d+/)?.[0]||5)));
-   const ratio=String($("#videoRatio")?.value||"16:9");
-   const ratioValue=["auto","9:16","16:9","1:1"].includes(ratio)?ratio:"16:9";
-   const effectiveRatio=ratioValue==="auto"?(source?"16:9":"16:9"):ratioValue;
-   const actionPrompt=[
-     "Create one continuous cinematic shot from the user's request.",
-     "Execute every requested action literally, visibly and in the exact order written.",
-     "Start the first requested action immediately; do not replace subject movement with camera movement.",
-     "Preserve the reference subject identity, face, clothing, anatomy, scale and starting composition unless the user explicitly asks for a change.",
-     "Spatial instructions are literal: 'on the pillow' means physically resting on the pillow; 'on the table' means physically on the table; 'inside' means inside; 'behind' means behind; 'next to' means beside; 'left corner' and 'right corner' mean the visible composition corners.",
-     "When a specific surface is named, identify that exact surface and place the requested object relative to it. Never move it to the center just for convenience.",
-     "If a subject travels or the user specifies a new distance/location, visibly change the surrounding environment consistently while preserving the subject.",
-     "Keep motion physically coherent and continuous. No teleporting, sliding, frozen subjects, accidental extra characters or duplicate objects.",
-     "Do not add water, rain, droplets, sand, smoke, fog, fire, dust, particles, extra people, vehicles, props or text unless explicitly requested.",
-     "Use natural synchronized audio generated by LTX-2.3 when available: dialogue, footsteps, impacts, ambience and requested music should match the visible action.",
-     "USER REQUEST:",
-     prompt
-   ].join("\n");
-   updateVideoProgress("LTX-2.3 Distilled",8,"отправляю запрос…");
    const response=await fetch("/api/generate",{
      method:"POST",
      headers:{"Content-Type":"application/json","Accept":"application/json"},
      body:JSON.stringify({
-       mode:"video",
-       provider:"ltx23",
-       model:"LTX-2.3 Distilled",
-       prompt:actionPrompt,
-       ratio:effectiveRatio,
-       duration,
-       options:{imageBase64:source}
-     })
+       mode:"chat",
+       model:"gemini-3.8-flash",
+       messages:chatMessages,
+       imageBase64:referenceImage||""
+     }),
+     signal:AbortSignal.timeout(90000)
    });
    const data=await response.json().catch(()=>({}));
-   if(!response.ok||!data?.videoUrl)throw new Error(data?.message||data?.error||"LTX-2.3 не вернул готовый MP4");
-   const videoUrl=String(data.videoUrl);
-   updateVideoProgress("LTX-2.3 Distilled",100,"видео + звук готовы");
-   const item=saveMedia("video",videoUrl,prompt,"LTX-2.3 Distilled · Video + Audio");
-   stopProgress();removeGenerationLoading();renderVideoLibrary();
-   if(item)scrollImagesToTop();
-   toast("LTX-2.3: видео + звук созданы");
+   if(!response.ok||!data.text)throw new Error(data.message||data.error||"Не удалось получить ответ Miya");
+   const answer=String(data.text).trim();
+   if(!answer)throw new Error("Miya не вернула текст ответа");
+   chatMessages.push({role:"assistant",content:answer});
+   addChatMessage(answer,false);
+   saveCurrentChat();
+   status.textContent=data.model==="VisionChat"?"Miya · VisionChat":"Miya · Free Text";
  }catch(e){
-   stopProgress();removeGenerationLoading();console.error("LTX-2.3 video generation failed",e);
-   $("#composerProgress").textContent="";$("#composerStatus").textContent="LTX-2.3 Distilled · ошибка · можно повторить";toast(e?.message||"Не удалось создать видео");
- }finally{$("#composerSend").disabled=false}
+   console.error("Miya chat failed",e);
+   toast(e?.message||"Не удалось получить ответ Miya");
+   status.textContent="AI Chat · ошибка · можно повторить";
+ }finally{
+   $("#composerSend").disabled=false;
+ }
 }
-
 function restoreReferenceImage(){try{referenceImage=referenceImage||sessionStorage.getItem("miyaReferenceImage")||""}catch{};setComposerAttachment(referenceImage||"")}
 function setVideoRatioDefault(){
  const el=$("#videoRatio"); if(el) el.value="16:9";
