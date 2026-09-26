@@ -1037,13 +1037,15 @@ if(chatMenuToggle){
 document.querySelectorAll("[data-mode]").forEach(b=>b.addEventListener("click",()=>setMode(b.dataset.mode)));
 $("#composerInput").addEventListener("input",syncInput);
 $("#composerInput").addEventListener("contextmenu",e=>{
-  // Firefox shows Paste/Copy for the focused textarea. Keep the whole prompt
-  // area editable even when the user opens the menu at its far right edge.
-  e.currentTarget.focus();
-  if(typeof e.clientX==="number"&&typeof e.clientY==="number"){
+  // Do not collapse an existing selection. Firefox's native Delete/Cut actions
+  // need the selection to remain intact after the context menu opens.
+  const input=e.currentTarget;
+  input.focus({preventScroll:true});
+  const hasSelection=input.selectionStart!==input.selectionEnd;
+  if(!hasSelection&&typeof e.clientX==="number"&&typeof e.clientY==="number"){
     try{
       const pos=document.caretPositionFromPoint?.(e.clientX,e.clientY);
-      if(pos?.offsetNode===e.currentTarget)e.currentTarget.setSelectionRange(pos.offset,pos.offset);
+      if(pos?.offsetNode===input)input.setSelectionRange(pos.offset,pos.offset);
     }catch{}
   }
 });
