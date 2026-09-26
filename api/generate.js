@@ -16,6 +16,7 @@ async function handler(req, res) {
       const cleanMessages = messages
         .filter(m => m && (m.role === "user" || m.role === "assistant") && typeof m.content === "string")
         .map(m => ({ role: m.role, content: m.content.slice(0, 12000) }));
+      const chatImageBase64 = typeof body.imageBase64 === "string" ? body.imageBase64.trim() : "";
 
       if (!cleanMessages.length || cleanMessages[cleanMessages.length - 1].role !== "user") {
         return res.status(400).json({ error: "A user message is required" });
@@ -32,9 +33,11 @@ async function handler(req, res) {
           (value, index, list) => list.indexOf(value) === index
         );
 
-        const contents = cleanMessages.map(m => ({
+        const contents = cleanMessages.map((m,index) => ({
           role: m.role === "assistant" ? "model" : "user",
-          parts: [{ text: m.content }]
+          parts: [{ text: m.content }, ...(index === cleanMessages.length - 1 && m.role === "user" && chatImageBase64
+            ? [{ inline_data: { mime_type: String(chatImageBase64.match(/^data:([^;]+);/i)?.[1] || "image/png"), data: chatImageBase64.replace(/^data:image\/[^;]+;base64,/i, "") } }]
+            : [])]
         }));
 
         let response;
@@ -309,8 +312,18 @@ async function handler(req, res) {
       ? Math.max(1, Math.min(4, Math.round(requestedCopies)))
       : 1;
 
+    const safeImagePrompt = isImageToImage
+      ? prompt
+      : [
+          "Create exactly the scene requested by the user.",
+          "Do not add water, sand, beach, sea, rain, wet surfaces, puddles, droplets, splashes, mist, smoke, fog, dust, particles, mud or other environmental effects unless the user explicitly asks for them.",
+          "Do not add unrequested objects, people, vehicles, props or weather.",
+          "Keep the requested scene clean, dry and physically coherent when those effects are not requested.",
+          "",
+          prompt
+        ].join("\n");
     const payload = {
-      prompt,
+      prompt: safeImagePrompt,
       ratio: isImageToImage && ratio === "1:1" ? "auto" : ratio,
       ...(copies > 1 && !isImageToImage ? { copies, count: copies } : {})
     };

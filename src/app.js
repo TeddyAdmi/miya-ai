@@ -285,10 +285,26 @@ function openImageViewer(item){
 <img class="image-viewer-image" alt="Miya AI Studio" draggable="false">
 <button type="button" class="image-viewer-nav image-viewer-prev" aria-label="Предыдущее изображение" title="Предыдущее изображение"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m14.5 5-7 7 7 7"/><path d="M8 12h10"/></svg></button>
 <button type="button" class="image-viewer-nav image-viewer-next" aria-label="Следующее изображение" title="Следующее изображение"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m9.5 5 7 7-7 7"/><path d="M16 12H6"/></svg></button>
-<div class="image-viewer-controls"><button type="button" class="image-viewer-zoom" aria-label="Увеличить" title="Увеличить"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 3H3v5M16 3h5v5M8 21H3v-5M21 16v5h-5"/><path d="M12 8v8M8 12h8"/></svg></button><button type="button" class="image-viewer-close" aria-label="Закрыть" title="Закрыть"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8.5"/><path d="m9 9 6 6M15 9l-6 6"/></svg></button></div></div>`;
+<div class="image-viewer-controls">
+<button type="button" class="image-viewer-edit" aria-label="Изменить картинку" title="Изменить картинку"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m4 16.5-.8 3.3 3.3-.8L18.7 6.8a2.2 2.2 0 0 1 3.1 3.1L6.5 19l-3.3.8.8-3.3Z"/><path d="m14.2 5.8 4 4"/></svg></button>
+<button type="button" class="image-viewer-video" aria-label="Создать видео" title="Создать видео"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m8 5 11 7-11 7V5Z"/></svg></button>
+<button type="button" class="image-viewer-zoom" aria-label="Увеличить" title="Увеличить"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 3H3v5M16 3h5v5M8 21H3v-5M21 16v5h-5"/><path d="M12 8v8M8 12h8"/></svg></button>
+<button type="button" class="image-viewer-close" aria-label="Закрыть" title="Закрыть"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8.5"/><path d="m9 9 6 6M15 9l-6 6"/></svg></button></div></div>`;
   document.body.appendChild(modal);
   modal.querySelector(".image-viewer-backdrop").onclick=closeImageViewer;
   modal.querySelector(".image-viewer-close").onclick=closeImageViewer;
+  modal.querySelector(".image-viewer-edit").onclick=async()=>{
+    const current=getLibrary().find(x=>x.id===modal.dataset.viewerItemId);
+    if(!current)return;
+    closeImageViewer();
+    openEditor(await mediaItemToReference(current));
+  };
+  modal.querySelector(".image-viewer-video").onclick=()=>{
+    const current=getLibrary().find(x=>x.id===modal.dataset.viewerItemId);
+    if(!current)return;
+    closeImageViewer();
+    openVideoFromImage(current.url);
+  };
   const stage=modal.querySelector(".image-viewer-stage");
   const prevButton=modal.querySelector(".image-viewer-prev");
   const nextButton=modal.querySelector(".image-viewer-next");
@@ -405,7 +421,7 @@ function buildMediaCard(item,{video=false}={}){
   media.addEventListener("click",e=>{e.stopPropagation();openImageViewer(item)});
  }
  const actions=document.createElement("div");actions.className="media-actions";
- const more=document.createElement("button");more.className="media-action media-more";more.removeAttribute("title");more.setAttribute("aria-label","Действия");more.dataset.tooltip="Действия";more.innerHTML='<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="5" cy="12" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="19" cy="12" r="1.5"/></svg>';
+ const more=document.createElement("button");more.className="media-action media-more";more.removeAttribute("title");more.setAttribute("aria-label","Открыть меню");more.innerHTML='<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="5" cy="12" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="19" cy="12" r="1.5"/></svg>';
  const menu=document.createElement("div");menu.className="media-action-menu";
  if(!video){
   const promptBtn=document.createElement("button");promptBtn.innerHTML='<span class="action-icon action-svg"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 5h14v14H5z"/><path d="M8 9h8M8 12h6M8 15h4"/></svg></span><span>Промт</span>';promptBtn.onclick=e=>{e.stopPropagation();menu.classList.remove("open");showPrompt(item)};
@@ -565,8 +581,10 @@ function showLoading(){
   grid.prepend(card);scrollImagesToTop();return;
  }
  const selectedVideoModel=$("#videoModel")?.value||"LTX-2.3 Distilled";
- c.innerHTML='<div class="result-grid"></div>';
+ const items=getLibrary().filter(x=>x.type==="video");
+ c.innerHTML='<div class="results-head"><div><h3>Все созданные видео</h3></div></div><div class="result-grid video-result-grid"></div>';
  const grid=c.querySelector(".result-grid");
+ items.forEach(item=>grid.appendChild(buildMediaCard(item,{video:true})));
  const card=document.createElement("div");card.className="generation-loading video-generation-loading";
  card.dataset.model=selectedVideoModel;
  card.innerHTML='<div class="generation-progress"><div class="progress-circle is-active"><span class="progress-percent">0%</span></div><div class="progress-copy"><b>Генерация видео</b><span class="progress-model"></span></div></div><div class="generation-progress-bar"><span></span></div>';
@@ -621,7 +639,7 @@ async function generateImage(prompt){
    if(referenceImage.startsWith("data:image/"))payload.imageBase64=referenceImage;
    else payload.imageUrl=referenceImage;
   }
-  const requestedCount=Math.max(1,Math.min(4,Number($("#composerCount").value)||1));
+  const requestedCount=1; // One image per request keeps the free upstream load predictable.
   const body=JSON.stringify({
    mode:"image",provider:"legacy-flux",prompt,model:modelName,
    ratio:$("#composerRatio").value,outputFormat:"png",copies:requestedCount,
@@ -712,6 +730,7 @@ async function generateImage(prompt){
   $("#composerModel").value=referenceImage?"FLUX Kontext Dev":"FLUX Dev";
   $("#composerStatus").textContent=actualModel+" · готово";
   if(composerProgress)composerProgress.textContent="100%";
+  requestAnimationFrame(()=>$("#workspace")?.scrollTo({top:0,behavior:"smooth"}));
   setTimeout(()=>$("#canvas .generation-loading")?.remove(),350);
  }catch(e){
   if(fakeTimer){clearInterval(fakeTimer);fakeTimer=null;}
@@ -745,6 +764,32 @@ function addChatMessage(text,isUser,image=""){
    actions.querySelector('[title="Сохранить ответ"]').onclick=()=>{try{const saved=JSON.parse(localStorage.getItem("miyaSavedAnswers")||"[]");saved.unshift({id:"answer-"+Date.now(),text,createdAt:Date.now()});localStorage.setItem("miyaSavedAnswers",JSON.stringify(saved.slice(0,50)));toast("Ответ сохранён")}catch{toast("Не удалось сохранить ответ")}};
    actions.querySelector('[title="Поделиться"]').onclick=async()=>{try{if(navigator.share)await navigator.share({title:"Miya AI Studio",text});else{await navigator.clipboard?.writeText(text);toast("Текст скопирован для отправки")}}catch{}};
    content.appendChild(actions);
+   const selectionBar=document.createElement("div");
+   selectionBar.className="chat-selection-actions";
+   selectionBar.hidden=true;
+   selectionBar.innerHTML='<button type="button" data-selection-action="image">Создать картинку</button><button type="button" data-selection-action="video">Создать видео</button><button type="button" data-selection-action="copy">Копировать</button>';
+   selectionBar.querySelector('[data-selection-action="image"]').onclick=()=>{
+     const t=selectionBar.dataset.selectionText||"";
+     if(t){setMode("images");$("#composerInput").value=t;syncInput();$("#composerInput").focus()}
+     selectionBar.hidden=true;
+   };
+   selectionBar.querySelector('[data-selection-action="video"]').onclick=()=>{
+     const t=selectionBar.dataset.selectionText||"";
+     if(t){setMode("video");$("#composerInput").value=t;syncInput();$("#composerInput").focus()}
+     selectionBar.hidden=true;
+   };
+   selectionBar.querySelector('[data-selection-action="copy"]').onclick=()=>{
+     const t=selectionBar.dataset.selectionText||"";
+     if(t)navigator.clipboard?.writeText(t).then(()=>toast("Выделенный промт скопирован")).catch(()=>toast("Не удалось скопировать"));
+     selectionBar.hidden=true;
+   };
+   bubble.addEventListener("mouseup",()=>{
+     const sel=window.getSelection?.();
+     const selected=String(sel?.toString()||"").trim();
+     if(!selected||!sel?.rangeCount||!bubble.contains(sel.anchorNode)||!bubble.contains(sel.focusNode))return;
+     selectionBar.dataset.selectionText=selected;
+     selectionBar.hidden=false;
+   });
  }
  row.append(av,content);
  stream.appendChild(row);
@@ -782,7 +827,7 @@ async function requestChat(){
      const response=await fetch("/api/generate",{
        method:"POST",
        headers:{"Content-Type":"application/json","Accept":"application/json"},
-       body:JSON.stringify({mode:"chat",model:"gemini-3.8-flash",messages:chatMessages}),
+       body:JSON.stringify({mode:"chat",model:"gemini-3.8-flash",messages:chatMessages,imageBase64:referenceImage||""}),
        signal:AbortSignal.timeout(90000)
      });
      const data=await response.json().catch(()=>({}));
@@ -833,9 +878,10 @@ let miyaFfmpegPromise=null;
 async function getMiyaFfmpeg(){
  if(miyaFfmpegPromise)return miyaFfmpegPromise;
  miyaFfmpegPromise=(async()=>{
-  if(!window.FFmpegWASM?.FFmpeg||!window.FFmpegUtil?.toBlobURL)throw new Error("FFmpeg не загрузился");
+  if(!window.FFmpegWASM?.FFmpeg)throw new Error("FFmpeg не загрузился");
+  const util=await import("https://cdn.jsdelivr.net/npm/@ffmpeg/util@0.12.2/+esm");
   const ffmpeg=new window.FFmpegWASM.FFmpeg(),base=window.__MIYA_FFMPEG_CORE_BASE;
-  const toBlobURL=window.FFmpegUtil.toBlobURL;
+  const toBlobURL=util.toBlobURL;
   await ffmpeg.load({coreURL:await toBlobURL(base+"/ffmpeg-core.js","text/javascript"),wasmURL:await toBlobURL(base+"/ffmpeg-core.wasm","application/wasm")});
   return ffmpeg;
  })();
