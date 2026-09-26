@@ -4,7 +4,7 @@ const modes={
  video:{title:"Видео",eyebrow:"VIDEO STUDIO · LTX",subtitle:"Создавай видео из текста или оживляй загруженные изображения.",placeholder:"Опиши сцену, движение и стиль видео...",send:"Создать видео",status:"LTX · Video generation"}
 };
 const $=s=>document.querySelector(s);
-let mode="chat",referenceImage=null,chatAttachmentFile=null,chatStarted=false,chatMessages=[];
+let mode="chat",referenceImage=null,chatAttachmentFile=null,chatMessages=[];
 const CHAT_KEY="miyaChats";
 let chatMenuSuppressed=false;
 function getChats(){
@@ -99,7 +99,7 @@ function renderChatHistoryMini(){
      e.preventDefault();e.stopPropagation();
      if(!window.confirm("Удалить этот чат?"))return;
      const all=getChats().filter(x=>x.id!==chat.id);persistChats(all);
-     if(window.__miyaChatId===chat.id){window.__miyaChatId=null;chatMessages=[];chatStarted=false;showEmpty()}
+     if(window.__miyaChatId===chat.id){window.__miyaChatId=null;chatMessages=[];showEmpty()}
      renderChatHistoryMini();
    };
    menu.append(pin,rename,del);
@@ -693,7 +693,6 @@ function addChatMessage(text,isUser,image=""){
  row.append(av,content);
  stream.appendChild(row);
  scrollChatToLatest("smooth");
- chatStarted=true;
 }
 async function requestChat(){
  const status=$("#composerStatus");
