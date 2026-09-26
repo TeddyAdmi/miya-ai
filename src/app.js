@@ -24,7 +24,11 @@ function saveCurrentChat(){
  const title=(firstUser?.content||"Новый чат").trim().slice(0,42)||"Новый чат";
  const currentId=window.__miyaChatId||("chat-"+Date.now()+"-"+Math.random().toString(36).slice(2,8));
  const existing=chats.find(x=>x.id===currentId);
- const messagesForStorage=chatMessages.map(m=>m.image&&m.image.length<250000?m:{...m,image:""});
+ const messagesForStorage=chatMessages.map(m=>{
+  if(!m.image)return m;
+  const image=String(m.image);
+  return image.length<=900000?{...m,image}:{...m,image:""};
+});
  const item={id:currentId,title,messages:messagesForStorage,updatedAt:Date.now(),pinned:Boolean(existing?.pinned)};
  const index=chats.findIndex(x=>x.id===currentId);
  if(index>=0)chats[index]=item;else chats.unshift(item);
@@ -910,10 +914,16 @@ async function getMiyaFfmpeg(){
  if(miyaFfmpegPromise)return miyaFfmpegPromise;
  miyaFfmpegPromise=(async()=>{
   if(!window.FFmpegWASM?.FFmpeg)throw new Error("FFmpeg не загрузился");
-  const util=await import("https://cdn.jsdelivr.net/npm/@ffmpeg/util@0.12.2/+esm");
   const ffmpeg=new window.FFmpegWASM.FFmpeg(),base=window.__MIYA_FFMPEG_CORE_BASE;
-  const toBlobURL=util.toBlobURL;
-  await ffmpeg.load({coreURL:await toBlobURL(base+"/ffmpeg-core.js","text/javascript"),wasmURL:await toBlobURL(base+"/ffmpeg-core.wasm","application/wasm")});
+  const toBlobURL=async(url,type)=>{
+    const response=await fetch(url,{mode:"cors",cache:"force-cache"});
+    if(!response.ok)throw new Error("FFmpeg asset HTTP "+response.status);
+    return URL.createObjectURL(new Blob([await response.arrayBuffer()],{type}));
+  };
+  const workerLoadURL=await toBlobURL(window.__MIYA_FFMPEG_WORKER,"text/javascript");
+  const coreURL=await toBlobURL(base+"/ffmpeg-core.js","text/javascript");
+  const wasmURL=await toBlobURL(base+"/ffmpeg-core.wasm","application/wasm");
+  await ffmpeg.load({workerLoadURL,coreURL,wasmURL});
   return ffmpeg;
  })();
  try{return await miyaFfmpegPromise}catch(e){miyaFfmpegPromise=null;throw e}
@@ -945,8 +955,8 @@ async function muxPixelSterAudio(videoUrl,prompt,duration,onProgress){
  const r=await fetch(videoUrl,{mode:"cors",cache:"no-store"});if(!r.ok)throw new Error("PixelSter MP4 недоступен для добавления звука (HTTP "+r.status+")");
  const videoBlob=await r.blob();if(!videoBlob.size)throw new Error("PixelSter вернул пустой MP4");
  onProgress?.(8,"получаю готовое видео");const audioBlob=synthMiyaAudio(prompt,duration);onProgress?.(16,"создаю бесплатную аудиодорожку");
- const ffmpeg=await getMiyaFfmpeg(),{fetchFile}=window.FFmpegUtil,token="miya_"+Date.now(),input=token+".mp4",audio=token+".wav",output=token+"_sound.mp4";
- await ffmpeg.writeFile(input,await fetchFile(videoBlob));await ffmpeg.writeFile(audio,await fetchFile(audioBlob));
+ const ffmpeg=await getMiyaFfmpeg(),token="miya_"+Date.now(),input=token+".mp4",audio=token+".wav",output=token+"_sound.mp4";
+ await ffmpeg.writeFile(input,new Uint8Array(await videoBlob.arrayBuffer()));await ffmpeg.writeFile(audio,new Uint8Array(await audioBlob.arrayBuffer()));
  const progress=({progress})=>onProgress?.(20+Math.round(Math.max(0,Math.min(1,progress))*78),"объединяю видео и звук");ffmpeg.on("progress",progress);
  try{await ffmpeg.exec(["-i",input,"-i",audio,"-map","0:v:0","-map","1:a:0","-c:v","copy","-c:a","aac","-b:a","160k","-shortest","-movflags","+faststart",output])}finally{ffmpeg.off("progress",progress)}
  const data=await ffmpeg.readFile(output);await Promise.all([ffmpeg.deleteFile(input).catch(()=>{}),ffmpeg.deleteFile(audio).catch(()=>{}),ffmpeg.deleteFile(output).catch(()=>{})]);
@@ -970,15 +980,18 @@ async function generateMotionVideo(prompt){
    const ratioValue=String($("#videoRatio")?.value||"auto");
    const ratio=["auto","9:16","16:9"].includes(ratioValue)?ratioValue:"auto";
    const motionPrompt=[
-     "ANIMATE THE PROVIDED IMAGE — FOLLOW THE USER'S ACTIONS LITERALLY.",
-     "The subject action is the highest priority. Do not replace an action with a camera move, idle pose, zoom, pan, or generic motion.",
-     "If the user gives several actions, execute them in the exact order as a continuous timeline. Start the first action immediately, complete it, then perform the next action.",
-     "For movement requests, show clear displacement of the subject through the scene. For walking away, visibly move the subject farther from the camera; for turning to camera, visibly rotate the body and face toward the camera.",
-     "For complex physical actions, show the requested body mechanics clearly and keep anatomy, identity, clothing and environment coherent.",
-     "If the user explicitly changes the location or says the subject travels a distance, visibly replace the surrounding environment with a new coherent location; do not merely change lighting or camera angle.",
-     "Do not add water, rain, droplets, smoke, fire, particles, extra people, vehicles, props, text, or other effects unless the user explicitly requests them.",
-     "Preserve the subject identity and starting scene unless a change is requested.",
-     "USER MOTION:",
+     "IMAGE-TO-VIDEO MOTION SYNTHESIS. FOLLOW THE USER'S MOTION REQUEST EXACTLY.",
+     "The visible subject in the supplied image is the ONLY main character. Do not introduce any human, animal, creature or other character that is not already present in the source image.",
+     "Do not invent a person, assistant, bystander, handler, rider, photographer or background character.",
+     "The requested action has higher priority than generic cinematic motion. Do not substitute zooming, panning, idle movement or camera shake for the requested action.",
+     "Execute multiple actions in the exact written order as one continuous timeline.",
+     "Start the requested action immediately and make the action unmistakably visible.",
+     "If the user says an animal runs away, the SAME animal must visibly run away; do not replace it with another subject.",
+     "If the user says an animal growls/roars/turns/looks/attacks, animate that SAME animal's body, head, mouth and movement.",
+     "Preserve identity, species, face, anatomy, clothing/fur, scale, lighting and the original environment unless the user explicitly requests a change.",
+     "Keep the camera stable unless the user explicitly requests camera movement.",
+     "Do not add water, rain, droplets, smoke, fire, particles, extra people, animals, vehicles, props, text or environmental effects unless explicitly requested.",
+     "USER MOTION REQUEST:",
      prompt
    ].join("\n");
    const payload={prompt:motionPrompt,ratio,duration,imageBase64:source.replace(/^data:image\/[^;]+;base64,/i,"")};
@@ -993,17 +1006,21 @@ async function generateMotionVideo(prompt){
      data=await fallback.json().catch(()=>({}));
      if(!fallback.ok||!data?.videoUrl)throw new Error(data?.message||data?.error||lastError?.message||"PixelSter не вернул видео");
    }
-   // PixelSter has already returned a complete MP4. Do not block the result on optional
-   // browser FFmpeg/audio post-processing: Firefox/CSP can prevent the WASM worker from loading.
-   // The original video is therefore saved immediately and generation is released for the next job.
+   let finalVideoUrl=String(data.videoUrl);
+   try{
+     updateVideoProgress(model,92,"добавляю звук…");
+     finalVideoUrl=await muxPixelSterAudio(finalVideoUrl,prompt,duration,(p,label)=>updateVideoProgress(model,p,label));
+   }catch(audioError){
+     console.warn("PixelSter audio mux failed; keeping provider MP4",audioError);
+     updateVideoProgress(model,96,"видео готово · звук недоступен");
+   }
    stopProgress();
-   updateVideoProgress(model,100,"видео готово");
-   const item=saveMedia("video",String(data.videoUrl),prompt,model);
+   updateVideoProgress(model,100,finalVideoUrl===String(data.videoUrl)?"видео готово":"видео + звук готовы");
+   const item=saveMedia("video",finalVideoUrl,prompt,model+(finalVideoUrl!==String(data.videoUrl)?" · Video + Audio":""));
    removeGenerationLoading();
    renderVideoLibrary();
    if(item)scrollImagesToTop();
-   toast("Видео создано");
-   if(item)scrollImagesToTop();
+   toast(finalVideoUrl!==String(data.videoUrl)?"PixelSter: видео + звук созданы":"PixelSter: видео создано");
  }catch(e){
    stopProgress();removeGenerationLoading();
    console.error("PixelSter Motion Synthesis failed",e);
@@ -1174,8 +1191,10 @@ $("#referenceInput").onchange=e=>{
  if(mode==="chat") chatAttachmentFile=file;
  const reader=new FileReader();
  reader.onload=()=>{
-  referenceImage=String(reader.result||"");try{sessionStorage.setItem("miyaReferenceImage",referenceImage)}catch{};setComposerAttachment(referenceImage);
-  if(mode==="images"){
+  const rawData=String(reader.result||"");
+  const finishAttachment=(dataUrl)=>{
+    referenceImage=dataUrl;try{sessionStorage.setItem("miyaReferenceImage",referenceImage)}catch{};setComposerAttachment(referenceImage);
+    if(mode==="images"){
     $("#composerModel").value="FLUX Kontext Dev";
     $("#composerRatio").value="auto";
     $("#composerStatus").textContent="Flux Kontext Dev · готово к редактированию";
@@ -1186,8 +1205,22 @@ $("#referenceInput").onchange=e=>{
   }else{
     $("#composerStatus").textContent="Изображение прикреплено · можно спросить Miya о фото";
   }
-  toast(mode==="chat"?"Изображение прикреплено к чату":"Изображение добавлено");
-  $("#composerInput").focus();
+    toast(mode==="chat"?"Изображение прикреплено к чату":"Изображение добавлено");
+    $("#composerInput").focus();
+  };
+  if(mode==="chat"&&rawData.startsWith("data:image/")){
+    const image=new Image();
+    image.onload=()=>{
+      const max=1280,scale=Math.min(1,max/Math.max(image.naturalWidth,image.naturalHeight));
+      const canvas=document.createElement("canvas");
+      canvas.width=Math.max(1,Math.round(image.naturalWidth*scale));canvas.height=Math.max(1,Math.round(image.naturalHeight*scale));
+      const ctx=canvas.getContext("2d");
+      ctx.drawImage(image,0,0,canvas.width,canvas.height);
+      finishAttachment(canvas.toDataURL("image/jpeg",.78));
+    };
+    image.onerror=()=>finishAttachment(rawData);
+    image.src=rawData;
+  }else finishAttachment(rawData);
  };
  reader.readAsDataURL(file);e.target.value="";
 };
