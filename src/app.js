@@ -281,7 +281,7 @@ function openImageViewer(item){
   modal=document.createElement("div");
   modal.id="imageViewerModal";
   modal.className="image-viewer-modal";
-  modal.innerHTML='<div class="image-viewer-backdrop"></div><div class="image-viewer-stage"><img class="image-viewer-image" alt="Miya AI Studio" draggable="false"><div class="image-viewer-controls"><button type="button" class="image-viewer-zoom" aria-label="Увеличить" title="Увеличить"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.8" cy="10.8" r="6.3"/><path d="m16 16 4.2 4.2M10.8 7.7v6.2M7.7 10.8h6.2"/></svg></button><button type="button" class="image-viewer-close" aria-label="Закрыть" title="Закрыть"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18"/></svg></button></div></div>';
+  modal.innerHTML='<div class="image-viewer-backdrop"></div><div class="image-viewer-stage"><img class="image-viewer-image" alt="Miya AI Studio" draggable="false"><div class="image-viewer-controls"><button type="button" class="image-viewer-zoom" aria-label="Увеличить" title="Увеличить"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 3H3v5M16 3h5v5M8 21H3v-5M21 16v5h-5"/><path d="M12 8v8M8 12h8"/></svg></button><button type="button" class="image-viewer-close" aria-label="Закрыть" title="Закрыть"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8.5"/><path d="m9 9 6 6M15 9l-6 6"/></svg></button></div></div>';
   document.body.appendChild(modal);
   modal.querySelector(".image-viewer-backdrop").onclick=closeImageViewer;
   modal.querySelector(".image-viewer-close").onclick=closeImageViewer;
@@ -332,7 +332,7 @@ function openImageViewer(item){
  img.dataset.panX="0";
  img.dataset.panY="0";
  const zoomControl=modal.querySelector(".image-viewer-zoom");
- zoomControl.innerHTML='<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.8" cy="10.8" r="6.3"/><path d="m16 16 4.2 4.2M10.8 7.7v6.2M7.7 10.8h6.2"/></svg>';
+ zoomControl.innerHTML='<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 3H3v5M16 3h5v5M8 21H3v-5M21 16v5h-5"/><path d="M12 8v8M8 12h8"/></svg>';
  zoomControl.title="Увеличить";
  img.style.transform="translate3d(0,0,0) scale(1)";
  modal.classList.add("open");
