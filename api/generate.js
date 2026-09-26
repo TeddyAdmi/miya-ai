@@ -223,7 +223,7 @@ async function handler(req, res) {
           inputImage,
           prompt,
           duration,
-          false,
+          true,
           Math.floor(Math.random()*2147483647),
           true,
           height,
@@ -241,7 +241,7 @@ async function handler(req, res) {
         });
       } catch(error) {
         console.error("Miya LTX server:",error);
-        return res.status(502).json({ok:false,error:"LTX_UPSTREAM_FAILED",message:"LTX-2.3 со звуком сейчас не завершил запрос. Генерация сброшена — можно сразу повторить.",detail:error?.message||"Gradio request failed"});
+        return res.status(502).json({ok:false,error:"LTX_UPSTREAM_FAILED",message:"LTX-2.3 не завершил генерацию. Генерация сброшена — можно сразу повторить.",detail:error?.message||"Gradio request failed"});
       }
     }
 
