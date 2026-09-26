@@ -405,19 +405,39 @@ function buildMediaCard(item,{video=false}={}){
   media.addEventListener("click",e=>{e.stopPropagation();openImageViewer(item)});
  }
  const actions=document.createElement("div");actions.className="media-actions";
- const more=document.createElement("button");more.className="media-action media-more";more.removeAttribute("title");more.setAttribute("aria-label","Действия");more.dataset.tooltip="Открыть изображение";more.innerHTML='<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="5" cy="12" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="19" cy="12" r="1.5"/></svg>';
+ const more=document.createElement("button");more.className="media-action media-more";more.removeAttribute("title");more.setAttribute("aria-label","Действия");more.dataset.tooltip="Действия";more.innerHTML='<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="5" cy="12" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="19" cy="12" r="1.5"/></svg>';
  const menu=document.createElement("div");menu.className="media-action-menu";
  if(!video){
-  const openBtn=document.createElement("button");openBtn.innerHTML='<span class="action-icon action-svg"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9V5a1 1 0 0 1 1-1h4M15 4h4a1 1 0 0 1 1 1v4M20 15v4a1 1 0 0 1-1 1h-4M9 20H5a1 1 0 0 1-1-1v-4"/><path d="m9 15 6-6M10 9h5v5"/></svg></span><span>Открыть изображение</span>';openBtn.onclick=e=>{e.stopPropagation();openImageViewer(item)};
-  const editBtn=document.createElement("button");editBtn.innerHTML='<span class="action-icon action-svg"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m4 16.5-.8 3.3 3.3-.8L18.7 6.8a2.2 2.2 0 0 0-3.1-3.1L4 16.5Z"/><path d="m14.2 5.8 4 4"/></svg></span><span>Редактировать</span>';editBtn.onclick=async e=>{e.stopPropagation();openEditor(await mediaItemToReference(item))};
-  const downloadBtn=document.createElement("button");downloadBtn.innerHTML='<span class="action-icon action-svg"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4v11M8 11l4 4 4-4M5 19h14"/></svg></span><span>Скачать</span>';downloadBtn.onclick=e=>{e.stopPropagation();showDownloadMenu(item,downloadBtn)};
-  const deleteBtn=document.createElement("button");deleteBtn.innerHTML='<span class="action-icon action-svg"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M9 7V4h6v3M7 7l1 13h8l1-13M10 11v5M14 11v5"/></svg></span><span>Удалить</span>';deleteBtn.onclick=e=>{e.stopPropagation();confirmDeleteMedia(item,card)};
-  menu.append(openBtn,editBtn,downloadBtn,deleteBtn);
+  const promptBtn=document.createElement("button");promptBtn.innerHTML='<span class="action-icon action-svg"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 5h14v14H5z"/><path d="M8 9h8M8 12h6M8 15h4"/></svg></span><span>Промт</span>';promptBtn.onclick=e=>{e.stopPropagation();menu.classList.remove("open");showPrompt(item)};
+  const editBtn=document.createElement("button");editBtn.innerHTML='<span class="action-icon action-svg"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m4 16.5-.8 3.3 3.3-.8L18.7 6.8a2.2 2.2 0 0 1 3.1 3.1L6.5 19l-3.3.8.8-3.3Z"/><path d="m14.2 5.8 4 4"/></svg></span><span>Изменить картинку</span>';editBtn.onclick=async e=>{e.stopPropagation();menu.classList.remove("open");openEditor(await mediaItemToReference(item))};
+  const videoBtn=document.createElement("button");videoBtn.innerHTML='<span class="action-icon action-svg"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="5" width="17" height="14" rx="2"/><path d="m10 9 5 3-5 3Z"/></svg></span><span>Сделать видео</span>';videoBtn.onclick=async e=>{e.stopPropagation();menu.classList.remove("open");openVideoFromImage(await mediaItemToReference(item))};
+  const downloadBtn=document.createElement("button");downloadBtn.innerHTML='<span class="action-icon action-svg"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4v11M8 11l4 4 4-4M5 19h14"/></svg></span><span>Скачать</span>';downloadBtn.onclick=e=>{e.stopPropagation();menu.classList.remove("open");showDownloadMenu(item,downloadBtn)};
+  const deleteBtn=document.createElement("button");deleteBtn.innerHTML='<span class="action-icon action-svg"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M9 7V4h6v3M7 7l1 13h8l1-13M10 11v5M14 11v5"/></svg></span><span>Удалить</span>';deleteBtn.onclick=e=>{e.stopPropagation();menu.classList.remove("open");confirmDeleteMedia(item,card)};
+  menu.append(promptBtn,editBtn,videoBtn,downloadBtn,deleteBtn);
  }else{
   const deleteBtn=document.createElement("button");deleteBtn.innerHTML='<span class="action-icon">⌫</span><span>Удалить</span>';deleteBtn.onclick=e=>{e.stopPropagation();confirmDeleteMedia(item,card)};menu.append(deleteBtn);
  }
  more.onclick=e=>{e.stopPropagation();document.querySelectorAll(".media-action-menu.open").forEach(x=>x!==menu&&x.classList.remove("open"));menu.classList.toggle("open")};
  actions.append(more,menu);card.appendChild(actions);return card;
+}
+function openVideoFromImage(url){
+ referenceImage=url||"";
+ try{sessionStorage.setItem("miyaReferenceImage",referenceImage)}catch{}
+ mode="video";
+ const m=modes.video;
+ $("#workspaceEyebrow").textContent=m.eyebrow;$("#workspaceTitle").textContent=m.title;$("#workspaceSubtitle").textContent=m.subtitle;
+ $("#composerInput").placeholder=m.placeholder;$("#composerSendText").textContent=m.send;$("#composerStatus").textContent="LTX-2.3 Distilled · изображение готово";
+ $(".image-settings").style.display="none";$("#videoOptions").classList.add("show");
+ $("#videoModel").value="LTX-2.3 Distilled";$("#videoRatio").value="auto";
+ document.querySelectorAll("[data-mode]").forEach(x=>x.classList.toggle("active",x.dataset.mode==="video"));
+ $("#chatMenuToggle")?.classList.remove("active");$("#chatSubmenu")?.classList.add("suppressed");
+ setComposerAttachment(referenceImage);renderVideoLibrary();syncInput();$("#composerInput").focus();
+}
+function renderVideoLibrary(){
+ const c=$("#canvas"),items=getLibrary().filter(x=>x.type==="video");
+ if(!items.length){showEmpty();return}
+ c.innerHTML='<div class="results-head"><div><h3>Все созданные видео</h3></div></div><div class="result-grid video-result-grid"></div>';
+ const grid=c.querySelector(".result-grid");items.forEach(item=>grid.appendChild(buildMediaCard(item,{video:true})));
 }
 function renderImageLibrary(){
  const c=$("#canvas"),items=getLibrary().filter(x=>x.type==="image");
@@ -540,7 +560,7 @@ function showLoading(){
   const selectedModel=referenceImage?"FLUX Kontext Dev":($("#composerModel")?.value||"FLUX Dev");
   const card=document.createElement("div");card.className="generation-loading"+(referenceImage?" has-upload":" no-upload");
   card.dataset.model=selectedModel;
-  card.innerHTML='<div class="generation-progress"><div class="progress-circle is-active"><span class="progress-percent"></span></div><div class="progress-copy"><b>Генерация изображения</b><span class="progress-model"></span></div></div>';
+  card.innerHTML='<div class="generation-progress"><div class="progress-circle is-active"><span class="progress-percent">0%</span></div><div class="progress-copy"><b>Генерация изображения</b><span class="progress-model"></span></div></div><div class="generation-progress-bar"><span></span></div>';
   card.querySelector(".progress-model").textContent=referenceImage?selectedModel+" · загрузка файла…":selectedModel+" · генерация…";
   grid.prepend(card);scrollImagesToTop();return;
  }
@@ -549,7 +569,7 @@ function showLoading(){
  const grid=c.querySelector(".result-grid");
  const card=document.createElement("div");card.className="generation-loading video-generation-loading";
  card.dataset.model=selectedVideoModel;
- card.innerHTML='<div class="generation-progress"><div class="progress-circle is-active"><span class="progress-percent">0%</span></div><div class="progress-copy"><b>Генерация видео</b><span class="progress-model"></span></div></div>';
+ card.innerHTML='<div class="generation-progress"><div class="progress-circle is-active"><span class="progress-percent">0%</span></div><div class="progress-copy"><b>Генерация видео</b><span class="progress-model"></span></div></div><div class="generation-progress-bar"><span></span></div>';
  card.querySelector(".progress-model").textContent=selectedVideoModel+" · подготовка…";
  grid.appendChild(card);scrollImagesToTop();
 }
@@ -573,6 +593,7 @@ async function generateImage(prompt){
  const setProgress=(p)=>{
   const value=Math.max(0,Math.min(99,Math.round(p)));
   if(ring){ring.classList.remove("is-active");ring.style.setProperty("--progress",value+"%");}
+  const bar=loader?.querySelector(".generation-progress-bar span");if(bar)bar.style.width=value+"%";
   if(percent)percent.textContent=value+"%";
   if(composerProgress)composerProgress.textContent=value+"%";
  };
@@ -794,6 +815,7 @@ function startVideoProgress(model){
  let value=4;
  if(copy)copy.textContent=model+" · запуск видеодвижка…";
  if(ring)ring.style.setProperty("--progress",value+"%");
+ const bar=loader?.querySelector(".generation-progress-bar span");if(bar)bar.style.width=value+"%";
  if(percent)percent.textContent=value+"%";
  const timer=setInterval(()=>{
    if(!document.body.contains(loader)){clearInterval(timer);return}
@@ -801,6 +823,7 @@ function startVideoProgress(model){
    const step=remaining>50?Math.random()*5+1.5:remaining>20?Math.random()*2.4+.5:Math.random()*.55+.15;
    value=Math.min(92,value+step);
    if(ring)ring.style.setProperty("--progress",value+"%");
+   const bar=loader?.querySelector(".generation-progress-bar span");if(bar)bar.style.width=Math.round(value)+"%";
    if(percent)percent.textContent=Math.round(value)+"%";
  },850);
  return ()=>clearInterval(timer);
@@ -824,10 +847,14 @@ async function generateMotionVideo(prompt){
    const ratioValue=String($("#videoRatio")?.value||"auto");
    const ratio=["auto","9:16","16:9"].includes(ratioValue)?ratioValue:"auto";
    const motionPrompt=[
-     "Animate the provided image according to the user's motion instructions.",
-     "The described subject action is the priority. Make the subject visibly perform the requested action, not just a camera move.",
-     "Use clear physical verbs and temporal continuity. Preserve identity and scene unless the user requests a change.",
-     "If multiple objects are mentioned, each should visibly move according to the prompt.",
+     "ANIMATE THE PROVIDED IMAGE — FOLLOW THE USER'S ACTIONS LITERALLY.",
+     "The subject action is the highest priority. Do not replace an action with a camera move, idle pose, zoom, pan, or generic motion.",
+     "If the user gives several actions, execute them in the exact order as a continuous timeline. Start the first action immediately, complete it, then perform the next action.",
+     "For movement requests, show clear displacement of the subject through the scene. For walking away, visibly move the subject farther from the camera; for turning to camera, visibly rotate the body and face toward the camera.",
+     "For complex physical actions, show the requested body mechanics clearly and keep anatomy, identity, clothing and environment coherent.",
+     "If the user explicitly changes the location or says the subject travels a distance, visibly replace the surrounding environment with a new coherent location; do not merely change lighting or camera angle.",
+     "Do not add water, rain, droplets, smoke, fire, particles, extra people, vehicles, props, text, or other effects unless the user explicitly requests them.",
+     "Preserve the subject identity and starting scene unless a change is requested.",
      "USER MOTION:",
      prompt
    ].join("\n");
@@ -860,62 +887,51 @@ async function generateVideo(prompt){
  const selectedModel=String($("#videoModel")?.value||"LTX-2.3 Distilled");
  if(selectedModel==="PixelSter Motion Synthesis") return generateMotionVideo(prompt);
  const source=referenceImage||"";
- showLoading();
- $("#composerSend").disabled=true;
+ showLoading();$("#composerSend").disabled=true;
  const stopProgress=startVideoProgress("LTX-2.3 Distilled");
- $("#composerStatus").textContent="LTX-2.3 · подготовка бесплатной генерации…";
+ $("#composerStatus").textContent="LTX-2.3 Distilled · подготовка видео + звука…";
  try{
-   if(!window.__miyaLtxClient){
-     $("#composerStatus").textContent="LTX-2.3 · подключение к Free ZeroGPU…";
-     const mod=await import("https://esm.sh/@gradio/client@1.15.0");
-     window.__miyaLtxClient=await mod.Client.connect("Lightricks/LTX-2-3");
-     window.__miyaLtxHandleFile=mod.handle_file;
-   }
-   const client=window.__miyaLtxClient;
-   const handleFile=window.__miyaLtxHandleFile;
-   let inputImage=null;
-   if(source){
-     const blob=await fetch(source).then(r=>r.blob());
-     const file=new File([blob],"miya-reference.png",{type:blob.type||"image/png"});
-     inputImage=handleFile(file);
-   }
-   const durationText=String($("#videoDuration")?.value||"3 сек");
-   const durationMatch=durationText.match(/\d+/);
-   const duration=Math.max(1,Math.min(10,Number(durationMatch?.[0]||3)));
+   const durationText=String($("#videoDuration")?.value||"5 сек");
+   const duration=Math.max(1,Math.min(10,Number(durationText.match(/\d+/)?.[0]||5)));
    const ratio=String($("#videoRatio")?.value||"16:9");
-   let width=1536,height=1024;
-   if(ratio==="9:16"){width=1024;height=1536}
-   else if(ratio==="1:1"){width=1024;height=1024}
-   const result=await client.predict("/generate_video",[
-     inputImage,
-     prompt,
-     duration,
-     true,
-     Math.floor(Math.random()*2147483647),
-     true,
-     height,
-     width
-   ]);
-   const raw=result?.data?.[0];
-   const videoUrl=typeof raw==="string"
-     ? raw
-     : String(raw?.url||raw?.path||raw?.data||"");
-   if(!videoUrl) throw new Error("LTX-2.3 не вернул готовое видео");
-   const item=saveMedia("video",videoUrl,prompt,"LTX-2.3 Distilled");
-   $("#canvas").innerHTML="";
-   renderLibrary("videos");
-   $("#composerStatus").textContent="LTX-2.3 · видео + звук готовы";
-   stopProgress();removeGenerationLoading();
-   toast("Видео создано");
+   const ratioValue=["auto","9:16","16:9","1:1"].includes(ratio)?ratio:"16:9";
+   const actionPrompt=[
+     "Create the requested action immediately and visibly.",
+     "Follow the user's actions in the exact order they are written. If several actions are requested, treat them as sequential beats in one continuous shot.",
+     "Do not substitute camera movement for subject movement. Keep the subject physically performing the requested action.",
+     "Preserve the reference subject identity and appearance. Add no unrequested effects.",
+     "Generate synchronized natural audio matching the visible actions, ambience and any explicitly requested music.",
+     "USER REQUEST:",
+     prompt
+   ].join("\n");
+   let data=null,lastError=null;
+   try{
+     const mod=await import("https://esm.sh/@gradio/client@2.7.0");
+     window.__miyaLtxClient=await mod.Client.connect("Lightricks/LTX-2-3");
+     const client=window.__miyaLtxClient,handleFile=mod.handle_file;
+     let inputImage=null;
+     if(source){const blob=await fetch(source).then(r=>r.blob());inputImage=handleFile(new File([blob],"miya-reference.png",{type:blob.type||"image/png"}))}
+     let width=1536,height=1024;
+     if(ratioValue==="9:16"){width=1024;height=1536}else if(ratioValue==="1:1"){width=1024;height=1024}
+     const result=await client.predict("/generate_video",[inputImage,actionPrompt,duration,false,Math.floor(Math.random()*2147483647),true,height,width]);
+     const raw=result?.data?.[0],videoUrl=typeof raw==="string"?raw:String(raw?.url||raw?.path||raw?.data||"");
+     if(!videoUrl)throw new Error("LTX-2.3 не вернул готовый MP4");
+     data={videoUrl};
+   }catch(e){
+     lastError=e;console.warn("LTX browser transport failed; using Miya server transport",e);
+     const fallback=await fetch("/api/generate",{method:"POST",headers:{"Content-Type":"application/json","Accept":"application/json"},body:JSON.stringify({mode:"video",provider:"ltx23",model:"LTX-2.3 Distilled",prompt:actionPrompt,ratio:ratioValue,duration,options:{imageBase64:source}}),signal:AbortSignal.timeout(59000)});
+     data=await fallback.json().catch(()=>({}));
+     if(!fallback.ok||!data?.videoUrl)throw new Error(data?.message||data?.error||lastError?.message||"LTX-2.3 не вернул видео");
+   }
+   const videoUrl=String(data.videoUrl||"");if(!videoUrl)throw new Error("LTX-2.3 не вернул готовый MP4");
+   const item=saveMedia("video",videoUrl,prompt,"LTX-2.3 Distilled · Video + Audio");
+   stopProgress();removeGenerationLoading();renderVideoLibrary();
+   $("#composerStatus").textContent="LTX-2.3 Distilled · видео + звук готовы";$("#composerProgress").textContent="100%";toast("Видео со звуком создано");
    if(item)scrollImagesToTop();
  }catch(e){
-   stopProgress();removeGenerationLoading();
-   console.error("LTX-2.3 video generation failed",e);
-   $("#composerStatus").textContent="LTX-2.3 · ошибка";
-   toast(e?.message||"Не удалось создать видео");
- }finally{
-   $("#composerSend").disabled=false;
- }
+   stopProgress();removeGenerationLoading();console.error("LTX-2.3 video generation failed",e);
+   $("#composerProgress").textContent="";$("#composerStatus").textContent="LTX-2.3 Distilled · ошибка · можно повторить";toast(e?.message||"Не удалось создать видео");
+ }finally{$("#composerSend").disabled=false}
 }
 
 function restoreReferenceImage(){try{referenceImage=referenceImage||sessionStorage.getItem("miyaReferenceImage")||""}catch{};setComposerAttachment(referenceImage||"")}
@@ -947,6 +963,8 @@ function setMode(next,render=true){
    renderImageLibrary();
    $("#composerModel").value=referenceImage?"FLUX Kontext Dev":"FLUX Dev";
    $("#composerRatio").value=referenceImage?"auto":"16:9";
+ }else if(next==="video"){
+   renderVideoLibrary();
  }else{
    showEmpty();
  }

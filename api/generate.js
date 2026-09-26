@@ -188,6 +188,39 @@ async function handler(req, res) {
       });
     }
 
+    if (body.mode === "video" && /ltx/i.test(String(body.provider || body.model || ""))) {
+      const prompt = typeof body.prompt === "string" ? body.prompt.trim() : "";
+      if (!prompt) return res.status(400).json({ ok:false, error:"PROMPT_REQUIRED" });
+      const options = body.options && typeof body.options === "object" ? body.options : {};
+      const imageBase64 = typeof options.imageBase64 === "string" ? options.imageBase64.trim() : "";
+      const ratioValue = typeof body.ratio === "string" ? body.ratio : "16:9";
+      const ratio = ["auto","9:16","16:9","1:1"].includes(ratioValue) ? ratioValue : "16:9";
+      const requestedDuration = Number(body.duration ?? 5);
+      const duration = Number.isFinite(requestedDuration) ? Math.max(1, Math.min(10, requestedDuration)) : 5;
+      try {
+        const { Client, handle_file } = await import("@gradio/client");
+        const client = await Client.connect("Lightricks/LTX-2-3");
+        let inputImage = null;
+        if (imageBase64) {
+          const raw = imageBase64.replace(/^data:image\/[^;]+;base64,/i, "").replace(/^base64,/i, "").replace(/\s+/g, "");
+          if (!raw || raw.length < 100) return res.status(400).json({ ok:false, error:"INVALID_VIDEO_SOURCE", message:"Исходное изображение для LTX-2.3 некорректно." });
+          const approxBytes = Math.ceil(raw.length * 3 / 4);
+          if (approxBytes > 3.5 * 1024 * 1024) return res.status(413).json({ ok:false, error:"VIDEO_SOURCE_TOO_LARGE", message:"Исходное изображение слишком большое. Максимум 3.5 MB." });
+          inputImage = handle_file(new Blob([Buffer.from(raw, "base64")], { type:"image/png" }));
+        }
+        let width=1536,height=1024;
+        if(ratio==="9:16"){width=1024;height=1536}else if(ratio==="1:1"){width=1024;height=1024}
+        const result=await client.predict("/generate_video",[inputImage,prompt,duration,false,Math.floor(Math.random()*2147483647),true,height,width]);
+        const raw=result?.data?.[0];
+        const videoUrl=typeof raw==="string"?raw:String(raw?.url||raw?.path||raw?.data||"");
+        if(!videoUrl||!/^https?:\/\//i.test(videoUrl)) return res.status(502).json({ok:false,error:"LTX_VIDEO_URL_MISSING",message:"LTX-2.3 не вернул готовый MP4.",providerResponse:result});
+        return res.status(200).json({ok:true,mode:"video",status:"completed",provider:"Lightricks",model:"LTX-2.3 Distilled · Video + Audio",videoUrl,meta:{transport:"server-gradio",free:true,synchronizedAudio:true,duration,ratio}});
+      } catch(error) {
+        console.error("Miya LTX server:",error);
+        return res.status(502).json({ok:false,error:"LTX_UPSTREAM_FAILED",message:"LTX-2.3 со звуком сейчас не завершил запрос. Генерация сброшена — можно сразу повторить.",detail:error?.message||"Gradio request failed"});
+      }
+    }
+
     if (body.mode === "video") {
       const prompt = typeof body.prompt === "string" ? body.prompt.trim() : "";
       if (!prompt) return res.status(400).json({ ok: false, error: "PROMPT_REQUIRED" });
@@ -346,8 +379,9 @@ async function handler(req, res) {
         "Apply the user's requested change literally and visibly.",
         "ADD means add exactly the requested object or feature.",
         "REMOVE means remove exactly the requested object or feature.",
-        "CHANGE LOCATION means replace the background/location while keeping the subject.",
+        "CHANGE LOCATION means completely replace the surrounding location while keeping the subject. If the user says the subject moved a distance such as 100 meters, change the full visible environment: landscape, buildings, road, vehicles, background objects and perspective should belong to the new location.",
         "CHANGE POSE means visibly change the subject's body position or direction.",
+        "Do not add water, rain, droplets, puddles, smoke, fire, particles, extra people, vehicles or props unless explicitly requested.",
         "Do not substitute a similar object. Do not invent an unrelated change. Do not ignore the requested edit.",
         "Return one coherent natural image, not a collage.",
         "",

@@ -1844,3 +1844,33 @@ body.light .chat-actions button:hover{background:#f1edff!important;border-color:
 .video-generation-loading .progress-copy b{font-size:12px!important;line-height:1.25!important}
 .video-generation-loading .progress-model{font-size:10px!important;line-height:1.35!important}
 @media(max-width:800px){.media-action[data-tooltip]::after{min-width:138px;max-width:190px;font-size:10px}.media-action-menu{min-width:210px!important}.media-action-menu button{font-size:10px!important}}
+
+/* Generation cards: full-width image reference, compact video reference. */
+.result-grid .generation-loading{grid-column:1/-1;width:100%;min-height:188px;padding:22px 28px;margin:0 0 2px;border-radius:16px}
+.generation-loading .generation-progress{display:flex;align-items:center;justify-content:center;gap:16px;width:100%;max-width:620px}
+.generation-loading .progress-circle{width:78px;height:78px;flex:0 0 78px}
+.generation-loading .progress-circle .progress-percent{font-size:15px!important;font-weight:800;white-space:nowrap}
+.generation-loading .progress-copy{min-width:0;flex:1;text-align:left}
+.generation-loading .progress-copy b{display:block;font-size:16px!important;line-height:1.25!important}
+.generation-loading .progress-model{display:block;margin-top:5px;font-size:13px!important;line-height:1.35!important;overflow-wrap:anywhere;word-break:break-word;white-space:normal}
+.generation-progress-bar{width:min(620px,100%);height:5px;margin-top:13px;border-radius:999px;background:rgba(126,164,201,.18);overflow:hidden}
+.generation-progress-bar span{display:block;width:0;height:100%;border-radius:inherit;background:linear-gradient(90deg,#9f63ff,#c07dff);transition:width .35s ease}
+.video-generation-loading{min-height:126px!important;padding:15px 22px!important}
+.video-generation-loading .generation-progress{max-width:560px}
+.video-generation-loading .progress-circle{width:62px;height:62px;flex-basis:62px}
+.video-generation-loading .progress-circle .progress-percent{font-size:13px!important}
+.video-generation-loading .progress-copy b{font-size:14px!important}
+.video-generation-loading .progress-model{font-size:12px!important}
+.video-generation-loading .generation-progress-bar{max-width:560px;margin-top:9px}
+.video-result-grid .media-card{aspect-ratio:16/9}
+.video-result-grid .media-card video{object-fit:contain;background:#030913}
+body.light .generation-loading{background:linear-gradient(135deg,#fff,#f5f7fb);border-color:#d8e1ec;box-shadow:0 10px 28px rgba(25,45,70,.10)}
+body.light .generation-progress-bar{background:#e7edf5}
+@media(max-width:800px){
+ .result-grid .generation-loading{min-height:160px;padding:18px}
+ .generation-loading .generation-progress{gap:11px}
+ .generation-loading .progress-circle{width:64px;height:64px;flex-basis:64px}
+ .generation-loading .progress-copy b{font-size:14px!important}
+ .generation-loading .progress-model{font-size:11px!important}
+ .video-generation-loading{min-height:112px!important}
+}
