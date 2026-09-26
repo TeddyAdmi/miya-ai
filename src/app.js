@@ -359,7 +359,7 @@ function buildMediaCard(item,{video=false}={}){
   media.addEventListener("click",e=>{e.stopPropagation();openImageViewer(item)});
  }
  const actions=document.createElement("div");actions.className="media-actions";
- const more=document.createElement("button");more.className="media-action media-more";more.removeAttribute("title");more.setAttribute("aria-label","Действия");more.innerHTML='<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="5" cy="12" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="19" cy="12" r="1.5"/></svg>';
+ const more=document.createElement("button");more.className="media-action media-more";more.removeAttribute("title");more.setAttribute("aria-label","Действия");more.dataset.tooltip="Действия";more.innerHTML='<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="5" cy="12" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="19" cy="12" r="1.5"/></svg>';
  const menu=document.createElement("div");menu.className="media-action-menu";
  if(!video){
   const promptBtn=document.createElement("button");promptBtn.innerHTML='<span class="action-icon action-svg"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 4h12v16H6z"/><path d="M9 8h6M9 12h6M9 16h4"/></svg></span><span>Промт</span>';promptBtn.onclick=e=>{e.stopPropagation();showPrompt(item)};
