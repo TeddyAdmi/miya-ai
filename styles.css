@@ -1725,3 +1725,18 @@ body.light .delete-confirm-ring::before{background:#fff}
  }
 }
 .media-more[title]{position:relative!important}
+
+/* FINAL CHAT GEOMETRY: the message canvas ends at the composer's top edge. */
+.chat-canvas .chat-stream{
+  min-height:100dvh!important;
+  height:auto!important;
+  box-sizing:border-box!important;
+  padding-top:18px!important;
+  padding-bottom:calc(var(--chat-composer-height, 180px) + 10px)!important;
+  display:flex!important;
+  flex-direction:column!important;
+  justify-content:flex-end!important;
+  gap:10px!important;
+  overflow:visible!important;
+}
+.chat-canvas .chat-stream .chat-row{flex:0 0 auto!important}
