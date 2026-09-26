@@ -3,7 +3,7 @@ const modes={
  images:{title:"Картинки",eyebrow:"IMAGE STUDIO · FLUX",subtitle:"Создавай изображения с нуля или загружай исходник и описывай изменения.",placeholder:"Опиши картинку или что изменить в загруженном изображении...",send:"Создать",status:"FLUX Dev · Image generation & editing"},
  video:{title:"Видео",eyebrow:"VIDEO STUDIO · LTX",subtitle:"Создавай видео из текста или оживляй загруженные изображения.",placeholder:"Опиши сцену, движение и стиль видео...",send:"Создать видео",status:"LTX · Video generation"}
 };
-const $=s=>document.querySelector(s),$$=s=>[...document.querySelectorAll(s)];
+const $=s=>document.querySelector(s);
 let mode="chat",referenceImage=null,chatAttachmentFile=null,chatStarted=false,chatMessages=[];
 const CHAT_KEY="miyaChats";
 let chatMenuSuppressed=false;
@@ -285,7 +285,7 @@ function openImageViewer(item){
 <img class="image-viewer-image" alt="Miya AI Studio" draggable="false">
 <button type="button" class="image-viewer-nav image-viewer-prev" aria-label="Предыдущее изображение" title="Предыдущее изображение"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m14.5 5-7 7 7 7"/><path d="M8 12h10"/></svg></button>
 <button type="button" class="image-viewer-nav image-viewer-next" aria-label="Следующее изображение" title="Следующее изображение"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m9.5 5 7 7-7 7"/><path d="M16 12H6"/></svg></button>
-<div class="image-viewer-controls"><button type="button" class="image-viewer-zoom" aria-label="Увеличить" title="Увеличить"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 3H3v5M16 3h5v5M8 21H3v-5M21 16v5h-5"/><path d="M12 8v8M8 12h8"/></svg></button><button type="button" class="image-viewer-close" aria-label="Закрыть" title="Закрыть"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8.5"/><path d="m9 9 6 6M15 9l-6 6"/></svg></button></div></div>`';
+<div class="image-viewer-controls"><button type="button" class="image-viewer-zoom" aria-label="Увеличить" title="Увеличить"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 3H3v5M16 3h5v5M8 21H3v-5M21 16v5h-5"/><path d="M12 8v8M8 12h8"/></svg></button><button type="button" class="image-viewer-close" aria-label="Закрыть" title="Закрыть"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8.5"/><path d="m9 9 6 6M15 9l-6 6"/></svg></button></div></div>`;
   document.body.appendChild(modal);
   modal.querySelector(".image-viewer-backdrop").onclick=closeImageViewer;
   modal.querySelector(".image-viewer-close").onclick=closeImageViewer;
@@ -885,11 +885,6 @@ $("#composerMic").onclick=()=>{
  };
  r.start();
 };
-$("#improve").onclick=improveComposerPrompt; /* keep image improve behavior */
-/* legacy handler replaced above */
-/* 
- const i=$("#composerInput");if(i.value.trim())i.value=i.value.trim()+", cinematic composition, professional lighting, realistic textures, highly detailed, premium quality";else toast("Сначала введи промпт");syncInput()
-}; */
 const emojiButton=$("#composerEmoji");
 const emojiPanel=$("#emojiPanel");
 const starterIdeas=[
@@ -948,33 +943,12 @@ document.querySelectorAll("[data-tool]").forEach(b=>b.onclick=()=>{
 renderChatHistoryMini();
 shuffleIdeas();
 setMode("chat");
-renderChatHistoryMini();
 
 
 const chatNavWrap=$("#chatNavWrap")||$(".chat-nav-wrap");
 if(chatNavWrap){chatNavWrap.addEventListener("mouseleave",()=>{chatMenuSuppressed=false;$("#chatSubmenu")?.classList.remove("suppressed");$("#chatMenuToggle")?.setAttribute("aria-expanded","false")})}
 
-// Keep chat action menus from becoming sticky when the pointer leaves the flyout.
+// Close transient chat/media menus when clicking outside them.
 document.addEventListener("click",e=>{if(!e.target.closest(".chat-history-row"))resetChatMenus()});
-document.addEventListener("click",e=>{
- if(!e.target.closest(".media-actions")) document.querySelectorAll(".media-action-menu.open").forEach(x=>x.classList.remove("open"));
-}); $("#composerTrash")?.addEventListener("click",()=>{
-   $("#composerInput").value="";
-   clearComposerAttachment();
-   syncInput();
-   $("#composerInput").focus();
-   $("#composerStatus").textContent=modes[mode]?.status||"Готово";
- });
- $("#composerAttachmentRemove")?.addEventListener("click",()=>clearComposerAttachment());
- $("#improve")?.addEventListener("click",improveComposerPrompt);
- $("#copyPrompt")?.addEventListener("click",copyComposerPrompt);
- $("#videoImprove")?.addEventListener("click",improveComposerPrompt);
- $("#videoCopyPrompt")?.addEventListener("click",copyComposerPrompt);
- $("#videoTrash")?.addEventListener("click",()=>{
-   $("#composerInput").value="";
-   clearComposerAttachment();
-   syncInput();
-   $("#composerInput").focus();
-   $("#composerStatus").textContent=modes.video.status;
- });
+document.addEventListener("click",e=>{if(!e.target.closest(".media-actions"))document.querySelectorAll(".media-action-menu.open").forEach(x=>x.classList.remove("open"))});
 
