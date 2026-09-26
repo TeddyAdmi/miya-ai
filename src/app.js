@@ -606,7 +606,8 @@ async function generateImage(prompt){
    ratio:$("#composerRatio").value,outputFormat:"png",copies:requestedCount,
    options:referenceImage?payload:{}
   });
-  const data=await new Promise((resolve,reject)=>{
+  let data;
+  const requestThroughMiyaApi=async()=>new Promise((resolve,reject)=>{
    const xhr=new XMLHttpRequest();
    xhr.open("POST","/api/generate",true);
    xhr.setRequestHeader("Content-Type","application/json");
@@ -648,6 +649,31 @@ async function generateImage(prompt){
    xhr.timeout=60000;
    xhr.send(body);
   });
+;
+  if(hasFileUpload){
+   try{
+    const directPayload={
+      prompt,
+      ratio:"auto",
+      imageBase64:String(payload.imageBase64||"").replace(/^data:image\/[^;]+;base64,/i,"")
+    };
+    const direct=await fetch("https://ahm7xmakki.com/api/pti",{
+      method:"POST",
+      headers:{"Content-Type":"application/json","Accept":"application/json"},
+      body:JSON.stringify(directPayload),
+      signal:AbortSignal.timeout(120000)
+    });
+    const directData=await direct.json().catch(()=>({}));
+    if(!direct.ok||!directData?.imageUrl)throw new Error(directData?.message||directData?.error||"PixelSter HTTP "+direct.status);
+    data=directData;
+    data.model="Flux Kontext Dev";
+   }catch(directError){
+    console.warn("Direct PixelSter Kontext request failed, falling back to Miya API",directError);
+    data=await requestThroughMiyaApi();
+   }
+  }else{
+   data=await requestThroughMiyaApi();
+  }
   const actualModel=data.model||modelName;
   if(fakeTimer){clearInterval(fakeTimer);fakeTimer=null;}
   if(loader){
