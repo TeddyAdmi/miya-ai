@@ -281,11 +281,11 @@ function openImageViewer(item){
   modal=document.createElement("div");
   modal.id="imageViewerModal";
   modal.className="image-viewer-modal";
-  modal.innerHTML='<div class="image-viewer-backdrop"></div><div class="image-viewer-stage">
+  modal.innerHTML=`<div class="image-viewer-backdrop"></div><div class="image-viewer-stage">
 <img class="image-viewer-image" alt="Miya AI Studio" draggable="false">
 <button type="button" class="image-viewer-nav image-viewer-prev" aria-label="Предыдущее изображение" title="Предыдущее изображение"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m14.5 5-7 7 7 7"/><path d="M8 12h10"/></svg></button>
 <button type="button" class="image-viewer-nav image-viewer-next" aria-label="Следующее изображение" title="Следующее изображение"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m9.5 5 7 7-7 7"/><path d="M16 12H6"/></svg></button>
-<div class="image-viewer-controls"><button type="button" class="image-viewer-zoom" aria-label="Увеличить" title="Увеличить"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 3H3v5M16 3h5v5M8 21H3v-5M21 16v5h-5"/><path d="M12 8v8M8 12h8"/></svg></button><button type="button" class="image-viewer-close" aria-label="Закрыть" title="Закрыть"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8.5"/><path d="m9 9 6 6M15 9l-6 6"/></svg></button></div></div>';
+<div class="image-viewer-controls"><button type="button" class="image-viewer-zoom" aria-label="Увеличить" title="Увеличить"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 3H3v5M16 3h5v5M8 21H3v-5M21 16v5h-5"/><path d="M12 8v8M8 12h8"/></svg></button><button type="button" class="image-viewer-close" aria-label="Закрыть" title="Закрыть"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8.5"/><path d="m9 9 6 6M15 9l-6 6"/></svg></button></div></div>`';
   document.body.appendChild(modal);
   modal.querySelector(".image-viewer-backdrop").onclick=closeImageViewer;
   modal.querySelector(".image-viewer-close").onclick=closeImageViewer;
