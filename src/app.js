@@ -829,6 +829,52 @@ function startVideoProgress(model){
  return ()=>clearInterval(timer);
 }
 
+let miyaFfmpegPromise=null;
+async function getMiyaFfmpeg(){
+ if(miyaFfmpegPromise)return miyaFfmpegPromise;
+ miyaFfmpegPromise=(async()=>{
+  if(!window.FFmpegWASM?.FFmpeg||!window.FFmpegUtil?.toBlobURL)throw new Error("FFmpeg не загрузился");
+  const ffmpeg=new window.FFmpegWASM.FFmpeg(),base=window.__MIYA_FFMPEG_CORE_BASE;
+  const toBlobURL=window.FFmpegUtil.toBlobURL;
+  await ffmpeg.load({coreURL:await toBlobURL(base+"/ffmpeg-core.js","text/javascript"),wasmURL:await toBlobURL(base+"/ffmpeg-core.wasm","application/wasm")});
+  return ffmpeg;
+ })();
+ try{return await miyaFfmpegPromise}catch(e){miyaFfmpegPromise=null;throw e}
+}
+function miyaWav(samples,sr=44100){
+ const buf=new ArrayBuffer(44+samples.length*2),v=new DataView(buf),put=(o,s)=>{for(let i=0;i<s.length;i++)v.setUint8(o+i,s.charCodeAt(i))};
+ put(0,"RIFF");v.setUint32(4,36+samples.length*2,true);put(8,"WAVE");put(12,"fmt ");v.setUint32(16,16,true);v.setUint16(20,1,true);v.setUint16(22,1,true);v.setUint32(24,sr,true);v.setUint32(28,sr*2,true);v.setUint16(32,2,true);v.setUint16(34,16,true);put(36,"data");v.setUint32(40,samples.length*2,true);
+ for(let i=0;i<samples.length;i++){const n=Math.max(-1,Math.min(1,samples[i]));v.setInt16(44+i*2,n<0?n*32768:n*32767,true)}return new Blob([buf],{type:"audio/wav"});
+}
+function synthMiyaAudio(prompt,duration){
+ const text=String(prompt||"").toLowerCase(),energetic=/(энерг|энергич|быстр|танц|dance|energetic|upbeat|music|музык|ритм|хаотич)/i.test(text);
+ const car=/(машин|авто|car|drive|ехал|уехал|двигател|engine)/i.test(text),door=/(двер|door|открыла|открыл|закрыл)/i.test(text),steps=/(ид[её]|ход|walk|беж|run|улиц|street)/i.test(text);
+ const sr=44100,total=Math.max(1,Math.ceil(duration*sr)),out=new Float32Array(total);
+ const state={v:2166136261};for(const c of text){state.v=Math.imul(state.v^c.charCodeAt(0),16777619)};const rnd=()=>{let x=state.v;x^=x<<13;x^=x>>>17;x^=x<<5;state.v=x>>>0;return (x>>>0)/4294967296};
+ const add=(at,len,fn,a)=>{const s=Math.max(0,Math.floor(at*sr)),e=Math.min(total,s+Math.floor(len*sr));for(let i=s;i<e;i++)out[i]+=fn((i-s)/sr)*a};
+ const kick=t=>add(t,.2,u=>Math.sin(2*Math.PI*(120-75*u/.2)*u)*Math.exp(-22*u),energetic?.34:.22);
+ const hat=t=>add(t,.07,u=>(rnd()*2-1)*Math.exp(-70*u),energetic?.055:.028);
+ const snare=t=>add(t,.16,u=>(rnd()*2-1)*Math.exp(-24*u),energetic?.13:.06);
+ const bass=(t,f)=>add(t,.28,u=>Math.sin(2*Math.PI*(f-7*u)*u)*Math.exp(-7*u),energetic?.12:.055);
+ const beat=energetic?.46:.62;
+ for(let t=0;t<duration;t+=beat){kick(t);if(t+beat/2<duration)snare(t+beat/2);for(let h=t;h<t+beat&&h<duration;h+=beat/2)hat(h);bass(t,[55,62,65,49][Math.floor(t/beat)%4])}
+ if(steps)for(let t=.2;t<duration;t+=.62)add(t,.13,u=>Math.sin(2*Math.PI*90*u)*Math.exp(-22*u),.09);
+ if(door)add(Math.min(duration-.25,Math.max(.35,duration*.38)),.3,u=>(rnd()*2-1)*Math.exp(-15*u),.18);
+ if(car)add(Math.max(.2,duration*.15),duration*.7,u=>Math.sin(2*Math.PI*(58+25*u)*u)*.06,.7);
+ const fade=Math.min(.3,duration/4);for(let i=0;i<total;i++){const t=i/sr,e=Math.max(0,Math.min(1,t/fade,(duration-t)/fade));out[i]=Math.tanh(out[i]*1.2)*e*.8}
+ return miyaWav(out,sr);
+}
+async function muxPixelSterAudio(videoUrl,prompt,duration,onProgress){
+ const r=await fetch(videoUrl,{mode:"cors",cache:"no-store"});if(!r.ok)throw new Error("PixelSter MP4 недоступен для добавления звука (HTTP "+r.status+")");
+ const videoBlob=await r.blob();if(!videoBlob.size)throw new Error("PixelSter вернул пустой MP4");
+ onProgress?.(8,"получаю готовое видео");const audioBlob=synthMiyaAudio(prompt,duration);onProgress?.(16,"создаю бесплатную аудиодорожку");
+ const ffmpeg=await getMiyaFfmpeg(),{fetchFile}=window.FFmpegUtil,token="miya_"+Date.now(),input=token+".mp4",audio=token+".wav",output=token+"_sound.mp4";
+ await ffmpeg.writeFile(input,await fetchFile(videoBlob));await ffmpeg.writeFile(audio,await fetchFile(audioBlob));
+ const progress=({progress})=>onProgress?.(20+Math.round(Math.max(0,Math.min(1,progress))*78),"объединяю видео и звук");ffmpeg.on("progress",progress);
+ try{await ffmpeg.exec(["-i",input,"-i",audio,"-map","0:v:0","-map","1:a:0","-c:v","copy","-c:a","aac","-b:a","160k","-shortest","-movflags","+faststart",output])}finally{ffmpeg.off("progress",progress)}
+ const data=await ffmpeg.readFile(output);await Promise.all([ffmpeg.deleteFile(input).catch(()=>{}),ffmpeg.deleteFile(audio).catch(()=>{}),ffmpeg.deleteFile(output).catch(()=>{})]);
+ onProgress?.(100,"видео со звуком готово");return URL.createObjectURL(new Blob([data.buffer],{type:"video/mp4"}));
+}
 async function generateMotionVideo(prompt){
  const source=referenceImage||"";
  if(!source){
@@ -870,10 +916,14 @@ async function generateMotionVideo(prompt){
      data=await fallback.json().catch(()=>({}));
      if(!fallback.ok||!data?.videoUrl)throw new Error(data?.message||data?.error||lastError?.message||"PixelSter не вернул видео");
    }
-   const item=saveMedia("video",data.videoUrl,prompt,model);
-   stopProgress();removeGenerationLoading();renderLibrary("videos");
-   $("#composerStatus").textContent=model+" · видео готово · без встроенного звука";
-   toast("Видео создано");
+   $("#composerStatus").textContent=model+" · добавляю звук…";
+   const finalVideoUrl=await muxPixelSterAudio(data.videoUrl,prompt,duration,(p,label)=>{
+    const v=Math.max(4,Math.min(100,Math.round(p))),loader=$("#canvas .video-generation-loading"),ring=loader?.querySelector(".progress-circle"),percent=loader?.querySelector(".progress-percent"),bar=loader?.querySelector(".generation-progress-bar span"),copy=loader?.querySelector(".progress-model");
+    if(ring)ring.style.setProperty("--progress",v+"%");if(percent)percent.textContent=v+"%";if(bar)bar.style.width=v+"%";if(copy)copy.textContent=model+" · "+label;if($("#composerProgress"))$("#composerProgress").textContent=v+"%";
+   });
+   const item=saveMedia("video",finalVideoUrl,prompt,model+" · Video + Audio");
+   stopProgress();removeGenerationLoading();renderVideoLibrary();
+   $("#composerStatus").textContent=model+" · видео + звук готовы";$("#composerProgress").textContent="100%";toast("Видео со звуком создано");
    if(item)scrollImagesToTop();
  }catch(e){
    stopProgress();removeGenerationLoading();
