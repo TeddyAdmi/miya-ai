@@ -378,10 +378,13 @@ async function handler(req, res) {
 
     for (let endpointIndex = 0; endpointIndex < endpoints.length; endpointIndex++) {
       const endpoint = endpoints[endpointIndex];
-      const maxAttempts = isImageToImage ? 3 : 1;
+      // Text-to-image can also receive transient 5xx/429 responses from the
+      // free upstream. Retry it without changing the Flux Dev prompt/model.
+      const maxAttempts = isImageToImage ? 3 : 2;
       for (let attempt = 0; attempt < maxAttempts; attempt++) {
         const controller = new AbortController();
-        const timeout = setTimeout(() => controller.abort(), 58000);
+        const timeoutMs = isImageToImage ? 58000 : 30000;
+        const timeout = setTimeout(() => controller.abort(), timeoutMs);
 
         try {
           response = await fetch(endpoint, {
