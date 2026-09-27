@@ -189,6 +189,12 @@ async function handler(req, res) {
         }
       }
 
+      const system =
+        "Ты Miya, дружелюбный AI-помощник внутри Miya AI Studio. " +
+        "Отвечай на русском, если пользователь пишет по-русски. " +
+        "Помогай с текстами, идеями, сценариями, промптами, изображениями и видео. " +
+        "Отвечай полезно и по существу.";
+
       // Anonymous free text chat: no Google login and no user API key.
       if (!chatImageBase64) {
         try {
