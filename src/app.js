@@ -878,12 +878,10 @@ async function requestChat(){
  status.textContent="Miya думает…";
  $("#composerSend").disabled=true;
  try{
-   const response=await fetch("/api/generate",{
+   const response=await fetch("/api/chat",{
      method:"POST",
      headers:{"Content-Type":"application/json","Accept":"application/json"},
      body:JSON.stringify({
-       mode:"chat",
-       model:"gemini-3.8-flash",
        messages:chatMessages,
        imageBase64:referenceImage||""
      }),
@@ -901,7 +899,7 @@ async function requestChat(){
    chatMessages.push({role:"assistant",content:answer});
    addChatMessage(answer,false);
    saveCurrentChat();
-   status.textContent=data.model==="VisionChat"?"Miya · VisionChat":"Miya · Free Text";
+   status.textContent=data.model==="VisionSter"?"Miya · VisionChat":"Miya · Free Text";
  }catch(e){
    console.error("Miya chat failed",e);
    toast(e?.message||"Не удалось получить ответ Miya");
