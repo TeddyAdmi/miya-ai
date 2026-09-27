@@ -79,39 +79,42 @@ async function handler(req, res) {
       let freeChatProvider = "LLM Faucet";
       let lastChatStatus = null;
 
-      try {
-        const faucetResponse = await fetch("https://api.llmfaucet.dev/v1/chat/completions", {
-          method: "POST",
-          headers: {
-            "Authorization": "Bearer free",
-            "Content-Type": "application/json",
-            "Accept": "application/json"
-          },
-          body: JSON.stringify({
-            model: "auto:fast",
-            messages: llmMessages,
-            max_tokens: 2048
-          }),
-          signal: AbortSignal.timeout(22000)
-        });
+      if (!chatImageBase64) {
+        try {
+          const faucetResponse = await fetch("https://api.llmfaucet.dev/v1/chat/completions", {
+            method: "POST",
+            headers: {
+              "Authorization": "Bearer free",
+              "Content-Type": "application/json",
+              "Accept": "application/json"
+            },
+            body: JSON.stringify({
+              model: "auto:fast",
+              messages: llmMessages,
+              max_tokens: 2048
+            }),
+            signal: AbortSignal.timeout(22000)
+          });
 
-        lastChatStatus = faucetResponse.status;
-        const faucetData = await faucetResponse.json().catch(() => ({}));
-        freeChatText = String(
-          faucetData?.choices?.[0]?.message?.content ||
-          faucetData?.choices?.[0]?.text ||
-          ""
-        ).trim();
+          lastChatStatus = faucetResponse.status;
+          const faucetData = await faucetResponse.json().catch(() => ({}));
+          freeChatText = String(
+            faucetData?.choices?.[0]?.message?.content ||
+            faucetData?.choices?.[0]?.text ||
+            ""
+          ).trim();
 
-        if (freeChatText) {
-          freeChatModel = String(
-            faucetData?.model ||
-            faucetData?.choices?.[0]?.model ||
-            "auto:fast"
-          );
+          if (freeChatText) {
+            freeChatModel = String(
+              faucetData?.model ||
+              faucetData?.choices?.[0]?.model ||
+              "auto:fast"
+            );
+          }
+        } catch (error) {
+          console.warn("Miya LLM Faucet:", error?.message || error);
         }
-      } catch (error) {
-        console.warn("Miya LLM Faucet:", error?.message || error);
+
       }
 
       // Keep a second anonymous/free route as a fallback. This is text-only;
@@ -209,102 +212,7 @@ async function handler(req, res) {
         }
       }
 
-      const transcript = cleanMessages
-        .slice(-12)
-        .map(m => (m.role === "assistant" ? "Miya: " : "Пользователь: ") + m.content)
-        .join("\n");
-
-      const system =
-        "Ты Miya, дружелюбный AI-помощник внутри Miya AI Studio. " +
-        "Отвечай на русском, если пользователь пишет по-русски. " +
-        "Помогай с текстами, идеями, сценариями, промптами, изображениями и видео. " +
-        "Отвечай полезно и по существу.";
-
-      const fallbackUrl =
-        "https://text.pollinations.ai/" +
-        encodeURIComponent(system + "\n\n" + transcript) +
-        "?model=openai&private=true";
-
-      // Free chat fallback. Prefer the legacy OpenAI-compatible POST endpoint
-      // because the old GET endpoint has become unreliable. If a current
-      // Pollinations key is configured, use the current API first.
-      const pollinationsKey = process.env.POLLINATIONS_API_KEY;
-      let fallbackText = "";
-      let fallbackModel = "openai";
-      let lastChatStatus = null;
-
-      if (pollinationsKey) {
-        try {
-          const currentResponse = await fetch("https://gen.pollinations.ai/v1/chat/completions", {
-            method: "POST",
-            headers: {
-              "Authorization": "Bearer " + pollinationsKey,
-              "Content-Type": "application/json",
-              "Accept": "application/json"
-            },
-            body: JSON.stringify({
-              model: "openai",
-              messages: [
-                { role: "system", content: system },
-                ...cleanMessages.slice(-12)
-              ],
-              max_tokens: 2048
-            }),
-            signal: AbortSignal.timeout(30000)
-          });
-          lastChatStatus = currentResponse.status;
-          const currentData = await currentResponse.json().catch(() => ({}));
-          fallbackText = String(currentData?.choices?.[0]?.message?.content || "").trim();
-          if (fallbackText) fallbackModel = "openai";
-        } catch {}
-      }
-
-      if (!fallbackText) {
-        try {
-          const legacyResponse = await fetch("https://text.pollinations.ai/openai", {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-              "Accept": "application/json, text/plain"
-            },
-            body: JSON.stringify({
-              model: "openai",
-              messages: [
-                { role: "system", content: system },
-                ...cleanMessages.slice(-12)
-              ]
-            }),
-            signal: AbortSignal.timeout(30000)
-          });
-          lastChatStatus = legacyResponse.status;
-          const legacyRaw = (await legacyResponse.text()).trim();
-          try {
-            const legacyData = legacyRaw ? JSON.parse(legacyRaw) : {};
-            fallbackText = String(
-              legacyData?.choices?.[0]?.message?.content ||
-              legacyData?.text ||
-              legacyData?.response ||
-              ""
-            ).trim();
-          } catch {
-            fallbackText = legacyRaw;
-          }
-        } catch {}
-      }
-
-      if (!fallbackText) {
-        try {
-          const legacyGet = await fetch(fallbackUrl, {
-            method: "GET",
-            headers: { Accept: "text/plain" },
-            signal: AbortSignal.timeout(30000)
-          });
-          lastChatStatus = legacyGet.status;
-          fallbackText = (await legacyGet.text()).trim();
-        } catch {}
-      }
-
-      if (!fallbackText) {
+      if (!chatImageBase64) {
         return res.status(502).json({
           ok: false,
           error: "CHAT_UPSTREAM_FAILED",
@@ -313,9 +221,11 @@ async function handler(req, res) {
         });
       }
 
-      return res.status(200).json({
-        ok: true, mode: "chat", text: fallbackText,
-        model: fallbackModel, provider: "Free Text", usage: null
+      return res.status(502).json({
+        ok: false,
+        error: "VISION_UPSTREAM_FAILED",
+        message: "Сервис анализа изображения временно недоступен.",
+        upstreamStatus: null
       });
     }
 
