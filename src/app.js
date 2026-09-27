@@ -4,7 +4,8 @@ const modes={
  video:{title:"Видео",eyebrow:"VIDEO STUDIO · LTX-2.3",subtitle:"Создавай короткие видео по сцене, действиям и движению — со звуком.",placeholder:"Опиши сцену, действия персонажей, движение камеры и атмосферу...",send:"Создать видео",status:"LTX-2.3 Distilled · Free ZeroGPU"}
 };
 const $=s=>document.querySelector(s);
-let mode="chat",referenceImage=null,chatAttachmentFile=null,chatMessages=[];\nlet videoGenerationBusy=false;
+let mode="chat",referenceImage=null,chatAttachmentFile=null,chatMessages=[];
+let videoGenerationBusy=false;
 const CHAT_KEY="miyaChats";
 let chatMenuSuppressed=false;
 function getChats(){
