@@ -754,7 +754,7 @@ async function generateImage(prompt){
   }
   const requestedCount=1; // One image per request keeps the free upstream load predictable.
   const body=JSON.stringify({
-   mode:"image",provider:"legacy-flux",prompt,model:modelName,
+   mode:"image",provider:"ahm7",prompt,model:modelName,
    ratio:$("#composerRatio").value,outputFormat:"png",copies:requestedCount,
    options:referenceImage?payload:{}
   });
@@ -791,6 +791,8 @@ async function generateImage(prompt){
     if(xhr.status>=200&&xhr.status<300&&result.imageUrl)resolve(result);
     else{
       let detail=result.message||result.error||("Создание не выполнена (HTTP "+xhr.status+")");
+      // Never expose obsolete Vheer/provider messages from stale upstream responses.
+      if(/vheer/i.test(String(detail))) detail="AHM7/PixelSter временно недоступен. Попробуйте ещё раз.";
       if(result.upstreamBody){
        const rawUpstream=String(result.upstreamBody).replace(/\\s+/g," ").trim();
        if(rawUpstream) detail += " · "+rawUpstream.slice(0,220);
