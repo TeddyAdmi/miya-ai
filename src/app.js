@@ -925,50 +925,11 @@ async function makePixelMotionAudio(duration,prompt){
   return audioBufferToWavBlob(rendered);
 }
 
-async function getPixelAudioFfmpeg(){
-  if(pixelAudioFfmpeg?.loaded)return pixelAudioFfmpeg;
-  if(pixelAudioFfmpegPromise)return pixelAudioFfmpegPromise;
-  pixelAudioFfmpegPromise=(async()=>{
-    const [{FFmpeg},{fetchFile,toBlobURL}]=await Promise.all([
-      import("https://cdn.jsdelivr.net/npm/@ffmpeg/ffmpeg@0.12.15/dist/esm/index.js"),
-      import("https://cdn.jsdelivr.net/npm/@ffmpeg/util@0.12.2/dist/esm/index.js")
-    ]);
-    const ffmpeg=new FFmpeg();
-    const base="https://cdn.jsdelivr.net/npm/@ffmpeg/core@0.12.10/dist/esm";
-    await ffmpeg.load({
-      coreURL:await toBlobURL(base+"/ffmpeg-core.js","text/javascript"),
-      wasmURL:await toBlobURL(base+"/ffmpeg-core.wasm","application/wasm")
-    });
-    pixelAudioFfmpeg=ffmpeg;
-    return ffmpeg;
-  })();
-  try{return await pixelAudioFfmpegPromise}catch(e){pixelAudioFfmpegPromise=null;throw e}
-}
-
-async function muxPixelSterAudio(videoUrl,prompt,duration,audioBase64="",audioMime="audio/wav",onProgress=()=>{}){
-  onProgress(93,"подготавливаю звук…");
-  const response=await fetch(videoUrl,{mode:"cors",cache:"no-store"});
-  if(!response.ok)throw new Error("PixelSter video cannot be downloaded for audio muxing (HTTP "+response.status+")");
-  const videoBlob=await response.blob();
-  let audioBlob;
-  if(audioBase64){
-    const binary=atob(audioBase64);
-    const bytes=new Uint8Array(binary.length);
-    for(let i=0;i<binary.length;i++)bytes[i]=binary.charCodeAt(i);
-    audioBlob=new Blob([bytes],{type:audioMime||"audio/wav"});
-  }else{
-    audioBlob=await makePixelMotionAudio(duration,prompt);
-  }
-  onProgress(95,"объединяю видео и звук…");
-  const ffmpeg=await getPixelAudioFfmpeg();
-  const util=await import("https://cdn.jsdelivr.net/npm/@ffmpeg/util@0.12.2/dist/esm/index.js");
-  await ffmpeg.writeFile("pixel-input.mp4",await util.fetchFile(videoBlob));
-  await ffmpeg.writeFile("pixel-audio.wav",await util.fetchFile(audioBlob));
-  await ffmpeg.exec(["-i","pixel-input.mp4","-i","pixel-audio.wav","-map","0:v:0","-map","1:a:0","-c:v","copy","-c:a","aac","-b:a","128k","-shortest","pixel-output.mp4"]);
-  const out=await ffmpeg.readFile("pixel-output.mp4");
-  try{await ffmpeg.deleteFile("pixel-input.mp4");await ffmpeg.deleteFile("pixel-audio.wav");await ffmpeg.deleteFile("pixel-output.mp4")}catch{}
-  onProgress(99,"звук готов");
-  return URL.createObjectURL(new Blob([out.buffer],{type:"video/mp4"}));
+async function muxPixelSterAudio(videoUrl,onProgress=()=>{}){
+  // Keep PixelSter's native MP4 as the playable result. Browser-side FFmpeg
+  // required an external jsDelivr worker that Firefox blocks by origin policy.
+  onProgress(94,"видео готово…");
+  return String(videoUrl||"");
 }
 
 async function generateMotionVideo(prompt){
@@ -996,47 +957,26 @@ async function generateMotionVideo(prompt){
      "Make every action clearly visible, physically coherent and in the exact written order.",
      "USER MOTION REQUEST:",
      prompt
-   ].join("\n")
-   const payload={prompt:motionPrompt,ratio,duration,imageBase64:source.replace(/^data:image\/[^;]+;base64,/i,"")};
-   const fallback=await fetch("/api/generate",{
+   ].join("\n");
+   updateVideoProgress(model,8,"отправляю запрос…");
+   const response=await fetch("/api/generate",{
      method:"POST",
      headers:{"Content-Type":"application/json","Accept":"application/json"},
      body:JSON.stringify({mode:"video",provider:"pixelster-motion",model,prompt:motionPrompt,ratio,duration,options:{imageBase64:source}}),
      signal:AbortSignal.timeout(115000)
    });
-   const data=await fallback.json().catch(()=>({}));
-   if(!fallback.ok||!data?.videoUrl)throw new Error(data?.message||data?.error||"PixelSter не вернул видео");
-   let audioData=null;
-   try{
-     updateVideoProgress(model,82,"генерирую звук…");
-     const audioResponse=await fetch("/api/generate",{
-       method:"POST",
-       headers:{"Content-Type":"application/json","Accept":"application/json"},
-       body:JSON.stringify({mode:"pixel-audio",prompt,duration}),
-       signal:AbortSignal.timeout(50000)
-     });
-     const audioJson=await audioResponse.json().catch(()=>({}));
-     if(audioResponse.ok&&audioJson?.audioBase64) audioData=audioJson;
-   }catch(audioRequestError){
-     console.warn("PixelSter sound request failed",audioRequestError);
-   }
-
-   let finalVideoUrl=String(data.videoUrl);
-   try{
-     updateVideoProgress(model,92,"добавляю звук…");
-     finalVideoUrl=await muxPixelSterAudio(finalVideoUrl,prompt,duration,data?.audioBase64||"",data?.audioMime||"audio/wav",(p,label)=>updateVideoProgress(model,p,label));
-   }catch(audioError){
-     console.error("PixelSter audio mux failed",audioError);
-     finalVideoUrl=String(data.videoUrl);
-     toast("PixelSter: видео готово, звук добавить не удалось");
-   }
+   const data=await response.json().catch(()=>({}));
+   if(!response.ok||!data?.videoUrl)throw new Error(data?.message||data?.error||"PixelSter не вернул видео");
+   const sourceVideoUrl=String(data.videoUrl);
+   updateVideoProgress(model,92,"проверяю видео…");
+   const finalVideoUrl=await muxPixelSterAudio(sourceVideoUrl,(p,label)=>updateVideoProgress(model,p,label));
    stopProgress();
-   updateVideoProgress(model,100,finalVideoUrl===String(data.videoUrl)?"видео готово":"видео + звук готовы");
-   const item=saveMedia("video",finalVideoUrl,prompt,model+(finalVideoUrl!==String(data.videoUrl)?" · Video + Audio":""));
+   updateVideoProgress(model,100,"видео готово");
+   const item=saveMedia("video",finalVideoUrl,prompt,model);
    removeGenerationLoading();
    renderVideoLibrary();
    if(item)scrollImagesToTop();
-   toast(finalVideoUrl!==String(data.videoUrl)?"PixelSter: видео + звук созданы":"PixelSter: видео создано");
+   toast("PixelSter: видео создано");
  }catch(e){
    stopProgress();removeGenerationLoading();
    console.error("PixelSter Motion Synthesis failed",e);
