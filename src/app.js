@@ -929,16 +929,18 @@ async function getPixelAudioFfmpeg(){
   if(pixelAudioFfmpeg?.loaded)return pixelAudioFfmpeg;
   if(pixelAudioFfmpegPromise)return pixelAudioFfmpegPromise;
   pixelAudioFfmpegPromise=(async()=>{
-    const FFmpegClass=window.FFmpegWASM?.FFmpeg;
-    if(!FFmpegClass)throw new Error("FFmpeg browser runtime is unavailable");
-    const util=await import("https://cdn.jsdelivr.net/npm/@ffmpeg/util@0.12.2/dist/esm/index.js");
-    const ffmpeg=new FFmpegClass();
-    const base=window.__MIYA_FFMPEG_CORE_BASE||"https://cdn.jsdelivr.net/npm/@ffmpeg/core@0.12.10/dist/umd";
+    const [{FFmpeg},{fetchFile,toBlobURL}]=await Promise.all([
+      import("https://cdn.jsdelivr.net/npm/@ffmpeg/ffmpeg@0.12.15/dist/esm/index.js"),
+      import("https://cdn.jsdelivr.net/npm/@ffmpeg/util@0.12.2/dist/esm/index.js")
+    ]);
+    const ffmpeg=new FFmpeg();
+    const base="https://cdn.jsdelivr.net/npm/@ffmpeg/core@0.12.10/dist/esm";
     await ffmpeg.load({
-      coreURL:await util.toBlobURL(base+"/ffmpeg-core.js","text/javascript"),
-      wasmURL:await util.toBlobURL(base+"/ffmpeg-core.wasm","application/wasm")
+      coreURL:await toBlobURL(base+"/ffmpeg-core.js","text/javascript"),
+      wasmURL:await toBlobURL(base+"/ffmpeg-core.wasm","application/wasm")
     });
-    pixelAudioFfmpeg=ffmpeg;return ffmpeg;
+    pixelAudioFfmpeg=ffmpeg;
+    return ffmpeg;
   })();
   try{return await pixelAudioFfmpegPromise}catch(e){pixelAudioFfmpegPromise=null;throw e}
 }
@@ -982,31 +984,19 @@ async function generateMotionVideo(prompt){
  const stopProgress=startVideoProgress(model);
  $("#composerStatus").textContent=model+" · генерация…";
  try{
-   const durationText=String($("#videoDuration")?.value||"5 сек");
+   const durationText=String($("#videoDuration")?.value||"10 сек");
    const duration=Math.max(5,Math.min(20,Number(durationText.match(/\d+/)?.[0]||5)));
    const ratioValue=String($("#videoRatio")?.value||"auto");
    const ratio=["auto","9:16","16:9"].includes(ratioValue)?ratioValue:"auto";
    const motionPrompt=[
-     "IMAGE-TO-VIDEO MOTION SYNTHESIS. FOLLOW THE USER'S MOTION REQUEST EXACTLY.",
-     "The supplied image is the visual starting point. Keep the original subject identity and environment.",
-     "If the USER MOTION REQUEST explicitly names another animal or object (for example an eagle), that requested subject IS allowed and must be introduced only as described. Do not omit an explicitly requested subject.",
-     "Do not invent humans, people, assistants, bystanders, handlers, riders or photographers unless the user explicitly requests a human.",
-     "Do not add any other unrequested characters or animals.",
-     "The requested action has higher priority than generic cinematic motion. Do not substitute zooming, panning, idle movement or camera shake for the requested action.",
-     "Execute multiple actions in the exact written order as one continuous timeline.",
-     "Start the requested action immediately and make the action unmistakably visible.",
-     "If the user says an animal runs away, the SAME animal must visibly run away; do not replace it with another subject.",
-     "If the user says an animal growls/roars/turns/looks/attacks, animate that SAME animal's body, head, mouth and movement.",
-     "If the user requests a roar, growl, bark or other sound, preserve that sound request for the final audio track and do not replace it with music.",
-     "ABSOLUTELY NO UNREQUESTED HUMANS. If the user did not request a human, there must be zero humans, silhouettes, reflections, shadows, handlers or bystanders.",
-     "Explicitly requested animals such as an eagle are not unrequested characters and must be preserved.",
-
-     "Preserve identity, species, face, anatomy, clothing/fur, scale, lighting and the original environment unless the user explicitly requests a change.",
-     "Keep the camera stable unless the user explicitly requests camera movement.",
-     "Do not add water, rain, droplets, smoke, fire, particles, extra people, animals, vehicles, props, text or environmental effects unless explicitly requested.",
+     "Create one continuous photorealistic image-to-video shot from the supplied image.",
+     "Preserve the original subject, anatomy, identity, environment and visual style.",
+     "Follow the user's action literally and chronologically. Every explicitly named animal or object is intentional and must appear.",
+     "Do not replace subject action with camera movement. Do not add humans or other unrequested characters.",
+     "Make every action clearly visible, physically coherent and in the exact written order.",
      "USER MOTION REQUEST:",
      prompt
-   ].join("\n");
+   ].join("\n")
    const payload={prompt:motionPrompt,ratio,duration,imageBase64:source.replace(/^data:image\/[^;]+;base64,/i,"")};
    const fallback=await fetch("/api/generate",{
      method:"POST",
@@ -1016,13 +1006,29 @@ async function generateMotionVideo(prompt){
    });
    const data=await fallback.json().catch(()=>({}));
    if(!fallback.ok||!data?.videoUrl)throw new Error(data?.message||data?.error||"PixelSter не вернул видео");
+   let audioData=null;
+   try{
+     updateVideoProgress(model,82,"генерирую звук…");
+     const audioResponse=await fetch("/api/generate",{
+       method:"POST",
+       headers:{"Content-Type":"application/json","Accept":"application/json"},
+       body:JSON.stringify({mode:"pixel-audio",prompt,duration}),
+       signal:AbortSignal.timeout(50000)
+     });
+     const audioJson=await audioResponse.json().catch(()=>({}));
+     if(audioResponse.ok&&audioJson?.audioBase64) audioData=audioJson;
+   }catch(audioRequestError){
+     console.warn("PixelSter sound request failed",audioRequestError);
+   }
+
    let finalVideoUrl=String(data.videoUrl);
    try{
      updateVideoProgress(model,92,"добавляю звук…");
      finalVideoUrl=await muxPixelSterAudio(finalVideoUrl,prompt,duration,data?.audioBase64||"",data?.audioMime||"audio/wav",(p,label)=>updateVideoProgress(model,p,label));
    }catch(audioError){
      console.error("PixelSter audio mux failed",audioError);
-     throw new Error("PixelSter видео создано, но звук не удалось добавить: "+(audioError?.message||audioError));
+     finalVideoUrl=String(data.videoUrl);
+     toast("PixelSter: видео готово, звук добавить не удалось");
    }
    stopProgress();
    updateVideoProgress(model,100,finalVideoUrl===String(data.videoUrl)?"видео готово":"видео + звук готовы");
@@ -1052,22 +1058,13 @@ async function generateVideo(prompt){
    const ratioValue=["auto","9:16","16:9","1:1"].includes(ratio)?ratio:"16:9";
    const effectiveRatio=ratioValue==="auto"?(source?"16:9":"16:9"):ratioValue;
    const actionPrompt=[
-     "Create one continuous cinematic shot from the user's request.",
-     "Treat every explicitly named animal/object as intentional. Do not remove an explicitly requested eagle, lion or other subject.",
-     "Execute every requested action literally, visibly and in the exact order written. Do not blend separate actions together.",
-     "Use clear temporal beats: establish the starting state, perform action 1, then action 2, then action 3. Do not jump directly to the ending state.",
-     "Start the first requested action immediately; do not replace subject movement with camera movement.",
-     "Preserve requested cause-and-effect: if one subject grabs another, show approach, contact, grab, impact, separation and final movement as separate visible beats.",
-     "Preserve the reference subject identity, face, clothing, anatomy, scale and starting composition unless the user explicitly asks for a change.",
-     "Spatial instructions are literal: 'on the pillow' means physically resting on the pillow; 'on the table' means physically on the table; 'inside' means inside; 'behind' means behind; 'next to' means beside; 'left corner' and 'right corner' mean the visible composition corners.",
-     "When a specific surface is named, identify that exact surface and place the requested object relative to it. Never move it to the center just for convenience.",
-     "If a subject travels or the user specifies a new distance/location, visibly change the surrounding environment consistently while preserving the subject.",
-     "Keep motion physically coherent and continuous. No teleporting, sliding, frozen subjects, accidental extra characters or duplicate objects.",
-     "Do not add water, rain, droplets, sand, smoke, fog, fire, dust, particles, extra people, vehicles, props or text unless explicitly requested.",
-     "Use natural synchronized audio generated by LTX-2.3 when available: dialogue, footsteps, impacts, ambience and requested music should match the visible action.",
-     "USER REQUEST:",
+     "Photorealistic cinematic action shot. Follow the user's description literally and chronologically.",
+     "Preserve every named subject, species, anatomy and environment. Show each action as a distinct visible beat with real cause and effect.",
+     "Use natural realistic physics, sharp fine detail, coherent motion and cinematic camera movement. The subject action has priority over camera movement.",
+     "Do not invent humans, animals, objects or events not requested. No text or subtitles.",
+     "USER SHOT DESCRIPTION:",
      prompt
-   ].join("\n");
+   ].join("\n")
    updateVideoProgress("LTX-2.3 Distilled",8,"отправляю запрос…");
    const response=await fetch("/api/generate",{
      method:"POST",
@@ -1098,7 +1095,7 @@ async function generateVideo(prompt){
 
 function restoreReferenceImage(){try{referenceImage=referenceImage||sessionStorage.getItem("miyaReferenceImage")||""}catch{};setComposerAttachment(referenceImage||"")}
 function setVideoRatioDefault(){
- const el=$("#videoRatio"); if(el) el.value="16:9";
+ const el=$("#videoRatio"); if(el) el.value="16:9"; const d=$("#videoDuration"); if(d) d.value="10 сек";
 }
 function setMode(next,render=true){
  const changedSection=next!==mode;
@@ -1146,66 +1143,6 @@ if(chatMenuToggle){
 }
 document.querySelectorAll("[data-mode]").forEach(b=>b.addEventListener("click",()=>setMode(b.dataset.mode)));
 $("#composerInput").addEventListener("input",syncInput);
-function closePromptContextMenu(){
-  $("#promptContextMenu")?.remove();
-}
-async function openPromptContextMenu(e){
-  e.preventDefault();
-  e.stopPropagation();
-  const input=e.currentTarget;
-  let promptClipboardText="";
-  try{promptClipboardText=await navigator.clipboard.readText()}catch{}
-
-  input.focus({preventScroll:true});
-  const hasSelection=input.selectionStart!==input.selectionEnd;
-  if(!hasSelection&&typeof e.clientX==="number"&&typeof e.clientY==="number"){
-    try{
-      const pos=document.caretPositionFromPoint?.(e.clientX,e.clientY);
-      if(pos?.offsetNode===input)input.setSelectionRange(pos.offset,pos.offset);
-    }catch{}
-  }
-  closePromptContextMenu();
-  const menu=document.createElement("div");
-  menu.id="promptContextMenu";
-  menu.className="prompt-context-menu";
-  const add=(label,disabled,action)=>{
-    const b=document.createElement("button");
-    b.type="button";b.textContent=label;b.disabled=disabled;
-    b.onclick=async ev=>{
-      ev.preventDefault();ev.stopPropagation();
-      await action();closePromptContextMenu();input.focus();
-    };
-    menu.appendChild(b);
-  };
-  const selected=input.selectionStart!==input.selectionEnd;
-  add("Вырезать",!selected,async()=>{document.execCommand("cut")});
-  add("Копировать",!selected,async()=>{
-    const value=input.value.slice(input.selectionStart,input.selectionEnd);
-    try{await navigator.clipboard.writeText(value)}catch{document.execCommand("copy")}
-  });
-  add("Вставить",false,async()=>{
-    let value=promptClipboardText;
-    if(!value){try{value=await navigator.clipboard.readText()}catch{}}
-    if(value){
-      input.setRangeText(value,input.selectionStart,input.selectionEnd,"end");
-      syncInput();
-    }else toast("Firefox не дал доступ к буферу обмена");
-  });
-  add("Удалить",!selected,async()=>{
-    input.setRangeText("",input.selectionStart,input.selectionEnd,"start");
-    syncInput();
-  });
-  add("Выделить всё",!input.value,async()=>input.select());
-  document.body.appendChild(menu);
-  const pad=8,rect=menu.getBoundingClientRect();
-  menu.style.left=Math.min(window.innerWidth-rect.width-pad,Math.max(pad,e.clientX))+"px";
-  menu.style.top=Math.min(window.innerHeight-rect.height-pad,Math.max(pad,e.clientY))+"px";
-  setTimeout(()=>{
-    document.addEventListener("mousedown",closePromptContextMenu,{once:true,capture:true});
-    document.addEventListener("scroll",closePromptContextMenu,{once:true,capture:true});
-  },0);
-}
-$("#composerInput").addEventListener("contextmenu",openPromptContextMenu);
 $("#composerInput").addEventListener("keydown",e=>{if(e.key==="Enter"&&!e.shiftKey){e.preventDefault();$("#composerSend").click()}});
 $("#composerSend").addEventListener("click",async()=>{
  const value=$("#composerInput").value.trim();
