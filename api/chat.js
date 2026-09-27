@@ -154,9 +154,6 @@ async function handler(req, res) {
       }
     }
 
-    // Prefer fast, explicit LLM7 models instead of "default": the default
-    // route is dynamically randomized and can land on a slow/degraded model.
-    // LLM7 currently reports healthy fast traffic for these models.
     async function firstSuccessful(calls) {
       const wrapped = calls.map(call =>
         call().then(result => result?.ok ? result : Promise.reject(result))
@@ -168,12 +165,12 @@ async function handler(req, res) {
       }
     }
 
-    // Use provider routing selectors instead of hard-coded model IDs.
-    // This keeps the free chat path working when an individual model is
-    // unavailable or temporarily requires authenticated access.
+    // Prefer currently active LLM7 models instead of routing selectors.
+    // These explicit models are visible in LLM7's live health data and avoid
+    // selector/auth routing changes. LLM Faucet remains the keyless fallback.
     const firstWave = [
-      () => callLlm7("fast"),
-      () => callLlm7("default"),
+      () => callLlm7("mistral-Nemo-Instruct-2407"),
+      () => callLlm7("codestral-latest"),
       () => callFaucet("auto:fast")
     ];
 
@@ -186,7 +183,7 @@ async function handler(req, res) {
     }
 
     const secondWave = [
-      () => callLlm7("default"),
+      () => callLlm7("mistral-Nemo-Instruct-2407"),
       () => callFaucet("auto"),
       () => callFaucet("auto:smart")
     ];
