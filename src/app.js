@@ -1199,6 +1199,64 @@ function formatCooldown(until){
  return h+":"+String(m).padStart(2,"0")+":"+String(s).padStart(2,"0");
 }
 
+async function generateMiniMaxVideo(prompt){
+ if(videoGenerationBusy){
+   toast("Видео уже создаётся. Дождитесь завершения текущего запроса.");
+   return;
+ }
+ videoGenerationBusy=true;
+ showLoading();
+ $("#composerSend").disabled=true;
+ const model="MiniMax H3";
+ const stopProgress=startVideoProgress(model);
+ try{
+   const durationText=String($("#videoDuration")?.value||"5 сек");
+   const duration=Math.max(5,Math.min(14,Number(durationText.match(/\\d+/)?.[0]||5)));
+   const ratioValue=String($("#videoRatio")?.value||"16:9");
+   const canvas=ratioValue==="9:16"?"544x960 · 9:16 fast"
+     :ratioValue==="1:1"?"544x544 · 1:1 fast"
+     :"960x544 · 16:9 fast";
+   updateVideoProgress(model,1,"подключение к MiniMax H3…");
+   const response=await fetch("/api/generate",{
+     method:"POST",
+     headers:{"Content-Type":"application/json","Accept":"application/json"},
+     body:JSON.stringify({
+       mode:"minimax-h3",
+       prompt,
+       imageBase64:referenceImage||"",
+       duration,
+       canvas,
+       steps:28
+     }),
+     signal:AbortSignal.timeout(120000)
+   });
+   const raw=await response.text();
+   let data={};
+   try{data=raw?JSON.parse(raw):{}}catch{}
+   if(!response.ok||!data?.videoUrl){
+     throw new Error(String(data?.message||data?.error||raw||"MiniMax H3 не вернул видео").slice(0,500));
+   }
+   updateVideoProgress(model,99,"видео получено…");
+   const item=saveMedia("video",data.videoUrl,prompt,model+" · Video + Audio");
+   stopProgress();
+   updateVideoProgress(model,100,"видео готово");
+   removeGenerationLoading();
+   renderVideoLibrary();
+   if(item)scrollImagesToTop();
+   toast("MiniMax H3: видео создано");
+ }catch(e){
+   stopProgress();
+   removeGenerationLoading();
+   $("#composerProgress").textContent="";
+   const msg=String(e?.message||"");
+   $("#composerStatus").textContent=model+" · ошибка";
+   toast("MiniMax H3: "+(msg||"не удалось создать видео"));
+ }finally{
+   videoGenerationBusy=false;
+   $("#composerSend").disabled=false;
+ }
+}
+
 async function generateVideo(prompt){
  refreshLtxQuotaState();
  const selectedModel=String($("#videoModel")?.value||"LTX-2.3 Distilled");
@@ -1212,6 +1270,7 @@ async function generateVideo(prompt){
  }
  if(selectedModel==="Wan 2.2 Fast") return generateWanVideo(prompt);
  if(selectedModel==="PixelSter Motion Synthesis") return generateMotionVideo(prompt);
+ if(selectedModel==="MiniMax H3") return generateMiniMaxVideo(prompt);
  if(videoGenerationBusy){
    toast("Видео уже создаётся. Дождитесь завершения текущего запроса.");
    return;
