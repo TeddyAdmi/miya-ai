@@ -261,142 +261,90 @@ async function handler(req, res) {
 
     if (body.mode === "pixel-audio") {
       const prompt = typeof body.prompt === "string" ? body.prompt.trim() : "";
-      if (!prompt) return res.status(400).json({ok:false,error:"PROMPT_REQUIRED"});
-      const requestedDuration = Number(body.duration ?? 10);
-      const duration = Number.isFinite(requestedDuration) ? Math.max(5, Math.min(20, Math.round(requestedDuration))) : 10;
-      const generatedAudio = await generatePixelSound(prompt, duration);
-      if (!generatedAudio) {
-        return res.status(502).json({ok:false,error:"PIXEL_AUDIO_FAILED",message:"TangoFlux не вернул звуковую дорожку. Повторите генерацию звука."});
-      }
-      return res.status(200).json({
-        ok:true, mode:"pixel-audio", provider:"TangoFlux",
-        audioBase64:generatedAudio.audioBase64, audioMime:generatedAudio.audioMime,
-        duration
+    if (!prompt) return res.status(400).json({ ok: false, error: "PROMPT_REQUIRED" });
+
+    const ratio = typeof body.ratio === "string" ? body.ratio : "1:1";
+    const requestedModel = typeof body.model === "string" ? body.model.trim() : "";
+    const options = body.options && typeof body.options === "object" ? body.options : {};
+
+    const imageUrl = typeof options.imageUrl === "string" ? options.imageUrl.trim() : "";
+    const imageBase64 = typeof options.imageBase64 === "string" ? options.imageBase64.trim() : "";
+
+    const wantsKontext = /kontext/i.test(requestedModel);
+    const isImageToImage = wantsKontext && Boolean(imageUrl || imageBase64);
+
+    if (wantsKontext && !isImageToImage) {
+      return res.status(400).json({
+        ok: false,
+        error: "KONTEXT_SOURCE_REQUIRED",
+        message: "Для Flux Kontext Dev нужно загрузить исходное изображение."
       });
     }
 
-    if (body.mode === "video" && /ltx/i.test(String(body.provider || body.model || ""))) {
-      const prompt = typeof body.prompt === "string" ? body.prompt.trim() : "";
-      if (!prompt) return res.status(400).json({ ok:false, error:"PROMPT_REQUIRED" });
-      const options = body.options && typeof body.options === "object" ? body.options : {};
-      const imageBase64 = typeof options.imageBase64 === "string" ? options.imageBase64.trim() : "";
-      const ratioValue = typeof body.ratio === "string" ? body.ratio : "16:9";
-      const ratio = ["auto","9:16","16:9","1:1"].includes(ratioValue) ? ratioValue : "16:9";
-      const requestedDuration = Number(body.duration ?? 5);
-      const duration = Number.isFinite(requestedDuration) ? Math.max(1, Math.min(10, requestedDuration)) : 3;
-      try {
-        const { Client, handle_file } = await import("@gradio/client");
-        const client = await Promise.race([
-          Client.connect("Lightricks/LTX-2-3"),
-          new Promise((_, reject) => setTimeout(() => reject(new Error("LTX Space connection timeout")), 15000))
-        ]);
-        // Current LTX-2.3 Space signature:
-        // image, prompt, duration, enhance_prompt, seed, randomize_seed, height, width.
-        // Keep prompt enhancement OFF so the user's exact motion instructions remain authoritative.
-        let inputImage = null;
-        if (imageBase64) {
-          const raw = imageBase64.replace(/^data:image\/[^;]+;base64,/i, "").replace(/^base64,/i, "").replace(/\s+/g, "");
-          if (!raw || raw.length < 100) return res.status(400).json({ok:false, error:"INVALID_VIDEO_SOURCE", message:"Исходное изображение для LTX-2.3 некорректно."});
-          const approxBytes = Math.ceil(raw.length * 3 / 4);
-          if (approxBytes > 3.5 * 1024 * 1024) return res.status(413).json({ok:false, error:"VIDEO_SOURCE_TOO_LARGE", message:"Исходное изображение слишком большое. Максимум 3.5 MB."});
-          inputImage = handle_file(new Blob([Buffer.from(raw, "base64")], { type:"image/png" }));
-        }
-
-        // LTX-2.3 Distilled ZeroGPU exposes the exact generate_video signature
-        // used here. Keep the dimensions explicit so the selected ratio is not
-        // silently replaced by the Space's UI preset.
-        let width=1536,height=1024;
-        if(ratio==="9:16"){width=1024;height=1536}
-        else if(ratio==="1:1"){width=1024;height=1024}
-
-        const highFidelityPrompt = String(prompt || "").trim();
-        const enhancePrompt = false;
-        const randomizeSeed = true;
-        const seed = Math.floor(Math.random()*2147483647);
-
-        const result=await client.predict("/generate_video",[
-          inputImage,
-          highFidelityPrompt,
-          duration,
-          enhancePrompt,
-          seed,
-          randomizeSeed,
-          height,
-          width
-        ]);
-
-        // Gradio's FileData shape can vary between Space/SDK versions.
-        // Walk the returned object instead of assuming data[0].url.
-        const findVideoUrl=(value,seen=new Set())=>{
-          if(value==null)return "";
-          if(typeof value==="string"){
-            return /^https?:\/\//i.test(value) ? value : "";
-          }
-          if(typeof value!=="object"||seen.has(value))return "";
-          seen.add(value);
-          const preferred=["url","videoUrl","video_url","path","file","data","value"];
-          for(const key of preferred){
-            const found=findVideoUrl(value[key],seen);
-            if(found)return found;
-          }
-          for(const key of Object.keys(value)){
-            const found=findVideoUrl(value[key],seen);
-            if(found)return found;
-          }
-          return "";
-        };
-        const videoUrl=findVideoUrl(result?.data)||findVideoUrl(result);
-        if(!videoUrl) {
-          console.error("LTX-2.3 returned no public video URL",result);
-          return res.status(502).json({ok:false,error:"LTX_VIDEO_URL_MISSING",message:"LTX-2.3 не вернул доступный MP4.",providerResponse:result});
-        }
-        return res.status(200).json({
-          ok:true,mode:"video",status:"completed",provider:"Lightricks",
-          model:"LTX-2.3 Distilled · Video + Audio",videoUrl,
-          meta:{transport:"server-gradio",free:true,synchronizedAudio:true,duration,ratio,width,height,highResolution:true,enhancePrompt:false,randomizeSeed:true}
-        });
-      } catch(error) {
-        console.error("Miya LTX server:",error);
-        return res.status(502).json({ok:false,error:"LTX_UPSTREAM_FAILED",message:"LTX-2.3 не завершил генерацию. Генерация сброшена — можно сразу повторить.",detail:error?.message||"Gradio request failed"});
-      }
-    }
-
-    const prompt = typeof body.prompt === "string" ? body.prompt.trim() : "";
-    if (!prompt) {
-      return res.status(400).json({ ok: false, error: "PROMPT_REQUIRED" });
-    }
-
-    const ratio = typeof body.ratio === "string" ? body.ratio : "1:1";
-    const options =
-      body.options && typeof body.options === "object" ? body.options : {};
-
-    const imageUrl =
-      typeof options.imageUrl === "string" ? options.imageUrl.trim() : "";
-    const imageBase64 =
-      typeof options.imageBase64 === "string" ? options.imageBase64.trim() : "";
-
-    const isImageToImage = Boolean(imageUrl || imageBase64);
     const endpointPath = isImageToImage ? "/api/pti" : "/api/tti";
-    const endpoint = "https://ahm7xmakki.com" + endpointPath;
     const endpoints = [
-      endpoint,
+      "https://ahm7xmakki.com" + endpointPath,
       "https://www.ahm7xmakki.com" + endpointPath
     ];
 
+    const requestedCopies = Number(body.copies ?? body.count ?? 1);
+    const copies = Number.isFinite(requestedCopies)
+      ? Math.max(1, Math.min(4, Math.round(requestedCopies)))
+      : 1;
+
     const payload = {
       prompt,
-      ratio: isImageToImage && ratio === "1:1" ? "auto" : ratio
+      ratio: isImageToImage && ratio === "1:1" ? "auto" : ratio,
+      ...(copies > 1 && !isImageToImage ? { copies, count: copies } : {})
     };
 
-    if (imageUrl) payload.imageUrl = imageUrl;
+    if (imageUrl) {
+      const sourceResponse = await fetch(imageUrl, {
+        method: "GET",
+        headers: { Accept: "image/*" }
+      });
+
+      if (!sourceResponse.ok) {
+        return res.status(400).json({
+          ok: false,
+          error: "SOURCE_IMAGE_FETCH_FAILED",
+          message: "Не удалось получить исходное изображение для редактирования (HTTP " + sourceResponse.status + ")."
+        });
+      }
+
+      const sourceBuffer = Buffer.from(await sourceResponse.arrayBuffer());
+      if (sourceBuffer.length > 3.5 * 1024 * 1024) {
+        return res.status(413).json({
+          ok: false,
+          error: "SOURCE_IMAGE_TOO_LARGE",
+          message: "Исходное изображение слишком большое. PixelSter принимает изображения до 3.5 MB."
+        });
+      }
+
+      const contentType = sourceResponse.headers.get("content-type") || "image/jpeg";
+      const mime = /^image\/(jpeg|png|webp)$/i.test(contentType)
+        ? contentType.split(";")[0]
+        : "image/jpeg";
+
+      payload.imageBase64 = "data:" + mime + ";base64," + sourceBuffer.toString("base64");
+    }
+
     if (imageBase64) payload.imageBase64 = imageBase64;
 
-    if (isImageToImage && imageBase64) {
-      const match = imageBase64.match(/^data:image\/[^;]+;base64,(.+)$/i);
-      if (!match) {
-        return res.status(400).json({ ok: false, error: "INVALID_IMAGE_BASE64" });
+    if (isImageToImage) {
+      const sourceData = payload.imageBase64 || "";
+      const match = sourceData.match(/^data:image\/[^;]+;base64,(.+)$/i);
+      const rawBase64 = match ? match[1].replace(/\s+/g,"") : sourceData.replace(/^base64,/i,"").replace(/\s+/g,"");
+
+      if (!rawBase64 || rawBase64.length < 100) {
+        return res.status(400).json({
+          ok: false,
+          error: "INVALID_IMAGE_BASE64",
+          message: "PixelSter не получил корректное исходное изображение."
+        });
       }
-      const approxBytes = Math.ceil(match[1].length * 3 / 4);
+
+      const approxBytes = Math.ceil(rawBase64.length * 3 / 4);
       if (approxBytes > 3.5 * 1024 * 1024) {
         return res.status(413).json({
           ok: false,
@@ -404,70 +352,109 @@ async function handler(req, res) {
           message: "Исходное изображение слишком большое. PixelSter принимает изображения до 3.5 MB."
         });
       }
+
+      // Proven PixelSter /pti contract: raw base64, without the data-URI prefix.
+      payload.imageBase64 = rawBase64;
+      payload.prompt = String(prompt).trim() + "\n\nSTRICT IMAGE EDIT:\n- Use the supplied image as the exact source image.\n- Preserve the original subject, identity, anatomy, clothing, pose, camera angle and environment unless explicitly asked to change them.\n- Make only the requested modification.\n- Return one coherent natural image, not a collage.";
     }
 
     let response = null;
     let raw = "";
     let data = {};
-    let lastError = null;
+    let lastNetworkError = null;
 
-    for (const currentEndpoint of endpoints) {
-      const controller = new AbortController();
-      const timeout = setTimeout(() => controller.abort(), 50000);
-      try {
-        response = await fetch(currentEndpoint, {
+    // One generation request per hostname. The previous implementation
+    // retried 3 payload variants x 3 times, which could create nine
+    // upstream jobs for one click and trigger fair-use throttling.
+    for (let endpointIndex = 0; endpointIndex < endpoints.length; endpointIndex++) {
+      const endpoint = endpoints[endpointIndex];
+      const maxAttempts = isImageToImage ? 3 : 1;
+      for (let attempt = 0; attempt < maxAttempts; attempt++) {
+        const controller = new AbortController();
+        const timeout = setTimeout(() => controller.abort(), 58000);
+
+        try {
+          response = await fetch(endpoint, {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
-            "Accept": "application/json"
+            Accept: "application/json"
           },
           body: JSON.stringify(payload),
           signal: controller.signal
         });
+
         raw = await response.text();
-        try { data = raw ? JSON.parse(raw) : {}; } catch { data = {}; }
-        if (response.ok && data?.success !== false) break;
-        lastError = new Error("HTTP " + response.status);
-        if (![408,429,500,502,503,504].includes(response.status)) break;
-      } catch (error) {
-        lastError = error;
-      } finally {
-        clearTimeout(timeout);
+        try {
+          data = raw ? JSON.parse(raw) : {};
+        } catch {
+          data = {};
+        }
+
+          if (response.ok && data?.success !== false) break;
+
+          if ([408,429,500,502,503,504].includes(response.status) && attempt < maxAttempts-1) {
+            await new Promise(resolve=>setTimeout(resolve,1000*(attempt+1)));
+            continue;
+          }
+          break;
+        } catch (error) {
+        lastNetworkError = error;
+
+        if (error?.name === "AbortError") {
+          return res.status(504).json({
+            ok: false,
+            error: "FLUX_TIMEOUT",
+            message: isImageToImage
+              ? "Flux Kontext Dev не завершил генерацию за 58 секунд."
+              : "Flux Dev не завершил генерацию за 58 секунд."
+          });
+        }
+
+          if (attempt < maxAttempts-1) {
+            await new Promise(resolve=>setTimeout(resolve,1000*(attempt+1)));
+            continue;
+          }
+          if (endpointIndex < endpoints.length - 1) continue;
+          break;
+        } finally {
+          clearTimeout(timeout);
+        }
       }
+      if (response?.ok && data?.success !== false) break;
+    }
+
+    if (lastNetworkError && (!response || !response.ok)) {
+      return res.status(502).json({
+        ok: false,
+        error: "FLUX_UPSTREAM_UNREACHABLE",
+        message: "Сервер Miya не смог подключиться к PixelSter. Попробована резервная точка API.",
+        detail: lastNetworkError?.message || "Upstream connection failed"
+      });
     }
 
     if (!response || !response.ok || data?.success === false) {
-      if (lastError?.name === "AbortError") {
-        return res.status(504).json({
-          ok: false,
-          error: "FLUX_TIMEOUT",
-          message: isImageToImage
-            ? "Flux Kontext Dev не завершил генерацию вовремя."
-            : "Flux Dev не завершил генерацию вовремя."
-        });
-      }
       return res.status(502).json({
         ok: false,
-        error: String(data?.error || data?.message || (response ? "FLUX_HTTP_" + response.status : "FLUX_UPSTREAM_UNREACHABLE")),
-        upstreamStatus: response?.status || 0,
-        upstreamBody: raw.slice(0, 500)
+        error: String(data?.error || data?.message || `FLUX_HTTP_${response?.status || "UNKNOWN"}`),
+        message: isImageToImage
+          ? "Flux Kontext Dev отклонил исходное изображение или запрос."
+          : "Flux Dev не вернул изображение.",
+        upstreamStatus: response?.status || null,
+        upstreamBody: raw.slice(0, 1000)
       });
     }
 
-    if (!response.ok || data?.success === false) {
-      return res.status(502).json({
-        ok: false,
-        error: String(data?.error || data?.message || `FLUX_HTTP_${response.status}`),
-        upstreamStatus: response.status,
-        upstreamBody: raw.slice(0, 500)
-      });
-    }
+    const imageUrls = Array.isArray(data?.imageUrls)
+      ? data.imageUrls.filter(url => typeof url === "string" && /^https?:\/\//i.test(url))
+      : Array.isArray(data?.images)
+        ? data.images.map(item => typeof item === "string" ? item : item?.imageUrl)
+            .filter(url => typeof url === "string" && /^https?:\/\//i.test(url))
+        : data?.imageUrl
+          ? [data.imageUrl]
+          : [];
 
-    if (
-      !data?.imageUrl ||
-      typeof data.imageUrl !== "string" ||
-      !/^https?:\/\//i.test(data.imageUrl)
-    ) {
+    if (!imageUrls.length) {
       return res.status(502).json({
         ok: false,
         error: "FLUX_IMAGE_URL_MISSING",
@@ -481,11 +468,13 @@ async function handler(req, res) {
       status: "completed",
       provider: "PixelSter",
       model: isImageToImage ? "Flux Kontext Dev" : "Flux Dev",
-      imageUrl: data.imageUrl,
+      imageUrl: imageUrls[0],
+      imageUrls,
+      count: imageUrls.length,
       meta: {
         transport: "http-json",
         free: true,
-        endpoint: isImageToImage ? "/api/pti" : "/api/tti",
+        endpoint: endpointPath,
         edit: isImageToImage
       }
     });
