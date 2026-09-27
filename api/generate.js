@@ -565,6 +565,47 @@ async function handler(req, res) {
     let data = {};
     let lastNetworkError = null;
 
+    async function generateHfFluxFallback() {
+      try {
+        const { Client } = await import("@gradio/client");
+        const client = await Promise.race([
+          Client.connect("black-forest-labs/FLUX.1-schnell"),
+          new Promise((_, reject) => setTimeout(() => reject(new Error("FLUX Schnell Space connection timeout")), 15000))
+        ]);
+        const width = ratio === "9:16" ? 768 : ratio === "16:9" ? 1024 : 1024;
+        const height = ratio === "9:16" ? 1024 : ratio === "16:9" ? 576 : 1024;
+        const result = await Promise.race([
+          client.predict("/infer", [prompt, Math.floor(Math.random() * 2147483647), true, width, height, 4]),
+          new Promise((_, reject) => setTimeout(() => reject(new Error("FLUX Schnell generation timeout")), 55000))
+        ]);
+        const findUrl = (value, seen = new Set()) => {
+          if (value == null) return "";
+          if (typeof value === "string") return value.startsWith("http") ? value : "";
+          if (typeof value !== "object" || seen.has(value)) return "";
+          seen.add(value);
+          for (const key of ["url", "imageUrl", "image_url", "path", "file", "value", "data"]) {
+            const found = findUrl(value[key], seen);
+            if (found) return found;
+          }
+          return "";
+        };
+        const sourceUrl = findUrl(result?.data) || findUrl(result);
+        if (!sourceUrl) throw new Error("FLUX Schnell returned no image URL");
+        const imageResponse = await fetch(sourceUrl, { headers: { Accept: "image/*" } });
+        if (!imageResponse.ok) throw new Error("FLUX Schnell image fetch HTTP " + imageResponse.status);
+        const bytes = Buffer.from(await imageResponse.arrayBuffer());
+        if (!bytes.length) throw new Error("FLUX Schnell returned empty image");
+        const mime = imageResponse.headers.get("content-type") || "image/png";
+        return {
+          imageUrl: "data:" + mime + ";base64," + bytes.toString("base64"),
+          model: "FLUX.1 Schnell · Hugging Face"
+        };
+      } catch (error) {
+        return { error: error?.message || "FLUX Schnell fallback failed" };
+      }
+    }
+
+
     // One generation request per hostname. The previous implementation
     // retried 3 payload variants x 3 times, which could create nine
     // upstream jobs for one click and trigger fair-use throttling.
@@ -624,6 +665,23 @@ async function handler(req, res) {
         }
       }
       if (response?.ok && data?.success !== false) break;
+    }
+
+    if (lastNetworkError && (!response || !response.ok) && !isImageToImage) {
+      const fallback = await generateHfFluxFallback();
+      if (fallback?.imageUrl) {
+        return res.status(200).json({
+          ok: true,
+          mode: "image",
+          status: "completed",
+          provider: "Hugging Face",
+          model: fallback.model,
+          imageUrl: fallback.imageUrl,
+          imageUrls: [fallback.imageUrl],
+          count: 1,
+          meta: { transport: "server-gradio-fallback", free: true, endpoint: "FLUX.1-schnell", edit: false }
+        });
+      }
     }
 
     if (lastNetworkError && (!response || !response.ok)) {
