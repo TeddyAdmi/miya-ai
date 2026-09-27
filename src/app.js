@@ -930,8 +930,8 @@ async function getPixelAudioFfmpeg(){
   if(pixelAudioFfmpegPromise)return pixelAudioFfmpegPromise;
   pixelAudioFfmpegPromise=(async()=>{
     const FFmpegClass=window.FFmpegWASM?.FFmpeg;
-    const util=window.FFmpegUtil;
-    if(!FFmpegClass||!util?.fetchFile||!util?.toBlobURL)throw new Error("FFmpeg audio tools are unavailable");
+    if(!FFmpegClass)throw new Error("FFmpeg browser runtime is unavailable");
+    const util=await import("https://cdn.jsdelivr.net/npm/@ffmpeg/util@0.12.2/dist/esm/index.js");
     const ffmpeg=new FFmpegClass();
     const base=window.__MIYA_FFMPEG_CORE_BASE||"https://cdn.jsdelivr.net/npm/@ffmpeg/core@0.12.10/dist/umd";
     await ffmpeg.load({
@@ -950,7 +950,8 @@ async function muxPixelSterAudio(videoUrl,prompt,duration,onProgress=()=>{}){
   const videoBlob=await response.blob();
   const audioBlob=await makePixelMotionAudio(duration,prompt);
   onProgress(95,"объединяю видео и звук…");
-  const ffmpeg=await getPixelAudioFfmpeg(),util=window.FFmpegUtil;
+  const ffmpeg=await getPixelAudioFfmpeg();
+  const util=await import("https://cdn.jsdelivr.net/npm/@ffmpeg/util@0.12.2/dist/esm/index.js");
   await ffmpeg.writeFile("pixel-input.mp4",await util.fetchFile(videoBlob));
   await ffmpeg.writeFile("pixel-audio.wav",await util.fetchFile(audioBlob));
   await ffmpeg.exec(["-i","pixel-input.mp4","-i","pixel-audio.wav","-map","0:v:0","-map","1:a:0","-c:v","copy","-c:a","aac","-b:a","128k","-shortest","pixel-output.mp4"]);
@@ -979,15 +980,18 @@ async function generateMotionVideo(prompt){
    const ratio=["auto","9:16","16:9"].includes(ratioValue)?ratioValue:"auto";
    const motionPrompt=[
      "IMAGE-TO-VIDEO MOTION SYNTHESIS. FOLLOW THE USER'S MOTION REQUEST EXACTLY.",
-     "The visible subject in the supplied image is the ONLY main character. Do not introduce any human, animal, creature or other character that is not already present in the source image.",
-     "Do not invent a person, assistant, bystander, handler, rider, photographer or background character.",
+     "The supplied image is the visual starting point. Keep the original subject identity and environment.",
+     "If the USER MOTION REQUEST explicitly names another animal or object (for example an eagle), that requested subject IS allowed and must be introduced only as described. Do not omit an explicitly requested subject.",
+     "Do not invent humans, people, assistants, bystanders, handlers, riders or photographers unless the user explicitly requests a human.",
+     "Do not add any other unrequested characters or animals.",
      "The requested action has higher priority than generic cinematic motion. Do not substitute zooming, panning, idle movement or camera shake for the requested action.",
      "Execute multiple actions in the exact written order as one continuous timeline.",
      "Start the requested action immediately and make the action unmistakably visible.",
      "If the user says an animal runs away, the SAME animal must visibly run away; do not replace it with another subject.",
      "If the user says an animal growls/roars/turns/looks/attacks, animate that SAME animal's body, head, mouth and movement.",
      "If the user requests a roar, growl, bark or other sound, preserve that sound request for the final audio track and do not replace it with music.",
-     "ABSOLUTELY NO HUMANS OR UNREQUESTED CHARACTERS. Do not create a person even briefly in the background.",
+     "ABSOLUTELY NO UNREQUESTED HUMANS. If the user did not request a human, there must be zero humans, silhouettes, reflections, shadows, handlers or bystanders.",
+     "Explicitly requested animals such as an eagle are not unrequested characters and must be preserved.",
 
      "Preserve identity, species, face, anatomy, clothing/fur, scale, lighting and the original environment unless the user explicitly requests a change.",
      "Keep the camera stable unless the user explicitly requests camera movement.",
@@ -1009,8 +1013,8 @@ async function generateMotionVideo(prompt){
      updateVideoProgress(model,92,"добавляю звук…");
      finalVideoUrl=await muxPixelSterAudio(finalVideoUrl,prompt,duration,(p,label)=>updateVideoProgress(model,p,label));
    }catch(audioError){
-     console.warn("PixelSter audio mux failed; keeping provider MP4",audioError);
-     updateVideoProgress(model,96,"видео готово · звук недоступен");
+     console.error("PixelSter audio mux failed",audioError);
+     throw new Error("PixelSter видео создано, но звук не удалось добавить: "+(audioError?.message||audioError));
    }
    stopProgress();
    updateVideoProgress(model,100,finalVideoUrl===String(data.videoUrl)?"видео готово":"видео + звук готовы");
@@ -1034,15 +1038,18 @@ async function generateVideo(prompt){
  showLoading();$("#composerSend").disabled=true;
  const stopProgress=startVideoProgress("LTX-2.3 Distilled");
  try{
-   const durationText=String($("#videoDuration")?.value||"3 сек");
-   const duration=Math.max(1,Math.min(10,Number(durationText.match(/\d+/)?.[0]||3)));
+   const durationText=String($("#videoDuration")?.value||"5 сек");
+   const duration=Math.max(1,Math.min(10,Number(durationText.match(/\d+/)?.[0]||5)));
    const ratio=String($("#videoRatio")?.value||"16:9");
    const ratioValue=["auto","9:16","16:9","1:1"].includes(ratio)?ratio:"16:9";
    const effectiveRatio=ratioValue==="auto"?(source?"16:9":"16:9"):ratioValue;
    const actionPrompt=[
      "Create one continuous cinematic shot from the user's request.",
-     "Execute every requested action literally, visibly and in the exact order written.",
+     "Treat every explicitly named animal/object as intentional. Do not remove an explicitly requested eagle, lion or other subject.",
+     "Execute every requested action literally, visibly and in the exact order written. Do not blend separate actions together.",
+     "Use clear temporal beats: establish the starting state, perform action 1, then action 2, then action 3. Do not jump directly to the ending state.",
      "Start the first requested action immediately; do not replace subject movement with camera movement.",
+     "Preserve requested cause-and-effect: if one subject grabs another, show approach, contact, grab, impact, separation and final movement as separate visible beats.",
      "Preserve the reference subject identity, face, clothing, anatomy, scale and starting composition unless the user explicitly asks for a change.",
      "Spatial instructions are literal: 'on the pillow' means physically resting on the pillow; 'on the table' means physically on the table; 'inside' means inside; 'behind' means behind; 'next to' means beside; 'left corner' and 'right corner' mean the visible composition corners.",
      "When a specific surface is named, identify that exact surface and place the requested object relative to it. Never move it to the center just for convenience.",
@@ -1134,10 +1141,13 @@ $("#composerInput").addEventListener("input",syncInput);
 function closePromptContextMenu(){
   $("#promptContextMenu")?.remove();
 }
-function openPromptContextMenu(e){
+async function openPromptContextMenu(e){
   e.preventDefault();
   e.stopPropagation();
   const input=e.currentTarget;
+  let promptClipboardText="";
+  try{promptClipboardText=await navigator.clipboard.readText()}catch{}
+
   input.focus({preventScroll:true});
   const hasSelection=input.selectionStart!==input.selectionEnd;
   if(!hasSelection&&typeof e.clientX==="number"&&typeof e.clientY==="number"){
@@ -1166,11 +1176,12 @@ function openPromptContextMenu(e){
     try{await navigator.clipboard.writeText(value)}catch{document.execCommand("copy")}
   });
   add("Вставить",false,async()=>{
-    try{
-      const value=await navigator.clipboard.readText();
+    let value=promptClipboardText;
+    if(!value){try{value=await navigator.clipboard.readText()}catch{}}
+    if(value){
       input.setRangeText(value,input.selectionStart,input.selectionEnd,"end");
       syncInput();
-    }catch{document.execCommand("paste")}
+    }else toast("Firefox не дал доступ к буферу обмена");
   });
   add("Удалить",!selected,async()=>{
     input.setRangeText("",input.selectionStart,input.selectionEnd,"start");
