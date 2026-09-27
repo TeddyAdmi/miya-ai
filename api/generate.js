@@ -389,7 +389,7 @@ async function handler(req, res) {
         response = await fetch(endpoint, {
           method:"POST",
           headers:{"Content-Type":"application/json",Accept:"application/json"},
-          body:JSON.stringify({ prompt, ratio, duration, imageBase64: rawBase64 }),
+          body:JSON.stringify({ prompt, ratio, duration, imageBase64: "data:image/png;base64," + rawBase64 }),
           signal:controller.signal
         });
         raw = await response.text();
