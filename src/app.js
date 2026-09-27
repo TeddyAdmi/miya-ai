@@ -945,7 +945,7 @@ async function generateMotionVideo(prompt){
  const stopProgress=startVideoProgress(model);
  $("#composerStatus").textContent=model+" · генерация…";
  try{
-   const durationText=String($("#videoDuration")?.value||"10 сек");
+   const durationText=String($("#videoDuration")?.value||"5 сек");
    const duration=Math.max(5,Math.min(20,Number(durationText.match(/\d+/)?.[0]||5)));
    const ratioValue=String($("#videoRatio")?.value||"auto");
    const ratio=["auto","9:16","16:9"].includes(ratioValue)?ratioValue:"auto";
@@ -995,8 +995,14 @@ async function generateMotionVideo(prompt){
  }catch(e){
    stopProgress();removeGenerationLoading();
    console.error("PixelSter Motion Synthesis failed",e);
-   $("#composerStatus").textContent=model+" · ошибка";
-   toast(e?.message||"Не удалось создать видео");
+   const rawMessage=String(e?.message||"");
+   const is504=/PixelSter HTTP 504|Gateway Time-out|Gateway Timeout|NetworkError/i.test(rawMessage);
+   $("#composerStatus").textContent=is504
+     ? model+" · сервер PixelSter не завершил запрос"
+     : model+" · ошибка";
+   toast(is504
+     ? "PixelSter: сервер не завершил генерацию вовремя. Попробуйте 5 сек или повторите позже."
+     : (rawMessage||"Не удалось создать видео"));
  }finally{$("#composerSend").disabled=false}
 }
 
@@ -1137,7 +1143,19 @@ $("#improve")?.addEventListener("click",improveComposerPrompt);
 $("#copyPrompt")?.addEventListener("click",copyComposerPrompt);
 $("#videoImprove")?.addEventListener("click",improveComposerPrompt);
 $("#videoCopyPrompt")?.addEventListener("click",copyComposerPrompt);
-$("#videoModel")?.addEventListener("change",()=>{ const model=$("#videoModel").value; $("#composerStatus").textContent=model==="PixelSter Motion Synthesis"?"PixelSter Motion Synthesis · резервная модель":"LTX-2.3 Distilled · Free ZeroGPU"; });
+$("#videoModel")?.addEventListener("change",()=>{
+ const model=$("#videoModel").value;
+ const duration=$("#videoDuration");
+ if(model==="PixelSter Motion Synthesis"){
+   // PixelSter's free motion endpoint can hit its upstream gateway timeout on
+   // longer clips. Start at the documented minimum duration; the user can
+   // still select 8/10/20 seconds manually when the endpoint is healthy.
+   if(duration && String(duration.value)==="10 сек") duration.value="5 сек";
+   $("#composerStatus").textContent="PixelSter Motion Synthesis · 5 сек по умолчанию";
+ }else{
+   $("#composerStatus").textContent="LTX-2.3 Distilled · Free ZeroGPU";
+ }
+});
 $("#videoTrash")?.addEventListener("click",()=>{
   $("#composerInput").value="";
   clearComposerAttachment();
