@@ -943,6 +943,15 @@ async function generateMotionVideo(prompt){
  $("#composerSend").disabled=true;
  const model="PixelSter Motion Synthesis";
  const stopProgress=startVideoProgress(model);
+ const progressTimer=setInterval(()=>{
+   const statusText=$("#composerStatus");
+   const m=statusText?.textContent||"";
+   if(!/ошибка|готово/.test(m)){
+     const current=Number(document.querySelector("#videoProgressFill")?.dataset?.progress||8);
+     const next=Math.min(92,current+1);
+     updateVideoProgress(model,next,next>=92?"генерация продолжается…":"генерация…");
+   }
+ },2500);
  $("#composerStatus").textContent=model+" · генерация…";
  try{
    const durationText=String($("#videoDuration")?.value||"10 сек");
@@ -968,8 +977,9 @@ async function generateMotionVideo(prompt){
    const data=await response.json().catch(()=>({}));
    if(!response.ok||!data?.videoUrl)throw new Error(data?.message||data?.error||"PixelSter не вернул видео");
    const sourceVideoUrl=String(data.videoUrl);
-   updateVideoProgress(model,92,"проверяю видео…");
+   updateVideoProgress(model,97,"видео получено…");
    const finalVideoUrl=await muxPixelSterAudio(sourceVideoUrl,(p,label)=>updateVideoProgress(model,p,label));
+   clearInterval(progressTimer);
    stopProgress();
    updateVideoProgress(model,100,"видео готово");
    const item=saveMedia("video",finalVideoUrl,prompt,model);
@@ -978,6 +988,7 @@ async function generateMotionVideo(prompt){
    if(item)scrollImagesToTop();
    toast("PixelSter: видео создано");
  }catch(e){
+   clearInterval(progressTimer);
    stopProgress();removeGenerationLoading();
    console.error("PixelSter Motion Synthesis failed",e);
    $("#composerStatus").textContent=model+" · ошибка";
