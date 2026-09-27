@@ -901,7 +901,6 @@ async function requestChat(){
    saveCurrentChat();
    status.textContent=data.model==="VisionSter"?"Miya · VisionChat":"Miya · Free Text";
  }catch(e){
-   console.error("Miya chat failed",e);
    toast(e?.message||"Не удалось получить ответ Miya");
    status.textContent="AI Chat · ошибка · можно повторить";
  }finally{
