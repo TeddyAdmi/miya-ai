@@ -3,7 +3,7 @@
  st.textContent=".composer-input-row{position:relative;z-index:1002!important}.composer textarea{position:relative!important;z-index:1003!important;pointer-events:auto!important;user-select:text!important;-moz-user-select:text!important;-webkit-user-select:text!important;-webkit-user-modify:read-write-plaintext-only!important}.prompt-context-menu{display:none!important}";
  document.head.appendChild(st);
 })();
-import { Client, handle_file } from "https://cdn.jsdelivr.net/npm/@gradio/client@2.7.1/dist/index.min.js";
+import { Client, handle_file } from "https://cdn.jsdelivr.net/npm/@gradio/client/dist/index.min.js";
 const modes={
  chat:{title:"Твоя AI-комната",eyebrow:"AI CHAT · MIYA",subtitle:"Общайся с Miya, придумывай идеи и управляй созданием контента.",placeholder:"Напиши сообщение...",send:"Отправить",status:"AI Chat готов"},
  images:{title:"Картинки",eyebrow:"IMAGE STUDIO · FLUX",subtitle:"Создавай изображения с нуля или загружай исходник и описывай изменения.",placeholder:"Опиши картинку или что изменить в загруженном изображении...",send:"Создать",status:"FLUX Dev · Image generation & editing"},
