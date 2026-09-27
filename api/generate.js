@@ -433,7 +433,7 @@ async function handler(req, res) {
         });
       }
 
-      const videoUrl = typeof data?.videoUrl === "string" && /^https?:\\/\\/i.test(data.videoUrl) ? data.videoUrl : "";
+      const videoUrl = typeof data?.videoUrl === "string" && /^https?:\/\//i.test(data.videoUrl) ? data.videoUrl : "";
       if (!videoUrl) return res.status(502).json({
         ok:false,
         error:"VIDEO_URL_MISSING",
