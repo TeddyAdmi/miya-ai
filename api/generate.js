@@ -229,7 +229,7 @@ async function handler(req, res) {
       const ratioValue = typeof body.ratio === "string" ? body.ratio : "16:9";
       const ratio = ["auto","9:16","16:9","1:1"].includes(ratioValue) ? ratioValue : "16:9";
       const requestedDuration = Number(body.duration ?? 5);
-      const duration = Number.isFinite(requestedDuration) ? Math.max(1, Math.min(10, requestedDuration)) : 5;
+      const duration = Number.isFinite(requestedDuration) ? Math.max(1, Math.min(10, requestedDuration)) : 3;
       try {
         const { Client, handle_file } = await import("@gradio/client");
         const client = await Promise.race([
