@@ -120,36 +120,38 @@ async function handler(req, res) {
       // Keep a second anonymous/free route as a fallback. This is text-only.
       if (!chatImageBase64 && !freeChatText) {
         try {
-try {
-            const legacyResponse = await fetch("https://text.pollinations.ai/openai", {
-              method: "POST",
-              headers: {
-                "Content-Type": "application/json",
-                "Accept": "application/json, text/plain"
-              },
-              body: JSON.stringify({
-                model: "openai",
-                messages: llmMessages
-              }),
-              signal: AbortSignal.timeout(24000)
-            });
+          const legacyResponse = await fetch("https://text.pollinations.ai/openai", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              "Accept": "application/json, text/plain"
+            },
+            body: JSON.stringify({
+              model: "openai",
+              messages: llmMessages
+            }),
+            signal: AbortSignal.timeout(24000)
+          });
 
-            lastChatStatus = legacyResponse.status;
-            const legacyRaw = (await legacyResponse.text()).trim();
+          lastChatStatus = legacyResponse.status;
+          const legacyRaw = (await legacyResponse.text()).trim();
 
-            try {
-              const legacyData = legacyRaw ? JSON.parse(legacyRaw) : {};
-              freeChatText = String(
-                legacyData?.choices?.[0]?.message?.content ||
-                legacyData?.text ||
-                legacyData?.response ||
-                ""
-              ).trim();
-            } catch {
-              freeChatText = legacyRaw;
-            }
+          try {
+            const legacyData = legacyRaw ? JSON.parse(legacyRaw) : {};
+            freeChatText = String(
+              legacyData?.choices?.[0]?.message?.content ||
+              legacyData?.text ||
+              legacyData?.response ||
+              ""
+            ).trim();
+          } catch {
+            freeChatText = legacyRaw;
+          }
 
-    
+          if (freeChatText) {
+            freeChatModel = "openai";
+            freeChatProvider = "Pollinations";
+          }
         } catch (error) {
           console.warn("Miya free text fallback:", error?.message || error);
         }
