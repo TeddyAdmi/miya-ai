@@ -165,6 +165,7 @@ function openMediaDB(){
 }
 async function cacheMedia(id,url,type="image"){
  try{
+  const cached=await getCachedMedia(id);if(cached?.blob)return true;
   const db=await openMediaDB();if(!db)return false;
   const response=await fetch(url,{mode:"cors",cache:"force-cache"});if(!response.ok)return false;
   const blob=await response.blob();if(!blob.size)return false;
@@ -537,7 +538,13 @@ function renderVideoLibrary(){
  const c=$("#canvas"),items=getLibrary().filter(x=>x.type==="video");
  if(!items.length){showEmpty();return}
  c.innerHTML='<div class="results-head"><div><h3>Все созданные видео</h3></div></div><div class="result-grid video-result-grid"></div>';
- const grid=c.querySelector(".result-grid");items.forEach(item=>grid.appendChild(buildMediaCard(item,{video:true})));
+ const grid=c.querySelector(".result-grid");
+ items.forEach(item=>{
+   grid.appendChild(buildMediaCard(item,{video:true}));
+   // Warm the local cache in the background. Existing videos become instant
+   // previews the next time the Video tab is opened.
+   cacheMedia(item.id,item.url,"video");
+ });
 }
 function renderImageLibrary(){
  const c=$("#canvas"),items=getLibrary().filter(x=>x.type==="image");
