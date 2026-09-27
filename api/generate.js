@@ -378,33 +378,37 @@ async function handler(req, res) {
       const requestedDuration = Number(body.duration ?? 5);
       const duration = Number.isFinite(requestedDuration) ? Math.max(5, Math.min(20, Math.round(requestedDuration))) : 5;
       const payload = { prompt, ratio, duration, imageBase64: rawBase64 };
-      const endpoints = ["https://ahm7xmakki.com/api/ptv","https://www.ahm7xmakki.com/api/ptv"];
-      let response = null, raw = "", data = {}, lastNetworkError = null;
-
-      for (let endpointIndex = 0; endpointIndex < endpoints.length; endpointIndex++) {
-        const endpoint = endpoints[endpointIndex];
-        for (let attempt = 0; attempt < 1; attempt++) {
-          const controller = new AbortController();
-          const timeout = setTimeout(() => controller.abort(), 100000);
-          try {
-            response = await fetch(endpoint, { method:"POST", headers:{"Content-Type":"application/json",Accept:"application/json"}, body:JSON.stringify(payload), signal:controller.signal });
-            raw = await response.text();
-            try { data = raw ? JSON.parse(raw) : {}; } catch { data = {}; }
-            if (response.ok && data?.success !== false) break;
-            if ([408,429,500,502,503,504].includes(response.status) && attempt === 0) { await new Promise(resolve => setTimeout(resolve,1200)); continue; }
-            break;
-          } catch (error) {
-            lastNetworkError = error;
-            if (error?.name === "AbortError") return res.status(504).json({ ok:false, error:"VIDEO_TIMEOUT", message:"Motion Synthesis не завершил видео за 100 секунд. Генерация сброшена — можно повторить." });
-            if (attempt === 0) { await new Promise(resolve => setTimeout(resolve,1200)); continue; }
-            break;
-          } finally { clearTimeout(timeout); }
+      const endpoint = "https://ahm7xmakki.com/api/ptv";
+      let response = null, raw = "", data = {};
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 108000);
+      try {
+        response = await fetch(endpoint, {
+          method:"POST",
+          headers:{"Content-Type":"application/json",Accept:"application/json"},
+          body:JSON.stringify(payload),
+          signal:controller.signal
+        });
+        raw = await response.text();
+        try { data = raw ? JSON.parse(raw) : {}; } catch { data = {}; }
+      } catch (error) {
+        if (error?.name === "AbortError") {
+          return res.status(504).json({ ok:false, error:"VIDEO_TIMEOUT", message:"Motion Synthesis не завершил видео за 108 секунд. Генерация сброшена — можно повторить." });
         }
-        if (response?.ok && data?.success !== false) break;
+        return res.status(502).json({ ok:false, error:"VIDEO_UPSTREAM_UNREACHABLE", message:"Не удалось подключиться к бесплатному Motion Synthesis API.", detail:error?.message || "Upstream connection failed" });
+      } finally {
+        clearTimeout(timeout);
       }
 
-      if (lastNetworkError && (!response || !response.ok)) return res.status(502).json({ ok:false, error:"VIDEO_UPSTREAM_UNREACHABLE", message:"Не удалось подключиться к бесплатному Motion Synthesis API.", detail:lastNetworkError?.message || "Upstream connection failed" });
-      if (!response || !response.ok || data?.success === false) return res.status(502).json({ ok:false, error:String(data?.error || data?.message || `VIDEO_HTTP_${response?.status || "UNKNOWN"}`), message:"Motion Synthesis не вернул видео.", upstreamStatus:response?.status || null, upstreamBody:raw.slice(0,1000) });
+      if (!response?.ok || data?.success === false) {
+        return res.status(502).json({
+          ok:false,
+          error:String(data?.error || data?.message || `VIDEO_HTTP_${response?.status || "UNKNOWN"}`),
+          message:"Motion Synthesis не вернул видео.",
+          upstreamStatus:response?.status || null,
+          upstreamBody:raw.slice(0,1000)
+        });
+      }
 
       const videoUrl = typeof data?.videoUrl === "string" && /^https?:\/\//i.test(data.videoUrl) ? data.videoUrl : "";
       if (!videoUrl) return res.status(502).json({ ok:false, error:"VIDEO_URL_MISSING", providerResponse:data });
@@ -413,9 +417,7 @@ async function handler(req, res) {
         model:"Motion Synthesis", videoUrl,
         meta:{ transport:"http-json", free:true, endpoint:"/api/ptv", duration, ratio }
       });
-    }
-
-    const prompt = typeof body.prompt === "string" ? body.prompt.trim() : "";
+    }const prompt = typeof body.prompt === "string" ? body.prompt.trim() : "";
     if (!prompt) return res.status(400).json({ ok: false, error: "PROMPT_REQUIRED" });
 
     const ratio = typeof body.ratio === "string" ? body.ratio : "1:1";
