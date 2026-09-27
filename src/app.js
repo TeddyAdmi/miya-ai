@@ -165,13 +165,14 @@ function openMediaDB(){
 }
 async function cacheMedia(id,url,type="image"){
  try{
-  if(type==="video")return false;
   const db=await openMediaDB();if(!db)return false;
-  const response=await fetch(url,{mode:"cors",cache:"no-store"});
-  if(!response.ok)return false;
-  const blob=await response.blob();
-  if(!blob.size)return false;
-  await new Promise((resolve,reject)=>{const tx=db.transaction("media","readwrite");tx.objectStore("media").put({id,blob,url,createdAt:Date.now()});tx.oncomplete=resolve;tx.onerror=()=>reject(tx.error)});
+  const response=await fetch(url,{mode:"cors",cache:"force-cache"});if(!response.ok)return false;
+  const blob=await response.blob();if(!blob.size)return false;
+  await new Promise((resolve,reject)=>{
+   const tx=db.transaction("media","readwrite");
+   tx.objectStore("media").put({id,blob,url,createdAt:Date.now(),type});
+   tx.oncomplete=resolve;tx.onerror=()=>reject(tx.error);
+  });
   return true;
  }catch{return false}
 }
@@ -479,20 +480,20 @@ function buildMediaCard(item,{video=false}={}){
    if(media&&media.tagName==="VIDEO"){media.removeAttribute("src");media.load();media.controls=false}
  };
  if(video){
-   const cover=document.createElement("button");
-   cover.type="button";cover.className="video-cover";cover.setAttribute("aria-label","Открыть видео");
-   cover.innerHTML='<span class="video-cover-play" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="m9 6 10 6-10 6V6Z"/></svg></span><span class="video-cover-copy"><b>Видео</b><small>'+String(item.model||"Video")+'</small></span>';
-   const mountVideo=()=>{
-     if(cover.dataset.mounted==="1")return;
-     cover.dataset.mounted="1";
-     media=document.createElement("video");media.className="media-video";media.setAttribute("aria-label","Miya Studio video");
-     media.controls=true;media.playsInline=true;media.preload="metadata";media.addEventListener("error",handleMediaFailure);
-     media.src=String(item.url||"");cover.replaceWith(media);
-     try{media.play().catch(()=>{})}catch{}
-   };
-   cover.addEventListener("click",e=>{e.stopPropagation();mountVideo()});
-   card.appendChild(cover);
- }else{
+   // The old Video tab used the real video element as the card preview.
+   // Resolve the IndexedDB copy first, then fall back to the provider URL.
+   media=document.createElement("video");
+   media.className="media-video";
+   media.setAttribute("aria-label","Miya Studio video");
+   media.controls=true;media.playsInline=true;media.preload="metadata";
+   media.addEventListener("error",handleMediaFailure);
+   card.appendChild(media);
+   resolveMediaUrl(item).then(url=>{
+     if(url&&!mediaFailed){media.src=url;media.load();}
+   }).catch(()=>{
+     if(!mediaFailed){media.src=String(item.url||"");media.load();}
+   });
+  }else{
    media=document.createElement("img");media.alt="Miya Studio";media.style.cursor="zoom-in";media.title="Открыть изображение";
    media.addEventListener("error",()=>{
      if(mediaFailed)return;
