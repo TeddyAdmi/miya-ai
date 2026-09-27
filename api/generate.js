@@ -288,7 +288,7 @@ async function handler(req, res) {
         const { Client, handle_file } = await import("@gradio/client");
         const client = await Promise.race([
           Client.connect("Lightricks/LTX-2-3"),
-          new Promise((_, reject) => setTimeout(() => reject(new Error("LTX Space connection timeout")), 25000))
+          new Promise((_, reject) => setTimeout(() => reject(new Error("LTX Space connection timeout")), 15000))
         ]);
         // Current LTX-2.3 Space signature:
         // image, prompt, duration, enhance_prompt, seed, randomize_seed, height, width.
@@ -385,7 +385,7 @@ async function handler(req, res) {
         const endpoint = endpoints[endpointIndex];
         for (let attempt = 0; attempt < 2; attempt++) {
           const controller = new AbortController();
-          const timeout = setTimeout(() => controller.abort(), 58000);
+          const timeout = setTimeout(() => controller.abort(), 52000);
           try {
             response = await fetch(endpoint, { method:"POST", headers:{"Content-Type":"application/json",Accept:"application/json"}, body:JSON.stringify(payload), signal:controller.signal });
             raw = await response.text();
@@ -395,7 +395,7 @@ async function handler(req, res) {
             break;
           } catch (error) {
             lastNetworkError = error;
-            if (error?.name === "AbortError") return res.status(504).json({ ok:false, error:"VIDEO_TIMEOUT", message:"Motion Synthesis не завершил видео за 58 секунд." });
+            if (error?.name === "AbortError") return res.status(504).json({ ok:false, error:"VIDEO_TIMEOUT", message:"Motion Synthesis не завершил видео за 52 секунды. Генерация сброшена — можно повторить." });
             if (attempt === 0) { await new Promise(resolve => setTimeout(resolve,1200)); continue; }
             break;
           } finally { clearTimeout(timeout); }
@@ -549,10 +549,10 @@ async function handler(req, res) {
     // upstream jobs for one click and trigger fair-use throttling.
     for (let endpointIndex = 0; endpointIndex < endpoints.length; endpointIndex++) {
       const endpoint = endpoints[endpointIndex];
-      const maxAttempts = isImageToImage ? 3 : 1;
+      const maxAttempts = 1;
       for (let attempt = 0; attempt < maxAttempts; attempt++) {
         const controller = new AbortController();
-        const timeout = setTimeout(() => controller.abort(), 58000);
+        const timeout = setTimeout(() => controller.abort(), 52000);
 
         try {
           response = await fetch(endpoint, {
