@@ -5,9 +5,9 @@
 })();
 import { Client, handle_file } from "https://cdn.jsdelivr.net/npm/@gradio/client/dist/index.min.js";
 const modes={
- chat:{title:"Твоя AI-комната",eyebrow:"AI CHAT · MIYA",subtitle:"Общайся с Miya, придумывай идеи и управляй созданием контента.",placeholder:"Напиши сообщение...",send:"Отправить",status:"AI Chat готов"},
- images:{title:"Картинки",eyebrow:"IMAGE STUDIO · FLUX",subtitle:"Создавай изображения с нуля или загружай исходник и описывай изменения.",placeholder:"Опиши картинку или что изменить в загруженном изображении...",send:"Создать",status:"FLUX Dev · Image generation & editing"},
- video:{title:"Видео",eyebrow:"VIDEO STUDIO · LTX-2.3",subtitle:"Создавай короткие видео по сцене, действиям и движению — со звуком.",placeholder:"Опиши сцену, действия персонажей, движение камеры и атмосферу...",send:"Создать видео",status:"LTX-2.3 Distilled · Free ZeroGPU"}
+ chat:{title:"Твоя AI-комната",eyebrow:"AI CHAT",subtitle:"Общайся с Miya, придумывай идеи и управляй созданием контента.",placeholder:"Напиши сообщение...",send:"Отправить",status:"AI Chat готов"},
+ images:{title:"Картинки",eyebrow:"КАРТИНКИ",subtitle:"Создавай изображения с нуля или загружай исходник и описывай изменения.",placeholder:"Опиши картинку или что изменить в загруженном изображении...",send:"Создать",status:"FLUX Dev · создание и редактирование"},
+ video:{title:"Видео",eyebrow:"ВИДЕО",subtitle:"Создавай короткие видео по сцене, действиям и движению — со звуком.",placeholder:"Опиши сцену, действия персонажей, движение камеры и атмосферу...",send:"Создать видео",status:"LTX-2.3 Distilled · Free ZeroGPU"}
 };
 const $=s=>document.querySelector(s);
 let mode="chat",referenceImage=null,chatAttachmentFile=null,chatMessages=[];
@@ -147,16 +147,11 @@ function openSavedChat(id){
 }
 
 const LIB_KEY="miyaLibrary";
-function isDeadVheerUrl(url){
- try{const u=new URL(String(url||""));return u.hostname==="access.vheer.com"&&/^\/results\//i.test(u.pathname)}catch{return false}
-}
 function getLibrary(){
  try{
   const raw=JSON.parse(localStorage.getItem(LIB_KEY)||"[]");
   const items=Array.isArray(raw)?raw.filter(x=>x&&typeof x.url==="string"):[];
-  const cleaned=items.filter(x=>!isDeadVheerUrl(x.url));
-  if(cleaned.length!==items.length){try{localStorage.setItem(LIB_KEY,JSON.stringify(cleaned))}catch{}}
-  return cleaned;
+  return items;
  }catch{return[]}
 }
 const MEDIA_DB="miyaMediaCache";
@@ -210,7 +205,7 @@ async function resolveMediaUrl(item){
   const cached=await getCachedMedia(item.id);
   if(cached?.blob)return URL.createObjectURL(cached.blob);
  }catch{}
- return isDeadVheerUrl(item.url) ? "" : item.url;
+ return item.url;
 }
 function setComposerAttachment(url){
  const box=$("#composerAttachment"),img=$("#composerAttachmentImage");
