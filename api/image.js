@@ -118,7 +118,10 @@ module.exports = async function imageHandler(req, res) {
       return res.status(413).json({ ok: false, error: "SOURCE_IMAGE_TOO_LARGE" });
     }
 
-    const editPrompt = prompt + "\n\nSTRICT IMAGE EDIT — FLUX KONTEXT DEV:\n- Use the supplied image as the exact source image.\n- Preserve the original subject, identity, anatomy, clothing, pose, camera angle, composition, lighting and environment unless explicitly requested otherwise.\n- Make only the requested modification.\n- Create exactly the requested number of objects. Never duplicate objects or body parts.\n- Return one coherent photorealistic image, not a collage.";
+    // Keep the proven Kontext contract: send the user's edit prompt unchanged.
+    // Extra moderation-sensitive guard text can cause otherwise valid prompts
+    // to be rejected upstream by AHM7.
+    const editPrompt = prompt;
 
     const upstream = await fetch("https://ahm7xmakki.com/api/pti", {
       method: "POST",
