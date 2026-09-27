@@ -1972,20 +1972,33 @@ body.light .chat-selection-actions button{background:#f4f6fa}
   .generation-loading .progress-copy b{font-size:8px!important}
   .generation-loading .progress-model{font-size:6.5px!important}
 }
-/* Video prompt tools use the exact same icon treatment as image prompt tools. */
-.video-options .video-tool.improve{
-  background:transparent!important;
-  color:#f4f7ff!important;
-  border:0!important;
-  width:38px!important;height:38px!important;
-  padding:0!important;
-  display:grid!important;place-items:center!important;
+/* Video prompt tools share one button system. */
+.video-options .video-tool.improve,
+.video-options .video-tool.composer-copy,
+.video-options .video-trash{
+  flex:0 0 38px!important;width:38px!important;height:38px!important;
+  min-width:38px!important;min-height:38px!important;padding:0!important;margin:0!important;
+  display:grid!important;place-items:center!important;box-sizing:border-box!important;
+  border:0!important;border-radius:9px!important;background:transparent!important;
+  color:var(--muted)!important;cursor:pointer!important;
 }
-body.light .video-options .video-tool.improve{color:#6550d8!important}
-.video-options .video-tool.improve svg{width:17px!important;height:17px!important;fill:currentColor!important;color:inherit!important}
-.video-options .video-tool.improve:hover{background:rgba(167,92,255,.10)!important;color:#c58aff!important}
-body.light .video-options .video-tool.improve:hover{background:#f0eaff!important;color:#6550d8!important}
-
+.video-options .video-tool.improve svg,
+.video-options .video-tool.composer-copy svg,
+.video-options .video-trash svg{
+  width:17px!important;height:17px!important;display:block!important;
+  fill:none!important;stroke:currentColor!important;stroke-width:1.8!important;
+  stroke-linecap:round!important;stroke-linejoin:round!important;
+}
+.video-options .video-tool.improve:hover,
+.video-options .video-tool.composer-copy:hover,
+.video-options .video-trash:hover{
+  background:rgba(120,150,190,.12)!important;color:inherit!important;
+}
+body.light .video-options .video-tool.improve:hover,
+body.light .video-options .video-tool.composer-copy:hover,
+body.light .video-options .video-trash:hover{
+  background:#edf3f9!important;color:#182436!important;
+}
 
 /* Miya prompt: compact custom right-click menu instead of Firefox's oversized menu.
    Text selection and keyboard editing remain native. */
