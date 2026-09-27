@@ -367,7 +367,6 @@ async function handler(req, res) {
         });
       }
 
-      // Proven PixelSter /pti contract: raw base64, without the data-URI prefix.
       payload.imageBase64 = rawBase64;
       payload.prompt = String(prompt).trim() + "\n\nSTRICT IMAGE EDIT:\n- Use the supplied image as the exact source image.\n- Preserve the original subject, identity, anatomy, clothing, pose, camera angle and environment unless explicitly asked to change them.\n- Make only the requested modification.\n- Return one coherent natural image, not a collage.";
     }
@@ -377,9 +376,6 @@ async function handler(req, res) {
     let data = {};
     let lastNetworkError = null;
 
-    // One generation request per hostname. The previous implementation
-    // retried 3 payload variants x 3 times, which could create nine
-    // upstream jobs for one click and trigger fair-use throttling.
     for (let endpointIndex = 0; endpointIndex < endpoints.length; endpointIndex++) {
       const endpoint = endpoints[endpointIndex];
       const maxAttempts = isImageToImage ? 3 : 1;
@@ -415,22 +411,12 @@ async function handler(req, res) {
         } catch (error) {
         lastNetworkError = error;
 
-        if (error?.name === "AbortError") {
-          return res.status(504).json({
-            ok: false,
-            error: "FLUX_TIMEOUT",
-            message: isImageToImage
-              ? "Flux Kontext Dev не завершил генерацию за 58 секунд."
-              : "Flux Dev не завершил генерацию за 58 секунд."
-          });
+        if (attempt < maxAttempts - 1) {
+          await new Promise(resolve => setTimeout(resolve, 1000 * (attempt + 1)));
+          continue;
         }
-
-          if (attempt < maxAttempts-1) {
-            await new Promise(resolve=>setTimeout(resolve,1000*(attempt+1)));
-            continue;
-          }
-          if (endpointIndex < endpoints.length - 1) continue;
-          break;
+        if (endpointIndex < endpoints.length - 1) continue;
+        break;
         } finally {
           clearTimeout(timeout);
         }
