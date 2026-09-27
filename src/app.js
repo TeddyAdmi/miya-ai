@@ -961,14 +961,27 @@ async function generateMotionVideo(prompt){
      prompt
    ].join("\n");
    updateVideoProgress(model,8,"отправляю запрос…");
-   const response=await fetch("/api/generate",{
+   // PixelSter /api/ptv can take longer than Vercel's serverless request window.
+   // Call the documented free endpoint directly from the browser so the long
+   // generation is not killed by the Miya /api/generate 60s gateway timeout.
+   // PixelSter accepts the source image as a data:image/... base64 payload.
+   const response=await fetch("https://ahm7xmakki.com/api/ptv",{
      method:"POST",
      headers:{"Content-Type":"application/json","Accept":"application/json"},
-     body:JSON.stringify({mode:"video",provider:"pixelster-motion",model,prompt:motionPrompt,ratio,duration,options:{imageBase64:source}}),
-     signal:AbortSignal.timeout(115000)
+     body:JSON.stringify({
+       prompt:motionPrompt,
+       ratio,
+       duration,
+       imageBase64:source
+     })
    });
-   const data=await response.json().catch(()=>({}));
-   if(!response.ok||!data?.videoUrl)throw new Error(data?.message||data?.error||"PixelSter не вернул видео");
+   const raw=await response.text();
+   let data={};
+   try{data=raw?JSON.parse(raw):{}}catch{}
+   if(!response.ok||data?.success===false||!data?.videoUrl){
+     const detail=String(data?.error||data?.message||raw||"PixelSter не вернул видео").slice(0,500);
+     throw new Error("PixelSter HTTP "+response.status+": "+detail);
+   }
    const sourceVideoUrl=String(data.videoUrl);
    updateVideoProgress(model,97,"видео получено…");
    const finalVideoUrl=await muxPixelSterAudio(sourceVideoUrl,(p,label)=>updateVideoProgress(model,p,label));
