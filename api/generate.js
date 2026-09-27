@@ -60,64 +60,110 @@ async function handler(req, res) {
         return res.status(400).json({ error: "A user message is required" });
       }
 
-      const requestedModel =
-        typeof body.model === "string" && body.model.trim()
-          ? body.model.trim()
-          : "gemini-3.8-flash";
+      // Anonymous free chat: no Google login, no user API key, no registration.
+      // LLM Faucet is an OpenAI-compatible gateway with anonymous access and
+      // automatic routing across currently available free upstreams.
+      const system =
+        "Ты Miya — дружелюбный AI-помощник внутри Miya AI Studio. " +
+        "Отвечай на русском, если пользователь пишет по-русски. " +
+        "Помогай с текстами, идеями, сценариями, промптами, изображениями и видео. " +
+        "Отвечай полезно, естественно и по существу.";
 
-      const apiKey = process.env.GEMINI_API_KEY;
-      if (apiKey) {
-        const modelsToTry = [requestedModel, "gemini-3.1-flash-lite", "gemini-3.1-flash", "gemini-2.5-flash"].filter(
-          (value, index, list) => list.indexOf(value) === index
-        );
+      const llmMessages = [
+        { role: "system", content: system },
+        ...cleanMessages.slice(-12)
+      ];
 
-        const contents = cleanMessages.map((m,index) => ({
-          role: m.role === "assistant" ? "model" : "user",
-          parts: [{ text: m.content }, ...(index === cleanMessages.length - 1 && m.role === "user" && chatImageBase64
-            ? [{ inline_data: { mime_type: String(chatImageBase64.match(/^data:([^;]+);/i)?.[1] || "image/png"), data: chatImageBase64.replace(/^data:image\/[^;]+;base64,/i, "") } }]
-            : [])]
-        }));
+      let freeChatText = "";
+      let freeChatModel = "auto:fast";
+      let freeChatProvider = "LLM Faucet";
+      let lastChatStatus = null;
 
-        let response;
-        let data = {};
-        let model = requestedModel;
+      try {
+        const faucetResponse = await fetch("https://api.llmfaucet.dev/v1/chat/completions", {
+          method: "POST",
+          headers: {
+            "Authorization": "Bearer free",
+            "Content-Type": "application/json",
+            "Accept": "application/json"
+          },
+          body: JSON.stringify({
+            model: "auto:fast",
+            messages: llmMessages,
+            max_tokens: 2048
+          }),
+          signal: AbortSignal.timeout(22000)
+        });
 
-        for (const candidate of modelsToTry) {
-          model = candidate;
-          response = await fetch(
-            `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(candidate)}:generateContent?key=${encodeURIComponent(apiKey)}`,
-            {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({
-                systemInstruction: {
-                  parts: [{
-                    text: "Ты Miya — дружелюбный AI-помощник внутри Miya AI Studio. Отвечай на русском, если пользователь пишет по-русски. Помогай с текстами, идеями, сценариями, промптами, изображениями и видео."
-                  }]
-                },
-                contents,
-                generationConfig: {
-                  thinkingConfig: { thinkingLevel: "low" },
-                  maxOutputTokens: 2048
-                }
-              }),
-              signal: AbortSignal.timeout(28000)
-            }
+        lastChatStatus = faucetResponse.status;
+        const faucetData = await faucetResponse.json().catch(() => ({}));
+        freeChatText = String(
+          faucetData?.choices?.[0]?.message?.content ||
+          faucetData?.choices?.[0]?.text ||
+          ""
+        ).trim();
+
+        if (freeChatText) {
+          freeChatModel = String(
+            faucetData?.model ||
+            faucetData?.choices?.[0]?.model ||
+            "auto:fast"
           );
-          data = await response.json().catch(() => ({}));
-          if (response.ok) break;
-          if (![429, 500, 502, 503, 504].includes(response.status)) break;
         }
+      } catch (error) {
+        console.warn("Miya LLM Faucet:", error?.message || error);
+      }
 
-        if (response?.ok) {
-          const text = data?.candidates?.[0]?.content?.parts?.map(part => part?.text || "").join("").trim();
-          if (text) {
-            return res.status(200).json({
-              ok: true, mode: "chat", text, model,
-              provider: "Gemini", usage: data?.usageMetadata || null
-            });
+      // Keep a second anonymous/free route as a fallback. This is text-only;
+      // image analysis is handled by the VisionSter branch below.
+      if (!freeChatText) {
+        try {
+          const legacyResponse = await fetch("https://text.pollinations.ai/openai", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              "Accept": "application/json, text/plain"
+            },
+            body: JSON.stringify({
+              model: "openai",
+              messages: llmMessages
+            }),
+            signal: AbortSignal.timeout(24000)
+          });
+
+          lastChatStatus = legacyResponse.status;
+          const legacyRaw = (await legacyResponse.text()).trim();
+
+          try {
+            const legacyData = legacyRaw ? JSON.parse(legacyRaw) : {};
+            freeChatText = String(
+              legacyData?.choices?.[0]?.message?.content ||
+              legacyData?.text ||
+              legacyData?.response ||
+              ""
+            ).trim();
+          } catch {
+            freeChatText = legacyRaw;
           }
+
+          if (freeChatText) {
+            freeChatModel = "openai";
+            freeChatProvider = "Pollinations";
+          }
+        } catch (error) {
+          console.warn("Miya free text fallback:", error?.message || error);
         }
+      }
+
+      if (freeChatText) {
+        return res.status(200).json({
+          ok: true,
+          mode: "chat",
+          text: freeChatText,
+          model: freeChatModel,
+          provider: freeChatProvider,
+          usage: null
+        });
       }
 
       // If a photo is attached and Gemini is unavailable, use the free server-side
