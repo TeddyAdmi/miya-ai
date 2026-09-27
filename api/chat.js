@@ -16,7 +16,11 @@ async function handler(req, res) {
     const imageBase64 = typeof body.imageBase64 === "string" ? body.imageBase64.trim() : "";
 
     if (!cleanMessages.length || cleanMessages[cleanMessages.length - 1].role !== "user") {
-      return res.status(400).json({ ok: false, error: "USER_MESSAGE_REQUIRED", message: "Нужно сообщение пользователя." });
+      return res.status(400).json({
+        ok: false,
+        error: "USER_MESSAGE_REQUIRED",
+        message: "Нужно сообщение пользователя."
+      });
     }
 
     const system =
@@ -25,8 +29,7 @@ async function handler(req, res) {
       "Помогай с текстами, идеями, сценариями, промптами, изображениями и видео. " +
       "Отвечай полезно и по существу.";
 
-    // Image chat is intentionally isolated from the image-generation API.
-    // This prevents a Vision failure from affecting FLUX Dev / Kontext Dev.
+    // Image chat is intentionally isolated from text chat.
     if (imageBase64) {
       const visionPayload = {
         image: imageBase64,
@@ -99,43 +102,102 @@ async function handler(req, res) {
       }
     }
 
-    try {
-      const faucet = await fetch("https://api.llmfaucet.dev/v1/chat/completions", {
-        method: "POST",
-        headers: {
-          "Authorization": "Bearer free",
-          "Content-Type": "application/json",
-          "Accept": "application/json"
-        },
-        body: JSON.stringify({
-          model: "auto:fast",
-          messages: [
-            { role: "system", content: system },
-            ...cleanMessages.slice(-12)
-          ],
-          max_tokens: 2048
-        }),
-        signal: AbortSignal.timeout(22000)
-      });
+    const chatPayload = {
+      messages: [
+        { role: "system", content: system },
+        ...cleanMessages.slice(-12)
+      ],
+      max_tokens: 2048
+    };
 
-      const data = await faucet.json().catch(() => ({}));
-      const answer = String(data?.choices?.[0]?.message?.content || "").trim();
+    // First choice: the anonymous multi-provider gateway.
+    // Try fast routing, then balanced routing if the fast pool is temporarily empty.
+    const faucetModels = ["auto:fast", "auto"];
+    let faucetStatus = null;
 
-      if (faucet.ok && answer) {
-        return res.status(200).json({
-          ok: true,
-          mode: "chat",
-          text: answer,
-          model: String(data?.model || "auto:fast"),
-          provider: "LLM Faucet"
+    for (const model of faucetModels) {
+      try {
+        const faucet = await fetch("https://api.llmfaucet.dev/v1/chat/completions", {
+          method: "POST",
+          headers: {
+            "Authorization": "Bearer free",
+            "Content-Type": "application/json",
+            "Accept": "application/json"
+          },
+          body: JSON.stringify({ ...chatPayload, model }),
+          signal: AbortSignal.timeout(22000)
         });
-      }
-    } catch {}
+
+        faucetStatus = faucet.status;
+        const raw = await faucet.text();
+        let data = {};
+        try {
+          data = raw ? JSON.parse(raw) : {};
+        } catch {}
+
+        const answer = String(data?.choices?.[0]?.message?.content || "").trim();
+
+        if (faucet.ok && answer) {
+          return res.status(200).json({
+            ok: true,
+            mode: "chat",
+            text: answer,
+            model: String(data?.model || model),
+            provider: "LLM Faucet"
+          });
+        }
+      } catch {}
+    }
+
+    // Direct keyless LLM7 fallback. Its anonymous turbo tier does not
+    // require an account or an API key.
+    const llm7Models = ["minimax-m2.7", "gpt-oss:20b"];
+    let llm7Status = null;
+
+    for (const model of llm7Models) {
+      try {
+        const llm7 = await fetch("https://api.llm7.io/v1/chat/completions", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "Accept": "application/json"
+          },
+          body: JSON.stringify({
+            model,
+            ...chatPayload
+          }),
+          signal: AbortSignal.timeout(22000)
+        });
+
+        llm7Status = llm7.status;
+        const raw = await llm7.text();
+        let data = {};
+        try {
+          data = raw ? JSON.parse(raw) : {};
+        } catch {}
+
+        const answer = String(data?.choices?.[0]?.message?.content || "").trim();
+
+        if (llm7.ok && answer) {
+          return res.status(200).json({
+            ok: true,
+            mode: "chat",
+            text: answer,
+            model: String(data?.model || model),
+            provider: "LLM7"
+          });
+        }
+      } catch {}
+    }
 
     return res.status(502).json({
       ok: false,
       error: "CHAT_UPSTREAM_FAILED",
-      message: "Бесплатный AI-сервис чата временно недоступен."
+      message: "Бесплатные AI-сервисы чата временно недоступны.",
+      upstream: {
+        llmFaucet: faucetStatus,
+        llm7: llm7Status
+      }
     });
   } catch (error) {
     console.error("Miya Chat:", error);
