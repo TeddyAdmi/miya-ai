@@ -1111,7 +1111,7 @@ async function generateMotionVideo(prompt){
    // Route PixelSter through Miya's server so Firefox never sees the upstream
    // ahm7xmakki.com CORS failure. The server has the full 120s function window.
    const pixelSource=await compactPixelSterSource(source);
-   const response=await fetch("/api/generate",{
+   const response=await fetch("/api/minimax",{
      method:"POST",
      headers:{"Content-Type":"application/json","Accept":"application/json"},
      body:JSON.stringify({
