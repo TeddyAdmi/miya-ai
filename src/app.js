@@ -150,7 +150,13 @@ const LIB_KEY="miyaLibrary";
 function getLibrary(){
  try{
   const raw=JSON.parse(localStorage.getItem(LIB_KEY)||"[]");
-  const items=Array.isArray(raw)?raw.filter(x=>x&&typeof x.url==="string"):[];
+  const items=Array.isArray(raw)
+    ? raw.filter(x=>x&&typeof x.url==="string"&&!/https?:\/\/(?:www\.)?vheer\.com\//i.test(x.url))
+    : [];
+  // Remove obsolete Vheer media from the persistent library as well.
+  if(Array.isArray(raw)&&items.length!==raw.length){
+   try{localStorage.setItem(LIB_KEY,JSON.stringify(items))}catch{}
+  }
   return items;
  }catch{return[]}
 }
