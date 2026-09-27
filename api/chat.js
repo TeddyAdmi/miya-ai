@@ -114,7 +114,7 @@ async function handler(req, res) {
       try {
         const response = await fetch("https://api.llm7.io/v1/chat/completions", {
           method: "POST",
-          headers: { "Content-Type": "application/json", "Accept": "application/json" },
+          headers: { "Authorization": "Bearer unused", "Content-Type": "application/json", "Accept": "application/json" },
           body: JSON.stringify({ model, ...chatPayload }),
           signal: AbortSignal.timeout(7000)
         });
