@@ -890,7 +890,12 @@ async function requestChat(){
      signal:AbortSignal.timeout(90000)
    });
    const data=await response.json().catch(()=>({}));
-   if(!response.ok||!data.text)throw new Error(data.message||data.error||"Не удалось получить ответ Miya");
+   const serverMessage=typeof data?.message==="string"
+     ? data.message
+     : typeof data?.error==="string"
+       ? data.error
+       : "Не удалось получить ответ Miya";
+   if(!response.ok||!data.text)throw new Error(serverMessage);
    const answer=String(data.text).trim();
    if(!answer)throw new Error("Miya не вернула текст ответа");
    chatMessages.push({role:"assistant",content:answer});
