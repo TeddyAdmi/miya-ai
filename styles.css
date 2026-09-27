@@ -2048,3 +2048,9 @@ body.light .generation-loading .progress-model{color:#71859a}
 .workspace-head p{font-size:9px;font-weight:600}
 .side-btn b,.tool-btn,.side-label,.chat-history-mini-item{font-family:"Inter",system-ui,-apple-system,"Segoe UI",sans-serif}
 .side-btn b{font-weight:750}
+
+/* Compact fullscreen image viewer actions */
+.image-viewer-controls{gap:5px!important}
+.image-viewer-controls button{width:34px!important;height:34px!important;flex:0 0 34px!important;border-radius:9px!important}
+.image-viewer-controls button svg{width:15px!important;height:15px!important}
+@media(max-width:800px){.image-viewer-controls button{width:31px!important;height:31px!important;flex-basis:31px!important}.image-viewer-controls button svg{width:14px!important;height:14px!important}}
