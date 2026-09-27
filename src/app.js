@@ -802,16 +802,10 @@ async function generateImage(prompt){
    xhr.send(body);
   });
 ;
-  try{
-   data=await generateHfFluxImage(prompt,referenceImage);
-  }catch(hfError){
-   // Keep the old Miya API as a secondary fallback for transient HF Space failures.
-   try{
-    data=await requestThroughMiyaApi();
-   }catch(apiError){
-    throw new Error(hfError?.message||apiError?.message||"Не удалось создать изображение");
-   }
-  }
+  // Image creation/editing is routed through the original AHM7/PixelSter API.
+  // Do not call public Hugging Face FLUX Spaces here: they were only a fallback
+  // experiment and bypass the provider that this app originally used.
+  data=await requestThroughMiyaApi();
   const actualModel=data.model||modelName;
   if(fakeTimer){clearInterval(fakeTimer);fakeTimer=null;}
   if(loader){
