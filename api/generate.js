@@ -361,8 +361,7 @@ async function handler(req, res) {
       }
     }
 
-    if (body.mode === "video") {
-      const prompt = typeof body.prompt === "string" ? body.prompt.trim() : "";
+    const prompt = typeof body.prompt === "string" ? body.prompt.trim() : "";
     if (!prompt) {
       return res.status(400).json({ ok: false, error: "PROMPT_REQUIRED" });
     }
@@ -376,7 +375,7 @@ async function handler(req, res) {
     const imageBase64 =
       typeof options.imageBase64 === "string" ? options.imageBase64.trim() : "";
 
-    const isImageToImage = Boolean(imageUrl || imageBase64); 
+    const isImageToImage = Boolean(imageUrl || imageBase64);
     const endpointPath = isImageToImage ? "/api/pti" : "/api/tti";
     const endpoint = "https://ahm7xmakki.com" + endpointPath;
     const endpoints = [
@@ -389,11 +388,7 @@ async function handler(req, res) {
       ratio: isImageToImage && ratio === "1:1" ? "auto" : ratio
     };
 
-    if (imageUrl) {
-      // Keep the original AHM7 contract: send the source URL when the
-      // library/history item is already hosted, without rewriting the edit prompt.
-      payload.imageUrl = imageUrl;
-    }
+    if (imageUrl) payload.imageUrl = imageUrl;
     if (imageBase64) payload.imageBase64 = imageBase64;
 
     if (isImageToImage && imageBase64) {
@@ -414,7 +409,7 @@ async function handler(req, res) {
     let response = null;
     let raw = "";
     let data = {};
-    let lastNetworkError = null;
+    let lastError = null;
 
     for (const currentEndpoint of endpoints) {
       const controller = new AbortController();
@@ -431,36 +426,31 @@ async function handler(req, res) {
         });
         raw = await response.text();
         try { data = raw ? JSON.parse(raw) : {}; } catch { data = {}; }
-
         if (response.ok && data?.success !== false) break;
-
-        if (response.status === 408 || response.status === 429 || response.status >= 500) {
-          continue;
-        }
-        break;
+        lastError = new Error("HTTP " + response.status);
+        if (![408,429,500,502,503,504].includes(response.status)) break;
       } catch (error) {
-        lastNetworkError = error;
-        if (error?.name !== "AbortError") break;
+        lastError = error;
       } finally {
         clearTimeout(timeout);
       }
     }
 
-    if (lastNetworkError && (!response || !response.ok) && !response) {
+    if (!response || !response.ok || data?.success === false) {
+      if (lastError?.name === "AbortError") {
+        return res.status(504).json({
+          ok: false,
+          error: "FLUX_TIMEOUT",
+          message: isImageToImage
+            ? "Flux Kontext Dev не завершил генерацию вовремя."
+            : "Flux Dev не завершил генерацию вовремя."
+        });
+      }
       return res.status(502).json({
         ok: false,
-        error: "FLUX_UPSTREAM_UNREACHABLE",
-        message: "AHM7 PixelSter не отвечает.",
-        detail: lastNetworkError?.message || "Upstream connection failed"
-      });
-    }
-    if (!response) {
-      return res.status(504).json({
-        ok: false,
-        error: "FLUX_TIMEOUT",
-        message: isImageToImage
-          ? "Flux Kontext Dev не завершил генерацию вовремя."
-          : "Flux Dev не завершил генерацию вовремя."
+        error: String(data?.error || data?.message || (response ? "FLUX_HTTP_" + response.status : "FLUX_UPSTREAM_UNREACHABLE")),
+        upstreamStatus: response?.status || 0,
+        upstreamBody: raw.slice(0, 500)
       });
     }
 
