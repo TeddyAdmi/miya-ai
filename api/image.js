@@ -1,4 +1,4 @@
-async function handler(req, res) {
+module.exports = async function imageHandler(req, res) {
   res.setHeader("Cache-Control", "no-store");
   res.setHeader("Content-Type", "application/json; charset=utf-8");
 
@@ -7,27 +7,20 @@ async function handler(req, res) {
   }
 
   try {
-    const body =
-      typeof req.body === "string"
-        ? JSON.parse(req.body)
-        : (req.body && typeof req.body === "object" ? req.body : {});
+    const body = typeof req.body === "string"
+      ? JSON.parse(req.body)
+      : (req.body && typeof req.body === "object" ? req.body : {});
 
-    const requestMode = String(body.mode || "").trim().toLowerCase();
-    const isImageMode = ["image", "pixel-image", "legacy-flux", "flux", "generate-image", "tti"].includes(requestMode);
+    const prompt = typeof body.prompt === "string" ? body.prompt.trim() : "";
+    if (!prompt) {
+      return res.status(400).json({ ok: false, error: "PROMPT_REQUIRED" });
+    }
 
-
-    if (isImageMode) {
-      const prompt = typeof body.prompt === "string" ? body.prompt.trim() : "";
-    if (!prompt) return res.status(400).json({ ok: false, error: "PROMPT_REQUIRED" });
-
-    const ratio = typeof body.ratio === "string" ? body.ratio : "1:1";
-    const requestedModel = typeof body.model === "string" ? body.model.trim() : "";
+    const model = typeof body.model === "string" ? body.model.trim() : "FLUX Dev";
+    const wantsKontext = /kontext/i.test(model);
     const options = body.options && typeof body.options === "object" ? body.options : {};
-
     const imageUrl = typeof options.imageUrl === "string" ? options.imageUrl.trim() : "";
     const imageBase64 = typeof options.imageBase64 === "string" ? options.imageBase64.trim() : "";
-
-    const wantsKontext = /kontext/i.test(requestedModel);
     const isImageToImage = wantsKontext && Boolean(imageUrl || imageBase64);
 
     if (wantsKontext && !isImageToImage) {
@@ -38,12 +31,7 @@ async function handler(req, res) {
       });
     }
 
-    const endpointPath = isImageToImage ? "/api/pti" : "/api/tti";
-    const endpoints = [
-      "https://ahm7xmakki.com" + endpointPath,
-      "https://www.ahm7xmakki.com" + endpointPath
-    ];
-
+    const ratio = typeof body.ratio === "string" ? body.ratio : "16:9";
     const requestedCopies = Number(body.copies ?? body.count ?? 1);
     const copies = Number.isFinite(requestedCopies)
       ? Math.max(1, Math.min(4, Math.round(requestedCopies)))
@@ -51,86 +39,63 @@ async function handler(req, res) {
 
     const payload = {
       prompt,
-      ratio: isImageToImage && ratio === "1:1" ? "auto" : ratio,
-      ...(copies > 1 && !isImageToImage ? { copies, count: copies } : {})
+      ratio: isImageToImage && ratio === "1:1" ? "auto" : ratio
     };
 
-    if (imageUrl) {
-      const sourceResponse = await fetch(imageUrl, {
-        method: "GET",
-        headers: { Accept: "image/*" }
-      });
+    if (copies > 1 && !isImageToImage) {
+      payload.copies = copies;
+      payload.count = copies;
+    }
 
-      if (!sourceResponse.ok) {
+    if (imageUrl) {
+      const source = await fetch(imageUrl, { headers: { Accept: "image/*" } });
+      if (!source.ok) {
         return res.status(400).json({
           ok: false,
           error: "SOURCE_IMAGE_FETCH_FAILED",
-          message: "Не удалось получить исходное изображение для редактирования (HTTP " + sourceResponse.status + ")."
+          message: "Не удалось получить исходное изображение (HTTP " + source.status + ")."
         });
       }
-
-      const sourceBuffer = Buffer.from(await sourceResponse.arrayBuffer());
-      if (sourceBuffer.length > 3.5 * 1024 * 1024) {
-        return res.status(413).json({
-          ok: false,
-          error: "SOURCE_IMAGE_TOO_LARGE",
-          message: "Исходное изображение слишком большое. PixelSter принимает изображения до 3.5 MB."
-        });
+      const bytes = Buffer.from(await source.arrayBuffer());
+      if (bytes.length > 3.5 * 1024 * 1024) {
+        return res.status(413).json({ ok: false, error: "SOURCE_IMAGE_TOO_LARGE" });
       }
-
-      const contentType = sourceResponse.headers.get("content-type") || "image/jpeg";
-      const mime = /^image\/(jpeg|png|webp)$/i.test(contentType)
-        ? contentType.split(";")[0]
-        : "image/jpeg";
-
-      payload.imageBase64 = "data:" + mime + ";base64," + sourceBuffer.toString("base64");
+      const type = source.headers.get("content-type") || "image/jpeg";
+      const mime = /^image\/(jpeg|png|webp)$/i.test(type) ? type.split(";")[0] : "image/jpeg";
+      payload.imageBase64 = "data:" + mime + ";base64," + bytes.toString("base64");
+    } else if (imageBase64) {
+      payload.imageBase64 = imageBase64;
     }
 
-    if (imageBase64) payload.imageBase64 = imageBase64;
-
     if (isImageToImage) {
-      const sourceData = payload.imageBase64 || "";
+      const sourceData = String(payload.imageBase64 || "");
       const match = sourceData.match(/^data:image\/[^;]+;base64,(.+)$/i);
-      const rawBase64 = match ? match[1].replace(/\s+/g,"") : sourceData.replace(/^base64,/i,"").replace(/\s+/g,"");
+      const rawBase64 = match
+        ? match[1].replace(/\s+/g, "")
+        : sourceData.replace(/^base64,/i, "").replace(/\s+/g, "");
 
-      if (!rawBase64 || rawBase64.length < 100) {
-        return res.status(400).json({
-          ok: false,
-          error: "INVALID_IMAGE_BASE64",
-          message: "PixelSter не получил корректное исходное изображение."
-        });
+      if (rawBase64.length < 100) {
+        return res.status(400).json({ ok: false, error: "INVALID_IMAGE_BASE64" });
       }
 
-      const approxBytes = Math.ceil(rawBase64.length * 3 / 4);
-      if (approxBytes > 3.5 * 1024 * 1024) {
-        return res.status(413).json({
-          ok: false,
-          error: "SOURCE_IMAGE_TOO_LARGE",
-          message: "Исходное изображение слишком большое. PixelSter принимает изображения до 3.5 MB."
-        });
+      if (Math.ceil(rawBase64.length * 3 / 4) > 3.5 * 1024 * 1024) {
+        return res.status(413).json({ ok: false, error: "SOURCE_IMAGE_TOO_LARGE" });
       }
 
       payload.imageBase64 = rawBase64;
-      payload.prompt = String(prompt).trim() + "\n\nSTRICT IMAGE EDIT — FLUX KONTEXT DEV:\n- Use the supplied image as the exact source image and preserve everything that was not explicitly requested to change.\n- Preserve the original subject, identity, face, anatomy, body proportions, clothing, pose, camera angle, composition, lighting, shadows, background and environment.\n- Make only the requested modifications and integrate every new object naturally into the original photograph.\n- OBJECT COUNT IS STRICT: create exactly the number of objects explicitly requested in the user's prompt. Never duplicate, clone, merge or multiply an object.\n- ANIMAL ANATOMY IS STRICT: every animal must have exactly one coherent body and head with normal anatomy. A cat must have one body, one head, four legs and one tail unless the user explicitly requests otherwise. Never create duplicate bodies, heads, tails, limbs or overlapping copies of the same animal.\n- SPORTS BALL REALISM IS STRICT: a soccer ball must be exactly one realistic spherical physical ball with authentic panel construction, correct proportions, natural perspective, believable scale, contact with the surface and a realistic contact shadow. It must look like a real photographed object, not a decorative object, toy, illustration, distorted sphere or abstract shape.\n- New objects must have physically correct placement, scale, perspective, lighting, materials and shadows consistent with the source image.\n- Return one coherent photorealistic image, not a collage, duplicate-object composition or surreal result.\n- Do not add any unrequested objects, animals, limbs, tails, balls, people, text or watermarks.";
+      payload.prompt = prompt + "\n\nSTRICT IMAGE EDIT — FLUX KONTEXT DEV:\n- Preserve the source image and change only what the user explicitly requests.\n- Preserve identity, anatomy, proportions, pose, composition, lighting, shadows and background unless explicitly requested otherwise.\n- Create exactly the requested number of objects. Never duplicate objects or body parts.\n- Return one coherent photorealistic image with no collage, watermark or unrequested objects.";
     }
 
-    let response = null;
-    let raw = "";
-    let data = {};
-    let lastNetworkError = null;
+    const endpointPath = isImageToImage ? "/api/pti" : "/api/tti";
+    const hosts = ["https://ahm7xmakki.com", "https://www.ahm7xmakki.com"];
+    let lastError = "";
 
-    for (let endpointIndex = 0; endpointIndex < endpoints.length; endpointIndex++) {
-      const endpoint = endpoints[endpointIndex];
-      // Text-to-image can also receive transient 5xx/429 responses from the
-      // free upstream. Retry it without changing the Flux Dev prompt/model.
-      const maxAttempts = isImageToImage ? 3 : 2;
-      for (let attempt = 0; attempt < maxAttempts; attempt++) {
-        const controller = new AbortController();
-        const timeoutMs = isImageToImage ? 58000 : 30000;
-        const timeout = setTimeout(() => controller.abort(), timeoutMs);
+    for (const host of hosts) {
+      const controller = new AbortController();
+      const timer = setTimeout(() => controller.abort(), isImageToImage ? 58000 : 30000);
 
-        try {
-          response = await fetch(endpoint, {
+      try {
+        const upstream = await fetch(host + endpointPath, {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
@@ -140,98 +105,58 @@ async function handler(req, res) {
           signal: controller.signal
         });
 
-        raw = await response.text();
-        try {
-          data = raw ? JSON.parse(raw) : {};
-        } catch {
-          data = {};
-        }
+        const raw = await upstream.text();
+        let data = {};
+        try { data = raw ? JSON.parse(raw) : {}; } catch {}
 
-          if (response.ok && data?.success !== false) break;
-
-          if ([408,429,500,502,503,504].includes(response.status) && attempt < maxAttempts-1) {
-            await new Promise(resolve=>setTimeout(resolve,1000*(attempt+1)));
-            continue;
-          }
-          break;
-        } catch (error) {
-        lastNetworkError = error;
-
-        if (attempt < maxAttempts - 1) {
-          await new Promise(resolve => setTimeout(resolve, 1000 * (attempt + 1)));
+        if (!upstream.ok || data?.success === false) {
+          lastError = raw.slice(0, 500);
           continue;
         }
-        if (endpointIndex < endpoints.length - 1) continue;
-        break;
-        } finally {
-          clearTimeout(timeout);
+
+        const urls = Array.isArray(data.imageUrls)
+          ? data.imageUrls
+          : Array.isArray(data.images)
+            ? data.images.map(x => typeof x === "string" ? x : x?.imageUrl)
+            : data.imageUrl
+              ? [data.imageUrl]
+              : [];
+
+        const imageUrls = urls.filter(x => typeof x === "string" && /^https?:\/\//i.test(x));
+        if (!imageUrls.length) {
+          lastError = "FLUX_IMAGE_URL_MISSING";
+          continue;
         }
+
+        return res.status(200).json({
+          ok: true,
+          mode: "image",
+          status: "completed",
+          provider: "PixelSter",
+          model: isImageToImage ? "Flux Kontext Dev" : "Flux Dev",
+          imageUrl: imageUrls[0],
+          imageUrls,
+          count: imageUrls.length,
+          meta: { free: true, endpoint: endpointPath, edit: isImageToImage }
+        });
+      } catch (error) {
+        lastError = error?.message || String(error);
+      } finally {
+        clearTimeout(timer);
       }
-      if (response?.ok && data?.success !== false) break;
     }
 
-    if (lastNetworkError && (!response || !response.ok)) {
-      return res.status(502).json({
-        ok: false,
-        error: "FLUX_UPSTREAM_UNREACHABLE",
-        message: "Сервер Miya не смог подключиться к PixelSter. Попробована резервная точка API.",
-        detail: lastNetworkError?.message || "Upstream connection failed"
-      });
-    }
-
-    if (!response || !response.ok || data?.success === false) {
-      return res.status(502).json({
-        ok: false,
-        error: String(data?.error || data?.message || `FLUX_HTTP_${response?.status || "UNKNOWN"}`),
-        message: isImageToImage
-          ? "Flux Kontext Dev отклонил исходное изображение или запрос."
-          : "Flux Dev не вернул изображение.",
-        upstreamStatus: response?.status || null,
-        upstreamBody: raw.slice(0, 1000)
-      });
-    }
-
-    const imageUrls = Array.isArray(data?.imageUrls)
-      ? data.imageUrls.filter(url => typeof url === "string" && /^https?:\/\//i.test(url))
-      : Array.isArray(data?.images)
-        ? data.images.map(item => typeof item === "string" ? item : item?.imageUrl)
-            .filter(url => typeof url === "string" && /^https?:\/\//i.test(url))
-        : data?.imageUrl
-          ? [data.imageUrl]
-          : [];
-
-    if (!imageUrls.length) {
-      return res.status(502).json({
-        ok: false,
-        error: "FLUX_IMAGE_URL_MISSING",
-        providerResponse: data
-      });
-    }
-
-    return res.status(200).json({
-      ok: true,
-      mode: "image",
-      status: "completed",
-      provider: "PixelSter",
-      model: isImageToImage ? "Flux Kontext Dev" : "Flux Dev",
-      imageUrl: imageUrls[0],
-      imageUrls,
-      count: imageUrls.length,
-      meta: {
-        transport: "http-json",
-        free: true,
-        endpoint: endpointPath,
-        edit: isImageToImage
-      }
+    return res.status(502).json({
+      ok: false,
+      error: "FLUX_UPSTREAM_FAILED",
+      message: isImageToImage ? "Flux Kontext Dev не вернул изображение." : "Flux Dev не вернул изображение.",
+      detail: lastError
     });
   } catch (error) {
-    console.warn("Miya FLUX:", error?.message || error);
     return res.status(500).json({
       ok: false,
-      error: "GENERATION_ERROR",
-      message: error?.message || "Не удалось выполнить запрос генерации."
+      error: "IMAGE_HANDLER_ERROR",
+      message: error?.message || "Ошибка обработчика изображений."
     });
   }
-}
-
-module.exports = handler;
+};
