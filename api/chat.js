@@ -110,14 +110,37 @@ async function handler(req, res) {
       max_tokens: 2048
     };
 
-    // First choice: the anonymous multi-provider gateway.
-    // Try fast routing, then balanced routing if the fast pool is temporarily empty.
-    const faucetModels = ["auto:fast", "auto"];
-    let faucetStatus = null;
+    const chatPayload = {
+      messages: [
+        { role: "system", content: system },
+        ...cleanMessages.slice(-12)
+      ],
+      max_tokens: 1024
+    };
 
-    for (const model of faucetModels) {
+    async function callLlm7(model) {
       try {
-        const faucet = await fetch("https://api.llmfaucet.dev/v1/chat/completions", {
+        const response = await fetch("https://api.llm7.io/v1/chat/completions", {
+          method: "POST",
+          headers: { "Content-Type": "application/json", "Accept": "application/json" },
+          body: JSON.stringify({ model, ...chatPayload }),
+          signal: AbortSignal.timeout(10000)
+        });
+        const raw = await response.text();
+        let data = {};
+        try { data = raw ? JSON.parse(raw) : {}; } catch {}
+        const answer = String(data?.choices?.[0]?.message?.content || "").trim();
+        return response.ok && answer
+          ? { ok:true, text:answer, model:String(data?.model || model), provider:"LLM7" }
+          : { ok:false, status:response.status };
+      } catch {
+        return { ok:false, status:null };
+      }
+    }
+
+    async function callFaucet(model) {
+      try {
+        const response = await fetch("https://api.llmfaucet.dev/v1/chat/completions", {
           method: "POST",
           headers: {
             "Authorization": "Bearer free",
@@ -125,78 +148,55 @@ async function handler(req, res) {
             "Accept": "application/json"
           },
           body: JSON.stringify({ ...chatPayload, model }),
-          signal: AbortSignal.timeout(22000)
+          signal: AbortSignal.timeout(10000)
         });
-
-        faucetStatus = faucet.status;
-        const raw = await faucet.text();
+        const raw = await response.text();
         let data = {};
-        try {
-          data = raw ? JSON.parse(raw) : {};
-        } catch {}
-
+        try { data = raw ? JSON.parse(raw) : {}; } catch {}
         const answer = String(data?.choices?.[0]?.message?.content || "").trim();
-
-        if (faucet.ok && answer) {
-          return res.status(200).json({
-            ok: true,
-            mode: "chat",
-            text: answer,
-            model: String(data?.model || model),
-            provider: "LLM Faucet"
-          });
-        }
-      } catch {}
+        return response.ok && answer
+          ? { ok:true, text:answer, model:String(data?.model || model), provider:"LLM Faucet" }
+          : { ok:false, status:response.status };
+      } catch {
+        return { ok:false, status:null };
+      }
     }
 
-    // Direct keyless LLM7 fallback. Its anonymous turbo tier does not
-    // require an account or an API key.
-    const llm7Models = ["minimax-m2.7", "gpt-oss:20b"];
-    let llm7Status = null;
+    // Two independent free gateways are tried in parallel. This prevents
+    // one unavailable provider from blocking the whole chat for ~20+ seconds.
+    const firstWave = await Promise.all([
+      callLlm7("default"),
+      callFaucet("auto:fast")
+    ]);
+    const winner = firstWave.find(result => result?.ok);
+    if (winner) {
+      return res.status(200).json({
+        ok:true, mode:"chat", text:winner.text,
+        model:winner.model, provider:winner.provider
+      });
+    }
 
-    for (const model of llm7Models) {
-      try {
-        const llm7 = await fetch("https://api.llm7.io/v1/chat/completions", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            "Accept": "application/json"
-          },
-          body: JSON.stringify({
-            model,
-            ...chatPayload
-          }),
-          signal: AbortSignal.timeout(22000)
-        });
-
-        llm7Status = llm7.status;
-        const raw = await llm7.text();
-        let data = {};
-        try {
-          data = raw ? JSON.parse(raw) : {};
-        } catch {}
-
-        const answer = String(data?.choices?.[0]?.message?.content || "").trim();
-
-        if (llm7.ok && answer) {
-          return res.status(200).json({
-            ok: true,
-            mode: "chat",
-            text: answer,
-            model: String(data?.model || model),
-            provider: "LLM7"
-          });
-        }
-      } catch {}
+    const secondWave = await Promise.all([
+      callLlm7("minimax-m2.7"),
+      callFaucet("auto")
+    ]);
+    const fallbackWinner = secondWave.find(result => result?.ok);
+    if (fallbackWinner) {
+      return res.status(200).json({
+        ok:true, mode:"chat", text:fallbackWinner.text,
+        model:fallbackWinner.model, provider:fallbackWinner.provider
+      });
     }
 
     return res.status(502).json({
-      ok: false,
-      error: "CHAT_UPSTREAM_FAILED",
-      message: "Бесплатные AI-сервисы чата временно недоступны.",
-      upstream: {
-        llmFaucet: faucetStatus,
-        llm7: llm7Status
+      ok:false,
+      error:"CHAT_UPSTREAM_FAILED",
+      message:"Бесплатные AI-сервисы чата временно недоступны.",
+      upstream:{
+        llm7:firstWave[0]?.status ?? null,
+        llmFaucet:firstWave[1]?.status ?? null,
+        llm7Fallback:secondWave[0]?.status ?? null,
+        llmFaucetFallback:secondWave[1]?.status ?? null
       }
     });
   } catch (error) {
