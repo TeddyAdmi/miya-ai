@@ -1142,7 +1142,8 @@ if(chatMenuToggle){
  });
 }
 document.querySelectorAll("[data-mode]").forEach(b=>b.addEventListener("click",()=>setMode(b.dataset.mode)));
-$("#composerInput").addEventListener("input",syncInput);\n$("#composerInput").addEventListener("contextmenu",()=>{ $("#composerInput").focus(); });
+$("#composerInput").addEventListener("input",syncInput);
+$("#composerInput").addEventListener("contextmenu",()=>{ $("#composerInput").focus(); });
 $("#composerInput").addEventListener("keydown",e=>{if(e.key==="Enter"&&!e.shiftKey){e.preventDefault();$("#composerSend").click()}});
 $("#composerSend").addEventListener("click",async()=>{
  const value=$("#composerInput").value.trim();
