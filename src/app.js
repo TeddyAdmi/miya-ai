@@ -745,7 +745,7 @@ async function generateImage(prompt){
   let data;
   const requestThroughMiyaApi=async()=>new Promise((resolve,reject)=>{
    const xhr=new XMLHttpRequest();
-   xhr.open("POST","/api/generate",true);
+   xhr.open("POST","/api/image",true);
    xhr.setRequestHeader("Content-Type","application/json");
    xhr.setRequestHeader("Accept","application/json");
    xhr.upload.onprogress=e=>{
@@ -1233,7 +1233,7 @@ async function generateMiniMaxVideo(prompt){
      :ratioValue==="1:1"?"544x544 · 1:1 fast"
      :"960x544 · 16:9 fast";
    updateVideoProgress(model,1,"подключение к MiniMax H3…");
-   const response=await fetch("/api/generate",{
+   const response=await fetch("/api/minimax",{
      method:"POST",
      headers:{"Content-Type":"application/json","Accept":"application/json"},
      body:JSON.stringify({
