@@ -7,6 +7,44 @@ async function handler(req, res) {
     return res.status(405).json({ ok: false, error: "METHOD_NOT_ALLOWED" });
   }
 
+    async function generatePixelSound(prompt, duration) {
+      try {
+        const { Client } = await import("@gradio/client");
+        const client = await Promise.race([
+          Client.connect("declare-lab/TangoFlux"),
+          new Promise((_, reject) => setTimeout(() => reject(new Error("TangoFlux connection timeout")), 10000))
+        ]);
+        const soundPrompt = [
+          "Generate synchronized realistic cinematic sound effects for this exact image-to-video action.",
+          "No music. No human speech. Use only natural diegetic sounds that match the described action.",
+          "Desert canyon ambience, dry wind, fast eagle wing flaps, animal movement, physical impact and dust movement.",
+          "If a lion is present, include a deep realistic lion growl/roar when appropriate.",
+          "Synchronize the sound events in the same order as the visual actions.",
+          String(prompt || "")
+        ].join(" ");
+        const result = await Promise.race([
+          client.predict("/predict", [soundPrompt, 25, 4.5, Math.max(1, Math.min(20, Number(duration) || 5))]),
+          new Promise((_, reject) => setTimeout(() => reject(new Error("TangoFlux generation timeout")), 25000))
+        ]);
+        const value = result?.data?.[0] || result?.data || "";
+        const url = typeof value === "string"
+          ? value
+          : (value?.url || value?.path || value?.value || "");
+        if (!/^https?:\/\//i.test(String(url))) throw new Error("TangoFlux returned no audio URL");
+        const audioResponse = await fetch(String(url), { headers: { Accept: "audio/*" } });
+        if (!audioResponse.ok) throw new Error("TangoFlux audio fetch HTTP " + audioResponse.status);
+        const bytes = Buffer.from(await audioResponse.arrayBuffer());
+        if (!bytes.length) throw new Error("TangoFlux returned empty audio");
+        return {
+          audioBase64: bytes.toString("base64"),
+          audioMime: audioResponse.headers.get("content-type") || "audio/wav"
+        };
+      } catch (error) {
+        console.warn("Miya Pixel audio:", error?.message || error);
+        return null;
+      }
+    }
+
   try {
     const body =
       typeof req.body === "string" ? JSON.parse(req.body) : (req.body || {});
@@ -324,6 +362,7 @@ async function handler(req, res) {
       const requestedDuration = Number(body.duration ?? 5);
       const duration = Number.isFinite(requestedDuration) ? Math.max(5, Math.min(20, Math.round(requestedDuration))) : 5;
       const payload = { prompt, ratio, duration, imageBase64: rawBase64 };
+      const audioPromise = generatePixelSound(prompt, duration);
       const endpoints = ["https://ahm7xmakki.com/api/ptv","https://www.ahm7xmakki.com/api/ptv"];
       let response = null, raw = "", data = {}, lastNetworkError = null;
 
@@ -354,7 +393,14 @@ async function handler(req, res) {
 
       const videoUrl = typeof data?.videoUrl === "string" && /^https?:\/\//i.test(data.videoUrl) ? data.videoUrl : "";
       if (!videoUrl) return res.status(502).json({ ok:false, error:"VIDEO_URL_MISSING", providerResponse:data });
-      return res.status(200).json({ ok:true, mode:"video", status:"completed", provider:"PixelSter", model:"Motion Synthesis", videoUrl, meta:{ transport:"http-json", free:true, endpoint:"/api/ptv", duration, ratio } });
+      const generatedAudio = await audioPromise;
+      return res.status(200).json({
+        ok:true, mode:"video", status:"completed", provider:"PixelSter",
+        model:"Motion Synthesis", videoUrl,
+        audioBase64:generatedAudio?.audioBase64 || "",
+        audioMime:generatedAudio?.audioMime || "",
+        meta:{ transport:"http-json", free:true, endpoint:"/api/ptv", audioProvider:generatedAudio?"TangoFlux":"none", duration, ratio }
+      });
     }
 
     const prompt = typeof body.prompt === "string" ? body.prompt.trim() : "";
