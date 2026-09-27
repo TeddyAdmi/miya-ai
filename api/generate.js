@@ -29,7 +29,7 @@ async function handler(req, res) {
 
       const apiKey = process.env.GEMINI_API_KEY;
       if (apiKey) {
-        const modelsToTry = [requestedModel, "gemini-3.6-flash", "gemini-3.5-flash"].filter(
+        const modelsToTry = [requestedModel, "gemini-3.1-flash-lite", "gemini-3.1-flash", "gemini-2.5-flash"].filter(
           (value, index, list) => list.indexOf(value) === index
         );
 
@@ -78,6 +78,36 @@ async function handler(req, res) {
               provider: "Gemini", usage: data?.usageMetadata || null
             });
           }
+        }
+      }
+
+      // If a photo is attached and Gemini is unavailable, use the free server-side
+      // VisionSter endpoint instead of silently falling back to a text-only model.
+      if (chatImageBase64) {
+        try {
+          const visionResponse = await fetch("https://ahm7xmakki.com/api/imgchat", {
+            method: "POST",
+            headers: { "Content-Type": "application/json", "Accept": "application/json" },
+            body: JSON.stringify({
+              image: chatImageBase64,
+              userPrompt: cleanMessages[cleanMessages.length - 1].content,
+              messages: cleanMessages.slice(-12).map(m => ({
+                type: m.role === "assistant" ? "ai" : "user",
+                content: m.content
+              }))
+            }),
+            signal: AbortSignal.timeout(45000)
+          });
+          const visionData = await visionResponse.json().catch(() => ({}));
+          const visionText = String(visionData?.response || visionData?.text || "").trim();
+          if (visionResponse.ok && visionText) {
+            return res.status(200).json({
+              ok: true, mode: "chat", text: visionText,
+              model: "VisionSter", provider: "AHM7 Vision", usage: null
+            });
+          }
+        } catch (visionError) {
+          console.warn("Miya VisionSter fallback:", visionError?.message || visionError);
         }
       }
 
@@ -202,7 +232,13 @@ async function handler(req, res) {
       const duration = Number.isFinite(requestedDuration) ? Math.max(1, Math.min(10, requestedDuration)) : 5;
       try {
         const { Client, handle_file } = await import("@gradio/client");
-        const client = await Client.connect("Lightricks/LTX-2-3");
+        const client = await Promise.race([
+          Client.connect("Lightricks/LTX-2-3"),
+          new Promise((_, reject) => setTimeout(() => reject(new Error("LTX Space connection timeout")), 25000))
+        ]);
+        // Current LTX-2.3 Space signature:
+        // image, prompt, duration, enhance_prompt, seed, randomize_seed, height, width.
+        // Keep prompt enhancement OFF so the user's exact motion instructions remain authoritative.
         let inputImage = null;
         if (imageBase64) {
           const raw = imageBase64.replace(/^data:image\/[^;]+;base64,/i, "").replace(/^base64,/i, "").replace(/\s+/g, "");
@@ -215,8 +251,8 @@ async function handler(req, res) {
         // LTX-2.3 Distilled ZeroGPU exposes the exact generate_video signature
         // used here. Keep the dimensions explicit so the selected ratio is not
         // silently replaced by the Space's UI preset.
-        let width=1536,height=864;
-        if(ratio==="9:16"){width=864;height=1536}
+        let width=1536,height=1024;
+        if(ratio==="9:16"){width=1024;height=1536}
         else if(ratio==="1:1"){width=1024;height=1024}
 
         const result=await client.predict("/generate_video",[
@@ -235,8 +271,7 @@ async function handler(req, res) {
         const findVideoUrl=(value,seen=new Set())=>{
           if(value==null)return "";
           if(typeof value==="string"){
-            return /^https?:\/\//i.test(value)&&/\.(mp4|webm|mov)(?:[?#].*)?$/i.test(value)
-              ? value : "";
+            return /^https?:\/\//i.test(value) ? value : "";
           }
           if(typeof value!=="object"||seen.has(value))return "";
           seen.add(value);
