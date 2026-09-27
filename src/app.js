@@ -1127,27 +1127,28 @@ async function generateMotionVideo(prompt){
      prompt
    ].join("\n");
    updateVideoProgress(model,1,"отправляю запрос…");
-   // PixelSter /api/ptv can take longer than Vercel's serverless request window.
-   // Call the documented free endpoint directly from the browser so the long
-   // generation is not killed by the Miya /api/generate 60s gateway timeout.
-   // PixelSter accepts the source image as a data:image/... base64 payload.
+   // Route PixelSter through Miya's server so Firefox never sees the upstream
+   // ahm7xmakki.com CORS failure. The server has the full 120s function window.
    const pixelSource=await compactPixelSterSource(source);
-   const response=await fetch("https://ahm7xmakki.com/api/ptv",{
+   const response=await fetch("/api/generate",{
      method:"POST",
      headers:{"Content-Type":"application/json","Accept":"application/json"},
      body:JSON.stringify({
+       mode:"video",
+       provider:"pixelster",
        prompt:motionPrompt,
        ratio,
        duration,
-       imageBase64:pixelSource
-     })
+       options:{imageBase64:pixelSource}
+     }),
+     signal:AbortSignal.timeout(125000)
    });
    const raw=await response.text();
    let data={};
    try{data=raw?JSON.parse(raw):{}}catch{}
-   if(!response.ok||data?.success===false||!data?.videoUrl){
-     const detail=String(data?.error||data?.message||raw||"PixelSter не вернул видео").slice(0,500);
-     throw new Error("PixelSter HTTP "+response.status+": "+detail);
+   if(!response.ok||data?.ok===false||!data?.videoUrl){
+     const detail=String(data?.message||data?.error||raw||"PixelSter не вернул видео").slice(0,500);
+     throw new Error("PixelSter: "+detail);
    }
    const sourceVideoUrl=String(data.videoUrl);
    updateVideoProgress(model,99,"видео получено…");
@@ -1163,7 +1164,6 @@ async function generateMotionVideo(prompt){
  }catch(e){
    stopProgress();removeGenerationLoading();
    $("#composerProgress").textContent="";
-   console.error("PixelSter Motion Synthesis failed",e);
    const rawMessage=String(e?.message||"");
    const is504=/PixelSter HTTP 504|Gateway Time-out|Gateway Timeout|NetworkError/i.test(rawMessage);
    const isQuota=/exceeded your ZeroGPU quota|ZeroGPU quota|quota/i.test(rawMessage);
@@ -1378,7 +1378,7 @@ function setMode(next,render=true){
  $("#workspaceEyebrow").textContent=m.eyebrow;$("#workspaceTitle").textContent=m.title;$("#workspaceSubtitle").textContent=m.subtitle;
  $("#composerInput").placeholder=m.placeholder;$("#composerSendText").textContent=m.send;$("#composerStatus").textContent=m.status;
  $(".image-settings").style.display=next==="images"?"flex":"none";$("#videoOptions").classList.toggle("show",next==="video");
- if(next==="video"){ setVideoRatioDefault(); if($("#videoModel")&&!$("#videoModel").value)$("#videoModel").value="LTX-2.3 Distilled"; }
+ if(next==="video"){ setVideoRatioDefault(); if($("#videoModel")&&!$("#videoModel").value)$("#videoModel").value="LTX-2.3 Distilled"; refreshLtxQuotaState(); }
  document.querySelectorAll("[data-mode]").forEach(x=>x.classList.toggle("active",x.dataset.mode===next));
  document.querySelectorAll("#chatSubmenu .side-subbtn").forEach(x=>x.classList.remove("active"));
  $("#chatMenuToggle")?.classList.toggle("active",next==="chat");
@@ -1466,6 +1466,7 @@ $("#videoModel")?.addEventListener("change",()=>{
  const model=$("#videoModel").value;
  const duration=$("#videoDuration");
  if(duration && model==="PixelSter Motion Synthesis") duration.value="10 сек";
+ if(duration && model==="Wan 2.2 Fast") duration.value="3 сек";
  $("#composerProgress").textContent="";
  $("#composerStatus").textContent=model==="PixelSter Motion Synthesis"
    ? "PixelSter Motion Synthesis · 10 сек по умолчанию"
