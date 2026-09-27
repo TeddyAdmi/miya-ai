@@ -60,112 +60,64 @@ async function handler(req, res) {
         return res.status(400).json({ error: "A user message is required" });
       }
 
-      // Anonymous free chat: no Google login, no user API key, no registration.
-      // LLM Faucet is an OpenAI-compatible gateway with anonymous access and
-      // automatic routing across currently available free upstreams.
-      const system =
-        "Ты Miya — дружелюбный AI-помощник внутри Miya AI Studio. " +
-        "Отвечай на русском, если пользователь пишет по-русски. " +
-        "Помогай с текстами, идеями, сценариями, промптами, изображениями и видео. " +
-        "Отвечай полезно, естественно и по существу.";
+      const requestedModel =
+        typeof body.model === "string" && body.model.trim()
+          ? body.model.trim()
+          : "gemini-3.8-flash";
 
-      const llmMessages = [
-        { role: "system", content: system },
-        ...cleanMessages.slice(-12)
-      ];
+      const apiKey = process.env.GEMINI_API_KEY;
+      if (apiKey) {
+        const modelsToTry = [requestedModel, "gemini-3.1-flash-lite", "gemini-3.1-flash", "gemini-2.5-flash"].filter(
+          (value, index, list) => list.indexOf(value) === index
+        );
 
-      let freeChatText = "";
-      let freeChatModel = "auto:fast";
-      let freeChatProvider = "LLM Faucet";
-      let lastChatStatus = null;
+        const contents = cleanMessages.map((m,index) => ({
+          role: m.role === "assistant" ? "model" : "user",
+          parts: [{ text: m.content }, ...(index === cleanMessages.length - 1 && m.role === "user" && chatImageBase64
+            ? [{ inline_data: { mime_type: String(chatImageBase64.match(/^data:([^;]+);/i)?.[1] || "image/png"), data: chatImageBase64.replace(/^data:image\/[^;]+;base64,/i, "") } }]
+            : [])]
+        }));
 
-      if (!chatImageBase64) {
-        try {
-          const faucetResponse = await fetch("https://api.llmfaucet.dev/v1/chat/completions", {
-            method: "POST",
-            headers: {
-              "Authorization": "Bearer free",
-              "Content-Type": "application/json",
-              "Accept": "application/json"
-            },
-            body: JSON.stringify({
-              model: "auto:fast",
-              messages: llmMessages,
-              max_tokens: 2048
-            }),
-            signal: AbortSignal.timeout(22000)
-          });
+        let response;
+        let data = {};
+        let model = requestedModel;
 
-          lastChatStatus = faucetResponse.status;
-          const faucetData = await faucetResponse.json().catch(() => ({}));
-          freeChatText = String(
-            faucetData?.choices?.[0]?.message?.content ||
-            faucetData?.choices?.[0]?.text ||
-            ""
-          ).trim();
-
-          if (freeChatText) {
-            freeChatModel = String(
-              faucetData?.model ||
-              faucetData?.choices?.[0]?.model ||
-              "auto:fast"
-            );
-          }
-        } catch (error) {
-          console.warn("Miya LLM Faucet:", error?.message || error);
+        for (const candidate of modelsToTry) {
+          model = candidate;
+          response = await fetch(
+            `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(candidate)}:generateContent?key=${encodeURIComponent(apiKey)}`,
+            {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                systemInstruction: {
+                  parts: [{
+                    text: "Ты Miya — дружелюбный AI-помощник внутри Miya AI Studio. Отвечай на русском, если пользователь пишет по-русски. Помогай с текстами, идеями, сценариями, промптами, изображениями и видео."
+                  }]
+                },
+                contents,
+                generationConfig: {
+                  thinkingConfig: { thinkingLevel: "low" },
+                  maxOutputTokens: 2048
+                }
+              }),
+              signal: AbortSignal.timeout(28000)
+            }
+          );
+          data = await response.json().catch(() => ({}));
+          if (response.ok) break;
+          if (![429, 500, 502, 503, 504].includes(response.status)) break;
         }
 
-      }
-
-      // Keep a second anonymous/free route as a fallback. This is text-only.
-      if (!chatImageBase64 && !freeChatText) {
-        try {
-          const legacyResponse = await fetch("https://text.pollinations.ai/openai", {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-              "Accept": "application/json, text/plain"
-            },
-            body: JSON.stringify({
-              model: "openai",
-              messages: llmMessages
-            }),
-            signal: AbortSignal.timeout(24000)
-          });
-
-          lastChatStatus = legacyResponse.status;
-          const legacyRaw = (await legacyResponse.text()).trim();
-
-          try {
-            const legacyData = legacyRaw ? JSON.parse(legacyRaw) : {};
-            freeChatText = String(
-              legacyData?.choices?.[0]?.message?.content ||
-              legacyData?.text ||
-              legacyData?.response ||
-              ""
-            ).trim();
-          } catch {
-            freeChatText = legacyRaw;
+        if (response?.ok) {
+          const text = data?.candidates?.[0]?.content?.parts?.map(part => part?.text || "").join("").trim();
+          if (text) {
+            return res.status(200).json({
+              ok: true, mode: "chat", text, model,
+              provider: "Gemini", usage: data?.usageMetadata || null
+            });
           }
-
-          if (freeChatText) {
-            freeChatModel = "openai";
-            freeChatProvider = "Pollinations";
-          }
-        } catch (error) {
-          console.warn("Miya free text fallback:", error?.message || error);
         }
-      }
-
-      if (freeChatText) {
-        return res.status(200).json({
-          ok: true,
-          mode: "chat",
-          text: freeChatText,
-          model: freeChatModel,
-          provider: freeChatProvider,
-          usage: null
-        });
       }
 
       // If a photo is attached and Gemini is unavailable, use the free server-side
@@ -211,7 +163,139 @@ async function handler(req, res) {
         }
       }
 
+      // Anonymous free text chat: no Google login and no user API key.
       if (!chatImageBase64) {
+        try {
+          const faucetResponse = await fetch("https://api.llmfaucet.dev/v1/chat/completions", {
+            method: "POST",
+            headers: {
+              "Authorization": "Bearer free",
+              "Content-Type": "application/json",
+              "Accept": "application/json"
+            },
+            body: JSON.stringify({
+              model: "auto:fast",
+              messages: [
+                { role: "system", content: system },
+                ...cleanMessages.slice(-12)
+              ],
+              max_tokens: 2048
+            }),
+            signal: AbortSignal.timeout(22000)
+          });
+          const faucetData = await faucetResponse.json().catch(() => ({}));
+          const faucetText = String(faucetData?.choices?.[0]?.message?.content || "").trim();
+          if (faucetText) {
+            return res.status(200).json({
+              ok: true,
+              mode: "chat",
+              text: faucetText,
+              model: String(faucetData?.model || "auto:fast"),
+              provider: "LLM Faucet",
+              usage: faucetData?.usage || null
+            });
+          }
+        } catch (error) {
+          console.warn("Miya LLM Faucet:", error?.message || error);
+        }
+      }
+
+      const transcript = cleanMessages
+        .slice(-12)
+        .map(m => (m.role === "assistant" ? "Miya: " : "Пользователь: ") + m.content)
+        .join("\n");
+
+      const system =
+        "Ты Miya, дружелюбный AI-помощник внутри Miya AI Studio. " +
+        "Отвечай на русском, если пользователь пишет по-русски. " +
+        "Помогай с текстами, идеями, сценариями, промптами, изображениями и видео. " +
+        "Отвечай полезно и по существу.";
+
+      const fallbackUrl =
+        "https://text.pollinations.ai/" +
+        encodeURIComponent(system + "\n\n" + transcript) +
+        "?model=openai&private=true";
+
+      // Free chat fallback. Prefer the legacy OpenAI-compatible POST endpoint
+      // because the old GET endpoint has become unreliable. If a current
+      // Pollinations key is configured, use the current API first.
+      const pollinationsKey = process.env.POLLINATIONS_API_KEY;
+      let fallbackText = "";
+      let fallbackModel = "openai";
+      let lastChatStatus = null;
+
+      if (pollinationsKey) {
+        try {
+          const currentResponse = await fetch("https://gen.pollinations.ai/v1/chat/completions", {
+            method: "POST",
+            headers: {
+              "Authorization": "Bearer " + pollinationsKey,
+              "Content-Type": "application/json",
+              "Accept": "application/json"
+            },
+            body: JSON.stringify({
+              model: "openai",
+              messages: [
+                { role: "system", content: system },
+                ...cleanMessages.slice(-12)
+              ],
+              max_tokens: 2048
+            }),
+            signal: AbortSignal.timeout(30000)
+          });
+          lastChatStatus = currentResponse.status;
+          const currentData = await currentResponse.json().catch(() => ({}));
+          fallbackText = String(currentData?.choices?.[0]?.message?.content || "").trim();
+          if (fallbackText) fallbackModel = "openai";
+        } catch {}
+      }
+
+      if (!fallbackText) {
+        try {
+          const legacyResponse = await fetch("https://text.pollinations.ai/openai", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              "Accept": "application/json, text/plain"
+            },
+            body: JSON.stringify({
+              model: "openai",
+              messages: [
+                { role: "system", content: system },
+                ...cleanMessages.slice(-12)
+              ]
+            }),
+            signal: AbortSignal.timeout(30000)
+          });
+          lastChatStatus = legacyResponse.status;
+          const legacyRaw = (await legacyResponse.text()).trim();
+          try {
+            const legacyData = legacyRaw ? JSON.parse(legacyRaw) : {};
+            fallbackText = String(
+              legacyData?.choices?.[0]?.message?.content ||
+              legacyData?.text ||
+              legacyData?.response ||
+              ""
+            ).trim();
+          } catch {
+            fallbackText = legacyRaw;
+          }
+        } catch {}
+      }
+
+      if (!fallbackText) {
+        try {
+          const legacyGet = await fetch(fallbackUrl, {
+            method: "GET",
+            headers: { Accept: "text/plain" },
+            signal: AbortSignal.timeout(30000)
+          });
+          lastChatStatus = legacyGet.status;
+          fallbackText = (await legacyGet.text()).trim();
+        } catch {}
+      }
+
+      if (!fallbackText) {
         return res.status(502).json({
           ok: false,
           error: "CHAT_UPSTREAM_FAILED",
@@ -220,11 +304,9 @@ async function handler(req, res) {
         });
       }
 
-      return res.status(502).json({
-        ok: false,
-        error: "VISION_UPSTREAM_FAILED",
-        message: "Сервис анализа изображения временно недоступен.",
-        upstreamStatus: null
+      return res.status(200).json({
+        ok: true, mode: "chat", text: fallbackText,
+        model: fallbackModel, provider: "Free Text", usage: null
       });
     }
 
