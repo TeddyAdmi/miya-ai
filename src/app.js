@@ -1036,9 +1036,12 @@ if(chatMenuToggle){
 }
 document.querySelectorAll("[data-mode]").forEach(b=>b.addEventListener("click",()=>setMode(b.dataset.mode)));
 $("#composerInput").addEventListener("input",syncInput);
-$("#composerInput").addEventListener("contextmenu",e=>{
-  // Do not collapse an existing selection. Firefox's native Delete/Cut actions
-  // need the selection to remain intact after the context menu opens.
+function closePromptContextMenu(){
+  $("#promptContextMenu")?.remove();
+}
+function openPromptContextMenu(e){
+  e.preventDefault();
+  e.stopPropagation();
   const input=e.currentTarget;
   input.focus({preventScroll:true});
   const hasSelection=input.selectionStart!==input.selectionEnd;
@@ -1048,7 +1051,47 @@ $("#composerInput").addEventListener("contextmenu",e=>{
       if(pos?.offsetNode===input)input.setSelectionRange(pos.offset,pos.offset);
     }catch{}
   }
-});
+  closePromptContextMenu();
+  const menu=document.createElement("div");
+  menu.id="promptContextMenu";
+  menu.className="prompt-context-menu";
+  const add=(label,disabled,action)=>{
+    const b=document.createElement("button");
+    b.type="button";b.textContent=label;b.disabled=disabled;
+    b.onclick=async ev=>{
+      ev.preventDefault();ev.stopPropagation();
+      await action();closePromptContextMenu();input.focus();
+    };
+    menu.appendChild(b);
+  };
+  const selected=input.selectionStart!==input.selectionEnd;
+  add("Вырезать",!selected,async()=>{document.execCommand("cut")});
+  add("Копировать",!selected,async()=>{
+    const value=input.value.slice(input.selectionStart,input.selectionEnd);
+    try{await navigator.clipboard.writeText(value)}catch{document.execCommand("copy")}
+  });
+  add("Вставить",false,async()=>{
+    try{
+      const value=await navigator.clipboard.readText();
+      input.setRangeText(value,input.selectionStart,input.selectionEnd,"end");
+      syncInput();
+    }catch{document.execCommand("paste")}
+  });
+  add("Удалить",!selected,async()=>{
+    input.setRangeText("",input.selectionStart,input.selectionEnd,"start");
+    syncInput();
+  });
+  add("Выделить всё",!input.value,async()=>input.select());
+  document.body.appendChild(menu);
+  const pad=8,rect=menu.getBoundingClientRect();
+  menu.style.left=Math.min(window.innerWidth-rect.width-pad,Math.max(pad,e.clientX))+"px";
+  menu.style.top=Math.min(window.innerHeight-rect.height-pad,Math.max(pad,e.clientY))+"px";
+  setTimeout(()=>{
+    document.addEventListener("mousedown",closePromptContextMenu,{once:true,capture:true});
+    document.addEventListener("scroll",closePromptContextMenu,{once:true,capture:true});
+  },0);
+}
+$("#composerInput").addEventListener("contextmenu",openPromptContextMenu);
 $("#composerInput").addEventListener("keydown",e=>{if(e.key==="Enter"&&!e.shiftKey){e.preventDefault();$("#composerSend").click()}});
 $("#composerSend").addEventListener("click",async()=>{
  const value=$("#composerInput").value.trim();
