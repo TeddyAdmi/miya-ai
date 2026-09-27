@@ -1,4 +1,9 @@
-import { Client, handle_file } from "https://cdn.jsdelivr.net/npm/@gradio/client@2.7.0/dist/index.min.js";
+(()=>{
+ const st=document.createElement("style");
+ st.textContent=".composer-input-row{position:relative;z-index:1002!important}.composer textarea{position:relative!important;z-index:1003!important;pointer-events:auto!important;user-select:text!important;-moz-user-select:text!important;-webkit-user-select:text!important;-webkit-user-modify:read-write-plaintext-only!important}.prompt-context-menu{display:none!important}";
+ document.head.appendChild(st);
+})();
+import { Client, handle_file } from "https://cdn.jsdelivr.net/npm/@gradio/client@2.7.1/dist/index.min.js";
 const modes={
  chat:{title:"Твоя AI-комната",eyebrow:"AI CHAT · MIYA",subtitle:"Общайся с Miya, придумывай идеи и управляй созданием контента.",placeholder:"Напиши сообщение...",send:"Отправить",status:"AI Chat готов"},
  images:{title:"Картинки",eyebrow:"IMAGE STUDIO · FLUX",subtitle:"Создавай изображения с нуля или загружай исходник и описывай изменения.",placeholder:"Опиши картинку или что изменить в загруженном изображении...",send:"Создать",status:"FLUX Dev · Image generation & editing"},
@@ -189,9 +194,8 @@ function removeBrokenMediaItem(item,card){
  if(card){card.classList.add("media-load-error");card.remove();}
 }
 async function resolveMediaUrl(item){
- if(item?.type==="video")return item.url;
- const cached=await getCachedMedia(item.id);
- if(cached?.blob)return URL.createObjectURL(cached.blob);
+ if(!item?.url)return "";
+ // Paint remote images immediately; IndexedDB must never delay the library cover.
  return item.url;
 }
 function setComposerAttachment(url){
@@ -428,29 +432,43 @@ async function mediaItemToReference(item){
 }
 function buildMediaCard(item,{video=false}={}){
  const card=document.createElement("div");card.className="media-card";
- const media=video?document.createElement("video"):document.createElement("img");
- media.alt=video?"Miya AI Studio":"Miya AI Studio";
- let mediaFailed=false;
+ let media=null,mediaFailed=false;
  const handleMediaFailure=()=>{
    if(mediaFailed)return;
-   mediaFailed=true;
-   removeBrokenMediaItem(item,card);
+   mediaFailed=true;card.classList.add("media-load-error");
+   if(media&&media.tagName==="VIDEO"){media.removeAttribute("src");media.load();media.controls=false}
  };
- media.addEventListener("error",handleMediaFailure);
  if(video){
-   media.controls=true;media.playsInline=true;media.preload="metadata";
-   resolveMediaUrl(item).then(url=>{if(url)media.src=url});
+   const cover=document.createElement("button");
+   cover.type="button";cover.className="video-cover";cover.setAttribute("aria-label","Открыть видео");
+   cover.innerHTML='<span class="video-cover-play" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="m9 6 10 6-10 6V6Z"/></svg></span><span class="video-cover-copy"><b>Видео</b><small>'+String(item.model||"Video")+'</small></span>';
+   const mountVideo=()=>{
+     if(cover.dataset.mounted==="1")return;
+     cover.dataset.mounted="1";
+     media=document.createElement("video");media.className="media-video";media.setAttribute("aria-label","Miya Studio video");
+     media.controls=true;media.playsInline=true;media.preload="metadata";media.addEventListener("error",handleMediaFailure);
+     media.src=String(item.url||"");cover.replaceWith(media);
+     try{media.play().catch(()=>{})}catch{}
+   };
+   cover.addEventListener("click",e=>{e.stopPropagation();mountVideo()});
+   card.appendChild(cover);
  }else{
-   resolveMediaUrl(item).then(url=>{if(url)media.src=url});
- }
- card.appendChild(media);
- if(!video){
-  media.style.cursor="zoom-in";
-  media.title="Открыть изображение";
-  media.addEventListener("click",e=>{e.stopPropagation();openImageViewer(item)});
+   media=document.createElement("img");media.alt="Miya Studio";media.style.cursor="zoom-in";media.title="Открыть изображение";
+   media.addEventListener("error",()=>{
+     if(mediaFailed)return;
+     mediaFailed=true;
+     const base=String(item.url||"");
+     if(base){
+       mediaFailed=false;
+       media.src=base+(base.includes("?")?"&":"?")+"miya_retry="+Date.now();
+       setTimeout(()=>{if(media.naturalWidth===0)card.classList.add("media-load-error")},3500);
+     }else card.classList.add("media-load-error");
+   });
+   media.src=String(item.url||"");media.addEventListener("click",e=>{e.stopPropagation();openImageViewer(item)});card.appendChild(media);
  }
  const actions=document.createElement("div");actions.className="media-actions";
- const more=document.createElement("button");more.className="media-action media-more";more.removeAttribute("title");more.setAttribute("aria-label","Открыть меню");more.innerHTML='<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="5" cy="12" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="19" cy="12" r="1.5"/></svg>';
+ const more=document.createElement("button");more.className="media-action media-more";more.removeAttribute("title");more.setAttribute("aria-label","Открыть меню");
+ more.innerHTML='<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="5" cy="12" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="19" cy="12" r="1.5"/></svg>';
  const menu=document.createElement("div");menu.className="media-action-menu";
  if(!video){
   const promptBtn=document.createElement("button");promptBtn.innerHTML='<span class="action-icon action-svg"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 5h14v14H5z"/><path d="M8 9h8M8 12h6M8 15h4"/></svg></span><span>Промт</span>';promptBtn.onclick=e=>{e.stopPropagation();menu.classList.remove("open");showPrompt(item)};
@@ -460,7 +478,7 @@ function buildMediaCard(item,{video=false}={}){
   const deleteBtn=document.createElement("button");deleteBtn.innerHTML='<span class="action-icon action-svg"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M9 7V4h6v3M7 7l1 13h8l1-13M10 11v5M14 11v5"/></svg></span><span>Удалить</span>';deleteBtn.onclick=e=>{e.stopPropagation();menu.classList.remove("open");confirmDeleteMedia(item,card)};
   menu.append(promptBtn,editBtn,videoBtn,downloadBtn,deleteBtn);
  }else{
-  const deleteBtn=document.createElement("button");deleteBtn.innerHTML='<span class="action-icon">⌫</span><span>Удалить</span>';deleteBtn.onclick=e=>{e.stopPropagation();confirmDeleteMedia(item,card)};menu.append(deleteBtn);
+  const deleteBtn=document.createElement("button");deleteBtn.innerHTML='<span class="action-icon">⌫</span><span>Удалить</span>';deleteBtn.onclick=e=>{e.stopPropagation();menu.classList.remove("open");confirmDeleteMedia(item,card)};menu.append(deleteBtn);
  }
  more.onclick=e=>{e.stopPropagation();document.querySelectorAll(".media-action-menu.open").forEach(x=>x!==menu&&x.classList.remove("open"));menu.classList.toggle("open")};
  actions.append(more,menu);card.appendChild(actions);return card;
@@ -942,6 +960,18 @@ async function muxPixelSterAudio(videoUrl,onProgress=()=>{}){
   return String(videoUrl||"");
 }
 
+async function compactPixelSterSource(dataUrl){
+ try{
+  const source=String(dataUrl||"");
+  if(!source.startsWith("data:image/"))return source;
+  const img=new Image();
+  await new Promise((resolve,reject)=>{img.onload=resolve;img.onerror=reject;img.src=source});
+  const max=1024,scale=Math.min(1,max/Math.max(img.naturalWidth,img.naturalHeight));
+  const c=document.createElement("canvas");c.width=Math.max(1,Math.round(img.naturalWidth*scale));c.height=Math.max(1,Math.round(img.naturalHeight*scale));
+  const ctx=c.getContext("2d",{alpha:false});ctx.drawImage(img,0,0,c.width,c.height);
+  return c.toDataURL("image/jpeg",.68);
+ }catch{return dataUrl}
+}
 async function generateMotionVideo(prompt){
  const source=referenceImage||"";
  if(!source){
@@ -984,6 +1014,7 @@ async function generateMotionVideo(prompt){
    // Call the documented free endpoint directly from the browser so the long
    // generation is not killed by the Miya /api/generate 60s gateway timeout.
    // PixelSter accepts the source image as a data:image/... base64 payload.
+   const pixelSource=await compactPixelSterSource(source);
    const response=await fetch("https://ahm7xmakki.com/api/ptv",{
      method:"POST",
      headers:{"Content-Type":"application/json","Accept":"application/json"},
@@ -991,7 +1022,7 @@ async function generateMotionVideo(prompt){
        prompt:motionPrompt,
        ratio,
        duration,
-       imageBase64:source
+       imageBase64:pixelSource
      })
    });
    const raw=await response.text();
@@ -1018,12 +1049,17 @@ async function generateMotionVideo(prompt){
    console.error("PixelSter Motion Synthesis failed",e);
    const rawMessage=String(e?.message||"");
    const is504=/PixelSter HTTP 504|Gateway Time-out|Gateway Timeout|NetworkError/i.test(rawMessage);
+   const isQuota=/exceeded your ZeroGPU quota|ZeroGPU quota|quota/i.test(rawMessage);
    $("#composerStatus").textContent=is504
-     ? model+" · сервер PixelSter не завершил запрос"
-     : model+" · ошибка";
+     ? model+" · сервер не завершил запрос"
+     : isQuota
+       ? model+" · квота Hugging Face исчерпана"
+       : model+" · ошибка";
    toast(is504
-     ? "PixelSter: сервер не завершил генерацию вовремя. Попробуйте 10 сек или повторите позже."
-     : (rawMessage||"Не удалось создать видео"));
+     ? "PixelSter: сервер вернул 504. Это ошибка самого PixelSter, а не браузера."
+     : isQuota
+       ? "LTX-2.3: дневная ZeroGPU-квота Hugging Face исчерпана. Повторные запросы сейчас не помогут."
+       : (rawMessage||"Не удалось создать видео"));
  }finally{
    videoGenerationBusy=false;
    $("#composerSend").disabled=false
@@ -1193,6 +1229,15 @@ if(chatMenuToggle){
 }
 document.querySelectorAll("[data-mode]").forEach(b=>b.addEventListener("click",()=>setMode(b.dataset.mode)));
 $("#composerInput").addEventListener("input",syncInput);
+$("#composerInput").addEventListener("paste",e=>{
+ const text=e.clipboardData?.getData("text/plain");
+ if(text==null)return;
+ e.preventDefault();
+ const i=e.currentTarget,start=i.selectionStart??i.value.length,end=i.selectionEnd??start;
+ i.value=i.value.slice(0,start)+text+i.value.slice(end);
+ i.selectionStart=i.selectionEnd=start+text.length;
+ syncInput();
+});
 // Keep the prompt as a normal native textarea so Firefox/Chrome provide the
 // standard mouse menu: Paste, Copy, Cut and Select all.
 $("#composerInput").addEventListener("keydown",e=>{if(e.key==="Enter"&&!e.shiftKey){e.preventDefault();$("#composerSend").click()}});
