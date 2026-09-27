@@ -746,7 +746,7 @@ async function generateImage(prompt){
    if(referenceImage.startsWith("data:image/"))payload.imageBase64=referenceImage;
    else payload.imageUrl=referenceImage;
   }
-  const requestedCount=1; // One image per request keeps the free upstream load predictable.
+  const requestedCount=Number($("#composerCount")?.value||1);
   const body=JSON.stringify({
    mode:"image",provider:"ahm7",prompt,model:modelName,
    ratio:$("#composerRatio").value,outputFormat:"png",copies:requestedCount,
@@ -815,6 +815,7 @@ async function generateImage(prompt){
   scrollImagesToTop();
   $("#composerInput").value="";syncInput();
   $("#composerModel").value=referenceImage?"FLUX Kontext Dev":"FLUX Dev";
+  $("#composerRatio").value=referenceImage?"auto":"16:9";
   $("#composerStatus").textContent=actualModel+" · готово";
   if(composerProgress)composerProgress.textContent="100%";
   requestAnimationFrame(()=>$("#workspace")?.scrollTo({top:0,behavior:"smooth"}));
@@ -1445,6 +1446,17 @@ $("#composerTrash")?.addEventListener("click",()=>{
   $("#composerStatus").textContent=modes[mode]?.status||"Готово";
 });
 $("#composerAttachmentRemove")?.addEventListener("click",()=>clearComposerAttachment());
+
+$("#composerModel")?.addEventListener("change",()=>{
+  const model=$("#composerModel").value;
+  if(model==="FLUX Kontext Dev"){
+    $("#composerRatio").value="auto";
+    $("#composerStatus").textContent="FLUX Kontext Dev · готово к редактированию";
+  }else{
+    $("#composerRatio").value="16:9";
+    $("#composerStatus").textContent="FLUX Dev · готово";
+  }
+});
 $("#improve")?.addEventListener("click",improveComposerPrompt);
 $("#copyPrompt")?.addEventListener("click",copyComposerPrompt);
 $("#videoImprove")?.addEventListener("click",improveComposerPrompt);
