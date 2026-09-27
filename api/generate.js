@@ -283,8 +283,8 @@ async function handler(req, res) {
         let inputImage = null;
 
         if (sourceBase64) {
-          const match = sourceBase64.match(/^data:image\\/[^;]+;base64,(.+)$/i);
-          const raw = match ? match[1].replace(/\\s+/g, "") : sourceBase64.replace(/^base64,/i, "").replace(/\\s+/g, "");
+          const match = sourceBase64.match(/^data:image\/[^;]+;base64,(.+)$/i);
+          const raw = match ? match[1].replace(/\s+/g, "") : sourceBase64.replace(/^base64,/i, "").replace(/\s+/g, "");
           if (raw.length < 100) {
             return res.status(400).json({ ok:false, error:"INVALID_IMAGE_BASE64" });
           }
@@ -338,7 +338,7 @@ async function handler(req, res) {
 
         const findVideoUrl = (value, seen = new Set()) => {
           if (value == null) return "";
-          if (typeof value === "string") return /^https?:\\/\\//i.test(value) && /\\.(mp4|webm)(?:$|[?#])/i.test(value) ? value : "";
+          if (typeof value === "string") return /^https?:\/\//i.test(value) && /\.(mp4|webm)(?:$|[?#])/i.test(value) ? value : "";
           if (typeof value !== "object" || seen.has(value)) return "";
           seen.add(value);
           for (const key of ["url","videoUrl","video_url","path","file","data","value"]) {
