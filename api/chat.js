@@ -168,9 +168,12 @@ async function handler(req, res) {
       }
     }
 
+    // Use provider routing selectors instead of hard-coded model IDs.
+    // This keeps the free chat path working when an individual model is
+    // unavailable or temporarily requires authenticated access.
     const firstWave = [
-      () => callLlm7("codestral-latest"),
-      () => callLlm7("mistral-Nemo-Instruct-2407"),
+      () => callLlm7("fast"),
+      () => callLlm7("default"),
       () => callFaucet("auto:fast")
     ];
 
@@ -183,9 +186,9 @@ async function handler(req, res) {
     }
 
     const secondWave = [
-      () => callLlm7("minimax-m2.7"),
-      () => callLlm7("DeepSeek-V4-Flash-0731"),
-      () => callFaucet("auto")
+      () => callLlm7("default"),
+      () => callFaucet("auto"),
+      () => callFaucet("auto:smart")
     ];
 
     const fallbackWinner = await firstSuccessful(secondWave);
