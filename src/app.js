@@ -319,6 +319,10 @@ function openImageViewer(item){
 <div class="image-viewer-controls">
 <button type="button" class="image-viewer-edit" aria-label="Изменить картинку" title="Изменить картинку"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m4 16.5-.8 3.3 3.3-.8L18.7 6.8a2.2 2.2 0 0 1 3.1 3.1L6.5 19l-3.3.8.8-3.3Z"/><path d="m14.2 5.8 4 4"/></svg></button>
 <button type="button" class="image-viewer-video" aria-label="Создать видео" title="Создать видео"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m8 5 11 7-11 7V5Z"/></svg></button>
+<button type="button" class="image-viewer-prompt" aria-label="Показать промт" title="Промт"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 5h14v14H5z"/><path d="M8 9h8M8 12h6M8 15h4"/></svg></button>
+<button type="button" class="image-viewer-copy" aria-label="Копировать картинку" title="Копировать"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M15 9V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v7a2 2 0 0 0 2 2h3"/></svg></button>
+<button type="button" class="image-viewer-download" aria-label="Скачать" title="Скачать"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4v11M8 11l4 4 4-4M5 19h14"/></svg></button>
+<button type="button" class="image-viewer-delete" aria-label="Удалить" title="Удалить"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M9 7V4h6v3M7 7l1 13h8l1-13M10 11v5M14 11v5"/></svg></button>
 <button type="button" class="image-viewer-zoom" aria-label="Увеличить" title="Увеличить"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 3H3v5M16 3h5v5M8 21H3v-5M21 16v5h-5"/><path d="M12 8v8M8 12h8"/></svg></button>
 <button type="button" class="image-viewer-close" aria-label="Закрыть" title="Закрыть"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8.5"/><path d="m9 9 6 6M15 9l-6 6"/></svg></button></div></div>`;
   document.body.appendChild(modal);
@@ -335,6 +339,33 @@ function openImageViewer(item){
     if(!current)return;
     closeImageViewer();
     openVideoFromImage(current.url);
+  };
+  modal.querySelector(".image-viewer-prompt").onclick=()=>{
+    const current=getLibrary().find(x=>x.id===modal.dataset.viewerItemId);
+    if(current)showPrompt(current);
+  };
+  modal.querySelector(".image-viewer-copy").onclick=async()=>{
+    const current=getLibrary().find(x=>x.id===modal.dataset.viewerItemId);
+    if(!current)return;
+    try{
+      const response=await fetch(current.url,{headers:{Accept:"image/*"}});
+      if(!response.ok)throw new Error();
+      const blob=await response.blob();
+      if(!navigator.clipboard?.write||!window.ClipboardItem)throw new Error();
+      await navigator.clipboard.write([new ClipboardItem({[blob.type||"image/png"]:blob})]);
+      toast("Картинка скопирована");
+    }catch{toast("Не удалось скопировать картинку")}
+  };
+  modal.querySelector(".image-viewer-download").onclick=()=>{
+    const current=getLibrary().find(x=>x.id===modal.dataset.viewerItemId);
+    if(current)showDownloadMenu(current,modal.querySelector(".image-viewer-download"));
+  };
+  modal.querySelector(".image-viewer-delete").onclick=()=>{
+    const current=getLibrary().find(x=>x.id===modal.dataset.viewerItemId);
+    if(!current)return;
+    closeImageViewer();
+    const card=document.querySelector('.media-card[data-media-id="'+current.id+'"]');
+    confirmDeleteMedia(current,card);
   };
   const stage=modal.querySelector(".image-viewer-stage");
   const prevButton=modal.querySelector(".image-viewer-prev");
@@ -478,7 +509,7 @@ function buildMediaCard(item,{video=false}={}){
   const promptBtn=document.createElement("button");promptBtn.innerHTML='<span class="action-icon action-svg"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 5h14v14H5z"/><path d="M8 9h8M8 12h6M8 15h4"/></svg></span><span>Промт</span>';promptBtn.onclick=e=>{e.stopPropagation();menu.classList.remove("open");showPrompt(item)};
   const editBtn=document.createElement("button");editBtn.innerHTML='<span class="action-icon action-svg"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m4 16.5-.8 3.3 3.3-.8L18.7 6.8a2.2 2.2 0 0 1 3.1 3.1L6.5 19l-3.3.8.8-3.3Z"/><path d="m14.2 5.8 4 4"/></svg></span><span>Изменить картинку</span>';editBtn.onclick=async e=>{e.stopPropagation();menu.classList.remove("open");openEditor(await mediaItemToReference(item))};
   const videoBtn=document.createElement("button");videoBtn.innerHTML='<span class="action-icon action-svg"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="5" width="17" height="14" rx="2"/><path d="m10 9 5 3-5 3Z"/></svg></span><span>Сделать видео</span>';videoBtn.onclick=async e=>{e.stopPropagation();menu.classList.remove("open");openVideoFromImage(await mediaItemToReference(item))};
-  const copyBtn=document.createElement("button");copyBtn.innerHTML='<span class="action-icon action-svg"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M15 9V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v7a2 2 0 0 0 2 2h3"/></svg></span><span>Копировать</span>';copyBtn.onclick=async e=>{e.stopPropagation();menu.classList.remove("open");const prompt=String(item.prompt||"").trim();if(!prompt){toast("Промт не сохранён");return}try{await navigator.clipboard.writeText(prompt);toast("Промт скопирован")}catch{toast("Не удалось скопировать промт")}};
+  const copyBtn=document.createElement("button");copyBtn.innerHTML='<span class="action-icon action-svg"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M15 9V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v7a2 2 0 0 0 2 2h3"/></svg></span><span>Копировать</span>';copyBtn.onclick=async e=>{e.stopPropagation();menu.classList.remove("open");try{const response=await fetch(item.url,{headers:{Accept:"image/*"}});if(!response.ok)throw new Error();const blob=await response.blob();if(!navigator.clipboard?.write||!window.ClipboardItem)throw new Error();await navigator.clipboard.write([new ClipboardItem({[blob.type||"image/png"]:blob})]);toast("Картинка скопирована")}catch{toast("Не удалось скопировать картинку")}};
   const downloadBtn=document.createElement("button");downloadBtn.innerHTML='<span class="action-icon action-svg"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4v11M8 11l4 4 4-4M5 19h14"/></svg></span><span>Скачать</span>';downloadBtn.onclick=e=>{e.stopPropagation();menu.classList.remove("open");showDownloadMenu(item,downloadBtn)};
   const deleteBtn=document.createElement("button");deleteBtn.innerHTML='<span class="action-icon action-svg"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M9 7V4h6v3M7 7l1 13h8l1-13M10 11v5M14 11v5"/></svg></span><span>Удалить</span>';deleteBtn.onclick=e=>{e.stopPropagation();menu.classList.remove("open");confirmDeleteMedia(item,card)};
   menu.append(promptBtn,editBtn,videoBtn,copyBtn,downloadBtn,deleteBtn);
