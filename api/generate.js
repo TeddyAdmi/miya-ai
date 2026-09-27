@@ -336,7 +336,13 @@ async function handler(req, res) {
       });
     }
 
-    // Accept the image mode names used by current and older Miya Studio clients.\n    // A missing response from a serverless handler makes Vercel report FUNCTION_INVOCATION_FAILED,\n    // so normalize these aliases before routing instead of falling through.\n    const requestMode = String(body.mode || "").trim().toLowerCase();\n    const isImageMode = ["image", "pixel-image", "legacy-flux", "flux", "generate-image", "tti"].includes(requestMode);\n\n    if (body.mode === "minimax-h3") {
+    // Accept the image mode names used by current and older Miya Studio clients.
+    // A missing response from a serverless handler makes Vercel report FUNCTION_INVOCATION_FAILED,
+    // so normalize these aliases before routing instead of falling through.
+    const requestMode = String(body.mode || "").trim().toLowerCase();
+    const isImageMode = ["image", "pixel-image", "legacy-flux", "flux", "generate-image", "tti"].includes(requestMode);
+
+    if (body.mode === "minimax-h3") {
       const prompt = typeof body.prompt === "string" ? body.prompt.trim() : "";
       if (!prompt) return res.status(400).json({ ok:false, error:"PROMPT_REQUIRED" });
 
