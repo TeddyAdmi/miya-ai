@@ -114,9 +114,9 @@ async function handler(req, res) {
       try {
         const response = await fetch("https://api.llm7.io/v1/chat/completions", {
           method: "POST",
-          headers: { "Authorization": "Bearer unused", "Content-Type": "application/json", "Accept": "application/json" },
+          headers: { "Content-Type": "application/json", "Accept": "application/json" },
           body: JSON.stringify({ model, ...chatPayload }),
-          signal: AbortSignal.timeout(7000)
+          signal: AbortSignal.timeout(10000)
         });
         const raw = await response.text();
         let data = {};
@@ -199,7 +199,8 @@ async function handler(req, res) {
     return res.status(502).json({
       ok:false,
       error:"CHAT_UPSTREAM_FAILED",
-      message:"Бесплатные AI-сервисы чата временно недоступны."
+      message:"Бесплатные AI-сервисы чата временно недоступны.",
+      upstream:"llm7/faucet"
     });
   } catch (error) {
     console.error("Miya Chat:", error);
