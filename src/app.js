@@ -952,10 +952,13 @@ async function generateMotionVideo(prompt){
    const motionPrompt=[
      "Create one continuous high-quality cinematic image-to-video shot from the supplied image.",
      "Preserve the original subject identity, face, anatomy, clothing, composition, environment and visual style.",
-     "Follow the user's motion request literally and chronologically. Every named subject or object is intentional and must remain visible when relevant.",
-     "Prioritize stable anatomy, coherent physics, temporal consistency, natural facial motion, realistic textures and clean fine detail.",
-     "Use smooth purposeful camera movement only when it supports the requested action. Do not replace subject action with camera movement.",
-     "Use subtle cinematic depth, realistic motion blur, physically plausible lighting, reflections and atmospheric detail. Add tasteful cinematic visual effects such as volumetric light, sparks, dust, mist or impact particles only when they naturally fit the requested action or scene.",
+     "Keep the subject itself stable and natural. Do not invent new actions, objects, characters or scene changes.",
+     "CAMERA MOVEMENT: DIVE & RISE.",
+     "Start with a controlled cinematic descent toward the subject, as if the camera is smoothly diving downward and moving closer.",
+     "Continue the forward/downward movement through the scene with natural parallax and realistic depth, passing close to the subject without colliding with it or changing its identity.",
+     "Then smoothly pull upward and rise above the subject, revealing more of the surrounding environment from a higher angle.",
+     "The camera path must be one continuous fluid arc: descend and approach, pass close, then rise. No sudden cuts, spins, shakes, teleporting or abrupt direction changes.",
+     "Use realistic motion blur, stable anatomy, coherent physics, temporal consistency, natural depth and physically plausible lighting. Keep cinematic effects subtle and subordinate to the camera movement.",
      "Do not add humans, animals, props, weather or unrelated events that the user did not request.",
      "USER MOTION REQUEST:",
      prompt
@@ -984,7 +987,8 @@ async function generateMotionVideo(prompt){
    }
    const sourceVideoUrl=String(data.videoUrl);
    updateVideoProgress(model,97,"видео получено…");
-   const finalVideoUrl=await muxPixelSterAudio(sourceVideoUrl,(p,label)=>updateVideoProgress(model,p,label));
+   // PixelSter result is kept silent: do not add or synthesize any audio track.
+   const finalVideoUrl=sourceVideoUrl;
    stopProgress();
    updateVideoProgress(model,100,"видео готово");
    const item=saveMedia("video",finalVideoUrl,prompt,model);
