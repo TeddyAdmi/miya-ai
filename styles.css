@@ -1985,3 +1985,36 @@ body.light .video-options .video-tool.improve{color:#6550d8!important}
 .video-options .video-tool.improve svg{width:17px!important;height:17px!important;fill:currentColor!important;color:inherit!important}
 .video-options .video-tool.improve:hover{background:rgba(167,92,255,.10)!important;color:#c58aff!important}
 body.light .video-options .video-tool.improve:hover{background:#f0eaff!important;color:#6550d8!important}
+
+
+/* Miya prompt: compact custom right-click menu instead of Firefox's oversized menu.
+   Text selection and keyboard editing remain native. */
+.prompt-context-menu{
+  position:fixed;z-index:10000;min-width:150px;padding:5px;
+  border:1px solid rgba(123,164,205,.34);border-radius:10px;
+  background:rgba(7,23,41,.97);box-shadow:0 16px 40px rgba(0,0,0,.34);
+  backdrop-filter:blur(18px);
+}
+.prompt-context-menu button{
+  display:block;width:100%;border:0;background:transparent;color:#dce9f7;
+  text-align:left;border-radius:7px;padding:7px 9px;
+  font:600 11px/1.2 Manrope,sans-serif;
+}
+.prompt-context-menu button:hover:not(:disabled){background:rgba(167,92,255,.16);color:#fff}
+.prompt-context-menu button:disabled{opacity:.35;cursor:not-allowed}
+body.light .prompt-context-menu{background:rgba(255,255,255,.98);border-color:#d7e0eb;box-shadow:0 16px 40px rgba(30,55,85,.18)}
+body.light .prompt-context-menu button{color:#34465c}
+body.light .prompt-context-menu button:hover:not(:disabled){background:#f0eaff;color:#51409c}
+
+/* Generation popup labels are clipped/ellipsized inside the glass window. */
+.generation-loading{overflow:hidden!important;box-sizing:border-box!important}
+.generation-progress{min-width:0!important;overflow:hidden!important}
+.generation-loading .progress-copy{flex:1 1 auto;min-width:0!important;max-width:calc(100% - 50px)!important;overflow:hidden!important}
+.generation-loading .progress-copy b,.generation-loading .progress-model{
+  display:block!important;max-width:100%!important;overflow:hidden!important;
+  text-overflow:ellipsis!important;white-space:nowrap!important;
+}
+.generation-loading .progress-copy b{font-size:8px!important;line-height:1.15!important}
+.generation-loading .progress-model{font-size:7px!important;line-height:1.2!important}
+body.light .generation-loading .progress-copy b{color:#29394d}
+body.light .generation-loading .progress-model{color:#71859a}
