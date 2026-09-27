@@ -655,6 +655,62 @@ function showImage(url,prompt="",model="FLUX Dev"){
  const card=buildMediaCard(item);grid.prepend(card);
  $("#composerStatus").textContent=model+" · готово";
 }
+async function getGradioOutputUrl(value,seen=new Set()){
+ if(value==null)return "";
+ if(typeof value==="string")return /^https?:\/\//i.test(value)?value:"";
+ if(typeof value!=="object"||seen.has(value))return "";
+ seen.add(value);
+ for(const key of ["url","videoUrl","video_url","imageUrl","image_url","path","file","value","data"]){
+  const found=await getGradioOutputUrl(value[key],seen);
+  if(found)return found;
+ }
+ for(const key of Object.keys(value)){
+  const found=await getGradioOutputUrl(value[key],seen);
+  if(found)return found;
+ }
+ return "";
+}
+async function gradioImageToDataUrl(value){
+ const url=await getGradioOutputUrl(value);
+ if(!url)throw new Error("Hugging Face не вернул изображение");
+ const response=await fetch(url,{headers:{Accept:"image/*"}});
+ if(!response.ok)throw new Error("Hugging Face image HTTP "+response.status);
+ const blob=await response.blob();
+ return await new Promise((resolve,reject)=>{
+  const reader=new FileReader();
+  reader.onload=()=>resolve(String(reader.result||""));
+  reader.onerror=()=>reject(new Error("Не удалось прочитать изображение"));
+  reader.readAsDataURL(blob);
+ });
+}
+async function generateHfFluxImage(prompt,source){
+ const ratio=source?"auto":String($("#composerRatio")?.value||"16:9");
+ const width=ratio==="9:16"?768:ratio==="16:9"?1024:1024;
+ const height=ratio==="9:16"?1024:ratio==="16:9"?576:1024;
+ const seed=Math.floor(Math.random()*2147483647);
+ if(source){
+  const client=await Promise.race([
+   Client.connect("black-forest-labs/FLUX.1-Kontext-Dev",{events:["status","data"]}),
+   new Promise((_,reject)=>setTimeout(()=>reject(new Error("FLUX Kontext Dev Space не отвечает за 20 секунд")),20000))
+  ]);
+  const sourceBlob=await fetch(source).then(r=>{if(!r.ok)throw new Error("Не удалось подготовить исходное изображение");return r.blob()});
+  const inputImage=handle_file(sourceBlob);
+  const result=await Promise.race([
+   client.predict("/infer",[inputImage,prompt,seed,true,2.5,28]),
+   new Promise((_,reject)=>setTimeout(()=>reject(new Error("FLUX Kontext Dev не завершил создание за 90 секунд")),90000))
+  ]);
+  return {imageUrl:await gradioImageToDataUrl(result?.data||result),model:"FLUX Kontext Dev · Hugging Face"};
+ }
+ const client=await Promise.race([
+  Client.connect("black-forest-labs/FLUX.1-dev",{events:["status","data"]}),
+  new Promise((_,reject)=>setTimeout(()=>reject(new Error("FLUX Dev Space не отвечает за 20 секунд")),20000))
+ ]);
+ const result=await Promise.race([
+  client.predict("/infer",[prompt,seed,true,width,height,3.5,28]),
+  new Promise((_,reject)=>setTimeout(()=>reject(new Error("FLUX Dev не завершил создание за 100 секунд")),100000))
+ ]);
+ return {imageUrl:await gradioImageToDataUrl(result?.data||result),model:"FLUX Dev · Hugging Face"};
+}
 async function generateImage(prompt){
  showLoading();$("#composerSend").disabled=true;
  const loader=$("#canvas .generation-loading");
@@ -746,7 +802,16 @@ async function generateImage(prompt){
    xhr.send(body);
   });
 ;
-  data=await requestThroughMiyaApi();
+  try{
+   data=await generateHfFluxImage(prompt,referenceImage);
+  }catch(hfError){
+   // Keep the old Miya API as a secondary fallback for transient HF Space failures.
+   try{
+    data=await requestThroughMiyaApi();
+   }catch(apiError){
+    throw new Error(hfError?.message||apiError?.message||"Не удалось создать изображение");
+   }
+  }
   const actualModel=data.model||modelName;
   if(fakeTimer){clearInterval(fakeTimer);fakeTimer=null;}
   if(loader){
@@ -982,6 +1047,48 @@ async function compactPixelSterSource(dataUrl){
   return c.toDataURL("image/jpeg",.68);
  }catch{return dataUrl}
 }
+async function generateWanVideo(prompt){
+ const source=referenceImage||"";
+ if(!source){toast("Wan 2.2 требует исходное изображение");return;}
+ if(videoGenerationBusy){toast("Видео уже создаётся. Дождитесь завершения текущего запроса.");return;}
+ videoGenerationBusy=true;showLoading();$("#composerSend").disabled=true;
+ const model="Wan 2.2 Fast";
+ const stopProgress=startVideoProgress(model);
+ try{
+  const sourceBlob=await fetch(source).then(r=>{if(!r.ok)throw new Error("Не удалось подготовить исходное изображение для Wan");return r.blob()});
+  const inputImage=handle_file(sourceBlob);
+  const durationText=String($("#videoDuration")?.value||"3 сек");
+  const duration=Math.max(0.5,Math.min(5,Number(durationText.match(/\d+(?:\.\d+)?/)?.[0]||3)));
+  const client=await Promise.race([
+   Client.connect("zerogpu-aoti/wan2-2-fp8da-aoti-faster",{events:["status","data"]}),
+   new Promise((_,reject)=>setTimeout(()=>reject(new Error("Wan 2.2 Fast Space не отвечает за 20 секунд")),20000))
+  ]);
+  const submission=client.submit("/generate_video",[inputImage,prompt,6,"",duration,1,1,Math.floor(Math.random()*2147483647),true]);
+  let resultData=null;
+  for await(const message of submission){
+   if(message.type==="status"){
+    if(message.stage==="error")throw new Error(message.message||"Wan 2.2 завершил запрос с ошибкой");
+    if(message.stage==="pending")updateVideoProgress(model,Math.min(25,valueFromProgress(message.position,message.size)),"в очереди…");
+    if(message.stage==="generating"){
+     const reported=message.progress_data?.[0]?.progress;
+     if(Number.isFinite(Number(reported)))updateVideoProgress(model,Math.max(5,Math.min(98,Math.round(Number(reported)*90))),"создание…");
+    }
+   }else if(message.type==="data"){resultData=message.data}
+  }
+  const videoUrl=await getGradioOutputUrl(resultData);
+  if(!videoUrl)throw new Error("Wan 2.2 не вернул MP4");
+  updateVideoProgress(model,99,"видео получено…");
+  const item=saveMedia("video",videoUrl,prompt,model);
+  stopProgress();removeGenerationLoading();renderVideoLibrary();if(item)scrollImagesToTop();
+  toast("Wan 2.2: видео создано");
+ }catch(e){
+  stopProgress();removeGenerationLoading();$("#composerProgress").textContent="";
+  const msg=String(e?.message||"");
+  const isQuota=/ZeroGPU quota|exceeded your.*quota|quota/i.test(msg);
+  $("#composerStatus").textContent=isQuota?model+" · квота Hugging Face исчерпана":model+" · ошибка";
+  toast(isQuota?"Wan 2.2: бесплатная квота ZeroGPU исчерпана.":"Wan 2.2: "+(msg||"не удалось создать видео"));
+ }finally{videoGenerationBusy=false;$("#composerSend").disabled=false}
+}
 async function generateMotionVideo(prompt){
  const source=referenceImage||"";
  if(!source){
@@ -1097,10 +1204,10 @@ function setLtxQuotaCooldown(message){
  try{sessionStorage.setItem("miyaLtxQuotaUntil",String(until))}catch{}
  const select=$("#videoModel");
  if(select){
-  const option=[...select.options].find(o=>String(o.value||o.textContent).includes("LTX-2.3"));
-  if(option)option.disabled=true;
-  if(String(select.value||"").includes("LTX-2.3")){
-   const fallback=[...select.options].find(o=>!o.disabled&&String(o.value||o.textContent)==="PixelSter Motion Synthesis");
+  const options=[...select.options];
+  options.filter(o=>String(o.value||o.textContent).includes("LTX-2.3")||String(o.value||o.textContent).includes("Wan 2.2")).forEach(o=>o.disabled=true);
+  if(String(select.value||"").includes("LTX-2.3")||String(select.value||"").includes("Wan 2.2")){
+   const fallback=options.find(o=>!o.disabled&&String(o.value||o.textContent)==="PixelSter Motion Synthesis");
    if(fallback)select.value=fallback.value;
   }
  }
@@ -1112,7 +1219,9 @@ function refreshLtxQuotaState(){
  if(!select)return until;
  const option=[...select.options].find(o=>String(o.value||o.textContent).includes("LTX-2.3"));
  if(option)option.disabled=Boolean(until);
- if(until&&String(select.value||"").includes("LTX-2.3")){
+ const wan=[...select.options].find(o=>String(o.value||o.textContent).includes("Wan 2.2"));
+ if(wan)wan.disabled=Boolean(until);
+ if(until&&(String(select.value||"").includes("LTX-2.3")||String(select.value||"").includes("Wan 2.2"))){
   const fallback=[...select.options].find(o=>!o.disabled&&String(o.value||o.textContent)==="PixelSter Motion Synthesis");
   if(fallback)select.value=fallback.value;
  }
@@ -1136,6 +1245,7 @@ async function generateVideo(prompt){
    return;
   }
  }
+ if(selectedModel==="Wan 2.2 Fast") return generateWanVideo(prompt);
  if(selectedModel==="PixelSter Motion Synthesis") return generateMotionVideo(prompt);
  if(videoGenerationBusy){
    toast("Видео уже создаётся. Дождитесь завершения текущего запроса.");
