@@ -116,7 +116,7 @@ async function handler(req, res) {
           method: "POST",
           headers: { "Content-Type": "application/json", "Accept": "application/json" },
           body: JSON.stringify({ model, ...chatPayload }),
-          signal: AbortSignal.timeout(10000)
+          signal: AbortSignal.timeout(7000)
         });
         const raw = await response.text();
         let data = {};
@@ -140,7 +140,7 @@ async function handler(req, res) {
             "Accept": "application/json"
           },
           body: JSON.stringify({ ...chatPayload, model }),
-          signal: AbortSignal.timeout(10000)
+          signal: AbortSignal.timeout(7000)
         });
         const raw = await response.text();
         let data = {};
@@ -154,13 +154,30 @@ async function handler(req, res) {
       }
     }
 
-    // Two independent free gateways are tried in parallel. This prevents
-    // one unavailable provider from blocking the whole chat for ~20+ seconds.
+    // Prefer fast, explicit LLM7 models instead of "default": the default
+    // route is dynamically randomized and can land on a slow/degraded model.
+    // LLM7 currently reports healthy fast traffic for these models.
+    async function firstSuccessful(calls) {
+      const wrapped = calls.map(call =>
+        call().then(result => result?.ok ? result : Promise.reject(result))
+      );
+      try {
+        return await Promise.any(wrapped);
+      } catch {
+        return null;
+      }
+    }
+
     const firstWave = await Promise.all([
-      callLlm7("default"),
+      callLlm7("codestral-latest"),
+      callLlm7("mistral-Nemo-Instruct-2407"),
       callFaucet("auto:fast")
     ]);
-    const winner = firstWave.find(result => result?.ok);
+    const winner = await firstSuccessful([
+      () => Promise.resolve(firstWave[0]),
+      () => Promise.resolve(firstWave[1]),
+      () => Promise.resolve(firstWave[2])
+    ]);
     if (winner) {
       return res.status(200).json({
         ok:true, mode:"chat", text:winner.text,
@@ -170,9 +187,14 @@ async function handler(req, res) {
 
     const secondWave = await Promise.all([
       callLlm7("minimax-m2.7"),
+      callLlm7("DeepSeek-V4-Flash-0731"),
       callFaucet("auto")
     ]);
-    const fallbackWinner = secondWave.find(result => result?.ok);
+    const fallbackWinner = await firstSuccessful([
+      () => Promise.resolve(secondWave[0]),
+      () => Promise.resolve(secondWave[1]),
+      () => Promise.resolve(secondWave[2])
+    ]);
     if (fallbackWinner) {
       return res.status(200).json({
         ok:true, mode:"chat", text:fallbackWinner.text,
@@ -185,10 +207,12 @@ async function handler(req, res) {
       error:"CHAT_UPSTREAM_FAILED",
       message:"Бесплатные AI-сервисы чата временно недоступны.",
       upstream:{
-        llm7:firstWave[0]?.status ?? null,
-        llmFaucet:firstWave[1]?.status ?? null,
-        llm7Fallback:secondWave[0]?.status ?? null,
-        llmFaucetFallback:secondWave[1]?.status ?? null
+        llm7Codestral:firstWave[0]?.status ?? null,
+        llm7Mistral:firstWave[1]?.status ?? null,
+        llmFaucet:firstWave[2]?.status ?? null,
+        llm7MiniMax:secondWave[0]?.status ?? null,
+        llm7DeepSeek:secondWave[1]?.status ?? null,
+        llmFaucetFallback:secondWave[2]?.status ?? null
       }
     });
   } catch (error) {
