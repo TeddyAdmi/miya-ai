@@ -100,7 +100,8 @@ async function handler(req, res) {
                   thinkingConfig: { thinkingLevel: "low" },
                   maxOutputTokens: 2048
                 }
-              })
+              }),
+              signal: AbortSignal.timeout(28000)
             }
           );
           data = await response.json().catch(() => ({}));
@@ -122,30 +123,43 @@ async function handler(req, res) {
       // If a photo is attached and Gemini is unavailable, use the free server-side
       // VisionSter endpoint instead of silently falling back to a text-only model.
       if (chatImageBase64) {
-        try {
-          const visionResponse = await fetch("https://ahm7xmakki.com/api/imgchat", {
-            method: "POST",
-            headers: { "Content-Type": "application/json", "Accept": "application/json" },
-            body: JSON.stringify({
-              image: chatImageBase64,
-              userPrompt: cleanMessages[cleanMessages.length - 1].content,
-              messages: cleanMessages.slice(-12).map(m => ({
-                type: m.role === "assistant" ? "ai" : "user",
-                content: m.content
-              }))
-            }),
-            signal: AbortSignal.timeout(45000)
-          });
-          const visionData = await visionResponse.json().catch(() => ({}));
-          const visionText = String(visionData?.response || visionData?.text || "").trim();
-          if (visionResponse.ok && visionText) {
-            return res.status(200).json({
-              ok: true, mode: "chat", text: visionText,
-              model: "VisionSter", provider: "AHM7 Vision", usage: null
+        const visionPayload = {
+          image: chatImageBase64,
+          userPrompt: cleanMessages[cleanMessages.length - 1].content,
+          messages: cleanMessages.slice(-12).map(m => ({
+            type: m.role === "assistant" ? "ai" : "user",
+            content: m.content
+          }))
+        };
+
+        // Vision is a free upstream and can occasionally stall on the first
+        // request. Use short bounded attempts so the chat never hangs until
+        // the browser's 90s timeout. A second attempt also handles transient
+        // provider/network failures without changing image generation.
+        for (let visionAttempt = 1; visionAttempt <= 2; visionAttempt++) {
+          try {
+            const visionResponse = await fetch("https://ahm7xmakki.com/api/imgchat", {
+              method: "POST",
+              headers: { "Content-Type": "application/json", "Accept": "application/json" },
+              body: JSON.stringify(visionPayload),
+              signal: AbortSignal.timeout(22000)
             });
+            const visionData = await visionResponse.json().catch(() => ({}));
+            const visionText = String(visionData?.response || visionData?.text || "").trim();
+            if (visionResponse.ok && visionText) {
+              return res.status(200).json({
+                ok: true, mode: "chat", text: visionText,
+                model: "VisionSter", provider: "AHM7 Vision", usage: null
+              });
+            }
+            if (visionAttempt === 2) {
+              console.warn("Miya VisionSter HTTP:", visionResponse.status);
+            }
+          } catch (visionError) {
+            if (visionAttempt === 2) {
+              console.warn("Miya VisionSter fallback:", visionError?.message || visionError);
+            }
           }
-        } catch (visionError) {
-          console.warn("Miya VisionSter fallback:", visionError?.message || visionError);
         }
       }
 
