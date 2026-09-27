@@ -158,15 +158,6 @@ async function handler(req, res) {
       }
 
       if (freeChatText) {
-            freeChatModel = "openai";
-            freeChatProvider = "Pollinations";
-          }
-        } catch (error) {
-          console.warn("Miya free text fallback:", error?.message || error);
-        }
-      }
-
-      if (freeChatText) {
         return res.status(200).json({
           ok: true,
           mode: "chat",
