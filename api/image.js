@@ -27,11 +27,14 @@ module.exports = async function imageHandler(req, res) {
     }
 
     // Keep the proven AHM7 FLUX Dev contract exact: prompt + ratio only.
+    // Add a concise anatomy guard because FLUX can otherwise duplicate limbs
+    // when several hand/arm poses are described in one scene.
     if (!isImageToImage) {
+      const anatomyPrompt = prompt + "\n\nANATOMY CONSISTENCY: exactly one person with exactly two arms and exactly two hands. Each arm must connect naturally to one shoulder and each hand to one wrist. Do not generate extra arms, hands, fingers, duplicated limbs, detached limbs, or limbs growing from the torso, legs, table, or background. Keep the requested pose physically coherent and anatomically realistic.";
       const upstream = await fetch("https://ahm7xmakki.com/api/tti", {
         method: "POST",
         headers: { "Content-Type": "application/json", "Accept": "application/json" },
-        body: JSON.stringify({ prompt, ratio }),
+        body: JSON.stringify({ prompt: anatomyPrompt, ratio }),
         signal: AbortSignal.timeout(55000)
       });
 
