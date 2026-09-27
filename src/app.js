@@ -939,8 +939,8 @@ async function generateVideo(prompt){
  showLoading();$("#composerSend").disabled=true;
  const stopProgress=startVideoProgress("LTX-2.3 Distilled");
  try{
-   const durationText=String($("#videoDuration")?.value||"5 сек");
-   const duration=Math.max(1,Math.min(10,Number(durationText.match(/\d+/)?.[0]||5)));
+   const durationText=String($("#videoDuration")?.value||"3 сек");
+   const duration=Math.max(1,Math.min(10,Number(durationText.match(/\d+/)?.[0]||3)));
    const ratio=String($("#videoRatio")?.value||"16:9");
    const ratioValue=["auto","9:16","16:9","1:1"].includes(ratio)?ratio:"16:9";
    const effectiveRatio=ratioValue==="auto"?(source?"16:9":"16:9"):ratioValue;
@@ -1156,13 +1156,16 @@ $("#referenceInput").onchange=e=>{
     toast(mode==="chat"?"Изображение прикреплено к чату":"Изображение добавлено");
     $("#composerInput").focus();
   };
-  if(mode==="chat"&&rawData.startsWith("data:image/")){
+  if((mode==="chat"||mode==="images"||mode==="video")&&rawData.startsWith("data:image/")){
     const image=new Image();
     image.onload=()=>{
+      // Keep uploads small enough for both Vercel request bodies and the free
+      // PixelSter/LTX providers. Preserve the source aspect ratio.
       const max=1280,scale=Math.min(1,max/Math.max(image.naturalWidth,image.naturalHeight));
       const canvas=document.createElement("canvas");
-      canvas.width=Math.max(1,Math.round(image.naturalWidth*scale));canvas.height=Math.max(1,Math.round(image.naturalHeight*scale));
-      const ctx=canvas.getContext("2d");
+      canvas.width=Math.max(1,Math.round(image.naturalWidth*scale));
+      canvas.height=Math.max(1,Math.round(image.naturalHeight*scale));
+      const ctx=canvas.getContext("2d",{alpha:false});
       ctx.drawImage(image,0,0,canvas.width,canvas.height);
       finishAttachment(canvas.toDataURL("image/jpeg",.78));
     };
