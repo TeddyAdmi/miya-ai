@@ -1076,11 +1076,69 @@ async function generateMotionVideo(prompt){
  }
 }
 
+function getLtxQuotaCooldown(){
+ try{
+  const until=Number(sessionStorage.getItem("miyaLtxQuotaUntil")||0);
+  if(until>Date.now())return until;
+  sessionStorage.removeItem("miyaLtxQuotaUntil");
+ }catch{}
+ return 0;
+}
+function parseLtxQuotaCooldown(message){
+ const match=String(message||"").match(/Try again in\\s+(\\d+):(\\d+)(?::(\\d+))?/i);
+ if(!match)return 0;
+ const h=Number(match[1]||0),m=Number(match[2]||0),s=Number(match[3]||0);
+ return ((h*60+m)*60+s)*1000;
+}
+function setLtxQuotaCooldown(message){
+ const duration=parseLtxQuotaCooldown(message);
+ if(!duration)return 0;
+ const until=Date.now()+duration;
+ try{sessionStorage.setItem("miyaLtxQuotaUntil",String(until))}catch{}
+ const select=$("#videoModel");
+ if(select){
+  const option=[...select.options].find(o=>String(o.value||o.textContent).includes("LTX-2.3"));
+  if(option)option.disabled=true;
+  if(String(select.value||"").includes("LTX-2.3")){
+   const fallback=[...select.options].find(o=>!o.disabled&&String(o.value||o.textContent)==="PixelSter Motion Synthesis");
+   if(fallback)select.value=fallback.value;
+  }
+ }
+ return until;
+}
+function refreshLtxQuotaState(){
+ const until=getLtxQuotaCooldown();
+ const select=$("#videoModel");
+ if(!select)return until;
+ const option=[...select.options].find(o=>String(o.value||o.textContent).includes("LTX-2.3"));
+ if(option)option.disabled=Boolean(until);
+ if(until&&String(select.value||"").includes("LTX-2.3")){
+  const fallback=[...select.options].find(o=>!o.disabled&&String(o.value||o.textContent)==="PixelSter Motion Synthesis");
+  if(fallback)select.value=fallback.value;
+ }
+ return until;
+}
+function formatCooldown(until){
+ const left=Math.max(0,until-Date.now());
+ const total=Math.ceil(left/1000);
+ const h=Math.floor(total/3600),m=Math.floor((total%3600)/60),s=total%60;
+ return h+":"+String(m).padStart(2,"0")+":"+String(s).padStart(2,"0");
+}
+
 async function generateVideo(prompt){
+ refreshLtxQuotaState();
  const selectedModel=String($("#videoModel")?.value||"LTX-2.3 Distilled");
+ if(selectedModel==="LTX-2.3 Distilled"){
+  const quotaUntil=getLtxQuotaCooldown();
+  if(quotaUntil){
+   $("#composerStatus").textContent="LTX-2.3 временно недоступен · квота ZeroGPU";
+   toast("LTX-2.3 временно недоступен. Повторный запрос не отправлен. Осталось "+formatCooldown(quotaUntil));
+   return;
+  }
+ }
  if(selectedModel==="PixelSter Motion Synthesis") return generateMotionVideo(prompt);
  if(videoGenerationBusy){
-   toast("Видео уже генерируется. Дождитесь завершения текущего запроса.");
+   toast("Видео уже создаётся. Дождитесь завершения текущего запроса.");
    return;
  }
  videoGenerationBusy=true;
@@ -1089,7 +1147,7 @@ async function generateVideo(prompt){
  const stopProgress=startVideoProgress("LTX-2.3 Distilled");
  try{
    const durationText=String($("#videoDuration")?.value||"5 сек");
-   const duration=Math.max(1,Math.min(10,Number(durationText.match(/\d+/)?.[0]||5)));
+   const duration=Math.max(1,Math.min(10,Number(durationText.match(/\\d+/)?.[0]||5)));
    const ratio=String($("#videoRatio")?.value||"16:9");
    const ratioValue=["auto","9:16","16:9","1:1"].includes(ratio)?ratio:"16:9";
    const effectiveRatio=ratioValue==="auto"?(source?"16:9":"16:9"):ratioValue;
@@ -1107,7 +1165,7 @@ async function generateVideo(prompt){
      "PROMPT ADHERENCE IS MORE IMPORTANT THAN CREATIVITY.",
      "USER SHOT DESCRIPTION:",
      prompt
-   ].join("\n")
+   ].join("\\n");
    updateVideoProgress("LTX-2.3 Distilled",1,"подключение к LTX-2.3…");
    const client=await Promise.race([
      Client.connect("Lightricks/LTX-2-3",{events:["status","data"]}),
@@ -1129,14 +1187,7 @@ async function generateVideo(prompt){
 
    const seed=Math.floor(Math.random()*2147483647);
    const submission=client.submit("/generate_video",[
-     inputImage,
-     actionPrompt,
-     duration,
-     false,
-     seed,
-     true,
-     height,
-     width
+     inputImage,actionPrompt,duration,false,seed,true,height,width
    ]);
 
    let resultData=null;
@@ -1158,7 +1209,7 @@ async function generateVideo(prompt){
 
    const findVideoUrl=(value,seen=new Set())=>{
      if(value==null)return "";
-     if(typeof value==="string")return /^https?:\/\//i.test(value)?value:"";
+     if(typeof value==="string")return /^https?:\\/\\//i.test(value)?value:"";
      if(typeof value!=="object"||seen.has(value))return "";
      seen.add(value);
      for(const key of ["url","videoUrl","video_url","path","file","data","value"]){
@@ -1179,14 +1230,25 @@ async function generateVideo(prompt){
    if(item)scrollImagesToTop();
    toast("LTX-2.3: видео + звук созданы");
  }catch(e){
-   stopProgress();removeGenerationLoading();console.error("LTX-2.3 video generation failed",e);
-   $("#composerProgress").textContent="";$("#composerStatus").textContent="LTX-2.3 Distilled · ошибка · можно повторить";toast(e?.message||"Не удалось создать видео");
+   stopProgress();removeGenerationLoading();
+   $("#composerProgress").textContent="";
+   const rawMessage=String(e?.message||"");
+   const isQuota=/exceeded your ZeroGPU quota|ZeroGPU quota/i.test(rawMessage);
+   if(isQuota){
+     const until=setLtxQuotaCooldown(rawMessage);
+     $("#composerStatus").textContent="LTX-2.3 временно недоступен · квота ZeroGPU";
+     toast(until
+       ? "LTX-2.3 временно отключён до восстановления бесплатной квоты. Повторный запрос не отправлен."
+       : "LTX-2.3 временно отключён: бесплатная ZeroGPU-квота исчерпана.");
+   }else{
+     $("#composerStatus").textContent="LTX-2.3 Distilled · ошибка · можно повторить";
+     toast(rawMessage||"Не удалось создать видео");
+   }
  }finally{
    videoGenerationBusy=false;
    $("#composerSend").disabled=false;
  }
 }
-
 function restoreReferenceImage(){
  try{
   referenceImage=referenceImage||sessionStorage.getItem("miyaReferenceImage")||"";
