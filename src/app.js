@@ -943,12 +943,20 @@ async function getPixelAudioFfmpeg(){
   try{return await pixelAudioFfmpegPromise}catch(e){pixelAudioFfmpegPromise=null;throw e}
 }
 
-async function muxPixelSterAudio(videoUrl,prompt,duration,onProgress=()=>{}){
+async function muxPixelSterAudio(videoUrl,prompt,duration,audioBase64="",audioMime="audio/wav",onProgress=()=>{}){
   onProgress(93,"подготавливаю звук…");
   const response=await fetch(videoUrl,{mode:"cors",cache:"no-store"});
   if(!response.ok)throw new Error("PixelSter video cannot be downloaded for audio muxing (HTTP "+response.status+")");
   const videoBlob=await response.blob();
-  const audioBlob=await makePixelMotionAudio(duration,prompt);
+  let audioBlob;
+  if(audioBase64){
+    const binary=atob(audioBase64);
+    const bytes=new Uint8Array(binary.length);
+    for(let i=0;i<binary.length;i++)bytes[i]=binary.charCodeAt(i);
+    audioBlob=new Blob([bytes],{type:audioMime||"audio/wav"});
+  }else{
+    audioBlob=await makePixelMotionAudio(duration,prompt);
+  }
   onProgress(95,"объединяю видео и звук…");
   const ffmpeg=await getPixelAudioFfmpeg();
   const util=await import("https://cdn.jsdelivr.net/npm/@ffmpeg/util@0.12.2/dist/esm/index.js");
@@ -1011,7 +1019,7 @@ async function generateMotionVideo(prompt){
    let finalVideoUrl=String(data.videoUrl);
    try{
      updateVideoProgress(model,92,"добавляю звук…");
-     finalVideoUrl=await muxPixelSterAudio(finalVideoUrl,prompt,duration,(p,label)=>updateVideoProgress(model,p,label));
+     finalVideoUrl=await muxPixelSterAudio(finalVideoUrl,prompt,duration,data?.audioBase64||"",data?.audioMime||"audio/wav",(p,label)=>updateVideoProgress(model,p,label));
    }catch(audioError){
      console.error("PixelSter audio mux failed",audioError);
      throw new Error("PixelSter видео создано, но звук не удалось добавить: "+(audioError?.message||audioError));
