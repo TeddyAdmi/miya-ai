@@ -632,8 +632,8 @@ function showLoading(){
   const selectedModel=referenceImage?"FLUX Kontext Dev":($("#composerModel")?.value||"FLUX Dev");
   const card=document.createElement("div");card.className="generation-loading"+(referenceImage?" has-upload":" no-upload");
   card.dataset.model=selectedModel;
-  card.innerHTML='<div class="generation-progress"><div class="progress-circle is-active"><span class="progress-percent">0%</span></div><div class="progress-copy"><b>Генерация изображения</b><span class="progress-model"></span></div></div><div class="generation-progress-bar"><span></span></div>';
-  card.querySelector(".progress-model").textContent=referenceImage?selectedModel+" · загрузка файла…":selectedModel+" · генерация…";
+  card.innerHTML='<div class="generation-progress"><div class="progress-circle is-active"><span class="progress-percent">0%</span></div><div class="progress-copy"><b>Создание изображения</b><span class="progress-model"></span></div></div><div class="generation-progress-bar"><span></span></div>';
+  card.querySelector(".progress-model").textContent=referenceImage?selectedModel+" · загрузка файла…":selectedModel+" · создание…";
   grid.prepend(card);scrollImagesToTop();return;
  }
  const selectedVideoModel=$("#videoModel")?.value||"LTX-2.3 Distilled";
@@ -643,7 +643,7 @@ function showLoading(){
  items.forEach(item=>grid.appendChild(buildMediaCard(item,{video:true})));
  const card=document.createElement("div");card.className="generation-loading video-generation-loading";
  card.dataset.model=selectedVideoModel;
- card.innerHTML='<div class="generation-progress"><div class="progress-circle is-active"><span class="progress-percent">0%</span></div><div class="progress-copy"><b>Генерация видео</b><span class="progress-model"></span></div></div><div class="generation-progress-bar"><span></span></div>';
+ card.innerHTML='<div class="generation-progress"><div class="progress-circle is-active"><span class="progress-percent">0%</span></div><div class="progress-copy"><b>Создание видео</b><span class="progress-model"></span></div></div><div class="generation-progress-bar"><span></span></div>';
  card.querySelector(".progress-model").textContent=selectedVideoModel+" · подготовка…";
  grid.appendChild(card);scrollImagesToTop();
 }
@@ -680,11 +680,11 @@ async function generateImage(prompt){
    const step=remaining>45?Math.random()*7+2:remaining>18?Math.random()*3+1:Math.random()*0.8+0.2;
    fakeProgress=Math.min(92,fakeProgress+step);
    setProgress(fakeProgress);
-   if($("#composerStatus"))$("#composerStatus").textContent=modelName+" · генерация…";
+   if($("#composerStatus"))$("#composerStatus").textContent=modelName+" · создание…";
   },900);
  };
  startFakeProgress();
- $("#composerStatus").textContent=hasFileUpload?modelName+" · загрузка файла…":modelName+" · генерация…";
+ $("#composerStatus").textContent=hasFileUpload?modelName+" · загрузка файла…":modelName+" · создание…";
  try{
   const payload={
    prompt,
@@ -720,8 +720,8 @@ async function generateImage(prompt){
     fakeProgress=100;
     setProgress(100);
     const modelLabel=loader?.querySelector(".progress-model");
-    if(modelLabel)modelLabel.textContent=modelName+" · файл загружен · генерация…";
-    if($("#composerStatus"))$("#composerStatus").textContent=modelName+" · файл загружен · генерация…";
+    if(modelLabel)modelLabel.textContent=modelName+" · файл загружен · создание…";
+    if($("#composerStatus"))$("#composerStatus").textContent=modelName+" · файл загружен · создание…";
     if(fakeTimer){clearInterval(fakeTimer);fakeTimer=null;}
     fakeProgress=Math.max(fakeProgress,72);
     setProgress(fakeProgress);
@@ -734,7 +734,7 @@ async function generateImage(prompt){
     try{result=xhr.responseText?JSON.parse(xhr.responseText):{}}catch{}
     if(xhr.status>=200&&xhr.status<300&&result.imageUrl)resolve(result);
     else{
-      let detail=result.message||result.error||("Генерация не выполнена (HTTP "+xhr.status+")");
+      let detail=result.message||result.error||("Создание не выполнена (HTTP "+xhr.status+")");
       if(result.upstreamBody){
        const rawUpstream=String(result.upstreamBody).replace(/\\s+/g," ").trim();
        if(rawUpstream) detail += " · "+rawUpstream.slice(0,220);
@@ -889,7 +889,7 @@ function startVideoProgress(model){
    const remaining=99-value;
    const step=remaining>60?Math.random()*3.6+1.2:remaining>25?Math.random()*2.2+.7:Math.random()*.7+.2;
    value=Math.min(99,value+step);
-   updateVideoProgress(model,value,"генерация…");
+   updateVideoProgress(model,value,"создание…");
  },850);
  return (finalValue=null,label="")=>{
    clearInterval(timer);
@@ -999,7 +999,7 @@ async function generateMotionVideo(prompt){
  $("#composerSend").disabled=true;
  const model="PixelSter Motion Synthesis";
  const stopProgress=startVideoProgress(model);
- $("#composerStatus").textContent=model+" · генерация…";
+ $("#composerStatus").textContent=model+" · создание…";
  try{
    const durationText=String($("#videoDuration")?.value||"10 сек");
    const duration=Math.max(5,Math.min(20,Number(durationText.match(/\d+/)?.[0]||10)));
@@ -1148,7 +1148,7 @@ async function generateVideo(prompt){
        }else if(message.stage==="generating"){
          const reported=message.progress_data?.[0]?.progress;
          if(Number.isFinite(Number(reported))){
-           updateVideoProgress("LTX-2.3 Distilled",Math.max(1,Math.min(99,Math.round(Number(reported)*98)+1)),"генерация…");
+           updateVideoProgress("LTX-2.3 Distilled",Math.max(1,Math.min(99,Math.round(Number(reported)*98)+1)),"создание…");
          }
        }
      }else if(message.type==="data"){
