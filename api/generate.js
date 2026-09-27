@@ -259,7 +259,7 @@ async function handler(req, res) {
       });
     }
 
-    if (body.mode === "pixel-audio") {
+    if (body.mode === "image") {
       const prompt = typeof body.prompt === "string" ? body.prompt.trim() : "";
     if (!prompt) return res.status(400).json({ ok: false, error: "PROMPT_REQUIRED" });
 
