@@ -137,21 +137,45 @@ async function handler(req, res) {
         // the browser's 90s timeout. A second attempt also handles transient
         // provider/network failures without changing image generation.
         for (let visionAttempt = 1; visionAttempt <= 2; visionAttempt++) {
+          let visionTimer = null;
           try {
+            const visionController = new AbortController();
+            visionTimer = setTimeout(() => visionController.abort(), 22000);
+
             const visionResponse = await fetch("https://ahm7xmakki.com/api/imgchat", {
               method: "POST",
-              headers: { "Content-Type": "application/json", "Accept": "application/json" },
+              headers: {
+                "Content-Type": "application/json",
+                "Accept": "application/json"
+              },
               body: JSON.stringify(visionPayload),
-              signal: AbortSignal.timeout(22000)
+              signal: visionController.signal
             });
-            const visionData = await visionResponse.json().catch(() => ({}));
-            const visionText = String(visionData?.response || visionData?.text || "").trim();
+
+            const visionRaw = await visionResponse.text();
+            let visionData = {};
+            try {
+              visionData = visionRaw ? JSON.parse(visionRaw) : {};
+            } catch {}
+
+            const visionText = String(
+              visionData?.response ||
+              visionData?.text ||
+              visionData?.message ||
+              ""
+            ).trim();
+
             if (visionResponse.ok && visionText) {
               return res.status(200).json({
-                ok: true, mode: "chat", text: visionText,
-                model: "VisionSter", provider: "AHM7 Vision", usage: null
+                ok: true,
+                mode: "chat",
+                text: visionText,
+                model: "VisionSter",
+                provider: "AHM7 Vision",
+                usage: null
               });
             }
+
             if (visionAttempt === 2) {
               console.warn("Miya VisionSter HTTP:", visionResponse.status);
             }
@@ -159,6 +183,8 @@ async function handler(req, res) {
             if (visionAttempt === 2) {
               console.warn("Miya VisionSter fallback:", visionError?.message || visionError);
             }
+          } finally {
+            if (visionTimer) clearTimeout(visionTimer);
           }
         }
       }
@@ -200,16 +226,16 @@ async function handler(req, res) {
         }
       }
 
-      const transcript = cleanMessages
-        .slice(-12)
-        .map(m => (m.role === "assistant" ? "Miya: " : "Пользователь: ") + m.content)
-        .join("\n");
-
       const system =
         "Ты Miya, дружелюбный AI-помощник внутри Miya AI Studio. " +
         "Отвечай на русском, если пользователь пишет по-русски. " +
         "Помогай с текстами, идеями, сценариями, промптами, изображениями и видео. " +
         "Отвечай полезно и по существу.";
+
+      const transcript = cleanMessages
+        .slice(-12)
+        .map(m => (m.role === "assistant" ? "Miya: " : "Пользователь: ") + m.content)
+        .join("\n");
 
       const fallbackUrl =
         "https://text.pollinations.ai/" +
