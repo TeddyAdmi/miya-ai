@@ -1211,7 +1211,7 @@ async function generateMiniMaxVideo(prompt){
  const stopProgress=startVideoProgress(model);
  try{
    const durationText=String($("#videoDuration")?.value||"5 сек");
-   const duration=Math.max(5,Math.min(14,Number(durationText.match(/\\d+/)?.[0]||5)));
+   const duration=Math.max(5,Math.min(14,Number(durationText.match(/\d+/)?.[0]||5)));
    const ratioValue=String($("#videoRatio")?.value||"16:9");
    const canvas=ratioValue==="9:16"?"544x960 · 9:16 fast"
      :ratioValue==="1:1"?"544x544 · 1:1 fast"
@@ -1504,7 +1504,10 @@ $("#videoModel")?.addEventListener("change",()=>{
  $("#composerProgress").textContent="";
  $("#composerStatus").textContent=model==="PixelSter Motion Synthesis"
    ? "PixelSter Motion Synthesis · 10 сек по умолчанию"
-   : "LTX-2.3 Distilled · Free ZeroGPU";
+   : model==="MiniMax H3"
+     ? "MiniMax H3 · Free ZeroGPU"
+     : "LTX-2.3 Distilled · Free ZeroGPU";
+ if(model==="MiniMax H3" && duration) duration.value="5 сек";
 });
 $("#videoTrash")?.addEventListener("click",()=>{
   $("#composerInput").value="";
