@@ -1,10 +1,24 @@
 async function handler(req, res) {
 
-  res.setHeader("Cache-Control", "no-store");
-  res.setHeader("Content-Type", "application/json; charset=utf-8");
+  // Keep the handler alive even if Vercel/Node hands us an unexpected request object.
+  // This also makes platform/runtime failures visible as JSON instead of a generic
+  // FUNCTION_INVOCATION_FAILED response.
+  try {
+    res.setHeader("Cache-Control", "no-store");
+    res.setHeader("Content-Type", "application/json; charset=utf-8");
 
-  if (req.method !== "POST") {
-    return res.status(405).json({ ok: false, error: "METHOD_NOT_ALLOWED" });
+    if (!req || req.method !== "POST") {
+      return res.status(405).json({ ok: false, error: "METHOD_NOT_ALLOWED" });
+    }
+  } catch (bootstrapError) {
+    try {
+      return res.status(500).json({
+        ok: false,
+        error: "HANDLER_BOOTSTRAP_FAILED",
+        message: String(bootstrapError?.message || bootstrapError || "Handler bootstrap failed")
+      });
+    } catch {}
+    throw bootstrapError;
   }
 
     async function generatePixelSound(prompt, duration) {
