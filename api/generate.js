@@ -377,56 +377,42 @@ async function handler(req, res) {
       const ratio = allowedRatios.has(ratioValue) ? ratioValue : "auto";
       const requestedDuration = Number(body.duration ?? 5);
       const duration = Number.isFinite(requestedDuration) ? Math.max(5, Math.min(20, Math.round(requestedDuration))) : 5;
-      // PixelSter can occasionally return a transient 5xx after a long generation.
-      // Use both public hostnames, but keep the total work below Vercel's 120s limit.
-      // The first request uses the documented payload; the fallback also accepts the
-      // data-URI form used by PixelSter's browser client.
-      const payloads = [
-        { prompt, ratio, duration, imageBase64: rawBase64 },
-        { prompt, ratio, duration, imageBase64: "data:image/png;base64," + rawBase64 }
-      ];
-      const endpoints = [
-        "https://www.ahm7xmakki.com/api/ptv",
-        "https://ahm7xmakki.com/api/ptv"
-      ];
-
+      // PixelSter /api/ptv is long-running. Two sequential 55–60s attempts
+      // only guarantee a Vercel timeout. Give one documented request the full
+      // available server window instead.
+      const endpoint = "https://ahm7xmakki.com/api/ptv";
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 110000);
       let response = null, raw = "", data = {};
       let lastError = "";
-      for (let i = 0; i < endpoints.length; i++) {
-        const controller = new AbortController();
-        const timeout = setTimeout(() => controller.abort(), i === 0 ? 60000 : 55000);
-        try {
-          response = await fetch(endpoints[i], {
-            method:"POST",
-            headers:{"Content-Type":"application/json",Accept:"application/json"},
-            body:JSON.stringify(payloads[i]),
-            signal:controller.signal
-          });
-          raw = await response.text();
-          try { data = raw ? JSON.parse(raw) : {}; } catch { data = {}; }
-
-          if (response.ok && data?.success !== false) break;
-
-          lastError = `HTTP ${response.status}: ${String(data?.error || data?.message || raw).slice(0,500)}`;
-        } catch (error) {
-          lastError = error?.name === "AbortError"
-            ? "upstream timeout"
-            : String(error?.message || error);
-        } finally {
-          clearTimeout(timeout);
+      try {
+        response = await fetch(endpoint, {
+          method:"POST",
+          headers:{"Content-Type":"application/json",Accept:"application/json"},
+          body:JSON.stringify({ prompt, ratio, duration, imageBase64: rawBase64 }),
+          signal:controller.signal
+        });
+        raw = await response.text();
+        try { data = raw ? JSON.parse(raw) : {}; } catch { data = {}; }
+        if (!response.ok || data?.success === false) {
+          lastError = "HTTP " + response.status + ": " + String(data?.error || data?.message || raw).slice(0,500);
         }
+      } catch (error) {
+        lastError = error?.name === "AbortError" ? "upstream timeout (110s)" : String(error?.message || error);
+      } finally {
+        clearTimeout(timeout);
       }
 
       if (!response?.ok || data?.success === false) {
         console.error("PixelSter /api/ptv failed:", {
-          status: response?.status || null,
-          error: data?.error || null,
-          message: data?.message || null,
-          body: raw.slice(0,1000)
+          status:response?.status || null,
+          error:data?.error || null,
+          message:data?.message || null,
+          body:raw.slice(0,1000)
         });
         return res.status(502).json({
           ok:false,
-          error:String(data?.error || `VIDEO_HTTP_${response?.status || "UNKNOWN"}`),
+          error:String(data?.error || ("VIDEO_HTTP_" + (response?.status || "UNKNOWN"))),
           message:"Motion Synthesis не вернул видео. " + lastError,
           upstreamStatus:response?.status || null,
           upstreamBody:raw.slice(0,1000)
