@@ -40,6 +40,13 @@ module.exports = async function imageHandler(req, res) {
       try { data = raw ? JSON.parse(raw) : {}; } catch {}
 
       if (!upstream.ok) {
+        if (upstream.status === 403) {
+          return res.status(403).json({
+            ok: false,
+            error: "PROMPT_MODERATION_BLOCKED",
+            message: "Промпт отклонён модерацией. Измените формулировку запроса и попробуйте снова."
+          });
+        }
         return res.status(502).json({
           ok: false,
           error: "FLUX_UPSTREAM_HTTP",
