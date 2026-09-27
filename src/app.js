@@ -1,3 +1,4 @@
+import { Client, handle_file } from "https://cdn.jsdelivr.net/npm/@gradio/client@2.7.0/dist/index.min.js";
 const modes={
  chat:{title:"Твоя AI-комната",eyebrow:"AI CHAT · MIYA",subtitle:"Общайся с Miya, придумывай идеи и управляй созданием контента.",placeholder:"Напиши сообщение...",send:"Отправить",status:"AI Chat готов"},
  images:{title:"Картинки",eyebrow:"IMAGE STUDIO · FLUX",subtitle:"Создавай изображения с нуля или загружай исходник и описывай изменения.",placeholder:"Опиши картинку или что изменить в загруженном изображении...",send:"Создать",status:"FLUX Dev · Image generation & editing"},
@@ -151,8 +152,9 @@ function openMediaDB(){
   r.onsuccess=()=>resolve(r.result);r.onerror=()=>reject(r.error);
  });
 }
-async function cacheMedia(id,url){
+async function cacheMedia(id,url,type="image"){
  try{
+  if(type==="video")return false;
   const db=await openMediaDB();if(!db)return false;
   const response=await fetch(url,{mode:"cors",cache:"no-store"});
   if(!response.ok)return false;
@@ -176,7 +178,7 @@ function saveMedia(type,url,prompt="",model=""){
  try{localStorage.setItem(LIB_KEY,JSON.stringify(items.slice(0,500)))}catch{
    try{localStorage.setItem(LIB_KEY,JSON.stringify(items.slice(0,100)))}catch{}
  }
- cacheMedia(id,url);
+ cacheMedia(id,url,type);
  return item;
 }
 function removeBrokenMediaItem(item,card){
@@ -187,6 +189,7 @@ function removeBrokenMediaItem(item,card){
  if(card){card.classList.add("media-load-error");card.remove();}
 }
 async function resolveMediaUrl(item){
+ if(item?.type==="video")return item.url;
  const cached=await getCachedMedia(item.id);
  if(cached?.blob)return URL.createObjectURL(cached.blob);
  return item.url;
@@ -850,20 +853,26 @@ function updateVideoProgress(model,value,label=""){
  if(progress)progress.textContent=v+"%";
 }
 function startVideoProgress(model){
- let value=4;
- updateVideoProgress(model,value,"запуск видеодвижка…");
+ let value=1;
+ updateVideoProgress(model,1,"запуск видеодвижка…");
  const timer=setInterval(()=>{
    const loader=$("#canvas .video-generation-loading");
    if(!loader||!document.body.contains(loader)){clearInterval(timer);return}
-   const remaining=92-value;
-   const step=remaining>50?Math.random()*5+1.5:remaining>20?Math.random()*2.4+.5:Math.random()*.55+.15;
-   value=Math.min(92,value+step);
+   const remaining=99-value;
+   const step=remaining>60?Math.random()*3.6+1.2:remaining>25?Math.random()*2.2+.7:Math.random()*.7+.2;
+   value=Math.min(99,value+step);
    updateVideoProgress(model,value,"генерация…");
  },850);
  return (finalValue=null,label="")=>{
    clearInterval(timer);
    if(finalValue!==null)updateVideoProgress(model,finalValue,label);
  };
+}
+
+function valueFromProgress(position,size){
+ const p=Number(position),n=Number(size);
+ if(Number.isFinite(p)&&Number.isFinite(n)&&n>0)return Math.max(1,Math.min(99,Math.round((p/n)*98)+1));
+ return 1;
 }
 
 let pixelAudioFfmpeg=null;
@@ -938,16 +947,22 @@ async function generateMotionVideo(prompt){
  if(!source){
    toast("PixelSter Motion Synthesis требует исходное изображение");
    $("#composerStatus").textContent="PixelSter · нужно исходное изображение";
+   $("#composerProgress").textContent="";
    return;
  }
+ if(videoGenerationBusy){
+   toast("Видео уже генерируется. Дождитесь завершения текущего запроса.");
+   return;
+ }
+ videoGenerationBusy=true;
  showLoading();
  $("#composerSend").disabled=true;
  const model="PixelSter Motion Synthesis";
  const stopProgress=startVideoProgress(model);
  $("#composerStatus").textContent=model+" · генерация…";
  try{
-   const durationText=String($("#videoDuration")?.value||"5 сек");
-   const duration=Math.max(5,Math.min(20,Number(durationText.match(/\d+/)?.[0]||5)));
+   const durationText=String($("#videoDuration")?.value||"10 сек");
+   const duration=Math.max(5,Math.min(20,Number(durationText.match(/\d+/)?.[0]||10)));
    const ratioValue=String($("#videoRatio")?.value||"auto");
    const ratio=["auto","9:16","16:9"].includes(ratioValue)?ratioValue:"auto";
    const motionPrompt=[
@@ -964,7 +979,7 @@ async function generateMotionVideo(prompt){
      "USER MOTION REQUEST:",
      prompt
    ].join("\n");
-   updateVideoProgress(model,8,"отправляю запрос…");
+   updateVideoProgress(model,1,"отправляю запрос…");
    // PixelSter /api/ptv can take longer than Vercel's serverless request window.
    // Call the documented free endpoint directly from the browser so the long
    // generation is not killed by the Miya /api/generate 60s gateway timeout.
@@ -987,7 +1002,7 @@ async function generateMotionVideo(prompt){
      throw new Error("PixelSter HTTP "+response.status+": "+detail);
    }
    const sourceVideoUrl=String(data.videoUrl);
-   updateVideoProgress(model,97,"видео получено…");
+   updateVideoProgress(model,99,"видео получено…");
    // PixelSter result is kept silent: do not add or synthesize any audio track.
    const finalVideoUrl=sourceVideoUrl;
    stopProgress();
@@ -999,6 +1014,7 @@ async function generateMotionVideo(prompt){
    toast("PixelSter: видео создано");
  }catch(e){
    stopProgress();removeGenerationLoading();
+   $("#composerProgress").textContent="";
    console.error("PixelSter Motion Synthesis failed",e);
    const rawMessage=String(e?.message||"");
    const is504=/PixelSter HTTP 504|Gateway Time-out|Gateway Timeout|NetworkError/i.test(rawMessage);
@@ -1006,9 +1022,12 @@ async function generateMotionVideo(prompt){
      ? model+" · сервер PixelSter не завершил запрос"
      : model+" · ошибка";
    toast(is504
-     ? "PixelSter: сервер не завершил генерацию вовремя. Попробуйте 5 сек или повторите позже."
+     ? "PixelSter: сервер не завершил генерацию вовремя. Попробуйте 10 сек или повторите позже."
      : (rawMessage||"Не удалось создать видео"));
- }finally{$("#composerSend").disabled=false}
+ }finally{
+   videoGenerationBusy=false;
+   $("#composerSend").disabled=false
+ }
 }
 
 async function generateVideo(prompt){
@@ -1043,24 +1062,72 @@ async function generateVideo(prompt){
      "USER SHOT DESCRIPTION:",
      prompt
    ].join("\n")
-   updateVideoProgress("LTX-2.3 Distilled",8,"отправляю запрос…");
-   const response=await fetch("/api/generate",{
-     method:"POST",
-     headers:{"Content-Type":"application/json","Accept":"application/json"},
-     body:JSON.stringify({
-       mode:"video",
-       provider:"ltx23",
-       model:"LTX-2.3 Distilled",
-       prompt:actionPrompt,
-       ratio:effectiveRatio,
-       duration,
-       options:{imageBase64:source}
-     })
-   });
-   const data=await response.json().catch(()=>({}));
-   if(!response.ok||!data?.videoUrl)throw new Error(data?.message||data?.error||"LTX-2.3 не вернул готовый MP4");
-   const videoUrl=String(data.videoUrl);
-   updateVideoProgress("LTX-2.3 Distilled",100,"видео + звук готовы");
+   updateVideoProgress("LTX-2.3 Distilled",1,"подключение к LTX-2.3…");
+   const client=await Promise.race([
+     Client.connect("Lightricks/LTX-2-3",{events:["status","data"]}),
+     new Promise((_,reject)=>setTimeout(()=>reject(new Error("LTX-2.3 Space не отвечает за 20 секунд")),20000))
+   ]);
+
+   let inputImage=null;
+   if(source){
+     const sourceBlob=await fetch(source).then(r=>{
+       if(!r.ok)throw new Error("Не удалось подготовить исходное изображение для LTX-2.3");
+       return r.blob();
+     });
+     inputImage=handle_file(sourceBlob);
+   }
+
+   let width=1536,height=1024;
+   if(effectiveRatio==="9:16"){width=1024;height=1536}
+   else if(effectiveRatio==="1:1"){width=1024;height=1024}
+
+   const seed=Math.floor(Math.random()*2147483647);
+   const submission=client.submit("/generate_video",[
+     inputImage,
+     actionPrompt,
+     duration,
+     false,
+     seed,
+     true,
+     height,
+     width
+   ]);
+
+   let resultData=null;
+   for await(const message of submission){
+     if(message.type==="status"){
+       if(message.stage==="error")throw new Error(message.message||"LTX-2.3 завершил задачу с ошибкой");
+       if(message.stage==="pending"){
+         updateVideoProgress("LTX-2.3 Distilled",valueFromProgress(message.position,message.size),"в очереди…");
+       }else if(message.stage==="generating"){
+         const reported=message.progress_data?.[0]?.progress;
+         if(Number.isFinite(Number(reported))){
+           updateVideoProgress("LTX-2.3 Distilled",Math.max(1,Math.min(99,Math.round(Number(reported)*98)+1)),"генерация…");
+         }
+       }
+     }else if(message.type==="data"){
+       resultData=message.data;
+     }
+   }
+
+   const findVideoUrl=(value,seen=new Set())=>{
+     if(value==null)return "";
+     if(typeof value==="string")return /^https?:\/\//i.test(value)?value:"";
+     if(typeof value!=="object"||seen.has(value))return "";
+     seen.add(value);
+     for(const key of ["url","videoUrl","video_url","path","file","data","value"]){
+       const found=findVideoUrl(value[key],seen);
+       if(found)return found;
+     }
+     for(const key of Object.keys(value)){
+       const found=findVideoUrl(value[key],seen);
+       if(found)return found;
+     }
+     return "";
+   };
+   const videoUrl=findVideoUrl(resultData);
+   if(!videoUrl)throw new Error("LTX-2.3 не вернул доступный MP4");
+   updateVideoProgress("LTX-2.3 Distilled",99,"видео получено…");
    const item=saveMedia("video",videoUrl,prompt,"LTX-2.3 Distilled · Video + Audio");
    stopProgress();removeGenerationLoading();renderVideoLibrary();
    if(item)scrollImagesToTop();
@@ -1076,7 +1143,9 @@ async function generateVideo(prompt){
 
 function restoreReferenceImage(){try{referenceImage=referenceImage||sessionStorage.getItem("miyaReferenceImage")||""}catch{};setComposerAttachment(referenceImage||"")}
 function setVideoRatioDefault(){
- const el=$("#videoRatio"); if(el) el.value="16:9"; const d=$("#videoDuration"); if(d) d.value="10 сек";
+ const el=$("#videoRatio"); if(el) el.value="16:9";
+ const d=$("#videoDuration"); if(d) d.value="10 сек";
+ $("#composerProgress").textContent="";
 }
 function setMode(next,render=true){
  const changedSection=next!==mode;
@@ -1163,15 +1232,11 @@ $("#videoCopyPrompt")?.addEventListener("click",copyComposerPrompt);
 $("#videoModel")?.addEventListener("change",()=>{
  const model=$("#videoModel").value;
  const duration=$("#videoDuration");
- if(model==="PixelSter Motion Synthesis"){
-   // PixelSter's free motion endpoint can hit its upstream gateway timeout on
-   // longer clips. Start at the documented minimum duration; the user can
-   // still select 8/10/20 seconds manually when the endpoint is healthy.
-   if(duration && String(duration.value)==="10 сек") duration.value="5 сек";
-   $("#composerStatus").textContent="PixelSter Motion Synthesis · 5 сек по умолчанию";
- }else{
-   $("#composerStatus").textContent="LTX-2.3 Distilled · Free ZeroGPU";
- }
+ if(duration && model==="PixelSter Motion Synthesis") duration.value="10 сек";
+ $("#composerProgress").textContent="";
+ $("#composerStatus").textContent=model==="PixelSter Motion Synthesis"
+   ? "PixelSter Motion Synthesis · 10 сек по умолчанию"
+   : "LTX-2.3 Distilled · Free ZeroGPU";
 });
 $("#videoTrash")?.addEventListener("click",()=>{
   $("#composerInput").value="";
