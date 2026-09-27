@@ -643,7 +643,6 @@ function showLoading(){
  grid.appendChild(card);scrollImagesToTop();
 }
 function showImage(url,prompt="",model="FLUX Dev"){
- if(isDeadVheerUrl(url)){console.warn("Miya: ignored obsolete Vheer result URL",url);toast("Старый результат Vheer больше недоступен");return}
  const item=saveMedia("image",url,prompt,model);
  const c=$("#canvas");let grid=c.querySelector(".result-grid");
  if(!grid){c.innerHTML='<div class="result-grid"></div>';grid=c.querySelector(".result-grid")}
@@ -786,8 +785,6 @@ async function generateImage(prompt){
     if(xhr.status>=200&&xhr.status<300&&result.imageUrl)resolve(result);
     else{
       let detail=result.message||result.error||("Создание не выполнена (HTTP "+xhr.status+")");
-      // Never expose obsolete Vheer/provider messages from stale upstream responses.
-      if(/vheer/i.test(String(detail))) detail="AHM7/PixelSter временно недоступен. Попробуйте ещё раз.";
       if(result.upstreamBody){
        const rawUpstream=String(result.upstreamBody).replace(/\\s+/g," ").trim();
        if(rawUpstream) detail += " · "+rawUpstream.slice(0,220);
@@ -1353,7 +1350,6 @@ async function generateVideo(prompt){
 function restoreReferenceImage(){
  try{
   referenceImage=referenceImage||sessionStorage.getItem("miyaReferenceImage")||"";
-  if(isDeadVheerUrl(referenceImage)){referenceImage="";sessionStorage.removeItem("miyaReferenceImage")}
  }catch{}
  setComposerAttachment(referenceImage||"")
 }
