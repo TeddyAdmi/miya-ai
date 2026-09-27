@@ -309,13 +309,18 @@ async function handler(req, res) {
         if(ratio==="9:16"){width=1024;height=1536}
         else if(ratio==="1:1"){width=1024;height=1024}
 
+        const highFidelityPrompt = String(prompt || "").trim();
+        const enhancePrompt = false;
+        const randomizeSeed = true;
+        const seed = Math.floor(Math.random()*2147483647);
+
         const result=await client.predict("/generate_video",[
           inputImage,
-          prompt,
+          highFidelityPrompt,
           duration,
-          false,
-          Math.floor(Math.random()*2147483647),
-          true,
+          enhancePrompt,
+          seed,
+          randomizeSeed,
           height,
           width
         ]);
@@ -348,7 +353,7 @@ async function handler(req, res) {
         return res.status(200).json({
           ok:true,mode:"video",status:"completed",provider:"Lightricks",
           model:"LTX-2.3 Distilled · Video + Audio",videoUrl,
-          meta:{transport:"server-gradio",free:true,synchronizedAudio:true,duration,ratio,width,height}
+          meta:{transport:"server-gradio",free:true,synchronizedAudio:true,duration,ratio,width,height,highResolution:true,enhancePrompt:false,randomizeSeed:true}
         });
       } catch(error) {
         console.error("Miya LTX server:",error);

@@ -4,7 +4,7 @@ const modes={
  video:{title:"Видео",eyebrow:"VIDEO STUDIO · LTX-2.3",subtitle:"Создавай короткие видео по сцене, действиям и движению — со звуком.",placeholder:"Опиши сцену, действия персонажей, движение камеры и атмосферу...",send:"Создать видео",status:"LTX-2.3 Distilled · Free ZeroGPU"}
 };
 const $=s=>document.querySelector(s);
-let mode="chat",referenceImage=null,chatAttachmentFile=null,chatMessages=[];
+let mode="chat",referenceImage=null,chatAttachmentFile=null,chatMessages=[];\nlet videoGenerationBusy=false;
 const CHAT_KEY="miyaChats";
 let chatMenuSuppressed=false;
 function getChats(){
@@ -1009,6 +1009,11 @@ async function generateMotionVideo(prompt){
 async function generateVideo(prompt){
  const selectedModel=String($("#videoModel")?.value||"LTX-2.3 Distilled");
  if(selectedModel==="PixelSter Motion Synthesis") return generateMotionVideo(prompt);
+ if(videoGenerationBusy){
+   toast("Видео уже генерируется. Дождитесь завершения текущего запроса.");
+   return;
+ }
+ videoGenerationBusy=true;
  const source=referenceImage||"";
  showLoading();$("#composerSend").disabled=true;
  const stopProgress=startVideoProgress("LTX-2.3 Distilled");
@@ -1019,13 +1024,17 @@ async function generateVideo(prompt){
    const ratioValue=["auto","9:16","16:9","1:1"].includes(ratio)?ratio:"16:9";
    const effectiveRatio=ratioValue==="auto"?(source?"16:9":"16:9"):ratioValue;
    const actionPrompt=[
-     "Create a photorealistic cinematic audio-video shot. Follow the user's description literally and chronologically.",
-     "Preserve every named subject, species, identity, anatomy, clothing, environment and important composition detail. Show each action as a distinct visible beat with real cause and effect.",
-     "Prioritize stable faces, hands, anatomy, textures, edges and temporal consistency. Keep the subject sharp while motion remains natural and physically coherent.",
-     "Use cinematic camera movement only when it supports the action. Add subtle depth, realistic reflections, controlled motion blur, volumetric lighting and tasteful cinematic visual effects when appropriate to the described scene.",
-     "Generate synchronized diegetic sound effects matching visible actions: footsteps, impacts, cloth movement, object handling, wind, room tone, environmental ambience and mechanical sounds when present. Keep dialogue intelligible if requested.",
-     "Keep audio clean and natural: avoid clipping, harsh distortion, excessive echo, synthetic artifacts and random sounds. Do not add background music unless explicitly requested.",
-     "Do not invent humans, animals, objects or events that are not requested. No subtitles or on-screen text unless requested.",
+     "LTX-2.3 HIGH-FIDELITY IMAGE-TO-VIDEO DIRECTIVE.",
+     "Treat the USER SHOT DESCRIPTION as a locked storyboard, not as inspiration. Follow it literally, in the exact order written, from the first frame to the last.",
+     "Do not omit, merge, reorder, replace or reinterpret any named action. Each action must visibly cause the next action. Prefer explicit physical motion over vague cinematic posing.",
+     "Preserve the source image's subjects, identities, species, anatomy, proportions, faces, fur, feathers, clothing, environment, lighting and composition whenever they are not explicitly changed by the user's shot description.",
+     "Maintain strict temporal consistency: no duplicated subjects, extra limbs, extra wings, fused bodies, warped faces, stretched anatomy or new appendages.",
+     "The eagle must keep anatomically correct eagle anatomy and natural tail feathers only. NEVER invent an elongated mammal-like tail, a second tail, a rope-like tail, or any extra appendage on the eagle.",
+     "Do not invent people, animals, props, weather, objects, attacks, camera tricks or story events that the user did not request. Do not substitute camera movement for the requested subject action.",
+     "Respect the exact ending described by the user. If the prompt says a subject escapes or flies away, show that action clearly and leave the other subject behind as described.",
+     "Use high-detail photorealistic motion, stable anatomy, coherent physics, natural motion blur and physically plausible lighting. Keep cinematic effects subordinate to the requested action; never add decorative effects that change the scene.",
+     "Generate synchronized diegetic sound only for actions and environments actually described. No random sounds and no background music unless requested.",
+     "PROMPT ADHERENCE IS MORE IMPORTANT THAN CREATIVITY.",
      "USER SHOT DESCRIPTION:",
      prompt
    ].join("\n")
@@ -1054,7 +1063,10 @@ async function generateVideo(prompt){
  }catch(e){
    stopProgress();removeGenerationLoading();console.error("LTX-2.3 video generation failed",e);
    $("#composerProgress").textContent="";$("#composerStatus").textContent="LTX-2.3 Distilled · ошибка · можно повторить";toast(e?.message||"Не удалось создать видео");
- }finally{$("#composerSend").disabled=false}
+ }finally{
+   videoGenerationBusy=false;
+   $("#composerSend").disabled=false;
+ }
 }
 
 function restoreReferenceImage(){try{referenceImage=referenceImage||sessionStorage.getItem("miyaReferenceImage")||""}catch{};setComposerAttachment(referenceImage||"")}
