@@ -454,45 +454,14 @@ async function handler(req, res) {
         detail: lastNetworkError?.message || "Upstream connection failed"
       });
     }
-    const timeout = setTimeout(() => controller.abort(), 58000);
-    let response;
-    let raw = "";
-    let data = {};
-    try {
-      for (let attempt = 0; attempt < 3; attempt++) {
-        response = await fetch(endpoint, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            "Accept": "application/json"
-          },
-          body: JSON.stringify(payload),
-          signal: controller.signal
-        });
-        raw = await response.text();
-        try {
-          data = raw ? JSON.parse(raw) : {};
-        } catch {
-          data = {};
-        }
-
-        if (response.ok && data?.success !== false) break;
-        if (![429, 500, 502, 503, 504].includes(response.status) || attempt === 2) break;
-        await new Promise(resolve => setTimeout(resolve, 700 * (attempt + 1)));
-      }
-    } catch (error) {
-      if (error?.name === "AbortError") {
-        return res.status(504).json({
-          ok: false,
-          error: "FLUX_TIMEOUT",
-          message: isImageToImage
-            ? "Flux Kontext Dev не завершил генерацию за 58 секунд."
-            : "Flux Dev не завершил генерацию за 58 секунд."
-        });
-      }
-      throw error;
-    } finally {
-      clearTimeout(timeout);
+    if (!response) {
+      return res.status(504).json({
+        ok: false,
+        error: "FLUX_TIMEOUT",
+        message: isImageToImage
+          ? "Flux Kontext Dev не завершил генерацию вовремя."
+          : "Flux Dev не завершил генерацию вовремя."
+      });
     }
 
     if (!response.ok || data?.success === false) {
