@@ -478,9 +478,10 @@ function buildMediaCard(item,{video=false}={}){
   const promptBtn=document.createElement("button");promptBtn.innerHTML='<span class="action-icon action-svg"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 5h14v14H5z"/><path d="M8 9h8M8 12h6M8 15h4"/></svg></span><span>Промт</span>';promptBtn.onclick=e=>{e.stopPropagation();menu.classList.remove("open");showPrompt(item)};
   const editBtn=document.createElement("button");editBtn.innerHTML='<span class="action-icon action-svg"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m4 16.5-.8 3.3 3.3-.8L18.7 6.8a2.2 2.2 0 0 1 3.1 3.1L6.5 19l-3.3.8.8-3.3Z"/><path d="m14.2 5.8 4 4"/></svg></span><span>Изменить картинку</span>';editBtn.onclick=async e=>{e.stopPropagation();menu.classList.remove("open");openEditor(await mediaItemToReference(item))};
   const videoBtn=document.createElement("button");videoBtn.innerHTML='<span class="action-icon action-svg"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="5" width="17" height="14" rx="2"/><path d="m10 9 5 3-5 3Z"/></svg></span><span>Сделать видео</span>';videoBtn.onclick=async e=>{e.stopPropagation();menu.classList.remove("open");openVideoFromImage(await mediaItemToReference(item))};
+  const copyBtn=document.createElement("button");copyBtn.innerHTML='<span class="action-icon action-svg"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M15 9V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v7a2 2 0 0 0 2 2h3"/></svg></span><span>Копировать</span>';copyBtn.onclick=async e=>{e.stopPropagation();menu.classList.remove("open");const prompt=String(item.prompt||"").trim();if(!prompt){toast("Промт не сохранён");return}try{await navigator.clipboard.writeText(prompt);toast("Промт скопирован")}catch{toast("Не удалось скопировать промт")}};
   const downloadBtn=document.createElement("button");downloadBtn.innerHTML='<span class="action-icon action-svg"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4v11M8 11l4 4 4-4M5 19h14"/></svg></span><span>Скачать</span>';downloadBtn.onclick=e=>{e.stopPropagation();menu.classList.remove("open");showDownloadMenu(item,downloadBtn)};
   const deleteBtn=document.createElement("button");deleteBtn.innerHTML='<span class="action-icon action-svg"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M9 7V4h6v3M7 7l1 13h8l1-13M10 11v5M14 11v5"/></svg></span><span>Удалить</span>';deleteBtn.onclick=e=>{e.stopPropagation();menu.classList.remove("open");confirmDeleteMedia(item,card)};
-  menu.append(promptBtn,editBtn,videoBtn,downloadBtn,deleteBtn);
+  menu.append(promptBtn,editBtn,videoBtn,copyBtn,downloadBtn,deleteBtn);
  }else{
   const deleteBtn=document.createElement("button");deleteBtn.innerHTML='<span class="action-icon">⌫</span><span>Удалить</span>';deleteBtn.onclick=e=>{e.stopPropagation();menu.classList.remove("open");confirmDeleteMedia(item,card)};menu.append(deleteBtn);
  }
@@ -648,62 +649,6 @@ function showImage(url,prompt="",model="FLUX Dev"){
  if(!grid){c.innerHTML='<div class="result-grid"></div>';grid=c.querySelector(".result-grid")}
  const card=buildMediaCard(item);grid.prepend(card);
  $("#composerStatus").textContent=model+" · готово";
-}
-async function getGradioOutputUrl(value,seen=new Set()){
- if(value==null)return "";
- if(typeof value==="string")return /^https?:\/\//i.test(value)?value:"";
- if(typeof value!=="object"||seen.has(value))return "";
- seen.add(value);
- for(const key of ["url","videoUrl","video_url","imageUrl","image_url","path","file","value","data"]){
-  const found=await getGradioOutputUrl(value[key],seen);
-  if(found)return found;
- }
- for(const key of Object.keys(value)){
-  const found=await getGradioOutputUrl(value[key],seen);
-  if(found)return found;
- }
- return "";
-}
-async function gradioImageToDataUrl(value){
- const url=await getGradioOutputUrl(value);
- if(!url)throw new Error("Hugging Face не вернул изображение");
- const response=await fetch(url,{headers:{Accept:"image/*"}});
- if(!response.ok)throw new Error("Hugging Face image HTTP "+response.status);
- const blob=await response.blob();
- return await new Promise((resolve,reject)=>{
-  const reader=new FileReader();
-  reader.onload=()=>resolve(String(reader.result||""));
-  reader.onerror=()=>reject(new Error("Не удалось прочитать изображение"));
-  reader.readAsDataURL(blob);
- });
-}
-async function generateHfFluxImage(prompt,source){
- const ratio=source?"auto":String($("#composerRatio")?.value||"16:9");
- const width=ratio==="9:16"?768:ratio==="16:9"?1024:1024;
- const height=ratio==="9:16"?1024:ratio==="16:9"?576:1024;
- const seed=Math.floor(Math.random()*2147483647);
- if(source){
-  const client=await Promise.race([
-   Client.connect("black-forest-labs/FLUX.1-Kontext-Dev",{events:["status","data"]}),
-   new Promise((_,reject)=>setTimeout(()=>reject(new Error("FLUX Kontext Dev Space не отвечает за 20 секунд")),20000))
-  ]);
-  const sourceBlob=await fetch(source).then(r=>{if(!r.ok)throw new Error("Не удалось подготовить исходное изображение");return r.blob()});
-  const inputImage=handle_file(sourceBlob);
-  const result=await Promise.race([
-   client.predict("/infer",[inputImage,prompt,seed,true,2.5,28]),
-   new Promise((_,reject)=>setTimeout(()=>reject(new Error("FLUX Kontext Dev не завершил создание за 90 секунд")),90000))
-  ]);
-  return {imageUrl:await gradioImageToDataUrl(result?.data||result),model:"FLUX Kontext Dev · Hugging Face"};
- }
- const client=await Promise.race([
-  Client.connect("black-forest-labs/FLUX.1-dev",{events:["status","data"]}),
-  new Promise((_,reject)=>setTimeout(()=>reject(new Error("FLUX Dev Space не отвечает за 20 секунд")),20000))
- ]);
- const result=await Promise.race([
-  client.predict("/infer",[prompt,seed,true,width,height,3.5,28]),
-  new Promise((_,reject)=>setTimeout(()=>reject(new Error("FLUX Dev не завершил создание за 100 секунд")),100000))
- ]);
- return {imageUrl:await gradioImageToDataUrl(result?.data||result),model:"FLUX Dev · Hugging Face"};
 }
 async function generateImage(prompt){
  showLoading();$("#composerSend").disabled=true;
