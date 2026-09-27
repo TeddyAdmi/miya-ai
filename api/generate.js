@@ -383,9 +383,9 @@ async function handler(req, res) {
 
       for (let endpointIndex = 0; endpointIndex < endpoints.length; endpointIndex++) {
         const endpoint = endpoints[endpointIndex];
-        for (let attempt = 0; attempt < 2; attempt++) {
+        for (let attempt = 0; attempt < 1; attempt++) {
           const controller = new AbortController();
-          const timeout = setTimeout(() => controller.abort(), 52000);
+          const timeout = setTimeout(() => controller.abort(), 100000);
           try {
             response = await fetch(endpoint, { method:"POST", headers:{"Content-Type":"application/json",Accept:"application/json"}, body:JSON.stringify(payload), signal:controller.signal });
             raw = await response.text();
@@ -395,7 +395,7 @@ async function handler(req, res) {
             break;
           } catch (error) {
             lastNetworkError = error;
-            if (error?.name === "AbortError") return res.status(504).json({ ok:false, error:"VIDEO_TIMEOUT", message:"Motion Synthesis не завершил видео за 52 секунды. Генерация сброшена — можно повторить." });
+            if (error?.name === "AbortError") return res.status(504).json({ ok:false, error:"VIDEO_TIMEOUT", message:"Motion Synthesis не завершил видео за 100 секунд. Генерация сброшена — можно повторить." });
             if (attempt === 0) { await new Promise(resolve => setTimeout(resolve,1200)); continue; }
             break;
           } finally { clearTimeout(timeout); }
