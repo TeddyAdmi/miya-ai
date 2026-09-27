@@ -865,6 +865,101 @@ function startVideoProgress(model){
  };
 }
 
+let pixelAudioFfmpeg=null;
+let pixelAudioFfmpegPromise=null;
+
+function audioBufferToWavBlob(buffer){
+  const channels=buffer.numberOfChannels, sampleRate=buffer.sampleRate, frames=buffer.length;
+  const bytesPerSample=2, blockAlign=channels*bytesPerSample;
+  const dataSize=frames*blockAlign, arrayBuffer=new ArrayBuffer(44+dataSize);
+  const view=new DataView(arrayBuffer);
+  const writeString=(offset,str)=>{for(let i=0;i<str.length;i++)view.setUint8(offset+i,str.charCodeAt(i))};
+  writeString(0,"RIFF");view.setUint32(4,36+dataSize,true);writeString(8,"WAVE");
+  writeString(12,"fmt ");view.setUint32(16,16,true);view.setUint16(20,1,true);
+  view.setUint16(22,channels,true);view.setUint32(24,sampleRate,true);
+  view.setUint32(28,sampleRate*blockAlign,true);view.setUint16(32,blockAlign,true);
+  view.setUint16(34,16,true);writeString(36,"data");view.setUint32(40,dataSize,true);
+  let offset=44;
+  for(let i=0;i<frames;i++){
+    for(let ch=0;ch<channels;ch++){
+      const sample=Math.max(-1,Math.min(1,buffer.getChannelData(ch)[i]));
+      view.setInt16(offset,sample<0?sample*0x8000:sample*0x7fff,true);offset+=2;
+    }
+  }
+  return new Blob([arrayBuffer],{type:"audio/wav"});
+}
+
+async function makePixelMotionAudio(duration,prompt){
+  const seconds=Math.max(1,Math.min(20,Number(duration)||5));
+  const sampleRate=24000;
+  const ctx=new OfflineAudioContext(1,Math.ceil(seconds*sampleRate),sampleRate);
+  const master=ctx.createGain();master.gain.value=.55;master.connect(ctx.destination);
+  const text=String(prompt||"").toLowerCase();
+  const isRoar=/\b(лев|льв|lion|рычит|рык|рычит|roar|growl|гроул)\b/i.test(text);
+  const isRun=/\b(убег|беж|бег|runs?|running|run away)\b/i.test(text);
+
+  // A synthetic animal roar: layered low oscillation + filtered noise with
+  // a short attack and decay. It is deliberately an effect track, not speech.
+  if(isRoar){
+    const t=Math.min(.75,seconds*.22);
+    const osc=ctx.createOscillator(),gain=ctx.createGain(),filter=ctx.createBiquadFilter();
+    osc.type="sawtooth";osc.frequency.setValueAtTime(92,t);osc.frequency.exponentialRampToValueAtTime(48,t+.72);
+    filter.type="lowpass";filter.frequency.value=1250;filter.Q.value=1.1;
+    gain.gain.setValueAtTime(0,t);gain.gain.linearRampToValueAtTime(.9,t+.08);gain.gain.exponentialRampToValueAtTime(.001,Math.min(seconds,t+1.15));
+    osc.connect(filter);filter.connect(gain);gain.connect(master);osc.start(t);osc.stop(Math.min(seconds,t+1.3));
+    const noiseBuffer=ctx.createBuffer(1,Math.ceil(sampleRate*1.2),sampleRate),nd=noiseBuffer.getChannelData(0);
+    for(let i=0;i<nd.length;i++)nd[i]=(Math.random()*2-1)*Math.pow(1-i/nd.length,.35);
+    const noise=ctx.createBufferSource(),ng=ctx.createGain(),nf=ctx.createBiquadFilter();
+    nf.type="bandpass";nf.frequency.value=520;nf.Q.value=.7;
+    ng.gain.setValueAtTime(0,t);ng.gain.linearRampToValueAtTime(.42,t+.06);ng.gain.exponentialRampToValueAtTime(.001,Math.min(seconds,t+1.05));
+    noise.buffer=noiseBuffer;noise.connect(nf);nf.connect(ng);ng.connect(master);noise.start(t);noise.stop(Math.min(seconds,t+1.2));
+  }
+  if(isRun){
+    for(let t=.9;t<seconds;t+=.42){
+      const o=ctx.createOscillator(),g=ctx.createGain();
+      o.type="sine";o.frequency.value=72;g.gain.setValueAtTime(.16,t);g.gain.exponentialRampToValueAtTime(.001,t+.12);
+      o.connect(g);g.connect(master);o.start(t);o.stop(t+.13);
+    }
+  }
+  const rendered=await ctx.startRendering();
+  return audioBufferToWavBlob(rendered);
+}
+
+async function getPixelAudioFfmpeg(){
+  if(pixelAudioFfmpeg?.loaded)return pixelAudioFfmpeg;
+  if(pixelAudioFfmpegPromise)return pixelAudioFfmpegPromise;
+  pixelAudioFfmpegPromise=(async()=>{
+    const FFmpegClass=window.FFmpegWASM?.FFmpeg;
+    const util=window.FFmpegUtil;
+    if(!FFmpegClass||!util?.fetchFile||!util?.toBlobURL)throw new Error("FFmpeg audio tools are unavailable");
+    const ffmpeg=new FFmpegClass();
+    const base=window.__MIYA_FFMPEG_CORE_BASE||"https://cdn.jsdelivr.net/npm/@ffmpeg/core@0.12.10/dist/umd";
+    await ffmpeg.load({
+      coreURL:await util.toBlobURL(base+"/ffmpeg-core.js","text/javascript"),
+      wasmURL:await util.toBlobURL(base+"/ffmpeg-core.wasm","application/wasm")
+    });
+    pixelAudioFfmpeg=ffmpeg;return ffmpeg;
+  })();
+  try{return await pixelAudioFfmpegPromise}catch(e){pixelAudioFfmpegPromise=null;throw e}
+}
+
+async function muxPixelSterAudio(videoUrl,prompt,duration,onProgress=()=>{}){
+  onProgress(93,"подготавливаю звук…");
+  const response=await fetch(videoUrl,{mode:"cors",cache:"no-store"});
+  if(!response.ok)throw new Error("PixelSter video cannot be downloaded for audio muxing (HTTP "+response.status+")");
+  const videoBlob=await response.blob();
+  const audioBlob=await makePixelMotionAudio(duration,prompt);
+  onProgress(95,"объединяю видео и звук…");
+  const ffmpeg=await getPixelAudioFfmpeg(),util=window.FFmpegUtil;
+  await ffmpeg.writeFile("pixel-input.mp4",await util.fetchFile(videoBlob));
+  await ffmpeg.writeFile("pixel-audio.wav",await util.fetchFile(audioBlob));
+  await ffmpeg.exec(["-i","pixel-input.mp4","-i","pixel-audio.wav","-map","0:v:0","-map","1:a:0","-c:v","copy","-c:a","aac","-b:a","128k","-shortest","pixel-output.mp4"]);
+  const out=await ffmpeg.readFile("pixel-output.mp4");
+  try{await ffmpeg.deleteFile("pixel-input.mp4");await ffmpeg.deleteFile("pixel-audio.wav");await ffmpeg.deleteFile("pixel-output.mp4")}catch{}
+  onProgress(99,"звук готов");
+  return URL.createObjectURL(new Blob([out.buffer],{type:"video/mp4"}));
+}
+
 async function generateMotionVideo(prompt){
  const source=referenceImage||"";
  if(!source){
