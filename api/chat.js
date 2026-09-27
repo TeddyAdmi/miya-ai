@@ -107,14 +107,6 @@ async function handler(req, res) {
         { role: "system", content: system },
         ...cleanMessages.slice(-12)
       ],
-      max_tokens: 2048
-    };
-
-    const chatPayload = {
-      messages: [
-        { role: "system", content: system },
-        ...cleanMessages.slice(-12)
-      ],
       max_tokens: 1024
     };
 
