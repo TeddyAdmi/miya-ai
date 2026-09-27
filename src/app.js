@@ -950,11 +950,13 @@ async function generateMotionVideo(prompt){
    const ratioValue=String($("#videoRatio")?.value||"auto");
    const ratio=["auto","9:16","16:9"].includes(ratioValue)?ratioValue:"auto";
    const motionPrompt=[
-     "Create one continuous photorealistic image-to-video shot from the supplied image.",
-     "Preserve the original subject, anatomy, identity, environment and visual style.",
-     "Follow the user's action literally and chronologically. Every explicitly named animal or object is intentional and must appear.",
-     "Do not replace subject action with camera movement. Do not add humans or other unrequested characters.",
-     "Make every action clearly visible, physically coherent and in the exact written order.",
+     "Create one continuous high-quality cinematic image-to-video shot from the supplied image.",
+     "Preserve the original subject identity, face, anatomy, clothing, composition, environment and visual style.",
+     "Follow the user's motion request literally and chronologically. Every named subject or object is intentional and must remain visible when relevant.",
+     "Prioritize stable anatomy, coherent physics, temporal consistency, natural facial motion, realistic textures and clean fine detail.",
+     "Use smooth purposeful camera movement only when it supports the requested action. Do not replace subject action with camera movement.",
+     "Use subtle cinematic depth, realistic motion blur, physically plausible lighting, reflections and atmospheric detail. Add tasteful cinematic visual effects such as volumetric light, sparks, dust, mist or impact particles only when they naturally fit the requested action or scene.",
+     "Do not add humans, animals, props, weather or unrelated events that the user did not request.",
      "USER MOTION REQUEST:",
      prompt
    ].join("\n");
@@ -998,10 +1000,13 @@ async function generateVideo(prompt){
    const ratioValue=["auto","9:16","16:9","1:1"].includes(ratio)?ratio:"16:9";
    const effectiveRatio=ratioValue==="auto"?(source?"16:9":"16:9"):ratioValue;
    const actionPrompt=[
-     "Photorealistic cinematic action shot. Follow the user's description literally and chronologically.",
-     "Preserve every named subject, species, anatomy and environment. Show each action as a distinct visible beat with real cause and effect.",
-     "Use natural realistic physics, sharp fine detail, coherent motion and cinematic camera movement. The subject action has priority over camera movement.",
-     "Do not invent humans, animals, objects or events not requested. No text or subtitles.",
+     "Create a photorealistic cinematic audio-video shot. Follow the user's description literally and chronologically.",
+     "Preserve every named subject, species, identity, anatomy, clothing, environment and important composition detail. Show each action as a distinct visible beat with real cause and effect.",
+     "Prioritize stable faces, hands, anatomy, textures, edges and temporal consistency. Keep the subject sharp while motion remains natural and physically coherent.",
+     "Use cinematic camera movement only when it supports the action. Add subtle depth, realistic reflections, controlled motion blur, volumetric lighting and tasteful cinematic visual effects when appropriate to the described scene.",
+     "Generate synchronized diegetic sound effects matching visible actions: footsteps, impacts, cloth movement, object handling, wind, room tone, environmental ambience and mechanical sounds when present. Keep dialogue intelligible if requested.",
+     "Keep audio clean and natural: avoid clipping, harsh distortion, excessive echo, synthetic artifacts and random sounds. Do not add background music unless explicitly requested.",
+     "Do not invent humans, animals, objects or events that are not requested. No subtitles or on-screen text unless requested.",
      "USER SHOT DESCRIPTION:",
      prompt
    ].join("\n")
@@ -1083,7 +1088,8 @@ if(chatMenuToggle){
 }
 document.querySelectorAll("[data-mode]").forEach(b=>b.addEventListener("click",()=>setMode(b.dataset.mode)));
 $("#composerInput").addEventListener("input",syncInput);
-$("#composerInput").addEventListener("contextmenu",()=>{ $("#composerInput").focus(); });
+// Keep the prompt as a normal native textarea so Firefox/Chrome provide the
+// standard mouse menu: Paste, Copy, Cut and Select all.
 $("#composerInput").addEventListener("keydown",e=>{if(e.key==="Enter"&&!e.shiftKey){e.preventDefault();$("#composerSend").click()}});
 $("#composerSend").addEventListener("click",async()=>{
  const value=$("#composerInput").value.trim();

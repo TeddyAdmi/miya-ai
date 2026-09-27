@@ -1,8 +1,0 @@
-{
-  "name": "miya-ai",
-  "version": "1.0.0",
-  "private": true,
-  "dependencies": {
-    "@gradio/client": "^2.7.0"
-  }
-}
