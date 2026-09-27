@@ -147,7 +147,18 @@ function openSavedChat(id){
 }
 
 const LIB_KEY="miyaLibrary";
-function getLibrary(){try{return JSON.parse(localStorage.getItem(LIB_KEY)||"[]").filter(x=>x&&typeof x.url==="string")}catch{return[]}}
+function isDeadVheerUrl(url){
+ try{const u=new URL(String(url||""));return u.hostname==="access.vheer.com"&&/^\/results\//i.test(u.pathname)}catch{return false}
+}
+function getLibrary(){
+ try{
+  const raw=JSON.parse(localStorage.getItem(LIB_KEY)||"[]");
+  const items=Array.isArray(raw)?raw.filter(x=>x&&typeof x.url==="string"):[];
+  const cleaned=items.filter(x=>!isDeadVheerUrl(x.url));
+  if(cleaned.length!==items.length){try{localStorage.setItem(LIB_KEY,JSON.stringify(cleaned))}catch{}}
+  return cleaned;
+ }catch{return[]}
+}
 const MEDIA_DB="miyaMediaCache";
 function openMediaDB(){
  return new Promise((resolve,reject)=>{
@@ -195,8 +206,11 @@ function removeBrokenMediaItem(item,card){
 }
 async function resolveMediaUrl(item){
  if(!item?.url)return "";
- // Paint remote images immediately; IndexedDB must never delay the library cover.
- return item.url;
+ try{
+  const cached=await getCachedMedia(item.id);
+  if(cached?.blob)return URL.createObjectURL(cached.blob);
+ }catch{}
+ return isDeadVheerUrl(item.url) ? "" : item.url;
 }
 function setComposerAttachment(url){
  const box=$("#composerAttachment"),img=$("#composerAttachmentImage");
@@ -457,12 +471,7 @@ function buildMediaCard(item,{video=false}={}){
    media.addEventListener("error",()=>{
      if(mediaFailed)return;
      mediaFailed=true;
-     const base=String(item.url||"");
-     if(base){
-       mediaFailed=false;
-       media.src=base+(base.includes("?")?"&":"?")+"miya_retry="+Date.now();
-       setTimeout(()=>{if(media.naturalWidth===0)card.classList.add("media-load-error")},3500);
-     }else card.classList.add("media-load-error");
+     removeBrokenMediaItem(item,card);
    });
    media.src=String(item.url||"");media.addEventListener("click",e=>{e.stopPropagation();openImageViewer(item)});card.appendChild(media);
  }
@@ -639,6 +648,7 @@ function showLoading(){
  grid.appendChild(card);scrollImagesToTop();
 }
 function showImage(url,prompt="",model="FLUX Dev"){
+ if(isDeadVheerUrl(url)){console.warn("Miya: ignored obsolete Vheer result URL",url);toast("Старый результат Vheer больше недоступен");return}
  const item=saveMedia("image",url,prompt,model);
  const c=$("#canvas");let grid=c.querySelector(".result-grid");
  if(!grid){c.innerHTML='<div class="result-grid"></div>';grid=c.querySelector(".result-grid")}
@@ -1177,7 +1187,13 @@ async function generateVideo(prompt){
  }
 }
 
-function restoreReferenceImage(){try{referenceImage=referenceImage||sessionStorage.getItem("miyaReferenceImage")||""}catch{};setComposerAttachment(referenceImage||"")}
+function restoreReferenceImage(){
+ try{
+  referenceImage=referenceImage||sessionStorage.getItem("miyaReferenceImage")||"";
+  if(isDeadVheerUrl(referenceImage)){referenceImage="";sessionStorage.removeItem("miyaReferenceImage")}
+ }catch{}
+ setComposerAttachment(referenceImage||"")
+}
 function setVideoRatioDefault(){
  const el=$("#videoRatio"); if(el) el.value="16:9";
  const d=$("#videoDuration"); if(d) d.value="10 сек";
