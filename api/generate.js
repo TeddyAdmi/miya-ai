@@ -232,12 +232,6 @@ async function handler(req, res) {
         }
       }
 
-      const system =
-        "Ты Miya, дружелюбный AI-помощник внутри Miya AI Studio. " +
-        "Отвечай на русском, если пользователь пишет по-русски. " +
-        "Помогай с текстами, идеями, сценариями, промптами, изображениями и видео. " +
-        "Отвечай полезно и по существу.";
-
       const transcript = cleanMessages
         .slice(-12)
         .map(m => (m.role === "assistant" ? "Miya: " : "Пользователь: ") + m.content)
