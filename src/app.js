@@ -1209,7 +1209,7 @@ async function generateVideo(prompt){
 
    const findVideoUrl=(value,seen=new Set())=>{
      if(value==null)return "";
-     if(typeof value==="string")return /^https?:\\/\\//i.test(value)?value:"";
+     if(typeof value==="string")return /^https?:\/\//i.test(value)?value:"";
      if(typeof value!=="object"||seen.has(value))return "";
      seen.add(value);
      for(const key of ["url","videoUrl","video_url","path","file","data","value"]){
