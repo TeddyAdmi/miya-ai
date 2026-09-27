@@ -259,6 +259,22 @@ async function handler(req, res) {
       });
     }
 
+    if (body.mode === "pixel-audio") {
+      const prompt = typeof body.prompt === "string" ? body.prompt.trim() : "";
+      if (!prompt) return res.status(400).json({ok:false,error:"PROMPT_REQUIRED"});
+      const requestedDuration = Number(body.duration ?? 10);
+      const duration = Number.isFinite(requestedDuration) ? Math.max(5, Math.min(20, Math.round(requestedDuration))) : 10;
+      const generatedAudio = await generatePixelSound(prompt, duration);
+      if (!generatedAudio) {
+        return res.status(502).json({ok:false,error:"PIXEL_AUDIO_FAILED",message:"TangoFlux не вернул звуковую дорожку. Повторите генерацию звука."});
+      }
+      return res.status(200).json({
+        ok:true, mode:"pixel-audio", provider:"TangoFlux",
+        audioBase64:generatedAudio.audioBase64, audioMime:generatedAudio.audioMime,
+        duration
+      });
+    }
+
     if (body.mode === "video" && /ltx/i.test(String(body.provider || body.model || ""))) {
       const prompt = typeof body.prompt === "string" ? body.prompt.trim() : "";
       if (!prompt) return res.status(400).json({ ok:false, error:"PROMPT_REQUIRED" });
@@ -362,7 +378,6 @@ async function handler(req, res) {
       const requestedDuration = Number(body.duration ?? 5);
       const duration = Number.isFinite(requestedDuration) ? Math.max(5, Math.min(20, Math.round(requestedDuration))) : 5;
       const payload = { prompt, ratio, duration, imageBase64: rawBase64 };
-      const audioPromise = generatePixelSound(prompt, duration);
       const endpoints = ["https://ahm7xmakki.com/api/ptv","https://www.ahm7xmakki.com/api/ptv"];
       let response = null, raw = "", data = {}, lastNetworkError = null;
 
@@ -393,13 +408,10 @@ async function handler(req, res) {
 
       const videoUrl = typeof data?.videoUrl === "string" && /^https?:\/\//i.test(data.videoUrl) ? data.videoUrl : "";
       if (!videoUrl) return res.status(502).json({ ok:false, error:"VIDEO_URL_MISSING", providerResponse:data });
-      const generatedAudio = await audioPromise;
       return res.status(200).json({
         ok:true, mode:"video", status:"completed", provider:"PixelSter",
         model:"Motion Synthesis", videoUrl,
-        audioBase64:generatedAudio?.audioBase64 || "",
-        audioMime:generatedAudio?.audioMime || "",
-        meta:{ transport:"http-json", free:true, endpoint:"/api/ptv", audioProvider:generatedAudio?"TangoFlux":"none", duration, ratio }
+        meta:{ transport:"http-json", free:true, endpoint:"/api/ptv", duration, ratio }
       });
     }
 
