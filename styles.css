@@ -1209,6 +1209,8 @@ body.light .media-action-menu{
 
 /* Full-screen image viewer */
 body.image-viewer-open{overflow:hidden!important}
+/* Hide the bottom composer completely while an image/video viewer is open. */
+body.image-viewer-open .composer-wrap{display:none!important}
 .image-viewer-modal{
  position:fixed!important;inset:0!important;z-index:100000!important;
  display:none!important;background:rgba(0,0,0,.88)!important;
