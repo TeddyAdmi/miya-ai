@@ -2138,3 +2138,40 @@ body.light .generation-loading .progress-model{color:#71859a}
   background:rgba(105,92,255,.32)!important;
 }
 
+
+/* FINAL PROMPT HIT AREA: the editable textarea owns the whole central prompt surface.
+   Action buttons stay above it, so right-click anywhere in the prompt opens Firefox's
+   native editing menu instead of the video underneath. */
+.composer-input-row{
+  position:relative!important;
+  z-index:1002!important;
+  min-height:42px!important;
+  isolation:isolate!important;
+}
+.composer-input-row>textarea#composerInput{
+  position:absolute!important;
+  left:41px!important;
+  right:0!important;
+  top:0!important;
+  bottom:0!important;
+  width:auto!important;
+  height:100%!important;
+  min-height:42px!important;
+  max-height:120px!important;
+  margin:0!important;
+  z-index:1003!important;
+  pointer-events:auto!important;
+  background:transparent!important;
+}
+.composer-input-row>.composer-left-actions,
+.composer-input-row>#composerEmoji,
+.composer-input-row>#composerMic,
+.composer-input-row>#composerSend{
+  position:relative!important;
+  z-index:1005!important;
+}
+.composer-input-row>.composer-left-actions{flex:0 0 34px!important}
+.composer-input-row>.composer-attachment{z-index:1004!important;pointer-events:none!important}
+.composer-input-row>.composer-attachment button{pointer-events:auto!important}
+.composer-wrap,.composer{position:fixed!important;pointer-events:auto!important}
+.video-result-grid .media-card video{will-change:auto!important}
