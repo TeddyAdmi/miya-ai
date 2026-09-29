@@ -488,6 +488,40 @@ function openImageViewer(item){
  modal.classList.add("open");
  document.body.classList.add("image-viewer-open");
 }
+function closeVideoViewer(){
+ const modal=$("#videoViewerModal");
+ if(modal){modal.classList.remove("open");document.body.classList.remove("image-viewer-open")}
+}
+function openVideoViewer(item){
+ let modal=$("#videoViewerModal");
+ if(!modal){
+  modal=document.createElement("div");modal.id="videoViewerModal";modal.className="image-viewer-modal video-viewer-modal";
+  modal.innerHTML=`<div class="image-viewer-backdrop"></div><div class="image-viewer-stage video-viewer-stage">
+<video class="image-viewer-video-player" playsinline controls preload="metadata"></video>
+<button type="button" class="image-viewer-nav image-viewer-prev" title="Предыдущее видео"><svg viewBox="0 0 24 24"><path d="m14.5 5-7 7 7 7"/><path d="M8 12h10"/></svg></button>
+<button type="button" class="image-viewer-nav image-viewer-next" title="Следующее видео"><svg viewBox="0 0 24 24"><path d="m9.5 5 7 7-7 7"/><path d="M16 12H6"/></svg></button>
+<div class="image-viewer-controls">
+<button type="button" class="image-viewer-prompt" title="Промт"><svg viewBox="0 0 24 24"><path d="M5 5h14v14H5z"/><path d="M8 9h8M8 12h6M8 15h4"/></svg></button>
+<button type="button" class="image-viewer-download" title="Скачать"><svg viewBox="0 0 24 24"><path d="M12 4v11M8 11l4 4 4-4M5 19h14"/></svg></button>
+<button type="button" class="image-viewer-delete" title="Удалить"><svg viewBox="0 0 24 24"><path d="M4 7h16M9 7V4h6v3M7 7l1 13h8l1-13M10 11v5M14 11v5"/></svg></button>
+<button type="button" class="image-viewer-close" title="Закрыть"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5"/><path d="m9 9 6 6M15 9l-6 6"/></svg></button></div></div>`;
+  document.body.appendChild(modal);
+  modal.querySelector(".image-viewer-backdrop").onclick=closeVideoViewer;modal.querySelector(".image-viewer-close").onclick=closeVideoViewer;
+  modal.querySelector(".image-viewer-prompt").onclick=()=>{const x=getLibrary().find(x=>x.id===modal.dataset.viewerItemId);if(x)showPrompt(x)};
+  modal.querySelector(".image-viewer-download").onclick=()=>{const x=getLibrary().find(x=>x.id===modal.dataset.viewerItemId);if(x)showDownloadMenu(x,modal.querySelector(".image-viewer-download"))};
+  modal.querySelector(".image-viewer-delete").onclick=()=>{const x=getLibrary().find(x=>x.id===modal.dataset.viewerItemId);if(!x)return;closeVideoViewer();confirmDeleteMedia(x,document.querySelector('.media-card[data-media-id="'+x.id+'"]'))};
+  const player=modal.querySelector(".image-viewer-video-player"),prev=modal.querySelector(".image-viewer-prev"),next=modal.querySelector(".image-viewer-next");
+  const items=()=>getLibrary().filter(isVideoLibraryItem);
+  const nav=()=>{const a=items(),i=a.findIndex(x=>x.id===modal.dataset.viewerItemId),p=i>0,n=i>=0&&i<a.length-1;prev.hidden=!p;next.hidden=!n;prev.disabled=!p;next.disabled=!n};
+  const show=x=>{if(!x)return;modal.dataset.viewerItemId=x.id;player.pause();player.src=String(x.url||"");player.load();resolveMediaUrl(x).then(u=>{if(u&&modal.classList.contains("open")&&modal.dataset.viewerItemId===x.id){player.src=u;player.load()}}).catch(()=>{});nav()};
+  const move=d=>{const a=items(),i=a.findIndex(x=>x.id===modal.dataset.viewerItemId);if(i>=0&&a[i+d])show(a[i+d])};
+  prev.onclick=()=>move(-1);next.onclick=()=>move(1);modal.__videoNav=nav;
+  document.addEventListener("keydown",e=>{if(!$("#videoViewerModal")?.classList.contains("open"))return;if(e.key==="Escape")closeVideoViewer();else if(e.key==="ArrowLeft")move(-1);else if(e.key==="ArrowRight")move(1)});
+ }
+ const player=modal.querySelector(".image-viewer-video-player");modal.dataset.viewerItemId=item.id;player.pause();player.src=String(item.url||"");player.load();
+ resolveMediaUrl(item).then(u=>{if(u&&modal.classList.contains("open")&&modal.dataset.viewerItemId===item.id){player.src=u;player.load()}}).catch(()=>{});
+ modal.__videoNav?.();modal.classList.add("open");document.body.classList.add("image-viewer-open");
+}
 async function mediaItemToReference(item){
  try{
   const cached=await getCachedMedia(item.id);
@@ -511,8 +545,10 @@ function buildMediaCard(item,{video=false}={}){
    media=document.createElement("video");
    media.className="media-video";
    media.setAttribute("aria-label","Miya Studio video");
-   media.controls=true;media.playsInline=true;media.preload="metadata";media.muted=false;media.defaultMuted=false;media.volume=1;
+   media.controls=false;media.playsInline=true;media.preload="metadata";media.muted=false;media.defaultMuted=false;media.volume=1;
    media.addEventListener("error",handleMediaFailure);
+   media.addEventListener("click",e=>{e.stopPropagation();openVideoViewer(item)});
+   card.addEventListener("click",e=>{if(!e.target.closest(".media-actions"))openVideoViewer(item)});
    card.appendChild(media);
    const directUrl=String(item.url||"");
    if(directUrl)media.src=directUrl;
@@ -575,17 +611,19 @@ function openVideoFromImage(url){
  $("#chatMenuToggle")?.classList.remove("active");$("#chatSubmenu")?.classList.add("suppressed");
  setComposerAttachment(referenceImage);renderVideoLibrary();syncInput();$("#composerInput").focus();
 }
+function isVideoLibraryItem(item){
+ if(!item)return false;
+ const type=String(item.type||"").toLowerCase();
+ const url=String(item.url||"");
+ const model=String(item.model||"").toLowerCase();
+ return type==="video"||type==="videos"||type==="mp4"||/\\.(mp4|webm|mov)(?:[?#]|$)/i.test(url)||/agnes video|ltx-2\\.3|pixelster|motion synthesis|wan/i.test(model);
+}
 function renderVideoLibrary(){
- const c=$("#canvas"),items=getLibrary().filter(x=>x.type==="video");
- if(!items.length){showEmpty();return}
- c.innerHTML='<div class="results-head"><div><h3>Все созданные видео</h3></div></div><div class="result-grid video-result-grid"></div>';
+ const c=$("#canvas"),items=getLibrary().filter(isVideoLibraryItem);
+ c.innerHTML='<div class="results-head"><div><h3>Мои видео</h3></div></div><div class="result-grid video-result-grid"></div>';
  const grid=c.querySelector(".result-grid");
- items.forEach(item=>{
-   grid.appendChild(buildMediaCard(item,{video:true}));
-   // Warm the local cache in the background. Existing videos become instant
-   // previews the next time the Video tab is opened.
-   cacheMedia(item.id,item.url,"video");
- });
+ if(!items.length){grid.innerHTML='<div class="library-note">Пока нет созданных видео.</div>';return}
+ items.forEach(item=>grid.appendChild(buildMediaCard(item,{video:true})));
 }
 function renderImageLibrary(){
  const c=$("#canvas"),items=getLibrary().filter(x=>x.type==="image");
@@ -1249,8 +1287,8 @@ async function generateMotionVideo(prompt){
    if(item)scrollImagesToTop();
    toast("PixelSter: видео создано");
  }catch(e){
-   stopProgress();removeGenerationLoading();
-   $("#composerProgress").textContent="";
+   stopProgress(99,"ошибка");paintVideoProgress(99);removeGenerationLoading();
+   $("#composerProgress").textContent="99%";
    const rawMessage=String(e?.message||"");
    const is504=/PixelSter HTTP 504|Gateway Time-out|Gateway Timeout|NetworkError/i.test(rawMessage);
    const isQuota=/exceeded your ZeroGPU quota|ZeroGPU quota|quota/i.test(rawMessage);
@@ -1519,8 +1557,8 @@ async function generateVideo(prompt){
    if(item)scrollImagesToTop();
    toast("LTX-2.3: видео + звук созданы");
  }catch(e){
-   stopProgress();removeGenerationLoading();
-   $("#composerProgress").textContent="";
+   stopProgress(99,"ошибка");paintVideoProgress(99);removeGenerationLoading();
+   $("#composerProgress").textContent="99%";
    const rawMessage=String(e?.message||"");
    const isQuota=/exceeded your ZeroGPU quota|ZeroGPU quota/i.test(rawMessage);
    if(isQuota){
