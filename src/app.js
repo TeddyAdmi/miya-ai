@@ -1628,23 +1628,23 @@ $("#composerAttachmentRemove")?.addEventListener("click",()=>clearComposerAttach
 
 $("#composerModel")?.addEventListener("change",()=>{
   const model=$("#composerModel").value;
+  /* Keep an existing edit image visible while switching models. The selected
+     model decides whether that image is actually sent for generation. */
   if(model==="FLUX Kontext Dev"){
     $("#composerRatio").value="auto";
-    $("#composerStatus").textContent="FLUX Kontext Dev · готово к редактированию";
+    $("#composerStatus").textContent=referenceImage
+      ?"FLUX Kontext Dev · изображение готово к редактированию"
+      :"FLUX Kontext Dev · готово к редактированию";
   }else if(model==="Agnes Image 2.5 Flash"){
-    referenceImage=null;
-    chatAttachmentFile=null;
-    try{sessionStorage.removeItem("miyaReferenceImage")}catch{}
-    setComposerAttachment("");
     $("#composerRatio").value="16:9";
-    $("#composerStatus").textContent="Agnes Image 2.5 Flash · 4K · готово";
+    $("#composerStatus").textContent=referenceImage
+      ?"Agnes Image 2.5 Flash · 4K · изображение прикреплено"
+      :"Agnes Image 2.5 Flash · 4K · готово";
   }else{
-    referenceImage=null;
-    chatAttachmentFile=null;
-    try{sessionStorage.removeItem("miyaReferenceImage")}catch{}
-    setComposerAttachment("");
     $("#composerRatio").value="16:9";
-    $("#composerStatus").textContent="FLUX Dev · готово";
+    $("#composerStatus").textContent=referenceImage
+      ?"FLUX Dev · изображение прикреплено, используется только при выборе Kontext Dev"
+      :"FLUX Dev · готово";
   }
 });
 $("#improve")?.addEventListener("click",improveComposerPrompt);
