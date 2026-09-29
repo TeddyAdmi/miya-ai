@@ -17,7 +17,7 @@ module.exports = async function handler(req, res) {
       "Prioritize tack-sharp focus, high micro-contrast, fine texture detail and clean edges at pixel level.",
       "For close-ups, preserve extremely fine facial, hair, fur, fabric and surface detail; do not blur, smear, soften or watercolor the subject.",
       "Keep the requested composition, subject identity and scene faithful to the user prompt. Do not add decorative elements that were not requested.",
-      "Render at native 4K detail with maximum useful texture and clarity so the image remains sharp when zoomed in.",
+      "Use the same practical output quality as FLUX Dev, prioritizing fast-loading preview size without sacrificing useful detail.",
       "USER PROMPT:\n"+prompt
     ].join("\n");
     // Keep Agnes outputs lightweight so the result preview loads quickly.
@@ -46,7 +46,7 @@ module.exports = async function handler(req, res) {
     if(!upstream.ok) return res.status(upstream.status>=400&&upstream.status<500?upstream.status:502).json({ok:false,error:"AGNES_IMAGE_FAILED",message:data?.error?.message||data?.message||raw||("Agnes HTTP "+upstream.status),upstreamStatus:upstream.status});
     const urls=Array.isArray(data?.data)?data.data.map(x=>x?.url).filter(x=>typeof x==="string"&&/^https?:\/\//i.test(x)):[];
     if(!urls.length) return res.status(502).json({ok:false,error:"AGNES_IMAGE_URL_MISSING",providerResponse:data});
-    return res.status(200).json({ok:true,mode:"image",status:"completed",provider:"Agnes",model:"Agnes Image 2.5 Flash · 4K",imageUrl:urls[0],imageUrls:urls,count:urls.length,meta:{freeCandidate:true,size:outputSize,ratio,edit:Boolean(source)}});
+    return res.status(200).json({ok:true,mode:"image",status:"completed",provider:"Agnes",model:"Agnes Image 2.5 Flash",imageUrl:urls[0],imageUrls:urls,count:urls.length,meta:{freeCandidate:true,size:outputSize,ratio,edit:Boolean(source)}});
   }catch(e){
     return res.status(e?.name==="TimeoutError"?504:502).json({ok:false,error:"AGNES_IMAGE_HANDLER_ERROR",message:e?.message||"Agnes image request failed"});
   }
