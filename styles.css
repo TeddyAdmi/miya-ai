@@ -868,6 +868,29 @@ body.light .chat-history-menu .rename-label{color:#71859a!important}
 .chat-history-menu{right:-2px!important}
 .chat-nav-wrap .side-submenu.suppressed{opacity:0!important;visibility:hidden!important;pointer-events:none!important}
 .composer-input-row{position:relative!important}
+/* Keep the prompt textarea as the only full text hit-area; sibling controls cannot cover its left side. */
+.composer-input-row>textarea#composerInput{
+  position:relative!important;
+  z-index:1003!important;
+  pointer-events:auto!important;
+  user-select:text!important;
+  -moz-user-select:text!important;
+  -webkit-user-select:text!important;
+  touch-action:text!important;
+}
+.composer-input-row>.composer-left-actions{
+  position:relative!important;
+  z-index:1004!important;
+  pointer-events:none!important;
+}
+.composer-input-row>.composer-left-actions .attach{pointer-events:auto!important}
+.composer-input-row>.composer-attachment,
+.composer-input-row>.composer-emoji,
+.composer-input-row>.mic,
+.composer-input-row>.send{
+  position:relative!important;
+  z-index:1004!important;
+}
 .composer-emoji,.mic{flex:0 0 38px!important;width:38px!important;height:38px!important;display:grid!important;place-items:center!important;border:0!important;background:transparent!important;color:var(--muted)!important;border-radius:9px!important;cursor:pointer!important}
 .composer-emoji{font-size:22px!important}
 .composer-emoji:hover,.mic:hover{background:rgba(120,150,190,.12)!important;color:inherit!important}
