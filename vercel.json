@@ -20,6 +20,9 @@
     },
     "api/pixelster.js": {
       "maxDuration": 300
+    },
+    "api/agnes-video-proxy.js": {
+      "maxDuration": 300
     }
   }
 }
