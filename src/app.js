@@ -1110,30 +1110,18 @@ async function generateWanVideo(prompt){
  const model="Wan 2.2 Fast";
  const stopProgress=startVideoProgress(model);
  try{
-  const sourceBlob=await fetch(source).then(r=>{if(!r.ok)throw new Error("Не удалось подготовить исходное изображение для Wan");return r.blob()});
-  const inputImage=handle_file(sourceBlob);
-  const durationText=String($("#videoDuration")?.value||"3 сек");
-  const duration=Math.max(0.5,Math.min(5,Number(durationText.match(/\d+(?:\.\d+)?/)?.[0]||3)));
-  const client=await Promise.race([
-   Client.connect("zerogpu-aoti/wan2-2-fp8da-aoti-faster",{events:["status","data"]}),
-   new Promise((_,reject)=>setTimeout(()=>reject(new Error("Wan 2.2 Fast Space не отвечает за 20 секунд")),20000))
-  ]);
-  const submission=client.submit("/generate_video",[inputImage,prompt,6,"",duration,1,1,Math.floor(Math.random()*2147483647),true]);
-  let resultData=null;
-  for await(const message of submission){
-   if(message.type==="status"){
-    if(message.stage==="error")throw new Error(message.message||"Wan 2.2 завершил запрос с ошибкой");
-    if(message.stage==="pending")updateVideoProgress(model,Math.min(25,valueFromProgress(message.position,message.size)),"в очереди…");
-    if(message.stage==="generating"){
-     const reported=message.progress_data?.[0]?.progress;
-     if(Number.isFinite(Number(reported)))updateVideoProgress(model,Math.max(5,Math.min(98,Math.round(Number(reported)*90))),"создание…");
-    }
-   }else if(message.type==="data"){resultData=message.data}
-  }
-  const videoUrl=await getGradioOutputUrl(resultData);
-  if(!videoUrl)throw new Error("Wan 2.2 не вернул MP4");
+  const duration=Math.max(.5,Math.min(5,Number(String($("#videoDuration")?.value||"3 сек").match(/\\d+(?:\\.\\d+)?/)?.[0]||3)));
+  updateVideoProgress(model,1,"подготовка изображения…");
+  const sourceData=await compactPixelSterSource(source);
+  const response=await fetch("/api/minimax",{
+    method:"POST",headers:{"Content-Type":"application/json","Accept":"application/json"},
+    body:JSON.stringify({provider:"wan",prompt,imageBase64:sourceData,duration}),
+    signal:AbortSignal.timeout(300000)
+  });
+  const raw=await response.text();let data={};try{data=raw?JSON.parse(raw):{}}catch{}
+  if(!response.ok||!data?.videoUrl)throw new Error(String(data?.message||data?.error||raw||"Wan 2.2 не вернул видео").slice(0,700));
   updateVideoProgress(model,99,"видео получено…");
-  const item=saveMedia("video",videoUrl,prompt,model);
+  const item=saveMedia("video",data.videoUrl,prompt,model);
   stopProgress();removeGenerationLoading();renderVideoLibrary();if(item)scrollImagesToTop();
   toast("Wan 2.2: видео создано");
  }catch(e){
@@ -1141,7 +1129,7 @@ async function generateWanVideo(prompt){
   const msg=String(e?.message||"");
   const isQuota=/ZeroGPU quota|exceeded your.*quota|quota/i.test(msg);
   $("#composerStatus").textContent=isQuota?model+" · квота Hugging Face исчерпана":model+" · ошибка";
-  toast(isQuota?"Wan 2.2: бесплатная квота ZeroGPU исчерпана.":"Wan 2.2: "+(msg||"не удалось создать видео"));
+  toast(isQuota?"Wan 2.2: бесплатная квота ZeroGPU исчерпана.":model+": "+(msg||"не удалось создать видео"));
  }finally{videoGenerationBusy=false;$("#composerSend").disabled=false}
 }
 async function generateMotionVideo(prompt){
