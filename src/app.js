@@ -545,7 +545,7 @@ function buildMediaCard(item,{video=false}={}){
    media=document.createElement("video");
    media.className="media-video";
    media.setAttribute("aria-label","Miya Studio video");
-   media.controls=false;media.playsInline=true;media.preload="metadata";media.muted=false;media.defaultMuted=false;media.volume=1;
+   media.controls=false;media.playsInline=true;media.preload="none";media.muted=false;media.defaultMuted=false;media.volume=1;
    media.addEventListener("error",handleMediaFailure);
    media.addEventListener("click",e=>{e.stopPropagation();openVideoViewer(item)});
    card.addEventListener("click",e=>{if(!e.target.closest(".media-actions"))openVideoViewer(item)});
@@ -668,7 +668,7 @@ function toast(message){
  t.textContent=message;t.classList.add("show");clearTimeout(window.__toast);
  window.__toast=setTimeout(()=>t.classList.remove("show"),2600)
 }
-function syncInput(){const i=$("#composerInput");if(!i)return;i.style.height="auto";i.style.height=Math.min(120,Math.max(42,i.scrollHeight))+"px";const emoji=$("#composerEmoji");if(emoji)emoji.style.display=mode==="chat"?"":"none"}
+function syncInput(){const i=$("#composerInput");if(!i)return;i.style.height="auto";const h=Math.min(120,Math.max(42,i.scrollHeight));i.style.height=h+"px";const row=i.closest(".composer-input-row");if(row)row.style.height=h+"px";const emoji=$("#composerEmoji");if(emoji)emoji.style.display=mode==="chat"?"":"none"}
 function modeHero(){
  if(mode==="chat") return `<div class="studio-room clean-canvas chat-room">
    <div class="chat-welcome section-welcome">
