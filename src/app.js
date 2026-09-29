@@ -182,14 +182,18 @@ async function cacheMedia(id,url,type="image"){
  }catch{return false}
 }
 function warmMediaCache(items){
-  const list=Array.isArray(items)?items.filter(x=>x?.id&&x?.url):[];
+  /* Do not background-download whole videos: their native preload handles the
+     first frame/metadata. IndexedDB warming is only for image previews. */
+  const list=Array.isArray(items)
+    ? items.filter(x=>x?.id&&x?.url&&x.type==="image").slice(0,12)
+    : [];
   if(!list.length)return;
   const run=async()=>{
     let cursor=0;
     const worker=async()=>{
       while(cursor<list.length){
         const item=list[cursor++];
-        await cacheMedia(item.id,item.url,item.type||"image");
+        await cacheMedia(item.id,item.url,"image");
       }
     };
     await Promise.all([worker(),worker(),worker()]);
