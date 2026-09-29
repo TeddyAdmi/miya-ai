@@ -30,7 +30,7 @@ module.exports = async function handler(req, res) {
         :ratio==="1:1"
           ?"1024x1024"
           :"1280x720";
-    const payload={model:"agnes-image-2.5-flash",prompt:qualityPrompt,n,size:outputSize,ratio,extra_body:{response_format:"url"}};
+    const payload={model:"agnes-image-2.5-flash",prompt:qualityPrompt,n,size:outputSize,ratio,extra_body:{response_format:"url",output_format:"jpeg"}};
     const images=[];
     const source=String(body.imageBase64||body.imageUrl||"").trim();
     if(source) payload.extra_body.image=[source];
