@@ -985,8 +985,10 @@ function removeGenerationLoading(){
  const loader=$("#canvas .generation-loading");
  if(loader)loader.remove();
 }
-function updateVideoProgress(model,value,label=""){
- const v=Math.max(0,Math.min(100,Math.round(value)));
+let videoProgressState={value:1,target:1,model:"",label:"",timer:null};
+
+function paintVideoProgress(value){
+ const v=Math.max(1,Math.min(100,Math.round(value)));
  const loader=$("#canvas .video-generation-loading");
  const ring=loader?.querySelector(".progress-circle");
  const percent=loader?.querySelector(".progress-percent");
@@ -995,25 +997,55 @@ function updateVideoProgress(model,value,label=""){
  if(ring)ring.style.setProperty("--progress",v+"%");
  if(percent)percent.textContent=v+"%";
  if(bar)bar.style.width=v+"%";
- if(copy)copy.textContent=model+(label?" · "+label:"");
+ const text=videoProgressState.model+(videoProgressState.label?" · "+videoProgressState.label:"");
+ if(copy)copy.textContent=text;
  const status=$("#composerStatus"),progress=$("#composerProgress");
- if(status)status.textContent=model+(label?" · "+label:"");
+ if(status)status.textContent=text;
  if(progress)progress.textContent=v+"%";
 }
+
+function updateVideoProgress(model,value,label=""){
+ const numeric=Number(value);
+ if(Number.isFinite(numeric))videoProgressState.target=Math.max(videoProgressState.target,Math.max(1,Math.min(99,Math.round(numeric))));
+ videoProgressState.model=String(model||videoProgressState.model||"Видео");
+ if(label)videoProgressState.label=String(label);
+ paintVideoProgress(videoProgressState.value);
+}
+
 function startVideoProgress(model){
- let value=1;
- updateVideoProgress(model,1,"запуск видеодвижка…");
- const timer=setInterval(()=>{
+ if(videoProgressState.timer)clearInterval(videoProgressState.timer);
+ videoProgressState={value:1,target:99,model:String(model||"Видео"),label:"запуск видеодвижка…",timer:null};
+ paintVideoProgress(1);
+ // One deterministic percentage step at a time. Provider-reported progress can
+ // raise the target, but it can never make the displayed percentage jump backward.
+ videoProgressState.timer=setInterval(()=>{
    const loader=$("#canvas .video-generation-loading");
-   if(!loader||!document.body.contains(loader)){clearInterval(timer);return}
-   const remaining=99-value;
-   const step=remaining>60?Math.random()*3.6+1.2:remaining>25?Math.random()*2.2+.7:Math.random()*.7+.2;
-   value=Math.min(99,value+step);
-   updateVideoProgress(model,value,"создание…");
- },850);
+   if(!loader||!document.body.contains(loader)){
+     clearInterval(videoProgressState.timer);
+     videoProgressState.timer=null;
+     return;
+   }
+   if(videoProgressState.value<videoProgressState.target){
+     videoProgressState.value=Math.min(videoProgressState.target,videoProgressState.value+1);
+     paintVideoProgress(videoProgressState.value);
+   }
+ },150);
  return (finalValue=null,label="")=>{
-   clearInterval(timer);
-   if(finalValue!==null)updateVideoProgress(model,finalValue,label);
+   if(finalValue!==null){
+     videoProgressState.target=Math.max(videoProgressState.target,Math.min(100,Number(finalValue)||100));
+   }
+   if(label)videoProgressState.label=String(label);
+   if(finalValue===100){
+     videoProgressState.value=100;
+     videoProgressState.target=100;
+     paintVideoProgress(100);
+   }else{
+     paintVideoProgress(videoProgressState.value);
+   }
+   if(videoProgressState.timer){
+     clearInterval(videoProgressState.timer);
+     videoProgressState.timer=null;
+   }
  };
 }
 
