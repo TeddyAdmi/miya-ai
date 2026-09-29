@@ -17,7 +17,7 @@ module.exports = async function handler(req, res) {
 
     const ratio=["16:9","9:16","1:1","4:3","3:4","21:9"].includes(String(body.aspect_ratio))?String(body.aspect_ratio):"16:9";
     const seconds=Math.max(4,Math.min(12,Number(body.seconds)||12));
-    const payload={model,prompt};
+    const payload={model,prompt,n:1};
 
     if(model==="agnes-video-v2.0"){
       const dims={ "16:9":[1152,648], "9:16":[704,1280], "1:1":[1024,1024], "4:3":[1088,832], "3:4":[832,1088], "21:9":[1344,576] };
@@ -25,7 +25,7 @@ module.exports = async function handler(req, res) {
       payload.width=width; payload.height=height; payload.num_frames=Math.round(seconds*24); payload.frame_rate=24;
     }else{
       payload.mode=body.first_frame?"keyframe":"text";
-      payload.seconds=String(seconds);
+      payload.seconds=seconds;
       payload.size=model==="agnes-video-2.5-flash"?"720P":(String(body.size||"2K"));
       if(!["720P","1080P","1K","2K"].includes(payload.size)) payload.size="2K";
       payload.aspect_ratio=ratio;
