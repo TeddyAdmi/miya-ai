@@ -752,16 +752,19 @@ async function generateAgnesImage(prompt){
 }
 
 async function generateImage(prompt){
+ const selectedModel=String($("#composerModel")?.value||"").trim();
+ const useAgnesImage=!referenceImage && /Agnes Image/i.test(selectedModel);
+ if(useAgnesImage){
+  return generateAgnesImage(prompt);
+ }
  showLoading();$("#composerSend").disabled=true;
  const loader=$("#canvas .generation-loading");
  const ring=loader?.querySelector(".progress-circle");
  const percent=ring?.querySelector(".progress-percent");
- const selectedModel=String($("#composerModel")?.value||"").trim();
  const modelName=referenceImage
    ? "FLUX Kontext Dev"
    : (selectedModel||"FLUX Dev");
  const hasFileUpload=Boolean(referenceImage);
- const useAgnesImage=!referenceImage && /Agnes Image/i.test(modelName);
  const composerProgress=$("#composerProgress");
  let fakeProgress=0;
  let fakeTimer=null;
@@ -1365,16 +1368,11 @@ async function generateAgnesVideo(prompt, retryAttempt=0){
          65
        )
      );
-     if(retryAttempt<1){
-       stopProgress();removeGenerationLoading();
-       $("#composerProgress").textContent="";
-       $("#composerStatus").textContent="Agnes Video · лимит бесплатного доступа";
-       toast("Agnes достиг бесплатного лимита. Повторю автоматически через "+retryAfter+" сек.");
-       await new Promise(resolve=>setTimeout(resolve,retryAfter*1000));
-       videoGenerationBusy=false;
-       return generateAgnesVideo(prompt,retryAttempt+1);
-     }
-     throw new Error("Agnes: бесплатный лимит запросов ещё не сброшен. Подождите около минуты и попробуйте снова.");
+     stopProgress();removeGenerationLoading();
+     $("#composerProgress").textContent="";
+     $("#composerStatus").textContent="Agnes Video · бесплатный лимит · подожди "+retryAfter+" сек.";
+     toast("Agnes Video сейчас ограничен бесплатным лимитом. Новый запрос автоматически не отправляю. Подожди "+retryAfter+" сек. и попробуй снова.");
+     return;
    }
 
    if(!create.ok||!created.videoId){
