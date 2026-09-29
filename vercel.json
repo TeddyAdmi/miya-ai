@@ -6,9 +6,6 @@
     "api/chat.js": {
       "maxDuration": 60
     },
-    "api/minimax.js": {
-      "maxDuration": 300
-    },
     "api/image.js": {
       "maxDuration": 60
     },
