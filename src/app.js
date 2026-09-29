@@ -1249,8 +1249,8 @@ function setLtxQuotaCooldown(message){
  const select=$("#videoModel");
  if(select){
   const options=[...select.options];
-  options.filter(o=>String(o.value||o.textContent).includes("LTX-2.3")||String(o.value||o.textContent).includes("Wan 2.2")).forEach(o=>o.disabled=true);
-  if(String(select.value||"").includes("LTX-2.3")||String(select.value||"").includes("Wan 2.2")){
+  options.filter(o=>String(o.value||o.textContent).includes("LTX-2.3")).forEach(o=>o.disabled=true);
+  if(String(select.value||"").includes("LTX-2.3")){
    const fallback=options.find(o=>!o.disabled&&String(o.value||o.textContent)==="PixelSter Motion Synthesis");
    if(fallback)select.value=fallback.value;
   }
@@ -1263,8 +1263,6 @@ function refreshLtxQuotaState(){
  if(!select)return until;
  const option=[...select.options].find(o=>String(o.value||o.textContent).includes("LTX-2.3"));
  if(option)option.disabled=Boolean(until);
- const wan=[...select.options].find(o=>String(o.value||o.textContent).includes("Wan 2.2"));
- if(wan)wan.disabled=Boolean(until);
  if(until&&(String(select.value||"").includes("LTX-2.3")||String(select.value||"").includes("Wan 2.2"))){
   const fallback=[...select.options].find(o=>!o.disabled&&String(o.value||o.textContent)==="PixelSter Motion Synthesis");
   if(fallback)select.value=fallback.value;
