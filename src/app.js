@@ -635,7 +635,6 @@ function renderVideoLibrary(){
  const grid=c.querySelector(".result-grid");
  items.forEach(item=>{
    grid.appendChild(buildMediaCard(item,{video:true}));
-   cacheMedia(item.id,item.url,"video");
  });
 }
 function renderImageLibrary(){
@@ -647,8 +646,9 @@ function renderImageLibrary(){
    const card=buildMediaCard(item);
    const img=card.querySelector("img");
    if(img){
-     img.loading=index===0?"eager":"lazy";
-     if(index===0)img.fetchPriority="high";
+     img.loading=index<2?"eager":"lazy";
+     img.decoding="async";
+     img.fetchPriority=index===0?"high":"low";
    }
    grid.appendChild(card);
  });
@@ -1731,6 +1731,11 @@ if(videoModelSelect)videoModelSelect.addEventListener("change",()=>{
  }
 });
 $("#composerInput").addEventListener("input",syncInput);
+const composerInput=$("#composerInput");
+if(composerInput){
+ composerInput.addEventListener("contextmenu",e=>{e.stopPropagation();},true);
+ composerInput.addEventListener("mousedown",e=>{if(e.button===2)e.stopPropagation();},true);
+}
 $("#composerInput").addEventListener("paste",e=>{
  const text=e.clipboardData?.getData("text/plain");
  if(text==null)return;
