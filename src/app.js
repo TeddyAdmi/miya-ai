@@ -1818,10 +1818,10 @@ $("#videoCopyPrompt")?.addEventListener("click",copyComposerPrompt);
 $("#videoModel")?.addEventListener("change",()=>{
  const model=$("#videoModel").value;
  const duration=$("#videoDuration");
- if(duration) duration.value=model==="PixelSter Motion Synthesis"?"10 сек":"5 сек";
+ if(duration) duration.value=model==="PixelSter Motion Synthesis"?"5 сек":"5 сек";
  $("#composerProgress").textContent="";
  $("#composerStatus").textContent=model==="PixelSter Motion Synthesis"
-   ? "PixelSter Motion Synthesis · 10 сек"
+   ? "PixelSter Motion Synthesis · 5 сек"
      : model==="Agnes Video 2.5 Flash"
        ? "Agnes Video 2.5 Flash · 720P · до 12 сек"
          : model==="Agnes Video v2.0"
