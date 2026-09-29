@@ -1067,6 +1067,16 @@ body.light .chat-nav-wrap .chat-history-row.pinned .chat-history-mini-item{
   transform:translateY(-50%)!important;
 }
 
+/* Deleting a chat must close the chat flyout even while the pointer remains over the sidebar. */
+.chat-nav-wrap .side-submenu.suppressed,
+.chat-nav-wrap:hover .side-submenu.suppressed,
+.chat-nav-wrap .side-submenu:hover.suppressed,
+.chat-nav-wrap .side-menu-toggle:hover + .side-submenu.suppressed{
+  opacity:0!important;
+  visibility:hidden!important;
+  pointer-events:none!important;
+}
+
 /* Requested-only fixes */
 .workspace-head .eyebrow{display:none!important}
 .workspace-head{padding-top:4px!important;padding-bottom:2px!important}
