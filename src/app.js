@@ -1352,7 +1352,9 @@ async function generateAgnesVideo(prompt, retryAttempt=0){
    const actualSeconds=String(final.seconds||duration)+" сек";
    const actualSize=String(final.size||size);
    const item=saveMedia("video",final.url,prompt,shownModel+" · "+actualSize+" · "+actualSeconds);
-   stopProgress();removeGenerationLoading();renderVideoLibrary();if(item)scrollImagesToTop();
+   stopProgress(100,"готово");
+   updateVideoProgress(shownModel,100,"готово");
+   removeGenerationLoading();renderVideoLibrary();if(item)scrollImagesToTop();
    $("#composerStatus").textContent=shownModel+" · готово"+fallbackNotice;
    toast(created.fallbackFrom
      ?"Agnes: Flash занят, видео создано через v2.0"
@@ -1655,9 +1657,7 @@ $("#referenceInput").onchange=e=>{
     $("#composerRatio").value="auto";
     $("#composerStatus").textContent="FLUX Kontext Dev · готово к редактированию";
   }else if(mode==="video"){
-    $("#videoModel").value="Agnes Video 2.5 Flash";
-    $("#videoRatio").value="auto";
-    $("#composerStatus").textContent=($("#videoModel")?.value==="PixelSter Motion Synthesis"?"PixelSter Motion Synthesis · изображение готово":"LTX-2.3 · изображение готово");
+    $("#composerStatus").textContent=String($("#videoModel")?.value||"LTX-2.3 Distilled")+" · изображение готово";
   }else{
     $("#composerStatus").textContent="Изображение прикреплено · можно спросить Miya о фото";
   }
