@@ -7,7 +7,7 @@ import { Client, handle_file } from "https://cdn.jsdelivr.net/npm/@gradio/client
 const modes={
  chat:{title:"Твоя AI-комната",eyebrow:"AI CHAT",subtitle:"Общайся с Miya, придумывай идеи и управляй созданием контента.",placeholder:"Напиши сообщение...",send:"Отправить",status:"AI Chat готов"},
  images:{title:"Картинки",eyebrow:"КАРТИНКИ",subtitle:"Создавай изображения с нуля или загружай исходник и описывай изменения.",placeholder:"Опиши картинку или что изменить в загруженном изображении...",send:"Создать",status:"FLUX Dev · создание и редактирование"},
- video:{title:"Видео",eyebrow:"ВИДЕО",subtitle:"Создавай короткие видео по сцене, действиям и движению — со звуком.",placeholder:"Опиши сцену, действия персонажей, движение камеры и атмосферу...",send:"Создать видео",status:"LTX-2.3 Distilled · Free ZeroGPU"}
+ video:{title:"Видео",eyebrow:"ВИДЕО",subtitle:"Создавай короткие видео по сцене, действиям и движению — со звуком.",placeholder:"Опиши сцену, действия персонажей, движение камеры и атмосферу...",send:"Создать видео",status:"Agnes Video 2.5 Flash · 720P · до 12 сек"}
 };
 const $=s=>document.querySelector(s);
 let mode="chat",referenceImage=null,chatAttachmentFile=null,chatMessages=[];
@@ -533,7 +533,7 @@ function openVideoFromImage(url){
  mode="video";
  const m=modes.video;
  $("#workspaceEyebrow").textContent=m.eyebrow;$("#workspaceTitle").textContent=m.title;$("#workspaceSubtitle").textContent=m.subtitle;
- $("#composerInput").placeholder=m.placeholder;$("#composerSendText").textContent=m.send;$("#composerStatus").textContent="LTX-2.3 Distilled · изображение готово";
+ $("#composerInput").placeholder=m.placeholder;$("#composerSendText").textContent=m.send;$("#composerStatus").textContent="Agnes Video 2.5 Flash · изображение готово";
  $(".image-settings").style.display="none";$("#videoOptions").classList.add("show");
  $("#videoModel").value="Agnes Video 2.5 Flash";$("#videoRatio").value="16:9";
  document.querySelectorAll("[data-mode]").forEach(x=>x.classList.toggle("active",x.dataset.mode==="video"));
@@ -1504,7 +1504,7 @@ function restoreReferenceImage(){
 }
 function setVideoRatioDefault(){
  const el=$("#videoRatio"); if(el) el.value="16:9";
- const d=$("#videoDuration"); if(d) d.value="10 сек";
+ const d=$("#videoDuration"); if(d) d.value="12 сек";
  $("#composerProgress").textContent="";
 }
 function setMode(next,render=true){
