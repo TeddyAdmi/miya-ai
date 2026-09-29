@@ -11,6 +11,43 @@ async function handler(req, res) {
     const prompt = typeof body.prompt === "string" ? body.prompt.trim() : "";
     if (!prompt) return res.status(400).json({ ok:false, error:"PROMPT_REQUIRED" });
 
+    if(provider==="wan"){
+      const promptText=String(body.prompt||"").trim();
+      const sourceBase64=String(body.imageBase64||"").trim();
+      if(!promptText)return res.status(400).json({ok:false,error:"PROMPT_REQUIRED"});
+      if(!sourceBase64)return res.status(400).json({ok:false,error:"WAN_SOURCE_REQUIRED",message:"Wan 2.2 требует исходное изображение."});
+      const match=sourceBase64.match(/^data:image\\/[^;]+;base64,(.+)$/i);
+      const rawImage=match?match[1].replace(/\\s+/g,""):sourceBase64.replace(/^base64,/i,"").replace(/\\s+/g,"");
+      if(rawImage.length<100)return res.status(400).json({ok:false,error:"INVALID_IMAGE_BASE64"});
+      const duration=Math.max(.5,Math.min(5,Number(body.duration)||3));
+      const client=await Promise.race([
+        Client.connect("zerogpu-aoti/wan2-2-fp8da-aoti-faster",{events:["status","data"]}),
+        new Promise((_,reject)=>setTimeout(()=>reject(new Error("Wan 2.2 Space не отвечает за 30 секунд")),30000))
+      ]);
+      const submission=client.submit("/generate_video",[handle_file(Buffer.from(rawImage,"base64")),promptText,6,"",duration,1,1,Math.floor(Math.random()*2147483647),true]);
+      let resultData=null;
+      for await(const message of submission){
+        if(message.type==="status"&&message.stage==="error")throw new Error(message.message||"Wan 2.2 завершил запрос с ошибкой");
+        if(message.type==="data")resultData=message.data;
+      }
+      const findVideo=(value,seen=new Set())=>{
+        if(value==null)return "";
+        if(typeof value==="string")return /^https?:\\/\\//i.test(value)?value:"";
+        if(typeof value!=="object"||seen.has(value))return "";
+        seen.add(value);
+        for(const key of ["url","videoUrl","video_url","path","file","data","value"]){
+          const found=findVideo(value[key],seen);if(found)return found;
+        }
+        for(const key of Object.keys(value)){
+          const found=findVideo(value[key],seen);if(found)return found;
+        }
+        return "";
+      };
+      const videoUrl=findVideo(resultData);
+      if(!videoUrl)throw new Error("Wan 2.2 не вернул MP4");
+      return res.status(200).json({ok:true,provider:"Hugging Face ZeroGPU",model:"Wan 2.2 Fast",videoUrl});
+    }
+
     const provider=String(body.provider||"").trim().toLowerCase();
 
     if(provider==="pixelster"){
