@@ -1550,52 +1550,79 @@ function setVideoRatioDefault(){
  $("#composerProgress").textContent="";
 }
 function setMode(next,render=true){
- const changedSection=next!==mode;
- if(changedSection){referenceImage=null;try{sessionStorage.removeItem("miyaReferenceImage")}catch{};setComposerAttachment("");$("#composerInput").value="";syncInput()}
- mode=next;const m=modes[next];
- $("#workspaceEyebrow").textContent=m.eyebrow;$("#workspaceTitle").textContent=m.title;$("#workspaceSubtitle").textContent=m.subtitle;
- $("#composerInput").placeholder=m.placeholder;$("#composerSendText").textContent=m.send;$("#composerStatus").textContent=m.status;
- $(".image-settings").style.display=next==="images"?"flex":"none";$("#videoOptions").classList.toggle("show",next==="video");
- if(next==="video"){
+ const target=String(next||"chat");
+ if(!modes[target])return;
+ const changedSection=target!==mode;
+ if(changedSection){
+   referenceImage=null;
+   try{sessionStorage.removeItem("miyaReferenceImage")}catch{}
+   setComposerAttachment("");
+   const input=$("#composerInput");
+   if(input)input.value="";
+ }
+ mode=target;
+ const m=modes[target];
+ const canvas=$("#canvas");
+
+ // Clear the previous section immediately, before any model/quota refresh.
+ if(render&&canvas){
+   canvas.classList.toggle("chat-canvas",target==="chat");
+   canvas.innerHTML="";
+ }
+
+ $("#workspaceEyebrow").textContent=m.eyebrow;
+ $("#workspaceTitle").textContent=m.title;
+ $("#workspaceSubtitle").textContent=m.subtitle;
+ $("#composerInput").placeholder=m.placeholder;
+ $("#composerSendText").textContent=m.send;
+ $("#composerStatus").textContent=m.status;
+ $(".image-settings").style.display=target==="images"?"flex":"none";
+ $("#videoOptions").classList.toggle("show",target==="video");
+
+ // Paint the active navigation state before any model-specific code runs.
+ document.querySelectorAll("[data-mode]").forEach(x=>x.classList.toggle("active",x.dataset.mode===target));
+ document.querySelectorAll("#chatSubmenu .side-subbtn").forEach(x=>x.classList.remove("active"));
+ $("#chatMenuToggle")?.classList.toggle("active",target==="chat");
+
+ if(target!=="chat"){
+   chatMenuSuppressed=true;
+   $("#chatSubmenu")?.classList.add("suppressed");
+   $("#chatMenuToggle")?.setAttribute("aria-expanded","false");
+ }else if(!chatMenuSuppressed){
+   if($("#chatSubmenu")?.classList.contains("collapsed"))$("#chatSubmenu").classList.remove("collapsed");
+   if($("#chatMenuToggle")){
+     $("#chatMenuToggle").classList.remove("collapsed");
+     $("#chatMenuToggle").setAttribute("aria-expanded","true");
+   }
+ }
+ if($("#chatMenuArrow"))$("#chatMenuArrow").textContent="→";
+
+ if(!render){syncInput();return}
+
+ if(target==="video"){
    setVideoRatioDefault();
-   if($("#videoModel")&&!$("#videoModel").value)$("#videoModel").value="Agnes Video 2.5 Flash";
+   const model=$("#videoModel");
+   if(model&&!model.value)model.value="Agnes Video 2.5 Flash";
    const input=$("#composerInput");
    if(input){
      input.style.pointerEvents="auto";
      input.style.userSelect="text";
      input.style.cursor="text";
    }
-   refreshLtxQuotaState();
- }
- document.querySelectorAll("[data-mode]").forEach(x=>x.classList.toggle("active",x.dataset.mode===next));
- document.querySelectorAll("#chatSubmenu .side-subbtn").forEach(x=>x.classList.remove("active"));
- $("#chatMenuToggle")?.classList.toggle("active",next==="chat");
- if(next!=="chat"){
-   chatMenuSuppressed=true;
-   $("#chatSubmenu")?.classList.add("suppressed");
-   $("#chatMenuToggle")?.setAttribute("aria-expanded","false");
- }else if(!chatMenuSuppressed){
-   if($("#chatSubmenu")?.classList.contains("collapsed"))$("#chatSubmenu").classList.remove("collapsed");
-   if($("#chatMenuToggle")){$("#chatMenuToggle").classList.remove("collapsed");$("#chatMenuToggle").setAttribute("aria-expanded","true")}
- }
- if($("#chatMenuArrow"))$("#chatMenuArrow").textContent="→";
- if(!render){syncInput();return}
- const canvas=$("#canvas");
- if(canvas)canvas.classList.toggle("chat-canvas",next==="chat");
- if(canvas)canvas.innerHTML="";
- if(next==="images"){
+   try{refreshLtxQuotaState()}catch{}
+   renderVideoLibrary();
+ }else if(target==="images"){
    referenceImage=referenceImage||null;
    renderImageLibrary();
    const imageModel=$("#composerModel");
-   imageModel.value=referenceImage?"FLUX Kontext Dev":"FLUX Dev";
-   $("#composerRatio").value=referenceImage?"auto":"16:9";
- }else if(next==="video"){
-   renderVideoLibrary();
+   if(imageModel)imageModel.value=referenceImage?"FLUX Kontext Dev":"FLUX Dev";
+   const ratio=$("#composerRatio");
+   if(ratio)ratio.value=referenceImage?"auto":"16:9";
  }else{
    showEmpty();
  }
  requestAnimationFrame(()=>$("#workspace")?.scrollTo({top:0,behavior:"auto"}));
- syncInput()
+ syncInput();
 }
 const chatMenuToggle=$("#chatMenuToggle");
 if(chatMenuToggle){
@@ -1608,17 +1635,18 @@ if(chatMenuToggle){
    requestAnimationFrame(()=>$("#composerInput")?.focus());
  });
 }
-document.querySelectorAll("[data-mode]").forEach(b=>b.addEventListener("click",e=>{
+// Capture navigation clicks so the Video button cannot be swallowed
+// by the chat flyout or another bubbling handler.
+document.addEventListener("click",e=>{
+ const button=e.target?.closest?.("[data-mode]");
+ if(!button)return;
+ const target=button.dataset.mode;
+ if(!modes[target])return;
  e.preventDefault();
  e.stopPropagation();
- const target=b.dataset.mode;
- if(target==="video"){
-   setMode("video",true);
-   $("#videoModel")?.focus({preventScroll:true});
- }else{
-   setMode(target,true);
- }
-}));
+ setMode(target,true);
+ if(target==="video")requestAnimationFrame(()=>$("#videoModel")?.focus({preventScroll:true}));
+},true);
 $("#composerInput").addEventListener("input",syncInput);
 $("#composerInput").addEventListener("paste",e=>{
  const text=e.clipboardData?.getData("text/plain");
