@@ -1530,7 +1530,7 @@ function setMode(next,render=true){
  if(next==="images"){
    referenceImage=referenceImage||null;
    renderImageLibrary();
-   $("#composerModel").value=referenceImage?"FLUX Kontext Dev":"FLUX Dev";
+   $("#composerModel").value=referenceImage?"Agnes Image 2.5 Flash":"Agnes Image 2.5 Flash";
    $("#composerRatio").value=referenceImage?"auto":"16:9";
  }else if(next==="video"){
    renderVideoLibrary();
