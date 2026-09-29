@@ -738,6 +738,10 @@ async function generateAgnesImage(prompt){
    $("#composerModel").value="Agnes Image 2.5 Flash";
    $("#composerRatio").value=ratio;
    $("#composerStatus").textContent=model+" · готово";
+   referenceImage=null;
+   chatAttachmentFile=null;
+   try{sessionStorage.removeItem("miyaReferenceImage")}catch{}
+   setComposerAttachment("");
    if(composerProgress)composerProgress.textContent="100%";
    setTimeout(()=>$("#canvas .generation-loading")?.remove(),350);
    toast("Agnes Image: изображение создано");
@@ -753,7 +757,7 @@ async function generateAgnesImage(prompt){
 
 async function generateImage(prompt){
  const selectedModel=String($("#composerModel")?.value||"").trim();
- const useAgnesImage=!referenceImage && /Agnes Image/i.test(selectedModel);
+ const useAgnesImage=/^Agnes Image/i.test(selectedModel);
  if(useAgnesImage){
   return generateAgnesImage(prompt);
  }
@@ -761,10 +765,10 @@ async function generateImage(prompt){
  const loader=$("#canvas .generation-loading");
  const ring=loader?.querySelector(".progress-circle");
  const percent=ring?.querySelector(".progress-percent");
- const modelName=referenceImage
+ const modelName=referenceImage && selectedModel==="FLUX Kontext Dev"
    ? "FLUX Kontext Dev"
    : (selectedModel||"FLUX Dev");
- const hasFileUpload=Boolean(referenceImage);
+ const hasFileUpload=modelName==="FLUX Kontext Dev" && Boolean(referenceImage);
  const composerProgress=$("#composerProgress");
  let fakeProgress=0;
  let fakeTimer=null;
@@ -1664,9 +1668,17 @@ $("#composerModel")?.addEventListener("change",()=>{
     $("#composerRatio").value="auto";
     $("#composerStatus").textContent="FLUX Kontext Dev · готово к редактированию";
   }else if(model==="Agnes Image 2.5 Flash"){
+    referenceImage=null;
+    chatAttachmentFile=null;
+    try{sessionStorage.removeItem("miyaReferenceImage")}catch{}
+    setComposerAttachment("");
     $("#composerRatio").value="16:9";
     $("#composerStatus").textContent="Agnes Image 2.5 Flash · 4K · готово";
   }else{
+    referenceImage=null;
+    chatAttachmentFile=null;
+    try{sessionStorage.removeItem("miyaReferenceImage")}catch{}
+    setComposerAttachment("");
     $("#composerRatio").value="16:9";
     $("#composerStatus").textContent="FLUX Dev · готово";
   }
