@@ -77,7 +77,7 @@ module.exports = async function handler(req, res) {
         return payload;
       }
 
-      payload.mode=source?"img2video":"text";
+      payload.mode=source?"keyframe":"text";
       payload.seconds=String(seconds);
       payload.size=model==="agnes-video-2.5-flash"
         ?"720P"
