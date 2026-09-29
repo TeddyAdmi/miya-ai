@@ -1552,6 +1552,11 @@ if(chatMenuToggle){
  });
 }
 document.querySelectorAll("[data-mode]").forEach(b=>b.addEventListener("click",()=>setMode(b.dataset.mode)));
+$("#composerInput").addEventListener("contextmenu",e=>{
+ // Let Firefox show its native Paste / Copy / Cut / Select all menu.
+ // Stop only application-level bubbling; never cancel the browser default.
+ e.stopPropagation();
+});
 $("#composerInput").addEventListener("input",syncInput);
 // Keep the browser's native clipboard behavior in the prompt textarea.
 // Do not intercept paste: Firefox's mouse menu must provide Paste / Copy / Cut / Select all.
