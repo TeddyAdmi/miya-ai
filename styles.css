@@ -2245,3 +2245,18 @@ body.light .generation-loading .progress-model{color:#71859a}
 .composer-input-row>textarea#composerInput{
   z-index:2147483647!important;
 }
+
+
+/* FINAL VIDEO/PROMPT HIT-TEST FIX */
+html.composer-hit-area .video-result-grid .media-card video,
+html.composer-hit-area .video-result-grid .media-card{
+  pointer-events:none!important;
+}
+html.composer-hit-area .composer-wrap,
+html.composer-hit-area .composer,
+html.composer-hit-area .composer-input-row,
+html.composer-hit-area .composer-input-row>textarea#composerInput{
+  pointer-events:auto!important;
+}
+/* First six videos get metadata immediately; the rest stay lazy. */
+.video-result-grid .media-card video{will-change:auto!important}
