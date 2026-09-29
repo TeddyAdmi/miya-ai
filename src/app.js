@@ -1553,15 +1553,8 @@ if(chatMenuToggle){
 }
 document.querySelectorAll("[data-mode]").forEach(b=>b.addEventListener("click",()=>setMode(b.dataset.mode)));
 $("#composerInput").addEventListener("input",syncInput);
-$("#composerInput").addEventListener("paste",e=>{
- const text=e.clipboardData?.getData("text/plain");
- if(text==null)return;
- e.preventDefault();
- const i=e.currentTarget,start=i.selectionStart??i.value.length,end=i.selectionEnd??start;
- i.value=i.value.slice(0,start)+text+i.value.slice(end);
- i.selectionStart=i.selectionEnd=start+text.length;
- syncInput();
-});
+// Keep the browser's native clipboard behavior in the prompt textarea.
+// Do not intercept paste: Firefox's mouse menu must provide Paste / Copy / Cut / Select all.
 // Keep the prompt as a normal native textarea so Firefox/Chrome provide the
 // standard mouse menu: Paste, Copy, Cut and Select all.
 $("#composerInput").addEventListener("keydown",e=>{if(e.key==="Enter"&&!e.shiftKey){e.preventDefault();$("#composerSend").click()}});
