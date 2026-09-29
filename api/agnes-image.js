@@ -20,7 +20,17 @@ module.exports = async function handler(req, res) {
       "Render at native 4K detail with maximum useful texture and clarity so the image remains sharp when zoomed in.",
       "USER PROMPT:\n"+prompt
     ].join("\n");
-    const payload={model:"agnes-image-2.5-flash",prompt:qualityPrompt,n,size:"4K",ratio,extra_body:{response_format:"url"}};
+    // Keep Agnes outputs lightweight so the result preview loads quickly.
+    // The UI still supports 16:9 / 9:16 / 1:1, but we intentionally avoid 4K
+    // because the generated PNG itself is the bottleneck for preview loading.
+    const outputSize=ratio==="16:9"
+      ?"1280x720"
+      :ratio==="9:16"
+        ?"720x1280"
+        :ratio==="1:1"
+          ?"1024x1024"
+          :"1280x720";
+    const payload={model:"agnes-image-2.5-flash",prompt:qualityPrompt,n,size:outputSize,ratio,extra_body:{response_format:"url"}};
     const images=[];
     const source=String(body.imageBase64||body.imageUrl||"").trim();
     if(source) payload.extra_body.image=[source];
@@ -36,7 +46,7 @@ module.exports = async function handler(req, res) {
     if(!upstream.ok) return res.status(upstream.status>=400&&upstream.status<500?upstream.status:502).json({ok:false,error:"AGNES_IMAGE_FAILED",message:data?.error?.message||data?.message||raw||("Agnes HTTP "+upstream.status),upstreamStatus:upstream.status});
     const urls=Array.isArray(data?.data)?data.data.map(x=>x?.url).filter(x=>typeof x==="string"&&/^https?:\/\//i.test(x)):[];
     if(!urls.length) return res.status(502).json({ok:false,error:"AGNES_IMAGE_URL_MISSING",providerResponse:data});
-    return res.status(200).json({ok:true,mode:"image",status:"completed",provider:"Agnes",model:"Agnes Image 2.5 Flash · 4K",imageUrl:urls[0],imageUrls:urls,count:urls.length,meta:{freeCandidate:true,size:"4K",ratio,edit:Boolean(source)}});
+    return res.status(200).json({ok:true,mode:"image",status:"completed",provider:"Agnes",model:"Agnes Image 2.5 Flash · 4K",imageUrl:urls[0],imageUrls:urls,count:urls.length,meta:{freeCandidate:true,size:outputSize,ratio,edit:Boolean(source)}});
   }catch(e){
     return res.status(e?.name==="TimeoutError"?504:502).json({ok:false,error:"AGNES_IMAGE_HANDLER_ERROR",message:e?.message||"Agnes image request failed"});
   }
