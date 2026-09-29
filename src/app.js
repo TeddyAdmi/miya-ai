@@ -1055,11 +1055,14 @@ function startVideoProgress(model){
      videoProgressState.timer=null;
      return;
    }
+   // Video progress uses the same predictable visual rule as image progress:
+   // one percentage point per second, reaching 99% after 70 seconds.
+   // Real provider progress may move it forward, but never backward.
    if(videoProgressState.value<videoProgressState.target){
      videoProgressState.value=Math.min(videoProgressState.target,videoProgressState.value+1);
      paintVideoProgress(videoProgressState.value);
    }
- },150);
+ },1000);
  return (finalValue=null,label="")=>{
    if(finalValue!==null){
      videoProgressState.target=Math.max(videoProgressState.target,Math.min(100,Number(finalValue)||100));
@@ -1592,17 +1595,10 @@ if(chatMenuToggle){
 }
 document.querySelectorAll("[data-mode]").forEach(b=>b.addEventListener("click",()=>setMode(b.dataset.mode)));
 $("#composerInput").addEventListener("input",syncInput);
-window.addEventListener("contextmenu",e=>{
-  const target=e.target instanceof Element?e.target:null;
-  if(target?.closest("#composerInput")){
-    e.stopImmediatePropagation();
-  }
-},true);
 $("#composerInput").addEventListener("paste",e=>{
- const i=e.currentTarget;
  const text=e.clipboardData?.getData("text/plain");
  if(text==null)return;
- /* Never cancel native paste: Firefox inserts the clipboard text itself. */
+ // Do not call preventDefault(): Firefox performs the native insertion.
  requestAnimationFrame(()=>syncInput());
 });
 $("#composerInput").addEventListener("keydown",e=>{if(e.key==="Enter"&&!e.shiftKey){e.preventDefault();$("#composerSend").click()}});
@@ -1682,31 +1678,31 @@ $("#videoTrash")?.addEventListener("click",()=>{
   $("#composerInput").focus();
   $("#composerStatus").textContent=modes.video.status;
 });
-$("#referenceInput").onchange=e=>{
- const file=e.target.files?.[0];if(!file)return;
+async function attachReferenceFile(file){
+ if(!file||!String(file.type||"").startsWith("image/")){toast("Перетащи сюда файл изображения");return}
  if(mode==="chat") chatAttachmentFile=file;
  const reader=new FileReader();
  reader.onload=()=>{
   const rawData=String(reader.result||"");
   const finishAttachment=(dataUrl)=>{
-    referenceImage=dataUrl;try{sessionStorage.setItem("miyaReferenceImage",referenceImage)}catch{};setComposerAttachment(referenceImage);
+    referenceImage=dataUrl;
+    try{sessionStorage.setItem("miyaReferenceImage",referenceImage)}catch{}
+    setComposerAttachment(referenceImage);
     if(mode==="images"){
-    $("#composerModel").value="FLUX Kontext Dev";
-    $("#composerRatio").value="auto";
-    $("#composerStatus").textContent="FLUX Kontext Dev · готово к редактированию";
-  }else if(mode==="video"){
-    $("#composerStatus").textContent=String($("#videoModel")?.value||"LTX-2.3 Distilled")+" · изображение готово";
-  }else{
-    $("#composerStatus").textContent="Изображение прикреплено · можно спросить Miya о фото";
-  }
+      $("#composerModel").value="FLUX Kontext Dev";
+      $("#composerRatio").value="auto";
+      $("#composerStatus").textContent="FLUX Kontext Dev · готово к редактированию";
+    }else if(mode==="video"){
+      $("#composerStatus").textContent=String($("#videoModel")?.value||"LTX-2.3 Distilled")+" · изображение готово";
+    }else{
+      $("#composerStatus").textContent="Изображение прикреплено · можно спросить Miya о фото";
+    }
     toast(mode==="chat"?"Изображение прикреплено к чату":"Изображение добавлено");
     $("#composerInput").focus();
   };
   if((mode==="chat"||mode==="images"||mode==="video")&&rawData.startsWith("data:image/")){
     const image=new Image();
     image.onload=()=>{
-      // Keep uploads small enough for both Vercel request bodies and the free
-      // PixelSter/LTX providers. Preserve the source aspect ratio.
       const max=1280,scale=Math.min(1,max/Math.max(image.naturalWidth,image.naturalHeight));
       const canvas=document.createElement("canvas");
       canvas.width=Math.max(1,Math.round(image.naturalWidth*scale));
@@ -1719,8 +1715,37 @@ $("#referenceInput").onchange=e=>{
     image.src=rawData;
   }else finishAttachment(rawData);
  };
- reader.readAsDataURL(file);e.target.value="";
+ reader.readAsDataURL(file);
+}
+$("#referenceInput").onchange=e=>{
+ const file=e.target.files?.[0];
+ if(file)attachReferenceFile(file);
+ e.target.value="";
 };
+
+// Drag an image from the desktop/file manager directly onto the "+" button.
+// The same path is used in Chat, Images and Video, so it also applies model
+// switching (Images -> Kontext Dev, Video -> selected video model).
+const composerAttach=$("#composerAttach");
+if(composerAttach){
+ ["dragenter","dragover"].forEach(type=>composerAttach.addEventListener(type,e=>{
+   if([...e.dataTransfer?.types||[]].includes("Files")){
+     e.preventDefault();
+     e.stopPropagation();
+     composerAttach.classList.add("drag-over");
+   }
+ }));
+ ["dragleave","drop"].forEach(type=>composerAttach.addEventListener(type,e=>{
+   e.preventDefault();
+   e.stopPropagation();
+   composerAttach.classList.remove("drag-over");
+ }));
+ composerAttach.addEventListener("drop",e=>{
+   const file=[...e.dataTransfer?.files||[]].find(f=>String(f.type||"").startsWith("image/"));
+   if(file)attachReferenceFile(file);
+   else toast("На «+» нужно положить файл изображения");
+ });
+}
 let speechRecognition=null;
 let speechBaseText="";
 $("#composerMic").onclick=()=>{
