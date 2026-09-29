@@ -1747,7 +1747,33 @@ if(videoModelSelect)videoModelSelect.addEventListener("change",()=>{
 $("#composerInput").addEventListener("input",syncInput);
 const composerInput=$("#composerInput");
 if(composerInput){
- // Keep native Firefox prompt hit-testing above videos underneath the fixed composer.
+ // The video element can win Firefox hit-testing over the fixed composer.
+ // A transparent shield sits just under the composer and above the video wall,
+ // so the prompt always receives mouse/right-click events without disabling
+ // video clicks anywhere outside the prompt.
+ let composerHitShield=document.querySelector(".composer-hit-shield");
+ if(!composerHitShield){
+   composerHitShield=document.createElement("div");
+   composerHitShield.className="composer-hit-shield";
+   composerHitShield.setAttribute("aria-hidden","true");
+   document.body.appendChild(composerHitShield);
+ }
+ const syncComposerHitShield=()=>{
+   const wrap=document.querySelector(".composer-wrap");
+   if(!wrap)return;
+   const r=wrap.getBoundingClientRect();
+   const videoMode=mode==="video";
+   composerHitShield.style.display=videoMode?"block":"none";
+   composerHitShield.style.left=Math.round(r.left)+"px";
+   composerHitShield.style.top=Math.round(r.top)+"px";
+   composerHitShield.style.width=Math.round(r.width)+"px";
+   composerHitShield.style.height=Math.round(r.height)+"px";
+ };
+ window.addEventListener("resize",syncComposerHitShield);
+ window.addEventListener("scroll",syncComposerHitShield,true);
+ requestAnimationFrame(syncComposerHitShield);
+
+ // Keep native Firefox prompt hit-testing and context menu behavior.
  const syncComposerHitLayer=()=>{
    const wrap=document.querySelector(".composer-wrap");
    if(!wrap)return;
