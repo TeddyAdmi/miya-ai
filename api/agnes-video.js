@@ -120,6 +120,29 @@ module.exports = async function handler(req, res) {
     if(!upstream.ok){
       const message=String(data?.error?.message||data?.message||raw||("Agnes HTTP "+upstream.status)).slice(0,700);
       const status=upstream.status>=400&&upstream.status<600?upstream.status:502;
+
+      // Agnes free video access is limited to roughly one executable request
+      // per minute. Never immediately retry a 429 or switch models: the free
+      // video pool is shared, so that only creates another rejected request.
+      // Return a standard Retry-After value so the browser can wait and retry
+      // once instead of making the user manually guess when the window resets.
+      if(upstream.status===429){
+        const retryHeader=Number(upstream.headers.get("retry-after"));
+        const retryAfterSeconds=Number.isFinite(retryHeader)&&retryHeader>0
+          ?Math.min(300,Math.ceil(retryHeader))
+          :65;
+        res.setHeader("Retry-After",String(retryAfterSeconds));
+        return res.status(429).json({
+          ok:false,
+          error:"AGNES_VIDEO_RATE_LIMITED",
+          message,
+          upstreamStatus:429,
+          model:actualModel,
+          fallbackFrom,
+          retryAfterSeconds
+        });
+      }
+
       return res.status(status).json({
         ok:false,
         error:"AGNES_VIDEO_CREATE_FAILED",
