@@ -1582,18 +1582,11 @@ if(chatMenuToggle){
 }
 document.querySelectorAll("[data-mode]").forEach(b=>b.addEventListener("click",()=>setMode(b.dataset.mode)));
 $("#composerInput").addEventListener("input",syncInput);
-document.addEventListener("contextmenu",e=>{
+window.addEventListener("contextmenu",e=>{
   const target=e.target instanceof Element?e.target:null;
   if(target?.closest("#composerInput")){
-    /* Capture at document level as well: this blocks any delegated page/Bastyon
-       context-menu handler while leaving Firefox's native menu untouched. */
-    e.stopPropagation();
+    e.stopImmediatePropagation();
   }
-},true);
-$("#composerInput").addEventListener("contextmenu",e=>{
- /* Keep Firefox's native editing menu (including Paste), but stop an outer
-    Bastyon/page handler from replacing it with a media/context menu. */
- e.stopPropagation();
 },true);
 $("#composerInput").addEventListener("paste",e=>{
  const i=e.currentTarget;
