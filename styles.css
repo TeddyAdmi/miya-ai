@@ -1242,6 +1242,44 @@ body.image-viewer-open{overflow:hidden!important}
  .image-viewer-controls{right:12px;top:12px}
  .image-viewer-controls button{width:38px;height:38px}
 }
+/* Video viewer uses the same full-screen shell as the image viewer. */
+.video-viewer-stage .image-viewer-video-player{
+ max-width:90vw!important;
+ max-height:88vh!important;
+ width:auto;
+ height:auto;
+ min-width:min(70vw,1100px);
+ border-radius:6px;
+ background:#05070a;
+ box-shadow:0 20px 80px rgba(0,0,0,.55);
+ object-fit:contain;
+}
+.video-viewer-stage .image-viewer-nav{
+ position:absolute;
+ top:50%;
+ transform:translateY(-50%);
+ width:46px;height:46px;
+ border:1px solid rgba(255,255,255,.20);
+ border-radius:50%;
+ background:rgba(20,27,38,.88);
+ color:#fff;
+ display:grid;place-items:center;
+ cursor:pointer;
+ z-index:3;
+ box-shadow:0 8px 28px rgba(0,0,0,.28);
+}
+.video-viewer-stage .image-viewer-nav svg{width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.video-viewer-stage .image-viewer-nav:hover{background:rgba(40,48,62,.96)}
+.video-viewer-stage .image-viewer-prev{left:22px}
+.video-viewer-stage .image-viewer-next{right:22px}
+.video-viewer-stage .image-viewer-nav:disabled{opacity:.25;cursor:default}
+@media(max-width:800px){
+ .video-viewer-stage .image-viewer-video-player{max-width:94vw!important;max-height:78vh!important;min-width:0;width:94vw}
+ .video-viewer-stage .image-viewer-prev{left:8px}
+ .video-viewer-stage .image-viewer-next{right:8px}
+ .video-viewer-stage .image-viewer-nav{width:38px;height:38px}
+}
+
 /* Prompt trash sits directly under the plus attachment button. */
 .composer-trash{
  flex:0 0 38px!important;width:38px!important;height:38px!important;
