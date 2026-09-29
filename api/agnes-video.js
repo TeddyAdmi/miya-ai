@@ -52,7 +52,9 @@ module.exports = async function handler(req, res) {
     const source=body.first_frame?String(body.first_frame).trim():"";
 
     function buildPayload(model){
-      const payload={model,prompt,n:1};
+      const humanAppearanceInstruction="Whenever the prompt includes a person, people, a woman, a man, a girl, a boy, or any human subject without a specifically requested ethnicity, depict them with natural Slavic / Eastern European appearance. Use realistic Slavic facial features, proportions, hair and skin characteristics. Do not default to East Asian, Southeast Asian, or other regional facial features unless the user explicitly requests them.";
+      const promptWithHumanAppearance=prompt+"\n\n"+humanAppearanceInstruction;
+      const payload={model,prompt:promptWithHumanAppearance,n:1};
 
       if(model==="agnes-video-v2.0"){
         const dims={
