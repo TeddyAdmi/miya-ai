@@ -1315,7 +1315,7 @@ async function generateMiniMaxVideo(prompt){
  }
 }
 
-async function generateAgnesVideo(prompt){
+async function generateAgnesVideo(prompt, retryAttempt=0){
  if(videoGenerationBusy){toast("Видео уже создаётся. Дождитесь завершения текущего запроса.");return;}
  videoGenerationBusy=true;showLoading();$("#composerSend").disabled=true;
  const model=String($("#videoModel")?.value||"Agnes Video 2.5");
@@ -1327,13 +1327,36 @@ async function generateAgnesVideo(prompt){
    const ratio=["16:9","9:16","1:1","4:3","3:4","21:9"].includes(String($("#videoRatio")?.value))?String($("#videoRatio").value):"16:9";
    const source=referenceImage||"";
    const size=apiModel==="agnes-video-2.5-flash"?"720P":"2K";
-   updateVideoProgress(model,5,"подключение к Agnes…");
+   updateVideoProgress(model,5,retryAttempt?"повтор после лимита Agnes…":"подключение к Agnes…");
    const create=await fetch("/api/agnes-video",{
      method:"POST",headers:{"Content-Type":"application/json","Accept":"application/json"},
      body:JSON.stringify({model:apiModel,prompt,seconds:duration,size,aspect_ratio:ratio,first_frame:source||undefined}),
      signal:AbortSignal.timeout(60000)
    });
    const createRaw=await create.text();let created={};try{created=createRaw?JSON.parse(createRaw):{}}catch{}
+
+   if(create.status===429||created.error==="AGNES_VIDEO_RATE_LIMITED"){
+     const retryAfter=Math.max(
+       1,
+       Math.min(
+         300,
+         Number(created.retryAfterSeconds)||
+         Number(create.headers.get("Retry-After"))||
+         65
+       )
+     );
+     if(retryAttempt<1){
+       stopProgress();removeGenerationLoading();
+       $("#composerProgress").textContent="";
+       $("#composerStatus").textContent="Agnes Video · лимит бесплатного доступа";
+       toast("Agnes достиг бесплатного лимита. Повторю автоматически через "+retryAfter+" сек.");
+       await new Promise(resolve=>setTimeout(resolve,retryAfter*1000));
+       videoGenerationBusy=false;
+       return generateAgnesVideo(prompt,retryAttempt+1);
+     }
+     throw new Error("Agnes: бесплатный лимит запросов ещё не сброшен. Подождите около минуты и попробуйте снова.");
+   }
+
    if(!create.ok||!created.videoId){
      const message=String(created.message||created.error||createRaw||"Agnes не создал задачу").slice(0,500);
      throw new Error(message);
@@ -1341,8 +1364,8 @@ async function generateAgnesVideo(prompt){
    const videoId=created.videoId;
    const activeModel=String(created.model||apiModel);
    const fallbackNotice=created.fallbackFrom
-     ? " · очередь Flash переполнена → v2.0"
-     : "";
+     ?" · очередь Flash переполнена → v2.0"
+     :"";
    if(created.fallbackFrom){
      $("#composerStatus").textContent="Agnes Video v2.0 · резервный запуск…";
      updateVideoProgress("Agnes Video v2.0",8,"Flash занят, запускаю резервную очередь…");
@@ -1368,8 +1391,8 @@ async function generateAgnesVideo(prompt){
    stopProgress();removeGenerationLoading();renderVideoLibrary();if(item)scrollImagesToTop();
    $("#composerStatus").textContent=shownModel+" · готово"+fallbackNotice;
    toast(created.fallbackFrom
-     ? "Agnes: Flash занят, видео создано через v2.0"
-     : "Agnes: видео создано");
+     ?"Agnes: Flash занят, видео создано через v2.0"
+     :"Agnes: видео создано");
  }catch(e){
    stopProgress();removeGenerationLoading();$("#composerProgress").textContent="";
    $("#composerStatus").textContent=model+" · ошибка";
@@ -1378,7 +1401,6 @@ async function generateAgnesVideo(prompt){
    videoGenerationBusy=false;$("#composerSend").disabled=false;
  }
 }
-
 async function generateVideo(prompt){
  refreshLtxQuotaState();
  const selectedModel=String($("#videoModel")?.value||"LTX-2.3 Distilled");
