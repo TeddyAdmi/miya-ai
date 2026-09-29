@@ -2223,3 +2223,25 @@ body.light .generation-loading .progress-model{color:#71859a}
   z-index:100003!important;
   pointer-events:auto!important;
 }
+
+/* Video wall must stay below the fixed composer. The videos remain clickable
+   everywhere else, but can never cover the prompt at the bottom. */
+.main{position:relative!important;z-index:0!important}
+.workspace{position:relative!important;z-index:0!important}
+.canvas{position:relative!important;z-index:0!important}
+.video-result-grid,.video-result-grid .media-card,.video-result-grid .media-card video{
+  z-index:0!important;
+}
+.composer-wrap{
+  position:fixed!important;
+  z-index:2147483647!important;
+  isolation:isolate!important;
+}
+.composer{
+  position:relative!important;
+  z-index:2147483647!important;
+}
+.composer-input-row,
+.composer-input-row>textarea#composerInput{
+  z-index:2147483647!important;
+}
