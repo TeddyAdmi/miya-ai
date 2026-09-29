@@ -633,8 +633,11 @@ function renderVideoLibrary(){
  if(!items.length){showEmpty();return}
  c.innerHTML='<div class="results-head"><div><h3>Все созданные видео</h3></div></div><div class="result-grid video-result-grid"></div>';
  const grid=c.querySelector(".result-grid");
- items.forEach(item=>{
-   grid.appendChild(buildMediaCard(item,{video:true}));
+ items.forEach((item,index)=>{
+   const card=buildMediaCard(item,{video:true});
+   const video=card.querySelector("video");
+   if(video)video.preload=index<6?"metadata":"none";
+   grid.appendChild(card);
  });
 }
 function renderImageLibrary(){
@@ -1733,6 +1736,20 @@ if(videoModelSelect)videoModelSelect.addEventListener("change",()=>{
 $("#composerInput").addEventListener("input",syncInput);
 const composerInput=$("#composerInput");
 if(composerInput){
+ // Keep native Firefox prompt hit-testing above videos underneath the fixed composer.
+ const syncComposerHitLayer=()=>{
+   const wrap=document.querySelector(".composer-wrap");
+   if(!wrap)return;
+   const r=wrap.getBoundingClientRect();
+   const x=window.__miyaPointerX, y=window.__miyaPointerY;
+   const over=Number.isFinite(x)&&Number.isFinite(y)&&x>=r.left&&x<=r.right&&y>=r.top&&y<=r.bottom;
+   document.documentElement.classList.toggle("composer-hit-area",over);
+ };
+ document.addEventListener("mousemove",e=>{
+   window.__miyaPointerX=e.clientX; window.__miyaPointerY=e.clientY; syncComposerHitLayer();
+ },true);
+ window.addEventListener("scroll",syncComposerHitLayer,true);
+ window.addEventListener("resize",syncComposerHitLayer);
  composerInput.addEventListener("contextmenu",e=>{e.stopPropagation();},true);
  composerInput.addEventListener("mousedown",e=>{if(e.button===2)e.stopPropagation();},true);
 }
