@@ -635,8 +635,6 @@ function renderVideoLibrary(){
  const grid=c.querySelector(".result-grid");
  items.forEach((item,index)=>{
    const card=buildMediaCard(item,{video:true});
-   const video=card.querySelector("video");
-   if(video)video.preload=index<6?"metadata":"none";
    grid.appendChild(card);
  });
 }
@@ -649,10 +647,7 @@ function renderImageLibrary(){
    const card=buildMediaCard(item);
    const img=card.querySelector("img");
    if(img){
-     img.loading=index<2?"eager":"lazy";
-     img.decoding="async";
-     img.fetchPriority=index===0?"high":"low";
-   }
+     }
    grid.appendChild(card);
  });
 }
