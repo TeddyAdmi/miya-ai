@@ -742,8 +742,12 @@ async function generateImage(prompt){
  const loader=$("#canvas .generation-loading");
  const ring=loader?.querySelector(".progress-circle");
  const percent=ring?.querySelector(".progress-percent");
- const modelName=referenceImage?"FLUX Kontext Dev":"FLUX Dev";
+ const selectedModel=String($("#composerModel")?.value||"").trim();
+ const modelName=referenceImage
+   ? "FLUX Kontext Dev"
+   : (selectedModel||"FLUX Dev");
  const hasFileUpload=Boolean(referenceImage);
+ const useAgnesImage=!referenceImage && /Agnes Image/i.test(modelName);
  const composerProgress=$("#composerProgress");
  let fakeProgress=0;
  let fakeTimer=null;
@@ -779,15 +783,17 @@ async function generateImage(prompt){
    else payload.imageUrl=referenceImage;
   }
   const requestedCount=Number($("#composerCount")?.value||1);
-  const body=JSON.stringify({
-   mode:"image",provider:"ahm7",prompt,model:modelName,
-   ratio:$("#composerRatio").value,outputFormat:"png",copies:requestedCount,
-   options:referenceImage?payload:{}
-  });
+  const body=useAgnesImage
+   ? JSON.stringify({prompt,ratio:$("#composerRatio").value,n:requestedCount,imageBase64:referenceImage||""})
+   : JSON.stringify({
+      mode:"image",provider:"ahm7",prompt,model:modelName,
+      ratio:$("#composerRatio").value,outputFormat:"png",copies:requestedCount,
+      options:referenceImage?payload:{}
+     });
   let data;
   const requestThroughMiyaApi=async()=>new Promise((resolve,reject)=>{
    const xhr=new XMLHttpRequest();
-   xhr.open("POST","/api/image",true);
+   xhr.open("POST",useAgnesImage?"/api/agnes-image":"/api/image",true);
    xhr.setRequestHeader("Content-Type","application/json");
    xhr.setRequestHeader("Accept","application/json");
    xhr.upload.onprogress=e=>{
@@ -846,8 +852,8 @@ async function generateImage(prompt){
   generatedUrls.forEach((url)=>showImage(url,prompt,actualModel));
   scrollImagesToTop();
   $("#composerInput").value="";syncInput();
-  $("#composerModel").value=referenceImage?"FLUX Kontext Dev":"FLUX Dev";
-  $("#composerRatio").value=referenceImage?"auto":"16:9";
+  $("#composerModel").value=referenceImage?"FLUX Kontext Dev":modelName;
+  $("#composerRatio").value=referenceImage?"auto":$("#composerRatio").value;
   $("#composerStatus").textContent=actualModel+" · готово";
   if(composerProgress)composerProgress.textContent="100%";
   requestAnimationFrame(()=>$("#workspace")?.scrollTo({top:0,behavior:"smooth"}));
@@ -1562,7 +1568,13 @@ function setMode(next,render=true){
  if(next==="images"){
    referenceImage=referenceImage||null;
    renderImageLibrary();
-   $("#composerModel").value=referenceImage?"Agnes Image 2.5 Flash":"Agnes Image 2.5 Flash";
+   const imageModel=$("#composerModel");
+   const allowedImageModels=["Agnes Image 2.5 Flash","FLUX Dev","FLUX Kontext Dev"];
+   if(referenceImage){
+     imageModel.value="FLUX Kontext Dev";
+   }else if(!allowedImageModels.includes(String(imageModel?.value||""))){
+     imageModel.value="FLUX Dev";
+   }
    $("#composerRatio").value=referenceImage?"auto":"16:9";
  }else if(next==="video"){
    renderVideoLibrary();
@@ -1633,6 +1645,9 @@ $("#composerModel")?.addEventListener("change",()=>{
   if(model==="FLUX Kontext Dev"){
     $("#composerRatio").value="auto";
     $("#composerStatus").textContent="FLUX Kontext Dev · готово к редактированию";
+  }else if(model==="Agnes Image 2.5 Flash"){
+    $("#composerRatio").value="16:9";
+    $("#composerStatus").textContent="Agnes Image 2.5 Flash · 4K · готово";
   }else{
     $("#composerRatio").value="16:9";
     $("#composerStatus").textContent="FLUX Dev · готово";
