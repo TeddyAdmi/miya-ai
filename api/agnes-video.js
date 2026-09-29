@@ -24,7 +24,7 @@ module.exports = async function handler(req, res) {
       const [width,height]=dims[ratio]||dims["16:9"];
       payload.width=width; payload.height=height; payload.num_frames=Math.round(seconds*24); payload.frame_rate=24;
     }else{
-      payload.mode=body.first_frame?"img2video":"text";
+      payload.mode=body.first_frame?"keyframe":"text";
       payload.seconds=String(seconds);
       payload.size=model==="agnes-video-2.5-flash"?"720P":(String(body.size||"2K"));
       if(!["720P","1080P","1K","2K"].includes(payload.size)) payload.size="2K";
