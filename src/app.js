@@ -1284,12 +1284,12 @@ async function generateMotionVideo(prompt){
  const stopProgress=startVideoProgress(model);
  $("#composerStatus").textContent=model+" · создание…";
  try{
-   const durationText=String($("#videoDuration")?.value||"10 сек");
-   const duration=Math.max(5,Math.min(20,Number(durationText.match(/\d+/)?.[0]||10)));
+   const durationText=String($("#videoDuration")?.value||"5 сек");
+   const duration=Math.max(5,Math.min(20,Number(durationText.match(/\d+/)?.[0]||5)));
    const ratioValue=String($("#videoRatio")?.value||"auto");
    const ratio=["auto","9:16","16:9"].includes(ratioValue)?ratioValue:"auto";
    const motionPrompt=[
-     "Create one continuous high-quality cinematic image-to-video shot from the supplied image.",
+     "Create one continuous cinematic image-to-video shot from the supplied image.",
      "Preserve the original subject identity, face, anatomy, clothing, composition, environment and visual style.",
      "Keep the subject itself stable and natural. Do not invent new actions, objects, characters or scene changes.",
      "CAMERA MOVEMENT: DIVE & RISE.",
@@ -1297,7 +1297,7 @@ async function generateMotionVideo(prompt){
      "Continue the forward/downward movement through the scene with natural parallax and realistic depth, passing close to the subject without colliding with it or changing its identity.",
      "Then smoothly pull upward and rise above the subject, revealing more of the surrounding environment from a higher angle.",
      "The camera path must be one continuous fluid arc: descend and approach, pass close, then rise. No sudden cuts, spins, shakes, teleporting or abrupt direction changes.",
-     "Use realistic motion blur, stable anatomy, coherent physics, temporal consistency, natural depth and physically plausible lighting. Keep cinematic effects subtle and subordinate to the camera movement.",
+     "Use realistic motion blur, stable anatomy, coherent physics, temporal consistency and natural depth. Keep effects subtle.",
      "Do not add humans, animals, props, weather or unrelated events that the user did not request.",
      "USER MOTION REQUEST:",
      prompt
@@ -1316,7 +1316,7 @@ async function generateMotionVideo(prompt){
        duration,
        options:{imageBase64:pixelSource}
      }),
-     signal:AbortSignal.timeout(125000)
+     signal:AbortSignal.timeout(60000)
    });
    const raw=await response.text();
    let data={};
