@@ -1334,26 +1334,42 @@ async function generateAgnesVideo(prompt){
      signal:AbortSignal.timeout(60000)
    });
    const createRaw=await create.text();let created={};try{created=createRaw?JSON.parse(createRaw):{}}catch{}
-   if(!create.ok||!created.videoId)throw new Error(String(created.message||created.error||createRaw||"Agnes не создал задачу").slice(0,500));
+   if(!create.ok||!created.videoId){
+     const message=String(created.message||created.error||createRaw||"Agnes не создал задачу").slice(0,500);
+     throw new Error(message);
+   }
    const videoId=created.videoId;
+   const activeModel=String(created.model||apiModel);
+   const fallbackNotice=created.fallbackFrom
+     ? " · очередь Flash переполнена → v2.0"
+     : "";
+   if(created.fallbackFrom){
+     $("#composerStatus").textContent="Agnes Video v2.0 · резервный запуск…";
+     updateVideoProgress("Agnes Video v2.0",8,"Flash занят, запускаю резервную очередь…");
+   }
    let final=null;
    const started=Date.now();
    while(Date.now()-started<15*60*1000){
      await new Promise(r=>setTimeout(r,3500));
-     const statusResponse=await fetch("/api/agnes-video-status?video_id="+encodeURIComponent(videoId)+"&model="+encodeURIComponent(apiModel),{headers:{"Accept":"application/json"},signal:AbortSignal.timeout(30000)});
+     const statusResponse=await fetch("/api/agnes-video-status?video_id="+encodeURIComponent(videoId)+"&model="+encodeURIComponent(activeModel),{headers:{"Accept":"application/json"},signal:AbortSignal.timeout(30000)});
      const raw=await statusResponse.text();let data={};try{data=raw?JSON.parse(raw):{}}catch{}
      if(!statusResponse.ok)throw new Error(String(data.message||data.error||raw||"Agnes status error").slice(0,500));
      const progress=Number(data.progress);
-     if(Number.isFinite(progress))updateVideoProgress(model,Math.max(5,Math.min(98,progress)),"создание…");
+     if(Number.isFinite(progress))updateVideoProgress(activeModel==="agnes-video-v2.0"?"Agnes Video v2.0":model,Math.max(5,Math.min(98,progress)),"создание…");
      if(data.status==="completed"){final=data;break}
      if(data.status==="failed"||data.error)throw new Error(String(data.error?.message||data.error||"Agnes генерация завершилась ошибкой"));
    }
    if(!final?.url)throw new Error("Agnes не успел вернуть готовое видео за 15 минут");
-   updateVideoProgress(model,99,"видео получено…");
-   const item=saveMedia("video",final.url,prompt,model+" · "+size+" · 12 сек");
+   updateVideoProgress(activeModel==="agnes-video-v2.0"?"Agnes Video v2.0":model,99,"видео получено…");
+   const shownModel=activeModel==="agnes-video-v2.0"?"Agnes Video v2.0":model;
+   const actualSeconds=String(final.seconds||duration)+" сек";
+   const actualSize=String(final.size||size);
+   const item=saveMedia("video",final.url,prompt,shownModel+" · "+actualSize+" · "+actualSeconds);
    stopProgress();removeGenerationLoading();renderVideoLibrary();if(item)scrollImagesToTop();
-   $("#composerStatus").textContent=model+" · готово";
-   toast("Agnes: видео создано");
+   $("#composerStatus").textContent=shownModel+" · готово"+fallbackNotice;
+   toast(created.fallbackFrom
+     ? "Agnes: Flash занят, видео создано через v2.0"
+     : "Agnes: видео создано");
  }catch(e){
    stopProgress();removeGenerationLoading();$("#composerProgress").textContent="";
    $("#composerStatus").textContent=model+" · ошибка";
