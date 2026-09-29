@@ -165,13 +165,17 @@ function openMediaDB(){
 }
 async function cacheMedia(id,url,type="image"){
  try{
+  const value=String(url||"");
+  // Agnes output storage has no CORS header. Do not fetch it into IndexedDB;
+  // the browser can display the provider URL directly in <img> and cache it normally.
+  if(/platform-outputs\\.agnes-ai\\.space/i.test(value))return false;
   const cached=await getCachedMedia(id);if(cached?.blob)return true;
   const db=await openMediaDB();if(!db)return false;
-  const response=await fetch(url,{mode:"cors",cache:"force-cache"});if(!response.ok)return false;
+  const response=await fetch(value,{mode:"cors",cache:"force-cache"});if(!response.ok)return false;
   const blob=await response.blob();if(!blob.size)return false;
   await new Promise((resolve,reject)=>{
    const tx=db.transaction("media","readwrite");
-   tx.objectStore("media").put({id,blob,url,createdAt:Date.now(),type});
+   tx.objectStore("media").put({id,blob,url:value,createdAt:Date.now(),type});
    tx.oncomplete=resolve;tx.onerror=()=>reject(tx.error);
   });
   return true;
@@ -496,6 +500,7 @@ function buildMediaCard(item,{video=false}={}){
    });
   }else{
    media=document.createElement("img");media.alt="Miya Studio";media.style.cursor="zoom-in";media.title="Открыть изображение";
+   media.decoding="async";
    media.addEventListener("error",()=>{
      if(mediaFailed)return;
      mediaFailed=true;
@@ -550,7 +555,16 @@ function renderImageLibrary(){
  const c=$("#canvas"),items=getLibrary().filter(x=>x.type==="image");
  if(!items.length){showEmpty();return}
  c.innerHTML='<div class="results-head"><div><h3>Все созданные картинки</h3></div></div><div class="result-grid"></div>';
- const grid=c.querySelector(".result-grid");items.forEach(item=>grid.appendChild(buildMediaCard(item)));
+ const grid=c.querySelector(".result-grid");
+ items.forEach((item,index)=>{
+   const card=buildMediaCard(item);
+   const img=card.querySelector("img");
+   if(img){
+     img.loading=index===0?"eager":"lazy";
+     if(index===0)img.fetchPriority="high";
+   }
+   grid.appendChild(card);
+ });
 }
 function renderLibrary(tab="images"){
  const c=$("#canvas"),items=getLibrary(),images=items.filter(x=>x.type==="image"),videos=items.filter(x=>x.type==="video");
@@ -1379,9 +1393,15 @@ async function generateAgnesVideo(prompt, retryAttempt=0){
    let final=null;
    const started=Date.now();
    while(Date.now()-started<15*60*1000){
-     await new Promise(r=>setTimeout(r,3500));
+     await new Promise(r=>setTimeout(r,10000));
      const statusResponse=await fetch("/api/agnes-video-status?video_id="+encodeURIComponent(videoId)+"&model="+encodeURIComponent(activeModel),{headers:{"Accept":"application/json"},signal:AbortSignal.timeout(30000)});
      const raw=await statusResponse.text();let data={};try{data=raw?JSON.parse(raw):{}}catch{}
+     if(statusResponse.status===429){
+       const retryAfter=Math.max(10,Math.min(90,Number(data.retryAfterSeconds)||Number(statusResponse.headers.get("Retry-After"))||65));
+       updateVideoProgress(activeModel==="agnes-video-v2.0"?"Agnes Video v2.0":model,Math.max(5,Number(data.progress)||5),"Agnes ограничил проверку — жду "+retryAfter+" сек…");
+       await new Promise(r=>setTimeout(r,retryAfter*1000));
+       continue;
+     }
      if(!statusResponse.ok)throw new Error(String(data.message||data.error||raw||"Agnes status error").slice(0,500));
      const progress=Number(data.progress);
      if(Number.isFinite(progress))updateVideoProgress(activeModel==="agnes-video-v2.0"?"Agnes Video v2.0":model,Math.max(5,Math.min(98,progress)),"создание…");
@@ -1552,7 +1572,17 @@ function setMode(next,render=true){
  $("#workspaceEyebrow").textContent=m.eyebrow;$("#workspaceTitle").textContent=m.title;$("#workspaceSubtitle").textContent=m.subtitle;
  $("#composerInput").placeholder=m.placeholder;$("#composerSendText").textContent=m.send;$("#composerStatus").textContent=m.status;
  $(".image-settings").style.display=next==="images"?"flex":"none";$("#videoOptions").classList.toggle("show",next==="video");
- if(next==="video"){ setVideoRatioDefault(); if($("#videoModel")&&!$("#videoModel").value)$("#videoModel").value="Agnes Video 2.5 Flash"; refreshLtxQuotaState(); }
+ if(next==="video"){
+   setVideoRatioDefault();
+   if($("#videoModel")&&!$("#videoModel").value)$("#videoModel").value="Agnes Video 2.5 Flash";
+   const input=$("#composerInput");
+   if(input){
+     input.style.pointerEvents="auto";
+     input.style.userSelect="text";
+     input.style.cursor="text";
+   }
+   refreshLtxQuotaState();
+ }
  document.querySelectorAll("[data-mode]").forEach(x=>x.classList.toggle("active",x.dataset.mode===next));
  document.querySelectorAll("#chatSubmenu .side-subbtn").forEach(x=>x.classList.remove("active"));
  $("#chatMenuToggle")?.classList.toggle("active",next==="chat");
