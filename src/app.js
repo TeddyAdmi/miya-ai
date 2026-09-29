@@ -1387,8 +1387,8 @@ async function generateAgnesVideo(prompt, retryAttempt=0){
          65
        )
      );
-     stopProgress();removeGenerationLoading();
-     $("#composerProgress").textContent="";
+     stopProgress(99,"лимит");paintVideoProgress(99);removeGenerationLoading();
+     $("#composerProgress").textContent="99%";
      videoGenerationBusy=false;
      $("#composerSend").disabled=false;
      $("#composerStatus").textContent="Agnes Video · лимит бесплатного доступа · можно повторить через "+retryAfter+" сек.";
@@ -1442,7 +1442,7 @@ async function generateAgnesVideo(prompt, retryAttempt=0){
      ?"Agnes: Flash занят, видео создано через v2.0"
      :"Agnes: видео создано");
  }catch(e){
-   stopProgress();removeGenerationLoading();$("#composerProgress").textContent="";
+   stopProgress(99,"ошибка");paintVideoProgress(99);removeGenerationLoading();$("#composerProgress").textContent="99%";
    $("#composerStatus").textContent=model+" · ошибка";
    toast("Agnes: "+(e?.message||"не удалось создать видео"));
  }finally{
