@@ -107,9 +107,6 @@ function renderChatHistoryMini(){
      const all=getChats().filter(x=>x.id!==chat.id);persistChats(all);
      if(window.__miyaChatId===chat.id){window.__miyaChatId=null;chatMessages=[];showEmpty()}
      resetChatMenus();
-     chatMenuSuppressed=true;
-     $("#chatSubmenu")?.classList.add("suppressed");
-     $("#chatMenuToggle")?.setAttribute("aria-expanded","false");
      renderChatHistoryMini();
    };
    menu.append(pin,rename,del);
