@@ -618,8 +618,18 @@ function isVideoLibraryItem(item){
  const model=String(item.model||"").toLowerCase();
  return type==="video"||type==="videos"||type==="mp4"||/\\.(mp4|webm|mov)(?:[?#]|$)/i.test(url)||/agnes video|ltx-2\\.3|pixelster|motion synthesis|wan/i.test(model);
 }
+function isStoredVideo(item){
+ if(!item||typeof item.url!=="string")return false;
+ const type=String(item.type||"").toLowerCase();
+ const url=String(item.url||"");
+ const model=String(item.model||"").toLowerCase();
+ return type==="video"||
+   type==="videos"||
+   /\\.(mp4|webm|mov)(?:[?#]|$)/i.test(url)||
+   /ltx-2[.-]3|pixelster|motion synthesis|agnes video/i.test(model);
+}
 function renderVideoLibrary(){
- const c=$("#canvas"),items=getLibrary().filter(x=>x.type==="video");
+ const c=$("#canvas"),items=getLibrary().filter(isStoredVideo);
  if(!items.length){showEmpty();return}
  c.innerHTML='<div class="results-head"><div><h3>Все созданные видео</h3></div></div><div class="result-grid video-result-grid"></div>';
  const grid=c.querySelector(".result-grid");
@@ -763,7 +773,7 @@ function showLoading(){
   grid.prepend(card);scrollImagesToTop();return;
  }
  const selectedVideoModel=$("#videoModel")?.value||"LTX-2.3 Distilled";
- const items=getLibrary().filter(x=>x.type==="video");
+ const items=getLibrary().filter(isStoredVideo);
  c.innerHTML='<div class="results-head"><div><h3>Все созданные видео</h3></div></div><div class="result-grid video-result-grid"></div>';
  const grid=c.querySelector(".result-grid");
  items.forEach(item=>grid.appendChild(buildMediaCard(item,{video:true})));
