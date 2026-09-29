@@ -17,6 +17,7 @@ module.exports = async function handler(req, res) {
       "Prioritize tack-sharp focus, high micro-contrast, fine texture detail and clean edges at pixel level.",
       "For close-ups, preserve extremely fine facial, hair, fur, fabric and surface detail; do not blur, smear, soften or watercolor the subject.",
       "Keep the requested composition, subject identity and scene faithful to the user prompt. Do not add decorative elements that were not requested.",
+      "Whenever the prompt includes a person, people, a woman, a man, a girl, a boy, or any human subject without a specifically requested ethnicity, depict them with natural Slavic / Eastern European appearance. Use realistic Slavic facial features, proportions, hair and skin characteristics. Do not default to East Asian, Southeast Asian, or other regional facial features unless the user explicitly requests them.",
       "Use the same practical output quality as FLUX Dev, prioritizing fast-loading preview size without sacrificing useful detail.",
       "USER PROMPT:\n"+prompt
     ].join("\n");
