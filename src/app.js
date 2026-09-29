@@ -106,6 +106,10 @@ function renderChatHistoryMini(){
      if(!window.confirm("Удалить этот чат?"))return;
      const all=getChats().filter(x=>x.id!==chat.id);persistChats(all);
      if(window.__miyaChatId===chat.id){window.__miyaChatId=null;chatMessages=[];showEmpty()}
+     resetChatMenus();
+     chatMenuSuppressed=true;
+     $("#chatSubmenu")?.classList.add("suppressed");
+     $("#chatMenuToggle")?.setAttribute("aria-expanded","false");
      renderChatHistoryMini();
    };
    menu.append(pin,rename,del);
@@ -1545,7 +1549,7 @@ function restoreReferenceImage(){
 }
 function setVideoRatioDefault(){
  const el=$("#videoRatio"); if(el) el.value="16:9";
- const d=$("#videoDuration"); if(d) d.value="12 сек";
+ const d=$("#videoDuration"); if(d) d.value="5 сек";
  $("#composerProgress").textContent="";
 }
 function setMode(next,render=true){
@@ -1670,16 +1674,16 @@ $("#videoCopyPrompt")?.addEventListener("click",copyComposerPrompt);
 $("#videoModel")?.addEventListener("change",()=>{
  const model=$("#videoModel").value;
  const duration=$("#videoDuration");
- if(duration && model==="PixelSter Motion Synthesis") duration.value="10 сек";
+ if(duration) duration.value=model==="PixelSter Motion Synthesis"?"10 сек":"5 сек";
  $("#composerProgress").textContent="";
  $("#composerStatus").textContent=model==="PixelSter Motion Synthesis"
-   ? "PixelSter Motion Synthesis · 10 сек по умолчанию"
+   ? "PixelSter Motion Synthesis · 10 сек"
      : model==="Agnes Video 2.5 Flash"
        ? "Agnes Video 2.5 Flash · 720P · до 12 сек"
          : model==="Agnes Video v2.0"
            ? "Agnes Video v2.0 · legacy"
            : "LTX-2.3 Distilled · Free ZeroGPU";
- if(model==="" && duration) duration.value="5 сек";
+ 
 });
 $("#videoTrash")?.addEventListener("click",()=>{
   $("#composerInput").value="";
