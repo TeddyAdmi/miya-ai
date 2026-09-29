@@ -1644,9 +1644,9 @@ $("#referenceInput").onchange=e=>{
   const finishAttachment=(dataUrl)=>{
     referenceImage=dataUrl;try{sessionStorage.setItem("miyaReferenceImage",referenceImage)}catch{};setComposerAttachment(referenceImage);
     if(mode==="images"){
-    $("#composerModel").value="FLUX Kontext Dev";
+    $("#composerModel").value="Agnes Image 2.5 Flash";
     $("#composerRatio").value="auto";
-    $("#composerStatus").textContent="Flux Kontext Dev · готово к редактированию";
+    $("#composerStatus").textContent="Agnes Image 2.5 Flash · 4K · готово к редактированию";
   }else if(mode==="video"){
     $("#videoModel").value="Agnes Video 2.5";
     $("#videoRatio").value="auto";
