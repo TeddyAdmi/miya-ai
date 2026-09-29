@@ -1017,7 +1017,7 @@ function removeGenerationLoading(){
 }
 let videoProgressState={value:1,target:1,model:"",label:"",timer:null,startedAt:0};
 
-function paintVideoProgress(value){
+function proxyAgnesVideoUrl(url){\n const value=String(url||"").trim();\n if(!/^https?:\\/\\//i.test(value))return value;\n try{\n   const host=new URL(value).hostname.toLowerCase();\n   if(host==="cos-platform-outputs.agnes-ai.cn"||host.endsWith(".agnes-ai.cn")||host.endsWith(".agnes-ai.space")) return "/api/agnes-video-proxy?url="+encodeURIComponent(value);\n }catch{}\n return value;\n}\n\nfunction paintVideoProgress(value){
  const v=Math.max(1,Math.min(100,Math.round(value)));
  const loader=$("#canvas .video-generation-loading");
  const ring=loader?.querySelector(".progress-circle");
@@ -1055,10 +1055,10 @@ function startVideoProgress(model){
      videoProgressState.timer=null;
      return;
    }
-   // Video has an 80-second visual range: 1% at start and 99% at 80s.
+   // Video has a 100-second visual range: 1% at start and 99% at 100s.
    // The real provider completion path alone is allowed to set 100%.
    const elapsed=Math.max(0,Date.now()-videoProgressState.startedAt);
-   const clockValue=Math.min(99,Math.max(1,Math.round(1+(elapsed/80000)*98)));
+   const clockValue=Math.min(99,Math.max(1,Math.round(1+(elapsed/100000)*98)));
    videoProgressState.value=Math.max(videoProgressState.value,clockValue);
    paintVideoProgress(videoProgressState.value);
  },1000);
@@ -1383,7 +1383,8 @@ async function generateAgnesVideo(prompt, retryAttempt=0){
    const shownModel=activeModel==="agnes-video-v2.0"?"Agnes Video v2.0":model;
    const actualSeconds=String(final.seconds||duration)+" сек";
    const actualSize=String(final.size||size);
-   const item=saveMedia("video",final.url,prompt,shownModel+" · "+actualSize+" · "+actualSeconds);
+   const playableUrl=proxyAgnesVideoUrl(final.url);
+   const item=saveMedia("video",playableUrl,prompt,shownModel+" · "+actualSize+" · "+actualSeconds);
    stopProgress(100,"готово");
    updateVideoProgress(shownModel,100,"готово");
    removeGenerationLoading();renderVideoLibrary();if(item)scrollImagesToTop();
