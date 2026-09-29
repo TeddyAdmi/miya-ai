@@ -603,8 +603,8 @@ function openVideoFromImage(url){
  try{sessionStorage.setItem("miyaReferenceImage",referenceImage)}catch{}
  mode="video";
  const m=modes.video;
- $("#workspaceEyebrow").textContent=m.eyebrow;$("#workspaceTitle").textContent=m.title;$("#workspaceSubtitle").textContent=m.subtitle;
- $("#composerInput").placeholder=m.placeholder;$("#composerSendText").textContent=m.send;$("#composerStatus").textContent="Agnes Video 2.5 Flash · изображение готово";
+ const workspaceEyebrow=$("#workspaceEyebrow"); if(workspaceEyebrow) workspaceEyebrow.textContent=m.eyebrow;$("#workspaceTitle").textContent=m.title;$("#workspaceSubtitle").textContent=m.subtitle;
+ const composerInput=$("#composerInput"); if(composerInput) composerInput.placeholder=m.placeholder;$("#composerSendText").textContent=m.send;$("#composerStatus").textContent="Agnes Video 2.5 Flash · изображение готово";
  $(".image-settings").style.display="none";$("#videoOptions").classList.add("show");
  $("#videoModel").value="Agnes Video 2.5 Flash";$("#videoRatio").value="16:9";
  document.querySelectorAll("[data-mode]").forEach(x=>x.classList.toggle("active",x.dataset.mode==="video"));
@@ -1324,11 +1324,12 @@ async function generateMotionVideo(prompt){
    toast("PixelSter: видео создано");
  }catch(e){
    stopProgress(99,"ошибка");paintVideoProgress(99);removeGenerationLoading();
-   $("#composerProgress").textContent="99%";
+   const progressEl=$("#composerProgress"); if(progressEl) progressEl.textContent="99%";
    const rawMessage=String(e?.message||"");
    const is504=/PixelSter HTTP 504|Gateway Time-out|Gateway Timeout|NetworkError/i.test(rawMessage);
    const isQuota=/exceeded your ZeroGPU quota|ZeroGPU quota|quota/i.test(rawMessage);
-   $("#composerStatus").textContent=is504
+   const statusEl=$("#composerStatus");
+  if(statusEl) statusEl.textContent=is504
      ? model+" · сервер не завершил запрос"
      : isQuota
        ? model+" · квота Hugging Face исчерпана"
@@ -1424,7 +1425,7 @@ async function generateAgnesVideo(prompt, retryAttempt=0){
        )
      );
      stopProgress(99,"лимит");paintVideoProgress(99);removeGenerationLoading();
-     $("#composerProgress").textContent="99%";
+     const progressEl=$("#composerProgress"); if(progressEl) progressEl.textContent="99%";
      videoGenerationBusy=false;
      $("#composerSend").disabled=false;
      $("#composerStatus").textContent="Agnes Video · лимит бесплатного доступа · можно повторить через "+retryAfter+" сек.";
@@ -1594,17 +1595,17 @@ async function generateVideo(prompt){
    toast("LTX-2.3: видео + звук созданы");
  }catch(e){
    stopProgress(99,"ошибка");paintVideoProgress(99);removeGenerationLoading();
-   $("#composerProgress").textContent="99%";
+   const progressEl=$("#composerProgress"); if(progressEl) progressEl.textContent="99%";
    const rawMessage=String(e?.message||"");
    const isQuota=/exceeded your ZeroGPU quota|ZeroGPU quota/i.test(rawMessage);
    if(isQuota){
      const until=setLtxQuotaCooldown(rawMessage);
-     $("#composerStatus").textContent="LTX-2.3 временно недоступен · квота ZeroGPU";
+     const statusEl=$("#composerStatus"); if(statusEl) statusEl.textContent="LTX-2.3 временно недоступен · квота ZeroGPU";
      toast(until
        ? "LTX-2.3 временно отключён до восстановления бесплатной квоты. Повторный запрос не отправлен."
        : "LTX-2.3 временно отключён: бесплатная ZeroGPU-квота исчерпана.");
    }else{
-     $("#composerStatus").textContent="LTX-2.3 Distilled · ошибка · можно повторить";
+     const statusEl=$("#composerStatus"); if(statusEl) statusEl.textContent="LTX-2.3 Distilled · ошибка · можно повторить";
      toast(rawMessage||"Не удалось создать видео");
    }
  }finally{
@@ -1621,7 +1622,7 @@ function restoreReferenceImage(){
 function setVideoRatioDefault(){
  const el=$("#videoRatio"); if(el) el.value="16:9";
  const d=$("#videoDuration"); if(d) d.value="5 сек";
- $("#composerProgress").textContent="";
+ const progress=$("#composerProgress"); if(progress) progress.textContent="";
 }
 function setMode(next,render=true){
  const target=String(next||"chat");
@@ -1646,13 +1647,13 @@ function setMode(next,render=true){
  }
 
  $("#workspaceEyebrow").textContent=m.eyebrow;
- $("#workspaceTitle").textContent=m.title;
- $("#workspaceSubtitle").textContent=m.subtitle;
+ const workspaceTitle=$("#workspaceTitle"); if(workspaceTitle) workspaceTitle.textContent=m.title;
+ const workspaceSubtitle=$("#workspaceSubtitle"); if(workspaceSubtitle) workspaceSubtitle.textContent=m.subtitle;
  $("#composerInput").placeholder=m.placeholder;
- $("#composerSendText").textContent=m.send;
- $("#composerStatus").textContent=m.status;
- $(".image-settings").style.display=target==="images"?"flex":"none";
- $("#videoOptions").classList.toggle("show",target==="video");
+ const composerSendText=$("#composerSendText"); if(composerSendText) composerSendText.textContent=m.send;
+ const composerStatus=$("#composerStatus"); if(composerStatus) composerStatus.textContent=m.status;
+ const imageSettings=$(".image-settings"); if(imageSettings) imageSettings.style.display=target==="images"?"flex":"none";
+ const videoOptions=$("#videoOptions"); if(videoOptions) videoOptions.classList.toggle("show",target==="video");
 
  // Paint the active navigation state before any model-specific code runs.
  document.querySelectorAll("[data-mode]").forEach(x=>x.classList.toggle("active",x.dataset.mode===target));
