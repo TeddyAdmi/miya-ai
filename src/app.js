@@ -619,11 +619,14 @@ function isVideoLibraryItem(item){
  return type==="video"||type==="videos"||type==="mp4"||/\\.(mp4|webm|mov)(?:[?#]|$)/i.test(url)||/agnes video|ltx-2\\.3|pixelster|motion synthesis|wan/i.test(model);
 }
 function renderVideoLibrary(){
- const c=$("#canvas"),items=getLibrary().filter(isVideoLibraryItem);
- c.innerHTML='<div class="results-head"><div><h3>Мои видео</h3></div></div><div class="result-grid video-result-grid"></div>';
+ const c=$("#canvas"),items=getLibrary().filter(x=>x.type==="video");
+ if(!items.length){showEmpty();return}
+ c.innerHTML='<div class="results-head"><div><h3>Все созданные видео</h3></div></div><div class="result-grid video-result-grid"></div>';
  const grid=c.querySelector(".result-grid");
- if(!items.length){grid.innerHTML='<div class="library-note">Пока нет созданных видео.</div>';return}
- items.forEach(item=>grid.appendChild(buildMediaCard(item,{video:true})));
+ items.forEach(item=>{
+   grid.appendChild(buildMediaCard(item,{video:true}));
+   cacheMedia(item.id,item.url,"video");
+ });
 }
 function renderImageLibrary(){
  const c=$("#canvas"),items=getLibrary().filter(x=>x.type==="image");
@@ -1055,6 +1058,29 @@ function removeGenerationLoading(){
  if(loader)loader.remove();
 }
 let videoProgressState={value:1,target:1,model:"",label:"",timer:null,startedAt:0};
+function stopProgress(finalValue=null,label=""){
+ if(videoProgressState.timer){
+   clearInterval(videoProgressState.timer);
+   videoProgressState.timer=null;
+ }
+ if(finalValue!==null){
+   const v=Math.max(1,Math.min(100,Math.round(Number(finalValue)||1)));
+   videoProgressState.value=v;
+   videoProgressState.target=v;
+ }
+ if(label)videoProgressState.label=String(label);
+ paintVideoProgress(videoProgressState.value);
+}
+function resetVideoProgress(){
+ if(videoProgressState.timer){
+   clearInterval(videoProgressState.timer);
+   videoProgressState.timer=null;
+ }
+ videoProgressState={value:1,target:1,model:"",label:"",timer:null,startedAt:0};
+ removeGenerationLoading();
+ const progress=$("#composerProgress");
+ if(progress)progress.textContent="";
+}
 
 function proxyAgnesVideoUrl(url){
  const value=String(url||"").trim();
@@ -1591,6 +1617,7 @@ function setMode(next,render=true){
  const target=String(next||"chat");
  if(!modes[target])return;
  const changedSection=target!==mode;
+ if(changedSection)resetVideoProgress();
  if(changedSection){
    referenceImage=null;
    try{sessionStorage.removeItem("miyaReferenceImage")}catch{}
@@ -1685,6 +1712,13 @@ document.addEventListener("click",e=>{
  setMode(target,true);
  if(target==="video")requestAnimationFrame(()=>$("#videoModel")?.focus({preventScroll:true}));
 },true);
+const videoModelSelect=$("#videoModel");
+if(videoModelSelect)videoModelSelect.addEventListener("change",()=>{
+ resetVideoProgress();
+ if(mode==="video"){
+   $("#composerStatus").textContent=videoModelSelect.value+" · готов";
+ }
+});
 $("#composerInput").addEventListener("input",syncInput);
 $("#composerInput").addEventListener("paste",e=>{
  const text=e.clipboardData?.getData("text/plain");
