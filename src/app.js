@@ -1249,9 +1249,9 @@ async function generateMotionVideo(prompt){
        ? model+" · квота Hugging Face исчерпана"
        : model+" · ошибка";
    toast(is504
-     ? "PixelSter: сервер вернул 504. Это ошибка самого PixelSter, а не браузера."
+     ? "PixelSter: сервер вернул 504. Повторный запрос сейчас не поможет."
      : isQuota
-       ? "LTX-2.3: дневная ZeroGPU-квота Hugging Face исчерпана. Повторные запросы сейчас не помогут."
+       ? "PixelSter: сервис сообщил об ограничении квоты. Повторный запрос сейчас не отправляю."
        : (rawMessage||"Не удалось создать видео"));
  }finally{
    videoGenerationBusy=false;
