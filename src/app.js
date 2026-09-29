@@ -633,9 +633,27 @@ function renderVideoLibrary(){
  if(!items.length){showEmpty();return}
  c.innerHTML='<div class="results-head"><div><h3>Все созданные видео</h3></div></div><div class="result-grid video-result-grid"></div>';
  const grid=c.querySelector(".result-grid");
- items.forEach((item,index)=>{
-   const card=buildMediaCard(item,{video:true});
-   grid.appendChild(card);
+ items.forEach(item=>grid.appendChild(buildMediaCard(item,{video:true})));
+ applyFirstSixMediaPriority(grid);
+}
+function applyFirstSixMediaPriority(grid){
+ if(!grid)return;
+ const cards=[...grid.querySelectorAll(".media-card")];
+ cards.slice(0,6).forEach((card,index)=>{
+   const img=card.querySelector("img");
+   const video=card.querySelector("video");
+   if(img){
+     // First 6 image previews get the browser's strongest normal loading hints.
+     // This is a browser scheduling hint, not a blocking/forced download.
+     img.loading="eager";
+     img.fetchPriority="high";
+   }
+   if(video){
+     // First 6 video previews get metadata/first-frame loading first.
+     // Do not preload the full video: that would slow the rest of the wall.
+     video.preload="metadata";
+   }
+   card.dataset.fastPreview=String(index+1);
  });
 }
 function renderImageLibrary(){
@@ -643,13 +661,8 @@ function renderImageLibrary(){
  if(!items.length){showEmpty();return}
  c.innerHTML='<div class="results-head"><div><h3>Все созданные картинки</h3></div></div><div class="result-grid"></div>';
  const grid=c.querySelector(".result-grid");
- items.forEach((item,index)=>{
-   const card=buildMediaCard(item);
-   const img=card.querySelector("img");
-   if(img){
-     }
-   grid.appendChild(card);
- });
+ items.forEach(item=>grid.appendChild(buildMediaCard(item)));
+ applyFirstSixMediaPriority(grid);
 }
 function renderLibrary(tab="images"){
  const c=$("#canvas"),items=getLibrary(),images=items.filter(x=>x.type==="image"),videos=items.filter(x=>x.type==="video");
@@ -657,7 +670,10 @@ function renderLibrary(tab="images"){
  c.querySelectorAll("[data-library-tab]").forEach(btn=>btn.classList.toggle("active",btn.dataset.libraryTab===tab));
  const grid=c.querySelector(".library-media-grid");const list=tab==="videos"?videos:images;
  if(!list.length){grid.innerHTML='<div class="library-note">'+(tab==="videos"?"Пока нет созданных видео.":"Пока нет созданных картинок.")+'</div>'}
- else list.forEach(item=>grid.appendChild(buildMediaCard(item,{video:tab==="videos"})));
+ else {
+   list.forEach(item=>grid.appendChild(buildMediaCard(item,{video:tab==="videos"})));
+   applyFirstSixMediaPriority(grid);
+ }
  c.querySelectorAll("[data-library-tab]").forEach(btn=>btn.onclick=()=>renderLibrary(btn.dataset.libraryTab));
 }
 
