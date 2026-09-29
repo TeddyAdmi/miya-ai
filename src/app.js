@@ -508,6 +508,11 @@ function buildMediaCard(item,{video=false}={}){
    });
    media.src=String(item.url||"");media.addEventListener("click",e=>{e.stopPropagation();openImageViewer(item)});card.appendChild(media);
  }
+ const modelBadge=document.createElement("div");
+ modelBadge.className="media-model-badge";
+ modelBadge.textContent=String(item.model||"Модель не указана");
+ modelBadge.title="Модель, которая фактически создала этот материал";
+ card.appendChild(modelBadge);
  const actions=document.createElement("div");actions.className="media-actions";
  const more=document.createElement("button");more.className="media-action media-more";more.removeAttribute("title");more.setAttribute("aria-label","Открыть меню");
  more.innerHTML='<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="5" cy="12" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="19" cy="12" r="1.5"/></svg>';
