@@ -1569,12 +1569,7 @@ function setMode(next,render=true){
    referenceImage=referenceImage||null;
    renderImageLibrary();
    const imageModel=$("#composerModel");
-   const allowedImageModels=["Agnes Image 2.5 Flash","FLUX Dev","FLUX Kontext Dev"];
-   if(referenceImage){
-     imageModel.value="FLUX Kontext Dev";
-   }else if(!allowedImageModels.includes(String(imageModel?.value||""))){
-     imageModel.value="FLUX Dev";
-   }
+   imageModel.value=referenceImage?"FLUX Kontext Dev":"FLUX Dev";
    $("#composerRatio").value=referenceImage?"auto":"16:9";
  }else if(next==="video"){
    renderVideoLibrary();
@@ -1690,9 +1685,9 @@ $("#referenceInput").onchange=e=>{
   const finishAttachment=(dataUrl)=>{
     referenceImage=dataUrl;try{sessionStorage.setItem("miyaReferenceImage",referenceImage)}catch{};setComposerAttachment(referenceImage);
     if(mode==="images"){
-    $("#composerModel").value="Agnes Image 2.5 Flash";
+    $("#composerModel").value="FLUX Kontext Dev";
     $("#composerRatio").value="auto";
-    $("#composerStatus").textContent="Agnes Image 2.5 Flash · 4K · готово к редактированию";
+    $("#composerStatus").textContent="FLUX Kontext Dev · готово к редактированию";
   }else if(mode==="video"){
     $("#videoModel").value="Agnes Video 2.5 Flash";
     $("#videoRatio").value="auto";
