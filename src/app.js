@@ -1015,7 +1015,7 @@ function removeGenerationLoading(){
  const loader=$("#canvas .generation-loading");
  if(loader)loader.remove();
 }
-let videoProgressState={value:1,target:1,model:"",label:"",timer:null};
+let videoProgressState={value:1,target:1,model:"",label:"",timer:null,startedAt:0};
 
 function paintVideoProgress(value){
  const v=Math.max(1,Math.min(100,Math.round(value)));
@@ -1044,7 +1044,7 @@ function updateVideoProgress(model,value,label=""){
 
 function startVideoProgress(model){
  if(videoProgressState.timer)clearInterval(videoProgressState.timer);
- videoProgressState={value:1,target:99,model:String(model||"Видео"),label:"запуск видеодвижка…",timer:null};
+ videoProgressState={value:1,target:99,model:String(model||"Видео"),label:"запуск видеодвижка…",timer:null,startedAt:Date.now()};
  paintVideoProgress(1);
  // One deterministic percentage step at a time. Provider-reported progress can
  // raise the target, but it can never make the displayed percentage jump backward.
@@ -1055,13 +1055,12 @@ function startVideoProgress(model){
      videoProgressState.timer=null;
      return;
    }
-   // Video progress uses the same predictable visual rule as image progress:
-   // one percentage point per second, reaching 99% after 70 seconds.
-   // Real provider progress may move it forward, but never backward.
-   if(videoProgressState.value<videoProgressState.target){
-     videoProgressState.value=Math.min(videoProgressState.target,videoProgressState.value+1);
-     paintVideoProgress(videoProgressState.value);
-   }
+   // Video has a 70-second visual range: 1% at start and 99% at 70s.
+   // If the provider finishes earlier, the real completion path sets 100%.
+   const elapsed=Math.max(0,Date.now()-videoProgressState.startedAt);
+   const clockValue=Math.min(99,Math.max(1,Math.round(1+(elapsed/70000)*98)));
+   videoProgressState.value=Math.max(videoProgressState.value,clockValue);
+   paintVideoProgress(videoProgressState.value);
  },1000);
  return (finalValue=null,label="")=>{
    if(finalValue!==null){
