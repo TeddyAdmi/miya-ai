@@ -535,7 +535,7 @@ function openVideoFromImage(url){
  $("#workspaceEyebrow").textContent=m.eyebrow;$("#workspaceTitle").textContent=m.title;$("#workspaceSubtitle").textContent=m.subtitle;
  $("#composerInput").placeholder=m.placeholder;$("#composerSendText").textContent=m.send;$("#composerStatus").textContent="LTX-2.3 Distilled · изображение готово";
  $(".image-settings").style.display="none";$("#videoOptions").classList.add("show");
- $("#videoModel").value="Agnes Video 2.5";$("#videoRatio").value="16:9";
+ $("#videoModel").value="Agnes Video 2.5 Flash";$("#videoRatio").value="16:9";
  document.querySelectorAll("[data-mode]").forEach(x=>x.classList.toggle("active",x.dataset.mode==="video"));
  $("#chatMenuToggle")?.classList.remove("active");$("#chatSubmenu")?.classList.add("suppressed");
  setComposerAttachment(referenceImage);renderVideoLibrary();syncInput();$("#composerInput").focus();
@@ -1514,7 +1514,7 @@ function setMode(next,render=true){
  $("#workspaceEyebrow").textContent=m.eyebrow;$("#workspaceTitle").textContent=m.title;$("#workspaceSubtitle").textContent=m.subtitle;
  $("#composerInput").placeholder=m.placeholder;$("#composerSendText").textContent=m.send;$("#composerStatus").textContent=m.status;
  $(".image-settings").style.display=next==="images"?"flex":"none";$("#videoOptions").classList.toggle("show",next==="video");
- if(next==="video"){ setVideoRatioDefault(); if($("#videoModel")&&!$("#videoModel").value)$("#videoModel").value="Agnes Video 2.5"; refreshLtxQuotaState(); }
+ if(next==="video"){ setVideoRatioDefault(); if($("#videoModel")&&!$("#videoModel").value)$("#videoModel").value="Agnes Video 2.5 Flash"; refreshLtxQuotaState(); }
  document.querySelectorAll("[data-mode]").forEach(x=>x.classList.toggle("active",x.dataset.mode===next));
  document.querySelectorAll("#chatSubmenu .side-subbtn").forEach(x=>x.classList.remove("active"));
  $("#chatMenuToggle")?.classList.toggle("active",next==="chat");
@@ -1619,10 +1619,8 @@ $("#videoModel")?.addEventListener("change",()=>{
    ? "PixelSter Motion Synthesis · 10 сек по умолчанию"
    : model==="MiniMax H3"
      ? "MiniMax H3 · Free ZeroGPU"
-     : model==="Agnes Video 2.5"
-       ? "Agnes Video 2.5 · 2K · до 12 сек"
-       : model==="Agnes Video 2.5 Flash"
-         ? "Agnes Video 2.5 Flash · 720P · до 12 сек"
+     : model==="Agnes Video 2.5 Flash"
+       ? "Agnes Video 2.5 Flash · 720P · до 12 сек"
          : model==="Agnes Video v2.0"
            ? "Agnes Video v2.0 · legacy"
            : "LTX-2.3 Distilled · Free ZeroGPU";
@@ -1648,7 +1646,7 @@ $("#referenceInput").onchange=e=>{
     $("#composerRatio").value="auto";
     $("#composerStatus").textContent="Agnes Image 2.5 Flash · 4K · готово к редактированию";
   }else if(mode==="video"){
-    $("#videoModel").value="Agnes Video 2.5";
+    $("#videoModel").value="Agnes Video 2.5 Flash";
     $("#videoRatio").value="auto";
     $("#composerStatus").textContent=($("#videoModel")?.value==="PixelSter Motion Synthesis"?"PixelSter Motion Synthesis · изображение готово":"LTX-2.3 · изображение готово");
   }else{
