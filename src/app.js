@@ -526,7 +526,17 @@ function buildMediaCard(item,{video=false}={}){
      mediaFailed=true;
      removeBrokenMediaItem(item,card);
    });
-   media.src=String(item.url||"");media.addEventListener("click",e=>{e.stopPropagation();openImageViewer(item)});card.appendChild(media);
+   media.src=String(item.url||"");
+   const isAgnesPreview=/^Agnes Image/i.test(String(item.model||""));
+   media.loading=isAgnesPreview?"lazy":"eager";
+   media.fetchPriority=isAgnesPreview?"low":"high";
+   if(isAgnesPreview){
+     media.style.maxHeight="280px";
+     media.style.objectFit="contain";
+     media.style.objectPosition="center";
+   }
+   media.addEventListener("click",e=>{e.stopPropagation();openImageViewer(item)});
+   card.appendChild(media);
  }
  const modelBadge=document.createElement("div");
  modelBadge.className="media-model-badge";
