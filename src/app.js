@@ -513,12 +513,12 @@ function openVideoViewer(item){
   const player=modal.querySelector(".image-viewer-video-player"),prev=modal.querySelector(".image-viewer-prev"),next=modal.querySelector(".image-viewer-next");
   const items=()=>getLibrary().filter(isVideoLibraryItem);
   const nav=()=>{const a=items(),i=a.findIndex(x=>x.id===modal.dataset.viewerItemId),p=i>0,n=i>=0&&i<a.length-1;prev.hidden=!p;next.hidden=!n;prev.disabled=!p;next.disabled=!n};
-  const show=x=>{if(!x)return;modal.dataset.viewerItemId=x.id;player.pause();player.src=String(x.url||"");player.load();resolveMediaUrl(x).then(u=>{if(u&&modal.classList.contains("open")&&modal.dataset.viewerItemId===x.id){player.src=u;player.load()}}).catch(()=>{});nav()};
+  const show=x=>{if(!x)return;modal.dataset.viewerItemId=x.id;player.pause();player.src=proxyAgnesVideoUrl(x.url);player.load();resolveMediaUrl(x).then(u=>{if(u&&modal.classList.contains("open")&&modal.dataset.viewerItemId===x.id){player.src=u;player.load()}}).catch(()=>{});nav()};
   const move=d=>{const a=items(),i=a.findIndex(x=>x.id===modal.dataset.viewerItemId);if(i>=0&&a[i+d])show(a[i+d])};
   prev.onclick=()=>move(-1);next.onclick=()=>move(1);modal.__videoNav=nav;
   document.addEventListener("keydown",e=>{if(!$("#videoViewerModal")?.classList.contains("open"))return;if(e.key==="Escape")closeVideoViewer();else if(e.key==="ArrowLeft")move(-1);else if(e.key==="ArrowRight")move(1)});
  }
- const player=modal.querySelector(".image-viewer-video-player");modal.dataset.viewerItemId=item.id;player.pause();player.src=String(item.url||"");player.load();
+ const player=modal.querySelector(".image-viewer-video-player");modal.dataset.viewerItemId=item.id;player.pause();player.src=proxyAgnesVideoUrl(item.url);player.load();
  resolveMediaUrl(item).then(u=>{if(u&&modal.classList.contains("open")&&modal.dataset.viewerItemId===item.id){player.src=u;player.load()}}).catch(()=>{});
  modal.__videoNav?.();modal.classList.add("open");document.body.classList.add("image-viewer-open");
 }
@@ -550,7 +550,7 @@ function buildMediaCard(item,{video=false}={}){
    media.addEventListener("click",e=>{e.stopPropagation();openVideoViewer(item)});
    card.addEventListener("click",e=>{if(!e.target.closest(".media-actions"))openVideoViewer(item)});
    card.appendChild(media);
-   const directUrl=String(item.url||"");
+   const directUrl=proxyAgnesVideoUrl(item.url);
    if(directUrl)media.src=directUrl;
    resolveMediaUrl(item).then(url=>{
      if(url&&url!==directUrl&&!mediaFailed){media.src=url;media.load();}
