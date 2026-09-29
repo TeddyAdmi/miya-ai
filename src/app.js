@@ -510,14 +510,14 @@ function buildMediaCard(item,{video=false}={}){
    media=document.createElement("video");
    media.className="media-video";
    media.setAttribute("aria-label","Miya Studio video");
-   media.controls=true;media.playsInline=true;media.preload="metadata";
+   media.controls=true;media.playsInline=true;media.preload="auto";media.muted=true;
    media.addEventListener("error",handleMediaFailure);
    card.appendChild(media);
+   const directUrl=String(item.url||"");
+   if(directUrl)media.src=directUrl;
    resolveMediaUrl(item).then(url=>{
-     if(url&&!mediaFailed){media.src=url;media.load();}
-   }).catch(()=>{
-     if(!mediaFailed){media.src=String(item.url||"");media.load();}
-   });
+     if(url&&url!==directUrl&&!mediaFailed){media.src=url;media.load();}
+   }).catch(()=>{});
   }else{
    media=document.createElement("img");media.alt="Miya Studio";media.style.cursor="zoom-in";media.title="Открыть изображение";
    media.decoding="async";
