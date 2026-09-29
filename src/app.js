@@ -1469,7 +1469,9 @@ async function generateVideo(prompt){
    if(!videoUrl)throw new Error("LTX-2.3 не вернул доступный MP4");
    updateVideoProgress("LTX-2.3 Distilled",99,"видео получено…");
    const item=saveMedia("video",videoUrl,prompt,"LTX-2.3 Distilled · Video + Audio");
-   stopProgress();removeGenerationLoading();renderVideoLibrary();
+   stopProgress(100,"готово");
+   updateVideoProgress("LTX-2.3 Distilled",100,"готово");
+   removeGenerationLoading();renderVideoLibrary();
    if(item)scrollImagesToTop();
    toast("LTX-2.3: видео + звук созданы");
  }catch(e){
