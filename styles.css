@@ -2175,3 +2175,51 @@ body.light .generation-loading .progress-model{color:#71859a}
 .composer-input-row>.composer-attachment button{pointer-events:auto!important}
 .composer-wrap,.composer{position:fixed!important;pointer-events:auto!important}
 .video-result-grid .media-card video{will-change:auto!important}
+
+/* FINAL FIX: keep the composer inside its fixed wrapper. Do not make the
+   composer/textarea fixed or absolute; that lets the video grid win hit-testing. */
+.composer-wrap{
+  position:fixed!important;
+  z-index:99999!important;
+  left:205px!important;
+  right:0!important;
+  bottom:0!important;
+  pointer-events:auto!important;
+  isolation:isolate!important;
+}
+.composer{
+  position:relative!important;
+  z-index:100000!important;
+  pointer-events:auto!important;
+}
+.composer-input-row{
+  position:relative!important;
+  z-index:100001!important;
+  display:flex!important;
+  align-items:flex-end!important;
+  pointer-events:auto!important;
+}
+.composer-input-row>textarea#composerInput{
+  position:relative!important;
+  left:auto!important;
+  right:auto!important;
+  top:auto!important;
+  bottom:auto!important;
+  display:block!important;
+  flex:1 1 auto!important;
+  width:auto!important;
+  height:auto!important;
+  min-height:42px!important;
+  max-height:120px!important;
+  margin:0!important;
+  z-index:100002!important;
+  pointer-events:auto!important;
+}
+.composer-input-row>.composer-left-actions,
+.composer-input-row>#composerEmoji,
+.composer-input-row>#composerMic,
+.composer-input-row>#composerSend{
+  position:relative!important;
+  z-index:100003!important;
+  pointer-events:auto!important;
+}
