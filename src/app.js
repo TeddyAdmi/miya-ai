@@ -510,7 +510,7 @@ function buildMediaCard(item,{video=false}={}){
    media=document.createElement("video");
    media.className="media-video";
    media.setAttribute("aria-label","Miya Studio video");
-   media.controls=true;media.playsInline=true;media.preload="auto";media.muted=true;
+   media.controls=true;media.playsInline=true;media.preload="metadata";media.muted=false;media.defaultMuted=false;media.volume=1;
    media.addEventListener("error",handleMediaFailure);
    card.appendChild(media);
    const directUrl=String(item.url||"");
@@ -727,8 +727,8 @@ function showLoading(){
  items.forEach(item=>grid.appendChild(buildMediaCard(item,{video:true})));
  const card=document.createElement("div");card.className="generation-loading video-generation-loading";
  card.dataset.model=selectedVideoModel;
- card.innerHTML='<div class="generation-progress"><div class="progress-circle is-active"><span class="progress-percent">0%</span></div><div class="progress-copy"><b>Создание видео</b><span class="progress-model"></span></div></div><div class="generation-progress-bar"><span></span></div>';
- card.querySelector(".progress-model").textContent=selectedVideoModel+" · подготовка…";
+ card.innerHTML='<div class="generation-progress"><div class="progress-circle is-active"><span class="progress-percent">1%</span></div><div class="progress-copy"><span class="progress-model"></span></div></div><div class="generation-progress-bar"><span></span></div>';
+ card.querySelector(".progress-model").textContent=selectedVideoModel;
  grid.appendChild(card);scrollImagesToTop();
 }
 function showImage(url,prompt="",model="FLUX Dev"){
@@ -1027,10 +1027,10 @@ function paintVideoProgress(value){
  if(ring)ring.style.setProperty("--progress",v+"%");
  if(percent)percent.textContent=v+"%";
  if(bar)bar.style.width=v+"%";
- const text=videoProgressState.model+(videoProgressState.label?" · "+videoProgressState.label:"");
+ const text=v>=100 ? "готово" : videoProgressState.model;
  if(copy)copy.textContent=text;
  const status=$("#composerStatus"),progress=$("#composerProgress");
- if(status)status.textContent=text;
+ if(status)status.textContent=v>=100 ? "готово" : videoProgressState.model+" · "+v+"%";
  if(progress)progress.textContent=v+"%";
 }
 
@@ -1055,10 +1055,10 @@ function startVideoProgress(model){
      videoProgressState.timer=null;
      return;
    }
-   // Video has a 70-second visual range: 1% at start and 99% at 70s.
-   // If the provider finishes earlier, the real completion path sets 100%.
+   // Video has an 80-second visual range: 1% at start and 99% at 80s.
+   // The real provider completion path alone is allowed to set 100%.
    const elapsed=Math.max(0,Date.now()-videoProgressState.startedAt);
-   const clockValue=Math.min(99,Math.max(1,Math.round(1+(elapsed/70000)*98)));
+   const clockValue=Math.min(99,Math.max(1,Math.round(1+(elapsed/80000)*98)));
    videoProgressState.value=Math.max(videoProgressState.value,clockValue);
    paintVideoProgress(videoProgressState.value);
  },1000);
