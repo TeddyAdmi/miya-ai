@@ -1,8 +1,3 @@
-(()=>{
- const st=document.createElement("style");
- st.textContent=".composer-input-row{position:relative;z-index:1002!important}.composer textarea{position:relative!important;z-index:1003!important;pointer-events:auto!important;user-select:text!important;-moz-user-select:text!important;-webkit-user-select:text!important;-webkit-user-modify:read-write-plaintext-only!important}.prompt-context-menu{display:none!important}";
- document.head.appendChild(st);
-})();
 import { Client, handle_file } from "https://cdn.jsdelivr.net/npm/@gradio/client/dist/index.min.js";
 const modes={
  chat:{title:"Твоя AI-комната",eyebrow:"AI CHAT",subtitle:"Общайся с Miya, придумывай идеи и управляй созданием контента.",placeholder:"Напиши сообщение...",send:"Отправить",status:"AI Chat готов"},
@@ -151,9 +146,8 @@ function getLibrary(){
  try{
   const raw=JSON.parse(localStorage.getItem(LIB_KEY)||"[]");
   const items=Array.isArray(raw)
-    ? raw.filter(x=>x&&typeof x.url==="string"&&!/https?:\/\/(?:www\.)?vheer\.com\//i.test(x.url))
+    ? raw.filter(x=>x&&typeof x.url==="string")
     : [];
-  // Remove obsolete Vheer media from the persistent library as well.
   if(Array.isArray(raw)&&items.length!==raw.length){
    try{localStorage.setItem(LIB_KEY,JSON.stringify(items))}catch{}
   }
@@ -1552,16 +1546,7 @@ if(chatMenuToggle){
  });
 }
 document.querySelectorAll("[data-mode]").forEach(b=>b.addEventListener("click",()=>setMode(b.dataset.mode)));
-$("#composerInput").addEventListener("contextmenu",e=>{
- // Let Firefox show its native Paste / Copy / Cut / Select all menu.
- // Stop only application-level bubbling; never cancel the browser default.
- e.stopPropagation();
-});
 $("#composerInput").addEventListener("input",syncInput);
-// Keep the browser's native clipboard behavior in the prompt textarea.
-// Do not intercept paste: Firefox's mouse menu must provide Paste / Copy / Cut / Select all.
-// Keep the prompt as a normal native textarea so Firefox/Chrome provide the
-// standard mouse menu: Paste, Copy, Cut and Select all.
 $("#composerInput").addEventListener("keydown",e=>{if(e.key==="Enter"&&!e.shiftKey){e.preventDefault();$("#composerSend").click()}});
 $("#composerSend").addEventListener("click",async()=>{
  const value=$("#composerInput").value.trim();
