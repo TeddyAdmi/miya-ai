@@ -1017,7 +1017,17 @@ function removeGenerationLoading(){
 }
 let videoProgressState={value:1,target:1,model:"",label:"",timer:null,startedAt:0};
 
-function proxyAgnesVideoUrl(url){\n const value=String(url||"").trim();\n if(!/^https?:\\/\\//i.test(value))return value;\n try{\n   const host=new URL(value).hostname.toLowerCase();\n   if(host==="cos-platform-outputs.agnes-ai.cn"||host.endsWith(".agnes-ai.cn")||host.endsWith(".agnes-ai.space")) return "/api/agnes-video-proxy?url="+encodeURIComponent(value);\n }catch{}\n return value;\n}\n\nfunction paintVideoProgress(value){
+function proxyAgnesVideoUrl(url){\n const value=String(url||"").trim();\n if(!/^https?:\\/\\//i.test(value))return value;\n try{\n   const host=new URL(value).hostname.toLowerCase();\n   if(host==="cos-platform-outputs.agnes-ai.cn"||host.endsWith(".agnes-ai.cn")||host.endsWith(".agnes-ai.space")) return "/api/agnes-video-proxy?url="+encodeURIComponent(value);\n }catch{}\n return value;\n}\n\nfunction proxyAgnesVideoUrl(url){
+ const value=String(url||"").trim();
+ if(!/^https?:\/\//i.test(value))return value;
+ try{
+   const host=new URL(value).hostname.toLowerCase();
+   if(host==="cos-platform-outputs.agnes-ai.cn"||host.endsWith(".agnes-ai.cn")||host.endsWith(".agnes-ai.space")) return "/api/agnes-video-proxy?url="+encodeURIComponent(value);
+ }catch{}
+ return value;
+}
+
+function paintVideoProgress(value){
  const v=Math.max(1,Math.min(100,Math.round(value)));
  const loader=$("#canvas .video-generation-loading");
  const ring=loader?.querySelector(".progress-circle");
