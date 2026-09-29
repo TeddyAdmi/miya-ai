@@ -1593,16 +1593,11 @@ if(chatMenuToggle){
 document.querySelectorAll("[data-mode]").forEach(b=>b.addEventListener("click",()=>setMode(b.dataset.mode)));
 $("#composerInput").addEventListener("input",syncInput);
 $("#composerInput").addEventListener("paste",e=>{
+ const i=e.currentTarget;
  const text=e.clipboardData?.getData("text/plain");
  if(text==null)return;
- e.preventDefault();
- const i=e.currentTarget;
- const start=i.selectionStart??i.value.length;
- const end=i.selectionEnd??start;
- i.value=i.value.slice(0,start)+text+i.value.slice(end);
- const caret=start+text.length;
- i.selectionStart=i.selectionEnd=caret;
- syncInput();
+ /* Let Firefox perform its native paste. We only normalize the input afterward. */
+ requestAnimationFrame(()=>syncInput());
 });
 $("#composerInput").addEventListener("keydown",e=>{if(e.key==="Enter"&&!e.shiftKey){e.preventDefault();$("#composerSend").click()}});
 $("#composerSend").addEventListener("click",async()=>{
