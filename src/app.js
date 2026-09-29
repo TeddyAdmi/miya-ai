@@ -535,7 +535,7 @@ function openVideoFromImage(url){
  $("#workspaceEyebrow").textContent=m.eyebrow;$("#workspaceTitle").textContent=m.title;$("#workspaceSubtitle").textContent=m.subtitle;
  $("#composerInput").placeholder=m.placeholder;$("#composerSendText").textContent=m.send;$("#composerStatus").textContent="LTX-2.3 Distilled · изображение готово";
  $(".image-settings").style.display="none";$("#videoOptions").classList.add("show");
- $("#videoModel").value="LTX-2.3 Distilled";$("#videoRatio").value="16:9";
+ $("#videoModel").value="Agnes Video 2.5";$("#videoRatio").value="16:9";
  document.querySelectorAll("[data-mode]").forEach(x=>x.classList.toggle("active",x.dataset.mode==="video"));
  $("#chatMenuToggle")?.classList.remove("active");$("#chatSubmenu")?.classList.add("suppressed");
  setComposerAttachment(referenceImage);renderVideoLibrary();syncInput();$("#composerInput").focus();
@@ -695,6 +695,54 @@ function showImage(url,prompt="",model="FLUX Dev"){
  const card=buildMediaCard(item);grid.prepend(card);
  $("#composerStatus").textContent=model+" · готово";
 }
+async function generateAgnesImage(prompt){
+ if(videoGenerationBusy){}
+ showLoading();$("#composerSend").disabled=true;
+ const model="Agnes Image 2.5 Flash · 4K";
+ const loader=$("#canvas .generation-loading");
+ const ring=loader?.querySelector(".progress-circle");
+ const percent=ring?.querySelector(".progress-percent");
+ const composerProgress=$("#composerProgress");
+ const setProgress=p=>{
+   const v=Math.max(0,Math.min(99,Math.round(p)));
+   if(ring){ring.classList.remove("is-active");ring.style.setProperty("--progress",v+"%");}
+   const bar=loader?.querySelector(".generation-progress-bar span");if(bar)bar.style.width=v+"%";
+   if(percent)percent.textContent=v+"%";
+   if(composerProgress)composerProgress.textContent=v+"%";
+ };
+ try{
+   setProgress(8);$("#composerStatus").textContent=model+" · подключение…";
+   const ratio=["1:1","3:4","4:3","16:9","9:16","2:3","3:2","21:9"].includes(String($("#composerRatio")?.value))?String($("#composerRatio").value):"16:9";
+   const requestedCount=Math.max(1,Math.min(4,Number($("#composerCount")?.value||1)));
+   const response=await fetch("/api/agnes-image",{
+     method:"POST",
+     headers:{"Content-Type":"application/json","Accept":"application/json"},
+     body:JSON.stringify({prompt,ratio,n:requestedCount,imageBase64:referenceImage||""}),
+     signal:AbortSignal.timeout(60000)
+   });
+   const raw=await response.text();let data={};try{data=raw?JSON.parse(raw):{}}catch{}
+   if(!response.ok||!data.imageUrl)throw new Error(String(data.message||data.error||raw||"Agnes Image не вернул изображение").slice(0,500));
+   setProgress(100);
+   const urls=Array.isArray(data.imageUrls)&&data.imageUrls.length?data.imageUrls:[data.imageUrl];
+   urls.forEach(url=>showImage(url,prompt,model));
+   scrollImagesToTop();
+   $("#composerInput").value="";syncInput();
+   $("#composerModel").value="Agnes Image 2.5 Flash";
+   $("#composerRatio").value=ratio;
+   $("#composerStatus").textContent=model+" · готово";
+   if(composerProgress)composerProgress.textContent="100%";
+   setTimeout(()=>$("#canvas .generation-loading")?.remove(),350);
+   toast("Agnes Image: изображение создано");
+ }catch(e){
+   $("#canvas .generation-loading")?.remove();
+   if(composerProgress)composerProgress.textContent="";
+   $("#composerStatus").textContent=model+" · ошибка";
+   toast("Agnes Image: "+(e?.message||"не удалось создать изображение"));
+ }finally{
+   $("#composerSend").disabled=false;
+ }
+}
+
 async function generateImage(prompt){
  showLoading();$("#composerSend").disabled=true;
  const loader=$("#canvas .generation-loading");
@@ -1273,6 +1321,54 @@ async function generateMiniMaxVideo(prompt){
  }
 }
 
+async function generateAgnesVideo(prompt){
+ if(videoGenerationBusy){toast("Видео уже создаётся. Дождитесь завершения текущего запроса.");return;}
+ videoGenerationBusy=true;showLoading();$("#composerSend").disabled=true;
+ const model=String($("#videoModel")?.value||"Agnes Video 2.5");
+ const isFlash=model==="Agnes Video 2.5 Flash";
+ const apiModel=isFlash?"agnes-video-2.5-flash":model==="Agnes Video v2.0"?"agnes-video-v2.0":"agnes-video-2.5";
+ const stopProgress=startVideoProgress(model);
+ try{
+   const duration=Math.max(4,Math.min(12,Number(String($("#videoDuration")?.value||"12 сек").match(/\d+/)?.[0]||12)));
+   const ratio=["16:9","9:16","1:1","4:3","3:4","21:9"].includes(String($("#videoRatio")?.value))?String($("#videoRatio").value):"16:9";
+   const source=referenceImage||"";
+   const size=apiModel==="agnes-video-2.5-flash"?"720P":"2K";
+   updateVideoProgress(model,5,"подключение к Agnes…");
+   const create=await fetch("/api/agnes-video",{
+     method:"POST",headers:{"Content-Type":"application/json","Accept":"application/json"},
+     body:JSON.stringify({model:apiModel,prompt,seconds:duration,size,aspect_ratio:ratio,first_frame:source||undefined}),
+     signal:AbortSignal.timeout(60000)
+   });
+   const createRaw=await create.text();let created={};try{created=createRaw?JSON.parse(createRaw):{}}catch{}
+   if(!create.ok||!created.videoId)throw new Error(String(created.message||created.error||createRaw||"Agnes не создал задачу").slice(0,500));
+   const videoId=created.videoId;
+   let final=null;
+   const started=Date.now();
+   while(Date.now()-started<15*60*1000){
+     await new Promise(r=>setTimeout(r,3500));
+     const statusResponse=await fetch("/api/agnes-video-status?video_id="+encodeURIComponent(videoId)+"&model="+encodeURIComponent(apiModel),{headers:{"Accept":"application/json"},signal:AbortSignal.timeout(30000)});
+     const raw=await statusResponse.text();let data={};try{data=raw?JSON.parse(raw):{}}catch{}
+     if(!statusResponse.ok)throw new Error(String(data.message||data.error||raw||"Agnes status error").slice(0,500));
+     const progress=Number(data.progress);
+     if(Number.isFinite(progress))updateVideoProgress(model,Math.max(5,Math.min(98,progress)),"создание…");
+     if(data.status==="completed"){final=data;break}
+     if(data.status==="failed"||data.error)throw new Error(String(data.error?.message||data.error||"Agnes генерация завершилась ошибкой"));
+   }
+   if(!final?.url)throw new Error("Agnes не успел вернуть готовое видео за 15 минут");
+   updateVideoProgress(model,99,"видео получено…");
+   const item=saveMedia("video",final.url,prompt,model+" · "+size+" · 12 сек");
+   stopProgress();removeGenerationLoading();renderVideoLibrary();if(item)scrollImagesToTop();
+   $("#composerStatus").textContent=model+" · готово";
+   toast("Agnes: видео создано");
+ }catch(e){
+   stopProgress();removeGenerationLoading();$("#composerProgress").textContent="";
+   $("#composerStatus").textContent=model+" · ошибка";
+   toast("Agnes: "+(e?.message||"не удалось создать видео"));
+ }finally{
+   videoGenerationBusy=false;$("#composerSend").disabled=false;
+ }
+}
+
 async function generateVideo(prompt){
  refreshLtxQuotaState();
  const selectedModel=String($("#videoModel")?.value||"LTX-2.3 Distilled");
@@ -1284,6 +1380,7 @@ async function generateVideo(prompt){
    return;
   }
  }
+ if(selectedModel==="Agnes Video 2.5"||selectedModel==="Agnes Video 2.5 Flash"||selectedModel==="Agnes Video v2.0") return generateAgnesVideo(prompt);
  if(selectedModel==="Wan 2.2 Fast") return generateWanVideo(prompt);
  if(selectedModel==="PixelSter Motion Synthesis") return generateMotionVideo(prompt);
  if(selectedModel==="MiniMax H3") return generateMiniMaxVideo(prompt);
@@ -1417,7 +1514,7 @@ function setMode(next,render=true){
  $("#workspaceEyebrow").textContent=m.eyebrow;$("#workspaceTitle").textContent=m.title;$("#workspaceSubtitle").textContent=m.subtitle;
  $("#composerInput").placeholder=m.placeholder;$("#composerSendText").textContent=m.send;$("#composerStatus").textContent=m.status;
  $(".image-settings").style.display=next==="images"?"flex":"none";$("#videoOptions").classList.toggle("show",next==="video");
- if(next==="video"){ setVideoRatioDefault(); if($("#videoModel")&&!$("#videoModel").value)$("#videoModel").value="LTX-2.3 Distilled"; refreshLtxQuotaState(); }
+ if(next==="video"){ setVideoRatioDefault(); if($("#videoModel")&&!$("#videoModel").value)$("#videoModel").value="Agnes Video 2.5"; refreshLtxQuotaState(); }
  document.querySelectorAll("[data-mode]").forEach(x=>x.classList.toggle("active",x.dataset.mode===next));
  document.querySelectorAll("#chatSubmenu .side-subbtn").forEach(x=>x.classList.remove("active"));
  $("#chatMenuToggle")?.classList.toggle("active",next==="chat");
@@ -1522,7 +1619,13 @@ $("#videoModel")?.addEventListener("change",()=>{
    ? "PixelSter Motion Synthesis · 10 сек по умолчанию"
    : model==="MiniMax H3"
      ? "MiniMax H3 · Free ZeroGPU"
-     : "LTX-2.3 Distilled · Free ZeroGPU";
+     : model==="Agnes Video 2.5"
+       ? "Agnes Video 2.5 · 2K · до 12 сек"
+       : model==="Agnes Video 2.5 Flash"
+         ? "Agnes Video 2.5 Flash · 720P · до 12 сек"
+         : model==="Agnes Video v2.0"
+           ? "Agnes Video v2.0 · legacy"
+           : "LTX-2.3 Distilled · Free ZeroGPU";
  if(model==="MiniMax H3" && duration) duration.value="5 сек";
 });
 $("#videoTrash")?.addEventListener("click",()=>{
@@ -1545,7 +1648,7 @@ $("#referenceInput").onchange=e=>{
     $("#composerRatio").value="auto";
     $("#composerStatus").textContent="Flux Kontext Dev · готово к редактированию";
   }else if(mode==="video"){
-    $("#videoModel").value="LTX-2.3 Distilled";
+    $("#videoModel").value="Agnes Video 2.5";
     $("#videoRatio").value="auto";
     $("#composerStatus").textContent=($("#videoModel")?.value==="PixelSter Motion Synthesis"?"PixelSter Motion Synthesis · изображение готово":"LTX-2.3 · изображение готово");
   }else{
