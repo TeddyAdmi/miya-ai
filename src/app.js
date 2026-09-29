@@ -168,7 +168,7 @@ async function cacheMedia(id,url,type="image"){
   const value=String(url||"");
   // Agnes output storage has no CORS header. Do not fetch it into IndexedDB;
   // the browser can display the provider URL directly in <img> and cache it normally.
-  if(/platform-outputs\\.agnes-ai\\.space/i.test(value))return false;
+  if(/(?:platform-outputs|cos-platform-outputs)\\.agnes-ai\\.(?:space|cn)/i.test(value))return false;
   const cached=await getCachedMedia(id);if(cached?.blob)return true;
   const db=await openMediaDB();if(!db)return false;
   const response=await fetch(value,{mode:"cors",cache:"force-cache"});if(!response.ok)return false;
