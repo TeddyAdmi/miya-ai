@@ -181,6 +181,22 @@ async function cacheMedia(id,url,type="image"){
   return true;
  }catch{return false}
 }
+function warmMediaCache(items){
+  const list=Array.isArray(items)?items.filter(x=>x?.id&&x?.url):[];
+  if(!list.length)return;
+  const run=async()=>{
+    let cursor=0;
+    const worker=async()=>{
+      while(cursor<list.length){
+        const item=list[cursor++];
+        await cacheMedia(item.id,item.url,item.type||"image");
+      }
+    };
+    await Promise.all([worker(),worker(),worker()]);
+  };
+  if("requestIdleCallback" in window)window.requestIdleCallback(()=>run(),{timeout:1200});
+  else setTimeout(run,80);
+}
 async function getCachedMedia(id){
  try{
   const db=await openMediaDB();if(!db)return null;
@@ -1562,11 +1578,16 @@ if(chatMenuToggle){
 }
 document.querySelectorAll("[data-mode]").forEach(b=>b.addEventListener("click",()=>setMode(b.dataset.mode)));
 $("#composerInput").addEventListener("input",syncInput);
+$("#composerInput").addEventListener("contextmenu",e=>{
+ /* Keep Firefox's native editing menu (including Paste), but stop an outer
+    Bastyon/page handler from replacing it with a media/context menu. */
+ e.stopPropagation();
+},true);
 $("#composerInput").addEventListener("paste",e=>{
  const i=e.currentTarget;
  const text=e.clipboardData?.getData("text/plain");
  if(text==null)return;
- /* Let Firefox perform its native paste. We only normalize the input afterward. */
+ /* Never cancel native paste: Firefox inserts the clipboard text itself. */
  requestAnimationFrame(()=>syncInput());
 });
 $("#composerInput").addEventListener("keydown",e=>{if(e.key==="Enter"&&!e.shiftKey){e.preventDefault();$("#composerSend").click()}});
