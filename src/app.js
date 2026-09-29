@@ -741,7 +741,7 @@ function showImage(url,prompt="",model="FLUX Dev"){
 async function generateAgnesImage(prompt){
  if(videoGenerationBusy){}
  showLoading();$("#composerSend").disabled=true;
- const model="Agnes Image 2.5 Flash · 4K";
+ const model="Agnes Image 2.5 Flash";
  const loader=$("#canvas .generation-loading");
  const ring=loader?.querySelector(".progress-circle");
  const percent=ring?.querySelector(".progress-percent");
@@ -1643,8 +1643,8 @@ $("#composerModel")?.addEventListener("change",()=>{
   }else if(model==="Agnes Image 2.5 Flash"){
     $("#composerRatio").value="16:9";
     $("#composerStatus").textContent=referenceImage
-      ?"Agnes Image 2.5 Flash · 4K · изображение прикреплено"
-      :"Agnes Image 2.5 Flash · 4K · готово";
+      ?"Agnes Image 2.5 Flash · изображение прикреплено"
+      :"Agnes Image 2.5 Flash · готово";
   }else{
     $("#composerRatio").value="16:9";
     $("#composerStatus").textContent=referenceImage
