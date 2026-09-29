@@ -11,6 +11,15 @@
     },
     "api/image.js": {
       "maxDuration": 60
+    },
+    "api/agnes-video.js": {
+      "maxDuration": 60
+    },
+    "api/agnes-video-status.js": {
+      "maxDuration": 30
+    },
+    "api/agnes-image.js": {
+      "maxDuration": 60
     }
   }
 }
