@@ -872,11 +872,14 @@ body.light .chat-history-menu .rename-label{color:#71859a!important}
 .composer-input-row>textarea#composerInput{
   position:relative!important;
   z-index:1003!important;
+  flex:1 1 auto!important;
+  min-width:0!important;
   pointer-events:auto!important;
   user-select:text!important;
   -moz-user-select:text!important;
   -webkit-user-select:text!important;
-  touch-action:text!important;
+  touch-action:auto!important;
+  isolation:isolate!important;
 }
 .composer-input-row>.composer-left-actions{
   position:relative!important;
@@ -2058,3 +2061,7 @@ body.light .generation-loading .progress-model{color:#71859a}
 .image-viewer-controls button{width:34px!important;height:34px!important;flex:0 0 34px!important;border-radius:9px!important}
 .image-viewer-controls button svg{width:15px!important;height:15px!important}
 @media(max-width:800px){.image-viewer-controls button{width:31px!important;height:31px!important;flex-basis:31px!important}.image-viewer-controls button svg{width:14px!important;height:14px!important}}
+
+/* Final prompt hit-area reset: hidden attachment must never reserve or cover the textarea. */
+.composer-input-row>.composer-attachment[hidden]{display:none!important}
+.composer-input-row>.composer-left-actions{flex:0 0 34px!important;width:34px!important;min-width:34px!important}
