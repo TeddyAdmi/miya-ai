@@ -2089,7 +2089,7 @@ body.light .generation-loading .progress-copy b{color:#29394d}
 body.light .generation-loading .progress-model{color:#71859a}
 
 /* Keep the fixed prompt above generated video elements so Firefox right-click targets the textarea. */
-.composer-wrap{z-index:1000!important}
+.composer-wrap{z-index:1000!important;pointer-events:auto!important}
 .composer{position:relative;z-index:1001!important}
 .composer-input-row{position:relative;z-index:1002!important}
 .composer textarea{position:relative;z-index:1003!important;pointer-events:auto!important}
