@@ -1379,8 +1379,10 @@ async function generateAgnesVideo(prompt, retryAttempt=0){
      );
      stopProgress();removeGenerationLoading();
      $("#composerProgress").textContent="";
-     $("#composerStatus").textContent="Agnes Video · бесплатный лимит · подожди "+retryAfter+" сек.";
-     toast("Agnes Video сейчас ограничен бесплатным лимитом. Новый запрос автоматически не отправляю. Подожди "+retryAfter+" сек. и попробуй снова.");
+     videoGenerationBusy=false;
+     $("#composerSend").disabled=false;
+     $("#composerStatus").textContent="Agnes Video · лимит бесплатного доступа · можно повторить через "+retryAfter+" сек.";
+     toast("Agnes Video сейчас ограничен бесплатным лимитом. Кнопка снова доступна. Подожди "+retryAfter+" сек. и отправь запрос ещё раз.");
      return;
    }
 
