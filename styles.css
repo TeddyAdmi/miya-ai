@@ -2247,6 +2247,16 @@ body.light .generation-loading .progress-model{color:#71859a}
 }
 
 
+/* Dedicated shield for the fixed Video prompt: it blocks video hit-testing
+   underneath the composer while keeping the composer itself on top. */
+.composer-hit-shield{
+  position:fixed!important;
+  display:none;
+  z-index:2147483646!important;
+  pointer-events:auto!important;
+  background:transparent!important;
+}
+
 /* FINAL VIDEO/PROMPT HIT-TEST FIX */
 html.composer-hit-area .video-result-grid .media-card video,
 html.composer-hit-area .video-result-grid .media-card{
