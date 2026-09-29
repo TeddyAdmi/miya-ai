@@ -790,9 +790,9 @@ async function generateImage(prompt){
  const loader=$("#canvas .generation-loading");
  const ring=loader?.querySelector(".progress-circle");
  const percent=ring?.querySelector(".progress-percent");
- const modelName=referenceImage && selectedModel==="FLUX Kontext Dev"
-   ? "FLUX Kontext Dev"
-   : (selectedModel||"FLUX Dev");
+ const modelName=selectedModel||"FLUX Dev";
+ const usesReferenceImage=Boolean(referenceImage) &&
+   (modelName==="FLUX Kontext Dev" || modelName==="Agnes Image 2.5 Flash");
  const hasFileUpload=modelName==="FLUX Kontext Dev" && Boolean(referenceImage);
  const composerProgress=$("#composerProgress");
  let fakeProgress=0;
@@ -824,7 +824,7 @@ async function generateImage(prompt){
    // an image comes from history/library; keep explicit ratio for fresh T2I.
    ratio:referenceImage?"auto":$("#composerRatio").value
   };
-  if(referenceImage){
+  if(usesReferenceImage){
    if(referenceImage.startsWith("data:image/"))payload.imageBase64=referenceImage;
    else payload.imageUrl=referenceImage;
   }
