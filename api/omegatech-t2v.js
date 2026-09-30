@@ -7,7 +7,7 @@ export default async function handler(req,res){
   try{
     const body=typeof req.body==="string"?JSON.parse(req.body||"{}"):(req.body||{});
     const requestedDuration=Math.max(1,Math.min(10,Number(body.duration)||5));
-    const duration=requestedDuration>5?10:5.1;
+    const duration=requestedDuration;
     const ratio=["16:9","9:16","1:1"].includes(body.ratio)?body.ratio:"16:9";
     const userPrompt=String(body.prompt||"").trim();
 
@@ -48,9 +48,10 @@ export default async function handler(req,res){
     if(!asksAnimals) negativeParts.push("animals");
     const negativePrompt=negativeParts.join(", ");
 
+    const cleanPrompt=userPrompt.slice(0,1500);
     const requestBody={
       action:"generate",
-      prompt,
+      prompt:cleanPrompt,
       negativePrompt,
       duration,
       seed:-1,
@@ -67,10 +68,16 @@ export default async function handler(req,res){
     });
 
     if(response.status===404 || !response.ok){
+      const qwenBody={
+        prompt:cleanPrompt,
+        ratio,
+        duration:requestedDuration,
+        negativePrompt
+      };
       const qwenResponse=await fetch("https://api.omegatech.app/api/ai/Qwen-text-to-video",{
         method:"POST",
         headers:{"Content-Type":"application/json"},
-        body:JSON.stringify({prompt,ratio,duration:requestedDuration})
+        body:JSON.stringify(qwenBody)
       });
       if(qwenResponse.ok){
         response=qwenResponse;
@@ -78,7 +85,12 @@ export default async function handler(req,res){
         const txtResponse=await fetch("https://api.omegatech.app/api/ai/Txt2video",{
           method:"POST",
           headers:{"Content-Type":"application/json"},
-          body:JSON.stringify({action:"generate",prompt,ratio,sound:Boolean(body.sound)})
+          body:JSON.stringify({
+            action:"generate",
+            prompt:cleanPrompt,
+            ratio,
+            sound:false
+          })
         });
         response=txtResponse;
       }
