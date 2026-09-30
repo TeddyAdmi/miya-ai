@@ -570,7 +570,6 @@ function buildMediaCard(item,{video=false}={}){
      const rawUrl=String(item.url||"");
      if(!/^https?:\/\/access\.vheer\.com\/results\//i.test(rawUrl)&&rawUrl&&!mediaFailed){
        media.src=rawUrl;
-       media.load();
      }else if(/^https?:\/\/access\.vheer\.com\/results\//i.test(rawUrl)){
        media.alt="Старая копия изображения";
      }
@@ -578,7 +577,6 @@ function buildMediaCard(item,{video=false}={}){
      const rawUrl=String(item.url||"");
      if(!/^https?:\/\/access\.vheer\.com\/results\//i.test(rawUrl)&&rawUrl&&!mediaFailed){
        media.src=rawUrl;
-       media.load();
      }else{
        media.alt="Старая копия изображения";
      }
