@@ -147,10 +147,6 @@ async function handler(req, res) {
       result = await callBlockRun("nvidia/nemotron-3.5-super");
     }
 
-    if (!result.ok) {
-      result = await callFaucet("auto:fast");
-    }
-
     if (result.ok) {
       return res.status(200).json({
         ok: true,
