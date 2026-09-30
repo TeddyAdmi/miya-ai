@@ -2286,3 +2286,19 @@ html.composer-hit-area .composer-input-row>textarea#composerInput{
 }
 /* First six videos get metadata immediately; the rest stay lazy. */
 .video-result-grid .media-card video{will-change:auto!important}
+
+/* Video model select must stay above prompt layers and remain natively clickable. */
+.video-options{
+  position:relative!important;
+  z-index:2147483647!important;
+  pointer-events:auto!important;
+}
+.video-options #videoModel{
+  position:relative!important;
+  z-index:2147483648!important;
+  pointer-events:auto!important;
+  appearance:auto!important;
+  -moz-appearance:auto!important;
+  opacity:1!important;
+  visibility:visible!important;
+}
