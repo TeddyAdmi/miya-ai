@@ -49,7 +49,6 @@ export default async function handler(req,res){
     const negativePrompt=negativeParts.join(", ");
 
     const cleanPrompt=userPrompt.slice(0,1500);
-    const cleanPrompt=userPrompt.slice(0,1500);
     const modelsResponse=await fetch("https://api.omegatech.app/api/ai/Argen",{
       method:"POST",
       headers:{"Content-Type":"application/json"},
@@ -92,40 +91,8 @@ export default async function handler(req,res){
     let payload=null;
     try{payload=JSON.parse(text)}catch{}
 
-    if(duration>5 && response.ok && payload?.sessionId){
-      let completed=false;
-      for(let i=0;i<120;i++){
-        await new Promise(r=>setTimeout(r,5000));
-        const poll=await fetch("https://api.omegatech.app/api/ai/wan",{
-          method:"POST",
-          headers:{"Content-Type":"application/json"},
-          body:JSON.stringify({action:"result",sessionId:String(payload.sessionId)})
-        });
-        const pollText=await poll.text();
-        let pollData=null;
-        try{pollData=JSON.parse(pollText)}catch{}
-        const videoUrl=
-          pollData?.data?.videoUrl||
-          pollData?.videoUrl||
-          pollData?.result?.videoUrl||
-          pollData?.data?.result?.videoUrl;
-        if(videoUrl){
-          text=JSON.stringify({success:true,statusCode:200,data:{videoUrl}});
-          completed=true;
-          break;
-        }
-        if(pollData?.success===false){
-          text=pollText;
-          break;
-        }
-      }
-      if(!completed && !payload?.data?.videoUrl){
-        text=JSON.stringify({success:false,error:"OmegaTech Wan video generation timed out"});
-      }
-    }
-
     if(!response.ok){
-      return res.status(502).json({success:false,error:"OmegaTech Wan upstream error",upstreamStatus:response.status,details:text.slice(0,2000)});
+      return res.status(502).json({success:false,error:"OmegaTech Argen upstream error",upstreamStatus:response.status,details:text.slice(0,2000)});
     }
     res.status(200).setHeader("Content-Type","application/json").send(text);
   }catch(error){
