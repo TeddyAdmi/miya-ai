@@ -2287,18 +2287,30 @@ html.composer-hit-area .composer-input-row>textarea#composerInput{
 /* First six videos get metadata immediately; the rest stay lazy. */
 .video-result-grid .media-card video{will-change:auto!important}
 
-/* Video model select must stay above prompt layers and remain natively clickable. */
+/* FINAL VIDEO MODEL DROPDOWN FIX: use the same native select behavior as Images. */
 .video-options{
+  display:flex!important;
   position:relative!important;
   z-index:2147483647!important;
   pointer-events:auto!important;
+  isolation:isolate!important;
+  overflow:visible!important;
 }
-.video-options #videoModel{
+.video-options .select-pill{
   position:relative!important;
+  display:block!important;
   z-index:2147483648!important;
   pointer-events:auto!important;
-  appearance:auto!important;
-  -moz-appearance:auto!important;
   opacity:1!important;
   visibility:visible!important;
+  transform:none!important;
+  filter:none!important;
+  cursor:pointer!important;
+  appearance:none!important;
+  -webkit-appearance:none!important;
+  -moz-appearance:none!important;
+}
+.video-options #videoModel{
+  min-width:105px!important;
+  flex:0 0 auto!important;
 }
