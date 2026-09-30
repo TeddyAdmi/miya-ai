@@ -52,7 +52,7 @@ export default async function handler(req,res){
     function findVideoUrl(value,depth=0){
       if(depth>6||value==null)return null;
       if(typeof value==="string"){
-        const m=value.match(/https?:\\/\\/[^"\\s]+\\.(?:mp4|webm)(?:\\?[^"\\s]*)?/i);
+        const m=value.match(/https?:\/\/[^"\s]+\.(?:mp4|webm)(?:\?[^"\s]*)?/i);
         return m?m[0]:null;
       }
       if(Array.isArray(value)){
