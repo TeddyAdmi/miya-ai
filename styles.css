@@ -142,7 +142,7 @@ body.light .progress-ring{background:#f8fafc;box-shadow:0 0 0 1px rgba(129,88,20
 .chat-actions{display:flex;gap:5px;flex-wrap:wrap;margin:5px 2px 0;opacity:.72}
 .chat-actions button{background:transparent;color:#68829f;font-size:7px;padding:4px 5px;border-radius:5px}
 .chat-actions button:hover{background:#102944;color:#b9d0e8}
-.chat-row.user .chat-content{display:flex;justify-content:flex-end}
+.chat-row.user .chat-content{display:flex;flex-direction:column;align-items:flex-end;min-width:0}
 .chat-row.user .chat-bubble{max-width:100%}
 body.light .chat-shell{background:rgba(255,255,255,.55);border-color:#dbe4ee}
 body.light .chat-history{background:#f8fafc;border-color:#dbe4ee}
