@@ -1823,29 +1823,6 @@ if(composerInput){
  composerInput.addEventListener("contextmenu",e=>{e.stopPropagation();},true);
  composerInput.addEventListener("mousedown",e=>{if(e.button===2)e.stopPropagation();},true);
 }
-$("#composerInput").addEventListener("paste",e=>{
- const text=e.clipboardData?.getData("text/plain");
- if(text==null)return;
- // Normalize copied prompt text so external formatting/whitespace does not
- // make the composer look uneven. Keep paragraph breaks intact.
- e.preventDefault();
- const input=$("#composerInput");
- if(!input)return;
- const clean=text
-   .replace(/\\r\\n?/g,"\\n")
-   .replace(/[\\u00a0\\u2007\\u202f]/g," ")
-   .replace(/[\\u200b\\u200c\\u200d\\ufeff]/g,"")
-   .split("\\n")
-   .map(line=>line.replace(/[ \\t]+/g," ").trim())
-   .join("\\n")
-   .replace(/\\n{3,}/g,"\\n\\n")
-   .trim();
- const start=input.selectionStart??input.value.length;
- const end=input.selectionEnd??start;
- input.setRangeText(clean,start,end,"end");
- input.dispatchEvent(new Event("input",{bubbles:true}));
- syncInput();
-});
 $("#composerInput").addEventListener("keydown",e=>{if(e.key==="Enter"&&!e.shiftKey){e.preventDefault();$("#composerSend").click()}});
 $("#composerSend").addEventListener("click",async()=>{
  const value=$("#composerInput").value.trim();
