@@ -606,7 +606,7 @@ function openVideoFromImage(url){
  const workspaceEyebrow=$("#workspaceEyebrow"); if(workspaceEyebrow) workspaceEyebrow.textContent=m.eyebrow;$("#workspaceTitle").textContent=m.title;$("#workspaceSubtitle").textContent=m.subtitle;
  const composerInput=$("#composerInput"); if(composerInput) composerInput.placeholder=m.placeholder;$("#composerSendText").textContent=m.send;$("#composerStatus").textContent="Agnes Video 2.5 Flash · изображение готово";
  $(".image-settings").style.display="none";$("#videoOptions").classList.add("show");
- $("#videoModel").value="Agnes Video 2.5 Flash";$("#videoRatio").value="16:9";
+ $("#videoModel").value="Agnes Video 2.5 Flash";$("#videoRatio").value="16:9"; if(typeof initVideoModelDropdown==="function")initVideoModelDropdown();
  document.querySelectorAll("[data-mode]").forEach(x=>x.classList.toggle("active",x.dataset.mode==="video"));
  $("#chatMenuToggle")?.classList.remove("active");$("#chatSubmenu")?.classList.add("suppressed");
  setComposerAttachment(referenceImage);renderVideoLibrary();syncInput();$("#composerInput").focus();
