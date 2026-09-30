@@ -1999,19 +1999,6 @@ body.light .chat-selection-actions button{background:#f4f6fa}
 .media-card:has(.media-action-menu.open){z-index:100!important}
 .media-action-menu.open{z-index:101!important}
 
-/* Prompt field: the textarea is the full editable surface. Right-click anywhere inside it
-   keeps Firefox's native Copy/Paste menu available, including the far-right edge. */
-.composer-input-row{position:relative!important}
-.composer textarea{
-  width:100%!important;
-  min-width:0!important;
-  user-select:text!important;
-  -moz-user-select:text!important;
-  -webkit-user-select:text!important;
-  cursor:text!important;
-}
-.composer textarea:focus{cursor:text!important}
-
 /* Media must preserve the generated video's real aspect ratio. The card is only a
    presentation frame; it never stretches a 16:9 source to fill it. */
 .video-result-grid .media-card video,
@@ -2098,143 +2085,6 @@ body.light .video-options .video-trash:hover{
 body.light .generation-loading .progress-copy b{color:#29394d}
 body.light .generation-loading .progress-model{color:#71859a}
 
-/* Keep the fixed prompt above generated video elements so Firefox right-click targets the textarea. */
-.composer-wrap{z-index:1000!important;pointer-events:auto!important}
-.composer{position:relative;z-index:1001!important}
-.composer-input-row{position:relative;z-index:1002!important}
-.composer textarea{position:relative;z-index:1003!important;pointer-events:auto!important}
-
-/* Unified typography: section names use the same strong, crisp face as the home branding. */
-.side-brand b,.workspace-head h1,.chat-welcome h2,.studio-room h2,.results-head h3,.library-empty h2{
- font-family:"Inter",system-ui,-apple-system,"Segoe UI",sans-serif;
- font-weight:800;
- letter-spacing:-.045em;
-}
-.workspace-head h1{font-size:22px}
-.workspace-head p{font-size:9px;font-weight:600}
-.side-btn b,.tool-btn,.side-label,.chat-history-mini-item{font-family:"Inter",system-ui,-apple-system,"Segoe UI",sans-serif}
-.side-btn b{font-weight:750}
-
-/* Compact fullscreen image viewer actions */
-.image-viewer-controls{gap:5px!important}
-.image-viewer-controls button{width:34px!important;height:34px!important;flex:0 0 34px!important;border-radius:9px!important}
-.image-viewer-controls button svg{width:15px!important;height:15px!important}
-@media(max-width:800px){.image-viewer-controls button{width:31px!important;height:31px!important;flex-basis:31px!important}.image-viewer-controls button svg{width:14px!important;height:14px!important}}
-
-/* Final prompt hit-area reset: hidden attachment must never reserve or cover the textarea. */
-.composer-input-row>.composer-attachment[hidden]{display:none!important}
-.composer-input-row>.composer-left-actions{flex:0 0 34px!important;width:34px!important;min-width:34px!important}
-
-/* Native browser editing: the prompt itself owns text selection and the normal right-click menu. */
-.composer-input-row>textarea#composerInput{
-  position:relative!important;
-  z-index:1003!important;
-  cursor:text!important;
-  caret-color:var(--text)!important;
-  user-select:text!important;
-  -moz-user-select:text!important;
-  -webkit-user-select:text!important;
-  pointer-events:auto!important;
-  touch-action:text!important;
-  isolation:isolate!important;
-}
-.composer-input-row>.composer-attachment{
-  pointer-events:none!important;
-}
-.composer-input-row>.composer-attachment button{
-  pointer-events:auto!important;
-}
-.composer-input-row>textarea#composerInput::selection{
-  background:rgba(105,92,255,.32)!important;
-}
-
-
-/* FINAL PROMPT HIT AREA: the editable textarea owns the whole central prompt surface.
-   Action buttons stay above it, so right-click anywhere in the prompt opens Firefox's
-   native editing menu instead of the video underneath. */
-.composer-input-row{
-  position:relative!important;
-  z-index:1002!important;
-  min-height:42px!important;
-  isolation:isolate!important;
-}
-.composer-input-row>textarea#composerInput{
-  position:absolute!important;
-  left:41px!important;
-  right:0!important;
-  top:0!important;
-  bottom:0!important;
-  width:auto!important;
-  height:100%!important;
-  min-height:42px!important;
-  max-height:120px!important;
-  margin:0!important;
-  z-index:1003!important;
-  pointer-events:auto!important;
-  background:transparent!important;
-}
-.composer-input-row>.composer-left-actions,
-.composer-input-row>#composerEmoji,
-.composer-input-row>#composerMic,
-.composer-input-row>#composerSend{
-  position:relative!important;
-  z-index:1005!important;
-}
-.composer-input-row>.composer-left-actions{flex:0 0 34px!important}
-.composer-input-row>.composer-attachment{z-index:1004!important;pointer-events:none!important}
-.composer-input-row>.composer-attachment button{pointer-events:auto!important}
-.composer-wrap,.composer{position:fixed!important;pointer-events:auto!important}
-.video-result-grid .media-card video{will-change:auto!important}
-
-/* FINAL FIX: keep the composer inside its fixed wrapper. Do not make the
-   composer/textarea fixed or absolute; that lets the video grid win hit-testing. */
-.composer-wrap{
-  position:fixed!important;
-  z-index:99999!important;
-  left:205px!important;
-  right:0!important;
-  bottom:0!important;
-  pointer-events:auto!important;
-  isolation:isolate!important;
-}
-.composer{
-  position:relative!important;
-  z-index:100000!important;
-  pointer-events:auto!important;
-}
-.composer-input-row{
-  position:relative!important;
-  z-index:100001!important;
-  display:flex!important;
-  align-items:flex-end!important;
-  pointer-events:auto!important;
-}
-.composer-input-row>textarea#composerInput{
-  position:relative!important;
-  left:auto!important;
-  right:auto!important;
-  top:auto!important;
-  bottom:auto!important;
-  display:block!important;
-  flex:1 1 auto!important;
-  width:auto!important;
-  height:auto!important;
-  min-height:42px!important;
-  max-height:120px!important;
-  margin:0!important;
-  z-index:100002!important;
-  pointer-events:auto!important;
-}
-.composer-input-row>.composer-left-actions,
-.composer-input-row>#composerEmoji,
-.composer-input-row>#composerMic,
-.composer-input-row>#composerSend{
-  position:relative!important;
-  z-index:100003!important;
-  pointer-events:auto!important;
-}
-
-
 /* Video wall must stay below the fixed composer. The videos remain clickable
    everywhere else, but can never cover the prompt at the bottom. */
 .main{position:relative!important;z-index:0!important}
@@ -2246,71 +2096,27 @@ body.light .generation-loading .progress-model{color:#71859a}
 .video-result-grid .media-card video{
   pointer-events:none!important;
 }
-.composer-wrap{
-  position:fixed!important;
-  z-index:2147483647!important;
-  pointer-events:auto!important;
-}
-.composer{
-  position:relative!important;
-  z-index:2147483647!important;
-  pointer-events:auto!important;
-}
-.composer-input-row{
-  position:relative!important;
-  z-index:2147483647!important;
-  pointer-events:auto!important;
-}
-.composer-input-row>textarea#composerInput{
-  position:relative!important;
-  z-index:2147483647!important;
-  pointer-events:auto!important;
-  min-height:72px!important;
-  max-height:120px!important;
-  user-select:text!important;
-  -moz-user-select:text!important;
-  -webkit-user-select:text!important;
-}
 
-
-/* FINAL VIDEO/PROMPT HIT-TEST FIX */
-html.composer-hit-area .video-result-grid .media-card video,
-html.composer-hit-area .video-result-grid .media-card{
-  pointer-events:none!important;
-}
-html.composer-hit-area .composer-wrap,
-html.composer-hit-area .composer,
-html.composer-hit-area .composer-input-row,
-html.composer-hit-area .composer-input-row>textarea#composerInput{
-  pointer-events:auto!important;
-}
 /* First six videos get metadata immediately; the rest stay lazy. */
 .video-result-grid .media-card video{will-change:auto!important}
 
-/* FINAL VIDEO MODEL DROPDOWN FIX: use the same native select behavior as Images. */
-.video-options{
-  display:flex!important;
+
+/* Restore the original prompt mechanics: normal flex textarea, yesterday's height. */
+.composer-input-row{position:relative!important;display:flex!important;align-items:flex-end!important;pointer-events:auto!important}
+.composer-input-row>textarea#composerInput{
   position:relative!important;
-  z-index:2147483647!important;
+  flex:1 1 auto!important;
+  width:auto!important;
+  height:auto!important;
+  min-height:72px!important;
+  max-height:120px!important;
+  margin:0!important;
   pointer-events:auto!important;
-  isolation:isolate!important;
-  overflow:visible!important;
+  user-select:text!important;
+  -moz-user-select:text!important;
+  -webkit-user-select:text!important;
+  cursor:text!important;
 }
-.video-options .select-pill{
-  position:relative!important;
-  display:block!important;
-  z-index:2147483648!important;
-  pointer-events:auto!important;
-  opacity:1!important;
-  visibility:visible!important;
-  transform:none!important;
-  filter:none!important;
-  cursor:pointer!important;
-  appearance:none!important;
-  -webkit-appearance:none!important;
-  -moz-appearance:none!important;
-}
-.video-options #videoModel{
-  min-width:105px!important;
-  flex:0 0 auto!important;
-}
+/* Video model select uses the same native behavior as the working image selects. */
+.video-options{position:relative!important;z-index:10!important;pointer-events:auto!important}
+.video-options #videoModel{pointer-events:auto!important;cursor:pointer!important;opacity:1!important;visibility:visible!important}
