@@ -86,6 +86,59 @@ async function handler(req, res) {
       max_tokens: 1024
     };
 
+    async function callLlm7(model) {
+      const started = Date.now();
+      try {
+        const response = await fetch("https://api.llm7.io/v1/chat/completions", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "Accept": "application/json"
+          },
+          body: JSON.stringify({ ...chatPayload, model }),
+          signal: AbortSignal.timeout(15000)
+        });
+
+        const raw = await response.text();
+        let data = {};
+        try { data = raw ? JSON.parse(raw) : {}; } catch {}
+
+        const answer = String(data?.choices?.[0]?.message?.content || "").trim();
+
+        if (response.ok && answer) {
+          return {
+            ok: true,
+            text: answer,
+            model: String(data?.model || model),
+            provider: "LLM7",
+            status: response.status,
+            elapsedMs: Date.now() - started
+          };
+        }
+
+        return {
+          ok: false,
+          status: response.status,
+          statusText: response.statusText,
+          provider: "LLM7",
+          model,
+          elapsedMs: Date.now() - started,
+          upstreamBody: raw.slice(0, 4000),
+          upstreamError: data?.error || data?.message || null
+        };
+      } catch (error) {
+        return {
+          ok: false,
+          status: null,
+          provider: "LLM7",
+          model,
+          elapsedMs: Date.now() - started,
+          upstreamBody: "",
+          upstreamError: String(error?.message || error)
+        };
+      }
+    }
+
     async function callFaucet(model) {
       const started = Date.now();
       try {
@@ -140,9 +193,13 @@ async function handler(req, res) {
       }
     }
 
-    // Diagnostic pass: use one Faucet request only so the response tells us
-    // exactly what the upstream service returns. No LLM7 calls and no duplicate waves.
-    const result = await callFaucet("auto:fast");
+    // Try LLM7 first. It has a keyless anonymous free tier for turbo models.
+    // Faucet remains a server-side fallback if LLM7 is temporarily unavailable.
+    let result = await callLlm7("gpt-oss:20b");
+
+    if (!result.ok) {
+      result = await callFaucet("auto:fast");
+    }
 
     if (result.ok) {
       return res.status(200).json({
@@ -157,14 +214,15 @@ async function handler(req, res) {
     return res.status(502).json({
       ok: false,
       error: "CHAT_UPSTREAM_FAILED",
-      message: "LLMFaucet не вернул успешный ответ.",
-      upstream: "llmfaucet",
+      message: "Бесплатные AI-сервисы чата временно недоступны.",
+      upstream: result.provider || "unknown",
       upstreamStatus: result.status,
       upstreamStatusText: result.statusText || "",
       upstreamError: result.upstreamError,
       upstreamBody: result.upstreamBody,
       elapsedMs: result.elapsedMs
     });
+
   } catch (error) {
     console.error("Miya Chat:", error);
     return res.status(500).json({
