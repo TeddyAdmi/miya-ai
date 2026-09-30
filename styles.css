@@ -2118,5 +2118,25 @@ body.light .generation-loading .progress-model{color:#71859a}
   cursor:text!important;
 }
 /* Video model select uses the same native behavior as the working image selects. */
-.video-options{position:relative!important;z-index:10!important;pointer-events:auto!important}
-.video-options #videoModel{pointer-events:auto!important;cursor:pointer!important;opacity:1!important;visibility:visible!important}
+.video-options{
+  position:relative!important;
+  z-index:1000!important;
+  pointer-events:auto!important;
+  overflow:visible!important;
+}
+.video-options #videoModel{
+  position:relative!important;
+  display:block!important;
+  flex:0 0 105px!important;
+  width:105px!important;
+  min-width:105px!important;
+  max-width:105px!important;
+  height:28px!important;
+  appearance:auto!important;
+  -webkit-appearance:auto!important;
+  -moz-appearance:auto!important;
+  pointer-events:auto!important;
+  cursor:pointer!important;
+  opacity:1!important;
+  visibility:visible!important;
+}
