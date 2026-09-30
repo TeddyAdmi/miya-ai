@@ -1216,9 +1216,6 @@ function addChatMessage(text,isUser,image="",isError=false){
    selectionBar.querySelector('[data-selection-action="video"]').onclick=()=>{
      const t=selectionBar.dataset.selectionText||"";
      if(t){setMode("video");$("#composerInput").value=t;syncInput();$("#composerInput").focus()}
-     selectionBar.querySelector('[data-selection-action="video"]').onclick=()=>{
-     const t=selectionBar.dataset.selectionText||"";
-     if(t){setMode("video");$("#composerInput").value=t;syncInput();$("#composerInput").focus()}
      selectionBar.hidden=true;
    };
    selectionBar.querySelector('[data-selection-action="copy"]').onclick=()=>{
