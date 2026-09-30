@@ -616,7 +616,7 @@ function isVideoLibraryItem(item){
  const type=String(item.type||"").toLowerCase();
  const url=String(item.url||"");
  const model=String(item.model||"").toLowerCase();
- return type==="video"||type==="videos"||type==="mp4"||/\\.(mp4|webm|mov)(?:[?#]|$)/i.test(url)||/agnes video|ltx-2\\.3|pixelster|motion synthesis|wan/i.test(model);
+ return type==="video"||type==="videos"||type==="mp4"||/\\.(mp4|webm|mov)(?:[?#]|$)/i.test(url)||/agnes video|ltx-2\\.3||motion synthesis|wan/i.test(model);
 }
 function isStoredVideo(item){
  if(!item||typeof item.url!=="string")return false;
@@ -626,7 +626,7 @@ function isStoredVideo(item){
  return type==="video"||
    type==="videos"||
    /\\.(mp4|webm|mov)(?:[?#]|$)/i.test(url)||
-   /ltx-2[.-]3|pixelster|motion synthesis|agnes video/i.test(model);
+   /ltx-2[.-]3||motion synthesis|agnes video/i.test(model);
 }
 function renderVideoLibrary(){
  const c=$("#canvas"),items=getLibrary().filter(isStoredVideo);
@@ -896,7 +896,7 @@ async function generateImage(prompt){
  try{
   const payload={
    prompt,
-   // Kontext is more reliable with PixelSter's native "auto" sizing when
+   // Kontext is more reliable with 's native "auto" sizing when
    // an image comes from history/library; keep explicit ratio for fresh T2I.
    ratio:referenceImage?"auto":$("#composerRatio").value
   };
@@ -956,7 +956,7 @@ async function generateImage(prompt){
    xhr.send(body);
   });
 ;
-  // Image creation/editing is routed through the original AHM7/PixelSter API.
+  // Image creation/editing is routed through the original AHM7/ API.
   // Do not call public Hugging Face FLUX Spaces here: they were only a fallback
   // experiment and bypass the provider that this app originally used.
   data=await requestThroughMiyaApi();
@@ -1246,106 +1246,6 @@ async function makePixelMotionAudio(duration,prompt){
   return audioBufferToWavBlob(rendered);
 }
 
-async function muxPixelSterAudio(videoUrl,onProgress=()=>{}){
-  // Keep PixelSter's native MP4 as the playable result. Browser-side FFmpeg
-  // required an external jsDelivr worker that Firefox blocks by origin policy.
-  onProgress(94,"видео готово…");
-  return String(videoUrl||"");
-}
-
-async function compactPixelSterSource(dataUrl){
- try{
-  const source=String(dataUrl||"");
-  if(!source.startsWith("data:image/"))return source;
-  const img=new Image();
-  await new Promise((resolve,reject)=>{img.onload=resolve;img.onerror=reject;img.src=source});
-  const max=1024,scale=Math.min(1,max/Math.max(img.naturalWidth,img.naturalHeight));
-  const c=document.createElement("canvas");c.width=Math.max(1,Math.round(img.naturalWidth*scale));c.height=Math.max(1,Math.round(img.naturalHeight*scale));
-  const ctx=c.getContext("2d",{alpha:false});ctx.drawImage(img,0,0,c.width,c.height);
-  return c.toDataURL("image/jpeg",.68);
- }catch{return dataUrl}
-}
-async function {
- const source=referenceImage||"";
- if(videoGenerationBusy){
-   toast("Видео уже генерируется. Дождитесь завершения текущего запроса.");
-   return;
- }
- videoGenerationBusy=true;
- showLoading();
- $("#composerSend").disabled=true;
- const model=;
- const stopProgress=startVideoProgress(model);
- $("#composerStatus").textContent=model+" · создание…";
- try{
-   const durationText=String($("#videoDuration")?.value||"5 сек");
-   const duration=Math.max(5,Math.min(20,Number(durationText.match(/\d+/)?.[0]||5)));
-   const ratioValue=String($("#videoRatio")?.value||"auto");
-   const ratio=["auto","9:16","16:9"].includes(ratioValue)?ratioValue:"auto";
-   const motionPrompt=[
-     "Animate the supplied image as one continuous cinematic shot.",
-     "Preserve the subject, face, anatomy, clothing, scene and style.",
-     "Camera movement: dive toward the subject, pass close with natural parallax, then rise above it.",
-     "Smooth continuous motion, realistic depth, stable anatomy, no cuts, shakes, spins or new objects.",
-     "User motion request:",
-     prompt
-   ].join("\n");
-   updateVideoProgress(model,1,"отправляю запрос…");
-   // Route PixelSter through Miya's server so Firefox never sees the upstream
-   // ahm7xmakki.com CORS failure. The server has the full 120s function window.
-      const response=await fetch("/api/pixelster",{
-     method:"POST",
-     headers:{"Content-Type":"application/json","Accept":"application/json"},
-     body:JSON.stringify({
-       
-       prompt:motionPrompt,
-       ratio,
-       duration,
-       options:{imageBase64:pixelSource}
-     }),
-     signal:AbortSignal.timeout(60000)
-   });
-   const raw=await response.text();
-   let data={};
-   try{data=raw?JSON.parse(raw):{}}catch{}
-   if(!response.ok||data?.ok===false||!data?.videoUrl){
-     const detail=String(data?.message||data?.error||raw||"PixelSter не вернул видео").slice(0,500);
-     throw new Error("PixelSter: "+detail);
-   }
-   const sourceVideoUrl=String(data.videoUrl);
-   updateVideoProgress(model,99,"видео получено…");
-   // PixelSter result is kept silent: do not add or synthesize any audio track.
-   const finalVideoUrl=sourceVideoUrl;
-   stopProgress();
-   updateVideoProgress(model,100,"видео готово");
-   const item=saveMedia("video",finalVideoUrl,prompt,model);
-   removeGenerationLoading();
-   renderVideoLibrary();
-   if(item)scrollImagesToTop();
-   toast("PixelSter: видео создано");
- }catch(e){
-   stopProgress(99,"ошибка");paintVideoProgress(99);removeGenerationLoading();
-   const progressEl=$("#composerProgress"); if(progressEl) progressEl.textContent="99%";
-   const rawMessage=String(e?.message||"");
-   const is504=/PixelSter HTTP 504|Gateway Time-out|Gateway Timeout|NetworkError/i.test(rawMessage);
-   const isQuota=/exceeded your ZeroGPU quota|ZeroGPU quota|quota/i.test(rawMessage);
-   const statusEl=$("#composerStatus");
-  if(statusEl) statusEl.textContent=is504
-     ? model+" · сервер не завершил запрос"
-     : isQuota
-       ? model+" · квота Hugging Face исчерпана"
-       : model+" · ошибка";
-   toast(is504
-     ? "PixelSter: сервер вернул 504. Повторный запрос сейчас не поможет."
-     : isQuota
-       ? "PixelSter: сервис сообщил об ограничении квоты. Повторный запрос сейчас не отправляю."
-       : (rawMessage||"Не удалось создать видео"));
- }finally{
-   videoGenerationBusy=false;
-   $("#composerSend").disabled=false
- }
-}
-
 function getLtxQuotaCooldown(){
  try{
   const until=Number(sessionStorage.getItem("miyaLtxQuotaUntil")||0);
@@ -1370,7 +1270,7 @@ function setLtxQuotaCooldown(message){
   const options=[...select.options];
   options.filter(o=>String(o.value||o.textContent).includes("LTX-2.3")).forEach(o=>o.disabled=true);
   if(String(select.value||"").includes("LTX-2.3")){
-   const fallback=options.find(o=>!o.disabled&&String(o.value||o.textContent)===);
+   const fallback=options.find(o=>!o.disabled&&String(o.value||o.textContent)===" Motion Synthesis");
    if(fallback)select.value=fallback.value;
   }
  }
@@ -1383,7 +1283,7 @@ function refreshLtxQuotaState(){
  const option=[...select.options].find(o=>String(o.value||o.textContent).includes("LTX-2.3"));
  if(option)option.disabled=Boolean(until);
  if(until&&(String(select.value||"").includes("LTX-2.3")||String(select.value||"").includes("Wan 2.2"))){
-  const fallback=[...select.options].find(o=>!o.disabled&&String(o.value||o.textContent)===);
+  const fallback=[...select.options].find(o=>!o.disabled&&String(o.value||o.textContent)===" Motion Synthesis");
   if(fallback)select.value=fallback.value;
  }
  return until;
@@ -1499,7 +1399,6 @@ async function generateVideo(prompt){
   }
  }
  if(selectedModel==="Agnes Video 2.5"||selectedModel==="Agnes Video 2.5 Flash"||selectedModel==="Agnes Video v2.0") return generateAgnesVideo(prompt);
- if(selectedModel===) return ;
  if(videoGenerationBusy){
    toast("Видео уже создаётся. Дождитесь завершения текущего запроса.");
    return;
@@ -1806,14 +1705,14 @@ $("#videoModel")?.addEventListener("change",()=>{
  const model=$("#videoModel").value;
  const duration=$("#videoDuration");
  if(duration) duration.value="5 сек";
- $("#composerProgress").textContent="";
- $("#composerStatus").textContent=model===
-   ? "PixelSter Motion Synthesis · 5 сек"
-     : model==="Agnes Video 2.5 Flash"
-       ? "Agnes Video 2.5 Flash · 720P · до 12 сек"
-         : model==="Agnes Video v2.0"
-           ? "Agnes Video v2.0 · legacy"
-           : "LTX-2.3 Distilled · Free ZeroGPU";
+ const progressEl=$("#composerProgress");
+ const statusEl=$("#composerStatus");
+ if(progressEl) progressEl.textContent="";
+ if(statusEl) statusEl.textContent=model==="Agnes Video 2.5 Flash"
+   ? "Agnes Video 2.5 Flash · 720P · до 12 сек"
+     : model==="Agnes Video v2.0"
+       ? "Agnes Video v2.0 · legacy"
+       : "LTX-2.3 Distilled · Free ZeroGPU";
  
 });
 $("#videoTrash")?.addEventListener("click",()=>{
