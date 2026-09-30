@@ -1270,7 +1270,9 @@ async function generateMotionVideo(prompt){
  if(!source){
    toast("PixelSter Motion Synthesis требует исходное изображение");
    $("#composerStatus").textContent="PixelSter · нужно исходное изображение";
-   $("#composerProgress").textContent="";
+   const progressEl=$("#composerProgress");
+  const statusEl=$("#composerStatus");
+  if(progressEl) progressEl.textContent="";
    return;
  }
  if(videoGenerationBusy){
