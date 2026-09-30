@@ -33,8 +33,8 @@ export default async function handler(req,res){
     ].join("\n");
 
     const lower=userPrompt.toLowerCase();
-    const asksPeople=/\\b(man|woman|person|people|human|soldier|soldiers|military|boy|girl|child|children|crowd|человек|люди|мужчина|женщина|солдат|солдаты|военные|ребенок|дети)\\b/i.test(lower);
-    const asksAnimals=/\\b(dog|cat|horse|boar|pig|wolf|bear|fox|deer|eagle|bird|animal|собак|собака|кот|кошка|лошад|кабан|свин|волк|медвед|лиса|олень|орел|птиц|животн)\\b/i.test(lower);
+    const asksPeople=/\b(man|woman|person|people|human|soldier|soldiers|military|boy|girl|child|children|crowd|человек|люди|мужчина|женщина|солдат|солдаты|военные|ребенок|дети)\b/i.test(lower);
+    const asksAnimals=/\b(dog|cat|horse|boar|pig|wolf|bear|fox|deer|eagle|bird|animal|собак|собака|кот|кошка|лошад|кабан|свин|волк|медвед|лиса|олень|орел|птиц|животн)\b/i.test(lower);
     const negativeParts=[
       "unrequested characters",
       "unrequested people",
@@ -104,7 +104,7 @@ export default async function handler(req,res){
       }
     }
 
-    res.status(response.status).setHeader("Content-Type","application/json").send(text);
+    if(!response.ok){\n      return res.status(502).json({success:false,error:"OmegaTech Wan upstream error",upstreamStatus:response.status,details:text.slice(0,2000)});\n    }\n    res.status(200).setHeader("Content-Type","application/json").send(text);
   }catch(error){
     res.status(500).json({success:false,error:String(error?.message||error||"OmegaTech request failed")});
   }
