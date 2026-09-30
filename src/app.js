@@ -1551,6 +1551,7 @@ function setMode(next,render=true){
  }
  mode=target;
  const m=modes[target];
+ const composer=$("#composer"); if(composer) composer.classList.toggle("voice-mode",target==="voice");
  const canvas=$("#canvas");
 
  // Clear the previous section immediately, before any model/quota refresh.
