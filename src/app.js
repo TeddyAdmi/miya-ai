@@ -2,7 +2,8 @@ import { Client, handle_file } from "https://cdn.jsdelivr.net/npm/@gradio/client
 const modes={
  chat:{title:"Твоя AI-комната",eyebrow:"AI CHAT",subtitle:"Общайся с Miya, придумывай идеи и управляй созданием контента.",placeholder:"Напиши сообщение...",send:"Отправить",status:"AI Chat готов"},
  images:{title:"Картинки",eyebrow:"КАРТИНКИ",subtitle:"Создавай изображения с нуля или загружай исходник и описывай изменения.",placeholder:"Опиши картинку или что изменить в загруженном изображении...",send:"Создать",status:"FLUX Dev · создание и редактирование"},
- video:{title:"Видео",eyebrow:"ВИДЕО",subtitle:"Создавай короткие видео по сцене, действиям и движению — со звуком.",placeholder:"Опиши сцену, действия персонажей, движение камеры и атмосферу...",send:"Создать видео",status:"Agnes Video 2.5 Flash · 720P · до 12 сек"}
+ video:{title:"Видео",eyebrow:"ВИДЕО",subtitle:"Создавай короткие видео по сцене, действиям и движению — со звуком.",placeholder:"Опиши сцену, действия персонажей, движение камеры и атмосферу...",send:"Создать видео",status:"Agnes Video 2.5 Flash · 720P · до 12 сек"},
+voice:{title:"Голос",eyebrow:"ГОЛОС",subtitle:"Превращай текст в естественную речь с мужскими и женскими голосами.",placeholder:"Введите текст для озвучки...",send:"Создать голос",status:"Svetlana · Female · Russia"}
 };
 const $=s=>document.querySelector(s);
 let mode="chat",referenceImage=null,chatAttachmentFile=null,chatMessages=[];
@@ -664,19 +665,30 @@ function renderImageLibrary(){
  items.forEach(item=>grid.appendChild(buildMediaCard(item)));
  applyFirstSixMediaPriority(grid);
 }
+let voiceCatalog=[];let voiceAudioParts=[];let voiceAudioItem=null;
+async function loadVoiceCatalog(){try{const r=await fetch("https://ahm7xmakki.com/api/voices",{cache:"force-cache"});const data=await r.json();voiceCatalog=Array.isArray(data?.voices)?data.voices:[];refreshVoiceSelects()}catch{voiceCatalog=[];const sel=$("#voiceSelect");if(sel)sel.innerHTML='<option value="">Не удалось загрузить голоса</option>'}}
+function refreshVoiceSelects(){const lang=$("#voiceLanguage")?.value||"ru";const gender=$("#voiceGender")?.value||"female";const sel=$("#voiceSelect");if(!sel)return;const list=voiceCatalog.filter(v=>{const l=String(v.language||"").toLowerCase(),g=String(v.gender||"").toLowerCase();const langOk=lang==="ru"?(l.includes("russian")||l==="ru"||l.includes("russia")):(l.startsWith(lang)||l.includes(lang));const genderOk=gender==="female"?(g.includes("female")||g.includes("woman")):(g.includes("male")||g.includes("man"));return langOk&&genderOk});sel.innerHTML="";list.forEach(v=>{const o=document.createElement("option");o.value=String(v.index);o.textContent=String(v.name||"Voice")+" · "+String(v.gender||"")+" · "+String(v.country||"");sel.appendChild(o)});if(!list.length){const o=document.createElement("option");o.value="";o.textContent="Нет голосов";sel.appendChild(o)}else{const preferred=list.find(v=>/svetlana/i.test(v.name))||list.find(v=>/dmitry/i.test(v.name))||list[0];sel.value=String(preferred.index)}}
+function splitVoiceText(text,max=1000){const clean=String(text||"").trim();if(!clean)return[];const out=[];for(let i=0;i<clean.length;i+=max)out.push(clean.slice(i,i+max));return out}
+function buildVoiceCard(parts,item){const card=document.createElement("div");card.className="voice-result-card";const title=document.createElement("div");title.className="voice-result-title";title.textContent=item?.model||"Голос";const meta=document.createElement("div");meta.className="voice-result-meta";meta.textContent=parts.length+" частей · MP3";const audio=document.createElement("audio");audio.controls=true;audio.preload="metadata";const playBtn=document.createElement("button");playBtn.type="button";playBtn.className="voice-play";playBtn.textContent="▶ Прослушать";const download=document.createElement("button");download.type="button";download.className="voice-download";download.textContent="Скачать MP3";const actions=document.createElement("div");actions.className="voice-result-actions";actions.append(playBtn,download);card.append(title,meta,audio,actions);let current=0;const urls=parts.map(b=>URL.createObjectURL(b));const playNext=()=>{if(current>=urls.length){playBtn.textContent="▶ Прослушать";current=0;return}audio.src=urls[current];audio.play().catch(()=>{})};audio.onended=()=>{current++;playNext()};playBtn.onclick=()=>{if(!urls.length)return;if(!audio.paused){audio.pause();playBtn.textContent="▶ Прослушать";return}if(current>=urls.length)current=0;playNext();playBtn.textContent="Ⅱ Пауза"};download.onclick=()=>{const blob=new Blob(parts,{type:"audio/mpeg"});const url=URL.createObjectURL(blob);const a=document.createElement("a");a.href=url;a.download="miya-voice.mp3";document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),1000)};return card}
+async function generateVoice(text){const sel=$("#voiceSelect");const voiceIndex=Number(sel?.value||0);if(!voiceIndex){toast("Выбери голос");return}const parts=splitVoiceText(text,1000);if(!parts.length)return;const canvas=$("#canvas");canvas.innerHTML='<div class="voice-wall"><div class="voice-generating"><div class="voice-generating-name"></div><div class="voice-progress"><span></span></div><b>0%</b></div></div>';const gender=$("#voiceGender")?.value==="male"?"Male":"Female";const v=voiceCatalog.find(x=>Number(x.index)===voiceIndex);const label=(String(v?.name||"Voice")+" · "+gender+" · "+String(v?.country||"")).replace(/ · $/,"");$(".voice-generating-name").textContent=label;const rate=Number($("#voiceRate")?.value||0),pitch=Number($("#voicePitch")?.value||0),start=performance.now();try{const results=await Promise.all(parts.map(async(part,i)=>{const r=await fetch("https://ahm7xmakki.com/api/tts",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({voiceIndex:voiceIndex,text:part,pitch:pitch,rate:rate})});if(!r.ok)throw new Error("TTS_"+r.status);return{i:i,blob:await r.blob()}}));results.sort((a,b)=>a.i-b.i);voiceAudioParts=results.map(x=>x.blob);const objectUrl=URL.createObjectURL(new Blob(voiceAudioParts,{type:"audio/mpeg"}));voiceAudioItem=saveMedia("audio",objectUrl,text,label);const wall=$("#canvas");wall.innerHTML="";wall.appendChild(buildVoiceCard(voiceAudioParts,voiceAudioItem));$("#composerStatus").textContent="Голос готов";toast("Готово · "+((performance.now()-start)/1000).toFixed(1)+" сек")}catch(e){console.error(e);$("#composerStatus").textContent=label+" · ошибка";toast("Не удалось создать голос")}}
+function renderVoiceLibrary(){const c=$("#canvas"),items=getLibrary().filter(x=>x.type==="audio");c.innerHTML='<div class="voice-wall"></div>';const wall=c.querySelector(".voice-wall");if(!items.length){wall.innerHTML='<div class="library-note">Пока нет созданных аудио.</div>';return}items.forEach(item=>{const card=document.createElement("div");card.className="voice-library-card";const title=document.createElement("b");title.textContent=item.model||"Аудио";const textEl=document.createElement("p");textEl.textContent=item.prompt||"";const audio=document.createElement("audio");audio.controls=true;audio.preload="metadata";resolveMediaUrl(item).then(url=>{if(url)audio.src=url});const del=document.createElement("button");del.type="button";del.textContent="Удалить";del.onclick=()=>confirmDeleteMedia(item,card);card.append(title,textEl,audio,del);wall.appendChild(card)})}
 function renderLibrary(tab="images"){
- const c=$("#canvas"),items=getLibrary(),images=items.filter(x=>x.type==="image"),videos=items.filter(x=>x.type==="video");
- c.innerHTML='<div class="library-section"><div class="library-tabs"><button type="button" class="library-tab" data-library-tab="images">Картинки</button><button type="button" class="library-tab" data-library-tab="videos">Видео</button></div><div class="result-grid library-media-grid"></div></div>';
+ const c=$("#canvas"),items=getLibrary(),images=items.filter(x=>x.type==="image"),videos=items.filter(x=>x.type==="video"),audios=items.filter(x=>x.type==="audio");
+ c.innerHTML='<div class="library-section"><div class="library-tabs"><button type="button" class="library-tab" data-library-tab="images">Картинки</button><button type="button" class="library-tab" data-library-tab="videos">Видео</button><button type="button" class="library-tab" data-library-tab="audio">Аудио</button></div><div class="result-grid library-media-grid"></div></div>';
  c.querySelectorAll("[data-library-tab]").forEach(btn=>btn.classList.toggle("active",btn.dataset.libraryTab===tab));
- const grid=c.querySelector(".library-media-grid");const list=tab==="videos"?videos:images;
- if(!list.length){grid.innerHTML='<div class="library-note">'+(tab==="videos"?"Пока нет созданных видео.":"Пока нет созданных картинок.")+'</div>'}
- else {
-   list.forEach(item=>grid.appendChild(buildMediaCard(item,{video:tab==="videos"})));
-   applyFirstSixMediaPriority(grid);
+ const grid=c.querySelector(".library-media-grid");
+ if(tab==="audio"){
+   grid.remove();
+   const wall=document.createElement("div");wall.className="voice-wall library-audio-wall";c.querySelector(".library-section").appendChild(wall);
+   if(!audios.length)wall.innerHTML='<div class="library-note">Пока нет созданных аудио.</div>';
+   else audios.forEach(item=>{const card=document.createElement("div");card.className="voice-library-card";const title=document.createElement("b");title.textContent=item.model||"Аудио";const textEl=document.createElement("p");textEl.textContent=item.prompt||"";const audio=document.createElement("audio");audio.controls=true;audio.preload="metadata";resolveMediaUrl(item).then(url=>{if(url)audio.src=url});const del=document.createElement("button");del.type="button";del.textContent="Удалить";del.onclick=()=>confirmDeleteMedia(item,card);card.append(title,textEl,audio,del);wall.appendChild(card)});
+ }else{
+   const list=tab==="videos"?videos:images;
+   if(!list.length)grid.innerHTML='<div class="library-note">'+(tab==="videos"?"Пока нет созданных видео.":"Пока нет созданных картинок.")+'</div>';
+   else{list.forEach(item=>grid.appendChild(buildMediaCard(item,{video:tab==="videos"})));applyFirstSixMediaPriority(grid)}
  }
  c.querySelectorAll("[data-library-tab]").forEach(btn=>btn.onclick=()=>renderLibrary(btn.dataset.libraryTab));
 }
-
 function toast(message){
  let t=$("#toast");if(!t){t=document.createElement("div");t.id="toast";t.className="toast";document.body.appendChild(t)}
  t.textContent=message;t.classList.add("show");clearTimeout(window.__toast);
@@ -691,6 +703,7 @@ function modeHero(){
      <p>Задавай вопросы, придумывай идеи, создавай промпты и работай с контентом.</p>
    </div>
  </div>`;
+ if(mode==="voice") return `<div class="studio-room clean-canvas"><div class="chat-welcome section-welcome"><div class="hero-mark voice"><span class="nav-icon icon-voice" aria-hidden="true"></span></div><div class="mini-badge">MIYA VOICE</div><h2>Текст в голос</h2><p>Выбери язык, мужской или женский голос и создай MP3 из текста.</p></div></div>`;
  if(mode==="images") return `<div class="studio-room clean-canvas">
    <div class="chat-welcome section-welcome">
      <div class="hero-mark image"><span class="nav-icon icon-image" aria-hidden="true"></span></div><div class="mini-badge">MIYA IMAGES</div>
@@ -1553,6 +1566,7 @@ function setMode(next,render=true){
  const composerSendText=$("#composerSendText"); if(composerSendText) composerSendText.textContent=m.send;
  const composerStatus=$("#composerStatus"); if(composerStatus) composerStatus.textContent=m.status;
  const imageSettings=$(".image-settings"); if(imageSettings) imageSettings.style.display=target==="images"?"flex":"none";
+ const voiceOptions=$("#voiceOptions"); if(voiceOptions) voiceOptions.classList.toggle("show",target==="voice");
  const videoOptions=$("#videoOptions"); if(videoOptions) videoOptions.classList.toggle("show",target==="video");
 
  // Paint the active navigation state before any model-specific code runs.
@@ -1594,6 +1608,8 @@ function setMode(next,render=true){
    if(imageModel)imageModel.value=referenceImage?"FLUX Kontext Dev":"FLUX Dev";
    const ratio=$("#composerRatio");
    if(ratio)ratio.value=referenceImage?"auto":"16:9";
+ }else if(target==="voice"){
+   renderVoiceLibrary();loadVoiceCatalog();
  }else{
    showEmpty();
  }
@@ -1668,6 +1684,7 @@ $("#composerSend").addEventListener("click",async()=>{
  if(!value){toast(mode==="chat"?"Напиши сообщение":mode==="video"?"Опиши видео":"Опиши, что создать или изменить");return}
  if(mode==="images"){await generateImage(value);return}
  if(mode==="video"){await generateVideo(value);return}
+ if(mode==="voice"){await generateVoice(value);return}
  if(mode==="chat"){const attachedImage=referenceImage;const attachedFile=chatAttachmentFile;chatMessages.push({role:"user",content:value,image:attachedImage||""});addChatMessage(value,true,attachedImage||"");$("#composerInput").value="";syncInput();saveCurrentChat();await requestChat();chatAttachmentFile=null;clearComposerAttachment();return}
  showLoading();await generateVideo(value)
 });
@@ -1684,6 +1701,12 @@ function improveComposerPrompt(){
  else toast("Сначала введи промпт");
  syncInput();
 }
+$("#voiceLanguage")?.addEventListener("change",refreshVoiceSelects);
+$("#voiceGender")?.addEventListener("change",refreshVoiceSelects);
+$("#voiceRate")?.addEventListener("input",e=>$("#voiceRateValue").textContent=e.target.value);
+$("#voicePitch")?.addEventListener("input",e=>$("#voicePitchValue").textContent=e.target.value);
+$("#voiceCopyPrompt")?.addEventListener("click",copyComposerPrompt);
+$("#voiceTrash")?.addEventListener("click",()=>{$("#composerInput").value="";syncInput();$("#composerInput").focus();$("#composerStatus").textContent="Svetlana · Female · Russia"});
 $("#composerTrash")?.addEventListener("click",()=>{
   $("#composerInput").value="";
   clearComposerAttachment();
