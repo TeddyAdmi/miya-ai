@@ -156,25 +156,9 @@ const LIB_KEY="miyaLibrary";
 function getLibrary(){
  try{
   const raw=JSON.parse(localStorage.getItem(LIB_KEY)||"[]");
-  const items=Array.isArray(raw)
-    ? raw.filter(x=>x&&typeof x.url==="string").map(x=>{
-        if(x.type==="image"){
-          const next={...x,url:jpegImageUrl(x.url)};
-          return next;
-        }
-        return x;
-      })
+  return Array.isArray(raw)
+    ? raw.filter(x=>x&&typeof x.url==="string")
     : [];
-  if(Array.isArray(raw)){
-    try{
-      const normalized=JSON.stringify(items);
-      if(normalized!==JSON.stringify(raw))localStorage.setItem(LIB_KEY,normalized);
-    }catch{}
-  }
-  if(Array.isArray(raw)&&items.length!==raw.length){
-   try{localStorage.setItem(LIB_KEY,JSON.stringify(items))}catch{}
-  }
-  return items;
  }catch{return[]}
 }
 const MEDIA_DB="miyaMediaCache";
@@ -240,11 +224,9 @@ function saveMedia(type,url,prompt="",model=""){
  return item;
 }
 function removeBrokenMediaItem(item,card){
- try{
-  const items=getLibrary().filter(x=>x.id!==item.id);
-  localStorage.setItem(LIB_KEY,JSON.stringify(items));
- }catch{}
- if(card){card.classList.add("media-load-error");card.remove();}
+ // Never delete library records just because a provider URL is temporarily
+ // unavailable. The IndexedDB cache may still contain the original image.
+ if(card)card.classList.add("media-load-error");
 }
 async function resolveMediaUrl(item){
  if(!item?.url)return "";
@@ -579,7 +561,12 @@ function buildMediaCard(item,{video=false}={}){
      mediaFailed=true;
      removeBrokenMediaItem(item,card);
    });
-   media.src=String(item.url||"");
+   // Prefer the persistent IndexedDB copy. This keeps old images visible even
+   // when the original provider URL or the JPEG proxy is no longer available.
+   resolveMediaUrl(item).then(url=>{
+     if(url&&!mediaFailed){media.src=url;media.load();}
+     else media.src=String(item.url||"");
+   }).catch(()=>{media.src=String(item.url||"")});
    const isAgnesPreview=/^Agnes Image/i.test(String(item.model||""));
    media.loading=isAgnesPreview?"lazy":"eager";
    media.fetchPriority=isAgnesPreview?"low":"high";
@@ -672,9 +659,36 @@ function applyFirstSixMediaPriority(grid){
    card.dataset.fastPreview=String(index+1);
  });
 }
+async function restoreCachedImagesIntoLibrary(){
+ try{
+  const db=await openMediaDB();if(!db)return;
+  const cached=await new Promise((resolve,reject)=>{
+   const tx=db.transaction("media","readonly");
+   const req=tx.objectStore("media").getAll();
+   req.onsuccess=()=>resolve(Array.isArray(req.result)?req.result:[]);
+   req.onerror=()=>reject(req.error);
+  });
+  const cachedImages=cached.filter(x=>x&&x.type==="image"&&x.id&&x.url);
+  if(!cachedImages.length)return;
+  const items=getLibrary();
+  const known=new Set(items.map(x=>x.id));
+  const recovered=cachedImages.filter(x=>!known.has(x.id)).map(x=>({
+    id:x.id,type:"image",url:String(x.url),prompt:"",model:"FLUX Dev",createdAt:Number(x.createdAt)||Date.now()
+  }));
+  if(!recovered.length)return;
+  const merged=[...recovered,...items].sort((a,b)=>(Number(b.createdAt)||0)-(Number(a.createdAt)||0)).slice(0,500);
+  try{localStorage.setItem(LIB_KEY,JSON.stringify(merged))}catch{}
+ }catch{}
+}
 function renderImageLibrary(){
  const c=$("#canvas"),items=getLibrary().filter(x=>x.type==="image");
- if(!items.length){showEmpty();return}
+ if(!items.length){
+   restoreCachedImagesIntoLibrary().then(()=>{
+     const recovered=getLibrary().filter(x=>x.type==="image");
+     if(recovered.length)renderImageLibrary();else showEmpty();
+   });
+   return;
+ }
  c.innerHTML='<div class="results-head"><div><h3>Все созданные картинки</h3></div></div><div class="result-grid"></div>';
  const grid=c.querySelector(".result-grid");
  items.forEach(item=>grid.appendChild(buildMediaCard(item)));
