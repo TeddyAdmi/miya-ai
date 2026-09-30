@@ -104,7 +104,9 @@ export default async function handler(req,res){
       }
     }
 
-    if(!response.ok){\n      return res.status(502).json({success:false,error:"OmegaTech Wan upstream error",upstreamStatus:response.status,details:text.slice(0,2000)});\n    }\n    res.status(200).setHeader("Content-Type","application/json").send(text);
+    if(!response.ok){
+      return res.status(502).json({success:false,error:"OmegaTech Wan upstream error",upstreamStatus:response.status,details:text.slice(0,2000)});
+    }\n    res.status(200).setHeader("Content-Type","application/json").send(text);
   }catch(error){
     res.status(500).json({success:false,error:String(error?.message||error||"OmegaTech request failed")});
   }
