@@ -566,7 +566,7 @@ function buildMediaCard(item,{video=false}={}){
    resolveMediaUrl(item).then(url=>{
      if(url&&!mediaFailed){media.src=url;media.load();return}
      const rawUrl=String(item.url||"");
-     if(/^https?:\\/\\/access\\.vheer\\.com\\/results\\//i.test(rawUrl)){
+     if(/^https?:\/\/access\.vheer\.com\/results\//i.test(rawUrl)){
        mediaFailed=true;
        card.classList.add("media-load-error");
        return;
@@ -574,7 +574,7 @@ function buildMediaCard(item,{video=false}={}){
      if(rawUrl&&!mediaFailed){media.src=rawUrl;media.load();}
    }).catch(()=>{
      const rawUrl=String(item.url||"");
-     if(/^https?:\\/\\/access\\.vheer\\.com\\/results\\//i.test(rawUrl)){
+     if(/^https?:\/\/access\.vheer\.com\/results\//i.test(rawUrl)){
        mediaFailed=true;
        card.classList.add("media-load-error");
        return;
