@@ -1625,7 +1625,8 @@ async function generateOmegaT2V(prompt){
    if(!response.ok||!data?.success||!data?.data?.videoUrl){
      throw new Error(String(data?.message||data?.error||raw||"OmegaTech T2V не вернул видео").slice(0,500));
    }
-   const videoUrl=String(data.data.videoUrl);
+   const remoteVideoUrl=String(data.data.videoUrl);
+   const videoUrl="/api/omegatech-video?url="+encodeURIComponent(remoteVideoUrl);
    updateVideoProgress("OmegaTech T2V",99,"видео получено…");
    const item=saveMedia("video",videoUrl,prompt,"OmegaTech T2V · Video + Audio");
    stopProgress(100,"готово");
