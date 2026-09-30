@@ -1265,16 +1265,8 @@ async function compactPixelSterSource(dataUrl){
   return c.toDataURL("image/jpeg",.68);
  }catch{return dataUrl}
 }
-async function generateMotionVideo(prompt){
+async function {
  const source=referenceImage||"";
- if(!source){
-   toast("PixelSter Motion Synthesis требует исходное изображение");
-   $("#composerStatus").textContent="PixelSter · нужно исходное изображение";
-   const progressEl=$("#composerProgress");
-  const statusEl=$("#composerStatus");
-  if(progressEl) progressEl.textContent="";
-   return;
- }
  if(videoGenerationBusy){
    toast("Видео уже генерируется. Дождитесь завершения текущего запроса.");
    return;
@@ -1282,7 +1274,7 @@ async function generateMotionVideo(prompt){
  videoGenerationBusy=true;
  showLoading();
  $("#composerSend").disabled=true;
- const model="PixelSter Motion Synthesis";
+ const model=;
  const stopProgress=startVideoProgress(model);
  $("#composerStatus").textContent=model+" · создание…";
  try{
@@ -1301,8 +1293,7 @@ async function generateMotionVideo(prompt){
    updateVideoProgress(model,1,"отправляю запрос…");
    // Route PixelSter through Miya's server so Firefox never sees the upstream
    // ahm7xmakki.com CORS failure. The server has the full 120s function window.
-   const pixelSource=await compactPixelSterSource(source,768);
-   const response=await fetch("/api/pixelster",{
+      const response=await fetch("/api/pixelster",{
      method:"POST",
      headers:{"Content-Type":"application/json","Accept":"application/json"},
      body:JSON.stringify({
@@ -1379,7 +1370,7 @@ function setLtxQuotaCooldown(message){
   const options=[...select.options];
   options.filter(o=>String(o.value||o.textContent).includes("LTX-2.3")).forEach(o=>o.disabled=true);
   if(String(select.value||"").includes("LTX-2.3")){
-   const fallback=options.find(o=>!o.disabled&&String(o.value||o.textContent)==="PixelSter Motion Synthesis");
+   const fallback=options.find(o=>!o.disabled&&String(o.value||o.textContent)===);
    if(fallback)select.value=fallback.value;
   }
  }
@@ -1392,7 +1383,7 @@ function refreshLtxQuotaState(){
  const option=[...select.options].find(o=>String(o.value||o.textContent).includes("LTX-2.3"));
  if(option)option.disabled=Boolean(until);
  if(until&&(String(select.value||"").includes("LTX-2.3")||String(select.value||"").includes("Wan 2.2"))){
-  const fallback=[...select.options].find(o=>!o.disabled&&String(o.value||o.textContent)==="PixelSter Motion Synthesis");
+  const fallback=[...select.options].find(o=>!o.disabled&&String(o.value||o.textContent)===);
   if(fallback)select.value=fallback.value;
  }
  return until;
@@ -1508,7 +1499,7 @@ async function generateVideo(prompt){
   }
  }
  if(selectedModel==="Agnes Video 2.5"||selectedModel==="Agnes Video 2.5 Flash"||selectedModel==="Agnes Video v2.0") return generateAgnesVideo(prompt);
- if(selectedModel==="PixelSter Motion Synthesis") return generateMotionVideo(prompt);
+ if(selectedModel===) return ;
  if(videoGenerationBusy){
    toast("Видео уже создаётся. Дождитесь завершения текущего запроса.");
    return;
@@ -1814,9 +1805,9 @@ $("#videoCopyPrompt")?.addEventListener("click",copyComposerPrompt);
 $("#videoModel")?.addEventListener("change",()=>{
  const model=$("#videoModel").value;
  const duration=$("#videoDuration");
- if(duration) duration.value=model==="PixelSter Motion Synthesis"?"5 сек":"5 сек";
+ if(duration) duration.value="5 сек";
  $("#composerProgress").textContent="";
- $("#composerStatus").textContent=model==="PixelSter Motion Synthesis"
+ $("#composerStatus").textContent=model===
    ? "PixelSter Motion Synthesis · 5 сек"
      : model==="Agnes Video 2.5 Flash"
        ? "Agnes Video 2.5 Flash · 720P · до 12 сек"
