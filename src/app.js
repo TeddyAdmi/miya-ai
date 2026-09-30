@@ -8,9 +8,9 @@ voice:{title:"Голос",eyebrow:"ГОЛОС",subtitle:"Превращай те
 const $=s=>document.querySelector(s);
 function jpegImageUrl(url){
   const value=String(url||"").trim();
-  if(!value||/^data:image\\//i.test(value)||/^blob:/i.test(value))return value;
+  if(!value||/^data:image\//i.test(value)||/^blob:/i.test(value))return value;
   if(value.startsWith("/api/image-jpeg?"))return value;
-  if(/^https?:\\/\\//i.test(value)){
+  if(/^https?:\/\//i.test(value)){
     return "/api/image-jpeg?url="+encodeURIComponent(value);
   }
   return value;
