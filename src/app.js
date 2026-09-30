@@ -1406,7 +1406,7 @@ function formatCooldown(until){
  return h+":"+String(m).padStart(2,"0")+":"+String(s).padStart(2,"0");
 }
 
-async function generateAgnesVideo(prompt, retryAttempt=0){
+async function generateAgnesVideo(prompt){
  if(videoGenerationBusy){toast("Видео уже создаётся. Дождитесь завершения текущего запроса.");return;}
  videoGenerationBusy=true;showLoading();$("#composerSend").disabled=true;
  const model=String($("#videoModel")?.value||"Agnes Video 2.5");
@@ -1418,51 +1418,51 @@ async function generateAgnesVideo(prompt, retryAttempt=0){
    const ratio=["16:9","9:16","1:1","4:3","3:4","21:9"].includes(String($("#videoRatio")?.value))?String($("#videoRatio").value):"16:9";
    const source=referenceImage||"";
    const size=apiModel==="agnes-video-2.5-flash"?"720P":"2K";
-   updateVideoProgress(model,5,retryAttempt?"повтор после лимита Agnes…":"подключение к Agnes…");
-   const create=await fetch("/api/agnes-video",{
-     method:"POST",headers:{"Content-Type":"application/json","Accept":"application/json"},
-     body:JSON.stringify({model:apiModel,prompt,seconds:duration,size,aspect_ratio:ratio,first_frame:source||undefined}),
-     signal:AbortSignal.timeout(60000)
+   updateVideoProgress(model,5,"подключение к Agnes…");
+
+   const create=await new Promise((resolve,reject)=>{
+     const xhr=new XMLHttpRequest();
+     let settled=false;
+     const finish=(fn,value)=>{
+       if(settled)return;
+       settled=true;
+       if(xhr.upload) xhr.upload.onprogress=null;
+       fn(value);
+     };
+     xhr.open("POST","/api/agnes-video",true);
+     xhr.setRequestHeader("Content-Type","application/json");
+     xhr.setRequestHeader("Accept","application/json");
+     xhr.timeout=120000;
+     xhr.ontimeout=()=>finish(reject,new Error("Agnes не ответил за 120 секунд"));
+     xhr.onerror=()=>finish(reject,new Error("Не удалось соединиться с Agnes"));
+     xhr.onabort=()=>finish(reject,new Error("Запрос Agnes был отменён браузером"));
+     xhr.onload=()=>{
+       let data={};
+       try{data=xhr.responseText?JSON.parse(xhr.responseText):{}}catch{}
+       finish(resolve,{status:xhr.status,ok:xhr.status>=200&&xhr.status<300,data,raw:xhr.responseText||"",retryAfter:xhr.getResponseHeader("Retry-After")});
+     };
+     try{
+       xhr.send(JSON.stringify({
+         model:apiModel,
+         prompt,
+         seconds:duration,
+         size,
+         aspect_ratio:ratio,
+         first_frame:source||undefined
+       }));
+     }catch(e){finish(reject,e)}
    });
-   const createRaw=await create.text();let created={};try{created=createRaw?JSON.parse(createRaw):{}}catch{}
 
+   const created=create.data;
    if(create.status===429||created.error==="AGNES_VIDEO_RATE_LIMITED"){
-     const retryAfter=Math.max(
-       1,
-       Math.min(
-         300,
-         Number(created.retryAfterSeconds)||
-         Number(create.headers.get("Retry-After"))||
-         65
-       )
-     );
-
-     // Agnes free access can return 429 for the shared one-minute window.
-     // Keep this generation locked and retry once automatically instead of
-     // re-enabling the button and allowing duplicate POST requests.
-     if(retryAttempt<1){
-       const until=Date.now()+retryAfter*1000;
-       const progressEl=$("#composerProgress");
-       let remaining=retryAfter;
-       while(remaining>0){
-         const pct=Math.max(1,Math.min(99,Math.round(1+((retryAfter-remaining)/Math.max(1,retryAfter))*4)));
-         updateVideoProgress(model,pct,"ожидание "+remaining+" сек.");
-         if(progressEl)progressEl.textContent=String(pct)+"%";
-         await new Promise(r=>setTimeout(r,Math.min(1000,Math.max(250,until-Date.now()))));
-         remaining=Math.max(0,Math.ceil((until-Date.now())/1000));
-       }
-       updateVideoProgress(model,5,"повтор…");
-       videoGenerationBusy=false;
-       return await generateAgnesVideo(prompt,retryAttempt+1);
-     }
-
      throw new Error("Agnes: бесплатный лимит ещё не снят. Попробуйте позже.");
    }
 
    if(!create.ok||!created.videoId){
-     const message=String(created.message||created.error||createRaw||"Agnes не создал задачу").slice(0,500);
+     const message=String(created.message||created.error||create.raw||"Agnes не создал задачу").slice(0,500);
      throw new Error(message);
    }
+
    const videoId=created.videoId;
    const activeModel=String(created.model||apiModel);
    const fallbackNotice=created.fallbackFrom
@@ -1472,11 +1472,15 @@ async function generateAgnesVideo(prompt, retryAttempt=0){
      if($("#composerStatus"))$("#composerStatus").textContent="Agnes Video v2.0 · резервный запуск…";
      updateVideoProgress("Agnes Video v2.0",8,"Flash занят, запускаю резервную очередь…");
    }
+
    let final=null;
    const started=Date.now();
    while(Date.now()-started<15*60*1000){
      await new Promise(r=>setTimeout(r,10000));
-     const statusResponse=await fetch("/api/agnes-video-status?video_id="+encodeURIComponent(videoId)+"&model="+encodeURIComponent(activeModel),{headers:{"Accept":"application/json"},signal:AbortSignal.timeout(30000)});
+     const statusResponse=await fetch("/api/agnes-video-status?video_id="+encodeURIComponent(videoId)+"&model="+encodeURIComponent(activeModel),{
+       headers:{"Accept":"application/json"},
+       signal:AbortSignal.timeout(30000)
+     });
      const raw=await statusResponse.text();let data={};try{data=raw?JSON.parse(raw):{}}catch{}
      if(statusResponse.status===429){
        const retryAfter=Math.max(10,Math.min(90,Number(data.retryAfterSeconds)||Number(statusResponse.headers.get("Retry-After"))||65));
@@ -1490,6 +1494,7 @@ async function generateAgnesVideo(prompt, retryAttempt=0){
      if(data.status==="completed"){final=data;break}
      if(data.status==="failed"||data.error)throw new Error(String(data.error?.message||data.error||"Agnes генерация завершилась ошибкой"));
    }
+
    if(!final?.url)throw new Error("Agnes не успел вернуть готовое видео за 15 минут");
    updateVideoProgress(activeModel==="agnes-video-v2.0"?"Agnes Video v2.0":model,99,"видео получено…");
    const shownModel=activeModel==="agnes-video-v2.0"?"Agnes Video v2.0":model;
