@@ -32,7 +32,7 @@ export default async function handler(req,res){
         action:"generate",
         prompt,
         wait:true,
-        timeout:240
+        timeout:240,\n        ratio,\n        duration:requestedDuration
       })
     });
 
