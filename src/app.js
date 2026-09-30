@@ -1608,6 +1608,9 @@ async function generateOmegaT2V(prompt){
  try{
    const ratio=String($("#videoRatio")?.value||"16:9");
    const ratioValue=["16:9","9:16","1:1"].includes(ratio)?ratio:"16:9";
+   const omegaRatio=ratioValue==="16:9"?"landscape":ratioValue==="9:16"?"portrait":"square";
+   const maxWidth=ratioValue==="16:9"?1920:ratioValue==="9:16"?1080:1536;
+   const maxHeight=ratioValue==="16:9"?1080:ratioValue==="9:16"?1920:1536;
    const actionPrompt=[
      "STRICT VIDEO PROMPT ADHERENCE.",
      "Treat the user's description as a locked storyboard, not as inspiration.",
@@ -1631,7 +1634,13 @@ async function generateOmegaT2V(prompt){
      body:JSON.stringify({
        action:"generate",
        prompt:actionPrompt,
-       ratio:ratioValue,
+       ratio:omegaRatio,
+       aspectRatio:ratioValue,
+       width:maxWidth,
+       height:maxHeight,
+       resolution:"1080p",
+       quality:"high",
+       duration:5,
        sound:true
      })
    });

@@ -11,7 +11,13 @@ export default async function handler(req,res){
       body:JSON.stringify({
         action:"generate",
         prompt:String(body.prompt||""),
-        ratio:["16:9","9:16","1:1"].includes(body.ratio)?body.ratio:"16:9",
+        ratio:["landscape","portrait","square","16:9","9:16","1:1"].includes(body.ratio)?body.ratio:"landscape",
+        aspectRatio:["16:9","9:16","1:1"].includes(body.aspectRatio)?body.aspectRatio:"16:9",
+        width:Number(body.width)||1920,
+        height:Number(body.height)||1080,
+        resolution:String(body.resolution||"1080p"),
+        quality:String(body.quality||"high"),
+        duration:5,
         sound:body.sound!==false
       })
     });

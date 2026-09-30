@@ -2289,15 +2289,7 @@ html.composer-hit-area .composer-input-row>textarea#composerInput{
 
 
 /* Miya Voice */
-.side-btn[data-mode="voice"] .icon-voice,
-.mobile-tabs [data-mode="voice"] .icon-voice,
-.hero-mark.voice .icon-voice{position:relative;display:inline-block;width:18px;height:20px;border:2px solid currentColor;border-radius:8px 8px 7px 7px;border-bottom-color:currentColor}
-.side-btn[data-mode="voice"] .icon-voice:before,
-.mobile-tabs [data-mode="voice"] .icon-voice:before,
-.hero-mark.voice .icon-voice:before{content:"";position:absolute;left:-5px;top:10px;width:24px;height:9px;border:2px solid currentColor;border-top:0;border-radius:0 0 12px 12px}
-.side-btn[data-mode="voice"] .icon-voice:after,
-.mobile-tabs [data-mode="voice"] .icon-voice:after,
-.hero-mark.voice .icon-voice:after{content:"";position:absolute;left:7px;top:20px;width:2px;height:5px;background:currentColor;box-shadow:-5px 5px 0 -0.2px currentColor,5px 5px 0 -0.2px currentColor}
+.icon-voice::before{mask-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M12 14.5a3.5 3.5 0 0 0 3.5-3.5V6a3.5 3.5 0 0 0-7 0v5a3.5 3.5 0 0 0 3.5 3.5Z' fill='none' stroke='black' stroke-width='1.8'/%3E%3Cpath d='M19 11a7 7 0 0 1-14 0' fill='none' stroke='black' stroke-width='1.8' stroke-linecap='round'/%3E%3Cpath d='M12 18v3M8 21h8' fill='none' stroke='black' stroke-width='1.8' stroke-linecap='round'/%3E%3C/svg%3E")}
 .voice-options{display:none;align-items:center;gap:8px;flex-wrap:wrap;padding-top:8px}
 .voice-options.show{display:flex}
 .voice-range{display:flex;align-items:center;gap:7px;height:34px;padding:0 10px;border:1px solid var(--border,#273149);border-radius:10px;background:var(--panel,#0d1525);font-size:12px;white-space:nowrap}
