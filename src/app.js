@@ -557,29 +557,34 @@ function buildMediaCard(item,{video=false}={}){
    media=document.createElement("img");media.alt="Miya Studio";media.style.cursor="zoom-in";media.title="Открыть изображение";
    media.decoding="async";
    media.addEventListener("error",()=>{
-     if(mediaFailed)return;
+     // Keep the library card visible. A provider URL can expire without the
+     // saved library record becoming invalid.
      mediaFailed=true;
-     removeBrokenMediaItem(item,card);
+     media.removeAttribute("src");
+     media.alt="Изображение недоступно";
+     card.classList.add("media-load-error");
    });
    // Prefer the persistent IndexedDB copy. Never request dead legacy Vheer
-   // result URLs: they only create noisy browser network errors.
+   // result URLs. If no local copy exists, keep the card as a placeholder.
    resolveMediaUrl(item).then(url=>{
      if(url&&!mediaFailed){media.src=url;media.load();return}
      const rawUrl=String(item.url||"");
-     if(/^https?:\/\/access\.vheer\.com\/results\//i.test(rawUrl)){
-       mediaFailed=true;
+     if(!/^https?:\/\/access\.vheer\.com\/results\//i.test(rawUrl)&&rawUrl&&!mediaFailed){
+       media.src=rawUrl;
+       media.load();
+     }else if(/^https?:\/\/access\.vheer\.com\/results\//i.test(rawUrl)){
+       media.alt="Старая копия изображения";
        card.classList.add("media-load-error");
-       return;
      }
-     if(rawUrl&&!mediaFailed){media.src=rawUrl;media.load();}
    }).catch(()=>{
      const rawUrl=String(item.url||"");
-     if(/^https?:\/\/access\.vheer\.com\/results\//i.test(rawUrl)){
-       mediaFailed=true;
+     if(!/^https?:\/\/access\.vheer\.com\/results\//i.test(rawUrl)&&rawUrl&&!mediaFailed){
+       media.src=rawUrl;
+       media.load();
+     }else{
+       media.alt="Старая копия изображения";
        card.classList.add("media-load-error");
-       return;
      }
-     if(rawUrl&&!mediaFailed){media.src=rawUrl;media.load();}
    });
    const isAgnesPreview=/^Agnes Image/i.test(String(item.model||""));
    media.loading=isAgnesPreview?"lazy":"eager";
