@@ -2291,13 +2291,13 @@ html.composer-hit-area .composer-input-row>textarea#composerInput{
 /* Miya Voice */
 .side-btn[data-mode="voice"] .icon-voice,
 .mobile-tabs [data-mode="voice"] .icon-voice,
-.hero-mark.voice .icon-voice{position:relative;display:inline-block;width:20px;height:20px;border:2px solid currentColor;border-radius:50%}
+.hero-mark.voice .icon-voice{position:relative;display:inline-block;width:18px;height:20px;border:2px solid currentColor;border-radius:8px 8px 7px 7px;border-bottom-color:currentColor}
 .side-btn[data-mode="voice"] .icon-voice:before,
 .mobile-tabs [data-mode="voice"] .icon-voice:before,
-.hero-mark.voice .icon-voice:before{content:"";position:absolute;left:5px;top:3px;width:6px;height:9px;border:1.8px solid currentColor;border-radius:5px}
+.hero-mark.voice .icon-voice:before{content:"";position:absolute;left:-5px;top:10px;width:24px;height:9px;border:2px solid currentColor;border-top:0;border-radius:0 0 12px 12px}
 .side-btn[data-mode="voice"] .icon-voice:after,
 .mobile-tabs [data-mode="voice"] .icon-voice:after,
-.hero-mark.voice .icon-voice:after{content:"";position:absolute;left:3px;top:10px;width:10px;height:5px;border-bottom:1.8px solid currentColor;border-radius:0 0 8px 8px}
+.hero-mark.voice .icon-voice:after{content:"";position:absolute;left:7px;top:20px;width:2px;height:5px;background:currentColor;box-shadow:-5px 5px 0 -0.2px currentColor,5px 5px 0 -0.2px currentColor}
 .voice-options{display:none;align-items:center;gap:8px;flex-wrap:wrap;padding-top:8px}
 .voice-options.show{display:flex}
 .voice-range{display:flex;align-items:center;gap:7px;height:34px;padding:0 10px;border:1px solid var(--border,#273149);border-radius:10px;background:var(--panel,#0d1525);font-size:12px;white-space:nowrap}
