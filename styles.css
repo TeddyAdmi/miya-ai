@@ -2138,10 +2138,10 @@ body.light .generation-loading .progress-model{color:#71859a}
 .video-options #videoModel{
   position:relative!important;
   display:block!important;
-  flex:0 0 155px!important;
-  width:155px!important;
-  min-width:155px!important;
-  max-width:155px!important;
+  flex:0 0 190px!important;
+  width:190px!important;
+  min-width:190px!important;
+  max-width:190px!important;
   height:28px!important;
   appearance:auto!important;
   -webkit-appearance:auto!important;
