@@ -49,52 +49,44 @@ export default async function handler(req,res){
     const negativePrompt=negativeParts.join(", ");
 
     const cleanPrompt=userPrompt.slice(0,1500);
-    const requestBody={
-      action:"generate",
-      prompt:cleanPrompt,
-      negativePrompt,
-      duration,
-      seed:-1,
-      steps:8,
-      cfg:5,
-      motion:4,
-      ratio
-    };
-
-    let response=await fetch("https://api.omegatech.app/api/ai/wan",{
+    const cleanPrompt=userPrompt.slice(0,1500);
+    const modelsResponse=await fetch("https://api.omegatech.app/api/ai/Argen",{
       method:"POST",
       headers:{"Content-Type":"application/json"},
-      body:JSON.stringify(requestBody)
+      body:JSON.stringify({action:"models"})
     });
-
-    if(response.status===404 || !response.ok){
-      const qwenBody={
-        prompt:cleanPrompt,
-        ratio,
-        duration:requestedDuration,
-        negativePrompt
-      };
-      const qwenResponse=await fetch("https://api.omegatech.app/api/ai/Qwen-text-to-video",{
-        method:"POST",
-        headers:{"Content-Type":"application/json"},
-        body:JSON.stringify(qwenBody)
-      });
-      if(qwenResponse.ok){
-        response=qwenResponse;
-      }else{
-        const txtResponse=await fetch("https://api.omegatech.app/api/ai/Txt2video",{
-          method:"POST",
-          headers:{"Content-Type":"application/json"},
-          body:JSON.stringify({
-            action:"generate",
-            prompt:cleanPrompt,
-            ratio,
-            sound:false
-          })
-        });
-        response=txtResponse;
-      }
-    }
+    const modelsText=await modelsResponse.text();
+    let modelsPayload=null;
+    try{modelsPayload=JSON.parse(modelsText)}catch{}
+    const videoModels=[];
+    const collect=(v)=>{
+      if(!v)return;
+      if(Array.isArray(v)){v.forEach(collect);return;}
+      if(typeof v!=="object")return;
+      const id=v.modelId||v.model||v.id;
+      const raw=JSON.stringify(v).toLowerCase();
+      if(id && (raw.includes("video")||v.engine||v.videoType)) videoModels.push(v);
+      Object.values(v).forEach(collect);
+    };
+    collect(modelsPayload);
+    const selected=videoModels[0]||{};
+    const argenBody={
+      action:"video",
+      prompt:cleanPrompt,
+      negativePrompt,
+      ratio,
+      videoDuration:requestedDuration,
+      videoResolution:"720p"
+    };
+    const modelId=selected.modelId||selected.model||selected.id;
+    if(modelId) argenBody.modelId=String(modelId);
+    if(selected.engine) argenBody.engine=String(selected.engine);
+    if(selected.videoType) argenBody.videoType=String(selected.videoType);
+    let response=await fetch("https://api.omegatech.app/api/ai/Argen",{
+      method:"POST",
+      headers:{"Content-Type":"application/json"},
+      body:JSON.stringify(argenBody)
+    });
 
     let text=await response.text();
     let payload=null;
