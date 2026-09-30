@@ -1152,27 +1152,58 @@ async function generateImage(prompt){
   if(fakeTimer){clearInterval(fakeTimer);fakeTimer=null;}
 }
 }
-function addChatMessage(text,isUser,image=""){
+function copyChatText(text){
+ const value=String(text||"");
+ if(!value)return;
+ if(navigator.clipboard?.writeText){
+   navigator.clipboard.writeText(value).then(()=>toast("Скопировано")).catch(()=>toast("Не удалось скопировать"));
+ }else toast("Копирование недоступно");
+}
+function retryLastChat(){
+ if(!chatMessages.length||chatMessages[chatMessages.length-1]?.role!=="user"){
+   toast("Нет сообщения для повтора");
+   return;
+ }
+ requestChat();
+}
+function addChatMessage(text,isUser,image="",isError=false){
  let stream=$("#canvas .chat-stream");
  if(!stream){
    $("#canvas").innerHTML='<div class="chat-stream"></div>';
    stream=$("#canvas .chat-stream");
  }
  const welcome=stream.querySelector(".chat-welcome");if(welcome)welcome.remove();
- const row=document.createElement("div");row.className="chat-row "+(isUser?"user":"assistant");
+ const row=document.createElement("div");row.className="chat-row "+(isUser?"user":"assistant")+(isError?" chat-error-row":"");
  const av=document.createElement("div");av.className="chat-avatar";av.textContent=isUser?"U":"M";
  const content=document.createElement("div");content.className="chat-content";
  const bubble=document.createElement("div");bubble.className="chat-bubble";bubble.textContent=text;
  content.appendChild(bubble);
  if(image){const preview=document.createElement("img");preview.className="chat-image-attachment";preview.src=image;preview.alt="Прикреплённое изображение";content.insertBefore(preview,bubble)}
- if(!isUser){
-   const actions=document.createElement("div");actions.className="chat-actions";
-   actions.innerHTML='<button title="Копировать"><span class="action-mini-icon">⧉</span>Копировать</button><button title="В промпт"><span class="action-mini-icon">✦</span>В промпт</button><button title="Сохранить ответ"><span class="action-mini-icon">♡</span>Сохранить</button><button title="Поделиться"><span class="action-mini-icon">↗</span>Поделиться</button>';
-   actions.querySelector('[title="Копировать"]').onclick=()=>navigator.clipboard?.writeText(text).then(()=>toast("Скопировано")).catch(()=>toast("Не удалось скопировать"));
+
+ const actions=document.createElement("div");actions.className="chat-actions";
+ if(isUser){
+   actions.innerHTML='<button type="button" title="Копировать"><span class="action-mini-icon">⧉</span>Копировать</button><button type="button" title="Повторить"><span class="action-mini-icon">↻</span>Повторить</button>';
+   actions.querySelector('[title="Копировать"]').onclick=()=>copyChatText(text);
+   actions.querySelector('[title="Повторить"]').onclick=()=>{
+     const value=String(text||"").trim();
+     if(!value)return;
+     $("#composerInput").value=value;syncInput();
+     if(chatMessages[chatMessages.length-1]?.role==="user"&&chatMessages[chatMessages.length-1].content===value){
+       retryLastChat();
+     }else{
+       $("#composerInput").focus();
+       toast("Это сообщение не последнее. Скопировано в поле ввода.");
+     }
+   };
+ }else{
+   actions.innerHTML='<button type="button" title="Копировать"><span class="action-mini-icon">⧉</span>Копировать</button><button type="button" title="В промпт"><span class="action-mini-icon">✦</span>В промпт</button><button type="button" title="Повторить"><span class="action-mini-icon">↻</span>Повторить</button>';
+   actions.querySelector('[title="Копировать"]').onclick=()=>copyChatText(text);
    actions.querySelector('[title="В промпт"]').onclick=()=>{$("#composerInput").value=text;syncInput();$("#composerInput").focus();toast("Ответ добавлен в промпт")};
-   actions.querySelector('[title="Сохранить ответ"]').onclick=()=>{try{const saved=JSON.parse(localStorage.getItem("miyaSavedAnswers")||"[]");saved.unshift({id:"answer-"+Date.now(),text,createdAt:Date.now()});localStorage.setItem("miyaSavedAnswers",JSON.stringify(saved.slice(0,50)));toast("Ответ сохранён")}catch{toast("Не удалось сохранить ответ")}};
-   actions.querySelector('[title="Поделиться"]').onclick=async()=>{try{if(navigator.share)await navigator.share({title:"Miya AI Studio",text});else{await navigator.clipboard?.writeText(text);toast("Текст скопирован для отправки")}}catch{}};
-   content.appendChild(actions);
+   actions.querySelector('[title="Повторить"]').onclick=()=>retryLastChat();
+ }
+ content.appendChild(actions);
+
+ if(!isUser&&!isError){
    const selectionBar=document.createElement("div");
    selectionBar.className="chat-selection-actions";
    selectionBar.hidden=true;
@@ -1185,11 +1216,14 @@ function addChatMessage(text,isUser,image=""){
    selectionBar.querySelector('[data-selection-action="video"]').onclick=()=>{
      const t=selectionBar.dataset.selectionText||"";
      if(t){setMode("video");$("#composerInput").value=t;syncInput();$("#composerInput").focus()}
+     selectionBar.querySelector('[data-selection-action="video"]').onclick=()=>{
+     const t=selectionBar.dataset.selectionText||"";
+     if(t){setMode("video");$("#composerInput").value=t;syncInput();$("#composerInput").focus()}
      selectionBar.hidden=true;
    };
    selectionBar.querySelector('[data-selection-action="copy"]').onclick=()=>{
      const t=selectionBar.dataset.selectionText||"";
-     if(t)navigator.clipboard?.writeText(t).then(()=>toast("Выделенный промт скопирован")).catch(()=>toast("Не удалось скопировать"));
+     if(t)copyChatText(t);
      selectionBar.hidden=true;
    };
    bubble.addEventListener("mouseup",()=>{
@@ -1199,6 +1233,7 @@ function addChatMessage(text,isUser,image=""){
      selectionBar.dataset.selectionText=selected;
      selectionBar.hidden=false;
    });
+   content.appendChild(selectionBar);
  }
  row.append(av,content);
  stream.appendChild(row);
@@ -1232,7 +1267,8 @@ async function requestChat(){
    saveCurrentChat();
    status.textContent=data.model==="VisionSter"?"Miya · VisionChat":"Miya · Free Text";
  }catch(e){
-   toast(e?.message||"Не удалось получить ответ Miya");
+   const message=String(e?.message||"Не удалось получить ответ Miya");
+   addChatMessage(message,false,"",true);
    status.textContent="AI Chat · ошибка · можно повторить";
  }finally{
    $("#composerSend").disabled=false;
