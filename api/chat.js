@@ -86,17 +86,17 @@ async function handler(req, res) {
       max_tokens: 1024
     };
 
-    async function callLlm7(model) {
+    async function callBlockRun(model) {
       const started = Date.now();
       try {
-        const response = await fetch("https://api.llm7.io/v1/chat/completions", {
+        const response = await fetch("https://blockrun.ai/api/v1/chat/completions", {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
             "Accept": "application/json"
           },
           body: JSON.stringify({ ...chatPayload, model }),
-          signal: AbortSignal.timeout(15000)
+          signal: AbortSignal.timeout(20000)
         });
 
         const raw = await response.text();
@@ -110,7 +110,7 @@ async function handler(req, res) {
             ok: true,
             text: answer,
             model: String(data?.model || model),
-            provider: "LLM7",
+            provider: "BlockRun",
             status: response.status,
             elapsedMs: Date.now() - started
           };
@@ -120,7 +120,7 @@ async function handler(req, res) {
           ok: false,
           status: response.status,
           statusText: response.statusText,
-          provider: "LLM7",
+          provider: "BlockRun",
           model,
           elapsedMs: Date.now() - started,
           upstreamBody: raw.slice(0, 4000),
@@ -130,7 +130,7 @@ async function handler(req, res) {
         return {
           ok: false,
           status: null,
-          provider: "LLM7",
+          provider: "BlockRun",
           model,
           elapsedMs: Date.now() - started,
           upstreamBody: "",
@@ -139,71 +139,19 @@ async function handler(req, res) {
       }
     }
 
-    async function callFaucet(model) {
-      const started = Date.now();
-      try {
-        const response = await fetch("https://api.llmfaucet.dev/v1/chat/completions", {
-          method: "POST",
-          headers: {
-            "Authorization": "Bearer free",
-            "Content-Type": "application/json",
-            "Accept": "application/json"
-          },
-          body: JSON.stringify({ ...chatPayload, model }),
-          signal: AbortSignal.timeout(15000)
-        });
 
-        const raw = await response.text();
-        let data = {};
-        try { data = raw ? JSON.parse(raw) : {}; } catch {}
+    // Primary free keyless provider. Fall back only if it fails.
+    let result = await callBlockRun("nvidia/gpt-oss-20b");
 
-        const answer = String(data?.choices?.[0]?.message?.content || "").trim();
-
-        if (response.ok && answer) {
-          return {
-            ok: true,
-            text: answer,
-            model: String(data?.model || model),
-            provider: "LLM Faucet",
-            status: response.status,
-            elapsedMs: Date.now() - started
-          };
-        }
-
-        return {
-          ok: false,
-          status: response.status,
-          statusText: response.statusText,
-          provider: "LLM Faucet",
-          model,
-          elapsedMs: Date.now() - started,
-          upstreamBody: raw.slice(0, 4000),
-          upstreamError: data?.error || data?.message || null
-        };
-      } catch (error) {
-        return {
-          ok: false,
-          status: null,
-          provider: "LLM Faucet",
-          model,
-          elapsedMs: Date.now() - started,
-          upstreamBody: "",
-          upstreamError: String(error?.message || error)
-        };
-      }
+    if (!result.ok) {
+      result = await callBlockRun("nvidia/nemotron-3.5-super");
     }
 
-    // LLM7 and Faucet are both unreachable from the Vercel runtime.
-    // Try several known keyless LLM7 model aliases; stop at the first success.
-    const llm7Models = ["gpt-oss:20b", "llama-3.3-70b", "qwen2.5-72b-instruct"];
-    let result = null;
-
-    for (const model of llm7Models) {
-      result = await callLlm7(model);
-      if (result.ok) break;
+    if (!result.ok) {
+      result = await callVireonix("auto");
     }
 
-    if (!result?.ok) {
+    if (!result.ok) {
       result = await callFaucet("auto:fast");
     }
 
