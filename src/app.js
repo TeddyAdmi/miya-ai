@@ -2,7 +2,7 @@ import { Client, handle_file } from "https://cdn.jsdelivr.net/npm/@gradio/client
 const modes={
  chat:{title:"Твоя AI-комната",eyebrow:"AI CHAT",subtitle:"Общайся с Miya, придумывай идеи и управляй созданием контента.",placeholder:"Напиши сообщение...",send:"Отправить",status:"AI Chat готов"},
  images:{title:"Картинки",eyebrow:"КАРТИНКИ",subtitle:"Создавай изображения с нуля или загружай исходник и описывай изменения.",placeholder:"Опиши картинку или что изменить в загруженном изображении...",send:"Создать",status:"FLUX Dev · создание и редактирование"},
- video:{title:"Видео",eyebrow:"ВИДЕО",subtitle:"Создавай короткие видео по сцене, действиям и движению — со звуком.",placeholder:"Опиши сцену, действия персонажей, движение камеры и атмосферу...",send:"Создать видео",status:"Agnes Video 2.5 Flash · 720P · до 12 сек"},
+ video:{title:"Видео",eyebrow:"ВИДЕО",subtitle:"Создавай короткие видео по сцене, действиям и движению — со звуком.",placeholder:"Опиши сцену, действия персонажей, движение камеры и атмосферу...",send:"Создать видео",status:"OmegaTech T2V · 16:9 · 5 сек"},
 voice:{title:"Голос",eyebrow:"ГОЛОС",subtitle:"Превращай текст в естественную речь с мужскими и женскими голосами.",placeholder:"Введите текст для озвучки...",send:"Создать голос",status:"Svetlana · Female · Russia"}
 };
 const $=s=>document.querySelector(s);
@@ -645,7 +645,7 @@ function openVideoFromImage(url){
  }
  $("#composerSendText").textContent=m.send;$("#composerStatus").textContent="Agnes Video 2.5 Flash · изображение готово";
  $(".image-settings").style.display="none";$("#videoOptions").classList.add("show");
- $("#videoModel").value="Agnes Video 2.5 Flash";$("#videoRatio").value="16:9";
+ $("#videoModel").value="OmegaTech T2V";$("#videoRatio").value="16:9";
  document.querySelectorAll("[data-mode]").forEach(x=>x.classList.toggle("active",x.dataset.mode==="video"));
  $("#chatMenuToggle")?.classList.remove("active");$("#chatSubmenu")?.classList.add("suppressed");
  setComposerAttachment(referenceImage);renderVideoLibrary();syncInput();$("#composerInput").focus();
@@ -1600,6 +1600,49 @@ async function generateAgnesVideo(prompt){
    videoGenerationBusy=false;if($("#composerSend"))$("#composerSend").disabled=false;
  }
 }
+async function generateOmegaT2V(prompt){
+ if(videoGenerationBusy){toast("Видео уже создаётся. Дождитесь завершения текущего запроса.");return}
+ videoGenerationBusy=true;
+ showLoading();$("#composerSend").disabled=true;
+ const stopProgress=startVideoProgress("OmegaTech T2V");
+ try{
+   const ratio=String($("#videoRatio")?.value||"16:9");
+   const ratioValue=["16:9","9:16","1:1"].includes(ratio)?ratio:"16:9";
+   updateVideoProgress("OmegaTech T2V",1,"создание…");
+   const response=await fetch("/api/omegatech-t2v",{
+     method:"POST",
+     headers:{"Content-Type":"application/json"},
+     body:JSON.stringify({
+       action:"generate",
+       prompt:String(prompt||""),
+       ratio:ratioValue,
+       sound:true
+     })
+   });
+   const raw=await response.text();
+   let data=null;
+   try{data=JSON.parse(raw)}catch{}
+   if(!response.ok||!data?.success||!data?.data?.videoUrl){
+     throw new Error(String(data?.message||data?.error||raw||"OmegaTech T2V не вернул видео").slice(0,500));
+   }
+   const videoUrl=String(data.data.videoUrl);
+   updateVideoProgress("OmegaTech T2V",99,"видео получено…");
+   const item=saveMedia("video",videoUrl,prompt,"OmegaTech T2V · Video + Audio");
+   stopProgress(100,"готово");
+   updateVideoProgress("OmegaTech T2V",100,"готово");
+   removeGenerationLoading();renderVideoLibrary();
+   if(item)scrollImagesToTop();
+   if($("#composerStatus"))$("#composerStatus").textContent="OmegaTech T2V · готово";
+ }catch(e){
+   stopProgress(null,"ошибка");removeGenerationLoading();
+   if($("#composerProgress"))$("#composerProgress").textContent="";
+   if($("#composerStatus"))$("#composerStatus").textContent="OmegaTech T2V · ошибка";
+   toast("OmegaTech T2V: "+(e?.message||"не удалось создать видео"));
+ }finally{
+   videoGenerationBusy=false;
+   if($("#composerSend"))$("#composerSend").disabled=false;
+ }
+}
 async function generateVideo(prompt){
  refreshLtxQuotaState();
  const selectedModel=String($("#videoModel")?.value||"LTX-2.3 Distilled");
@@ -1611,7 +1654,7 @@ async function generateVideo(prompt){
    return;
   }
  }
- if(selectedModel==="Agnes Video 2.5"||selectedModel==="Agnes Video 2.5 Flash"||selectedModel==="Agnes Video v2.0") return generateAgnesVideo(prompt);
+ if(selectedModel==="OmegaTech T2V") return generateOmegaT2V(prompt);\n if(selectedModel==="Agnes Video 2.5"||selectedModel==="Agnes Video 2.5 Flash"||selectedModel==="Agnes Video v2.0") return generateAgnesVideo(prompt);
  if(videoGenerationBusy){
    toast("Видео уже создаётся. Дождитесь завершения текущего запроса.");
    return;
