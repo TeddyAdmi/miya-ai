@@ -702,9 +702,39 @@ async function generateVoice(text){
  const setProgress=n=>{if(progress)progress.textContent=Math.round(n)+"%";if(bar)bar.style.width=Math.round(n)+"%"};
  const puterLang={ru:"ru-RU",en:"en-US",de:"de-DE",fr:"fr-FR",es:"es-ES"}[lang]||"ru-RU";
  const puterVoice={ru:{Female:"Tatyana",Male:"Maxim"},en:{Female:"Joanna",Male:"Matthew"},de:{Female:"Marlene",Male:"Hans"},fr:{Female:"Celine",Male:"Mathieu"},es:{Female:"Conchita",Male:"Enrique"}}[lang]?.[gender]||({Female:"Tatyana",Male:"Maxim"}[gender]);
+
+ const loadPuterForVoiceFallback=async()=>{
+   if(window.puter?.ai?.txt2speech)return window.puter;
+   if(window.__miyaPuterLoadPromise)return window.__miyaPuterLoadPromise;
+   window.__miyaPuterLoadPromise=new Promise((resolve,reject)=>{
+     const existing=document.querySelector('script[data-miya-puter="voice-fallback"]');
+     if(existing){
+       existing.addEventListener("load",()=>window.puter?.ai?.txt2speech?resolve(window.puter):reject(new Error("PUTER_NOT_READY")), {once:true});
+       existing.addEventListener("error",()=>reject(new Error("PUTER_LOAD_FAILED")), {once:true});
+       if(window.puter?.ai?.txt2speech)resolve(window.puter);
+       return;
+     }
+     const script=document.createElement("script");
+     script.src="https://js.puter.com/v2/";
+     script.async=true;
+     script.dataset.miyaPuter="voice-fallback";
+     script.onload=()=>{
+       if(window.puter?.ai?.txt2speech)resolve(window.puter);
+       else reject(new Error("PUTER_NOT_READY"));
+     };
+     script.onerror=()=>reject(new Error("PUTER_LOAD_FAILED"));
+     document.head.appendChild(script);
+   }).catch(error=>{
+     window.__miyaPuterLoadPromise=null;
+     throw error;
+   });
+   return window.__miyaPuterLoadPromise;
+ };
+
  const makePuterPart=async part=>{
-   if(!window.puter?.ai?.txt2speech)throw new Error("PUTER_NOT_READY");
-   const audio=await window.puter.ai.txt2speech(part,{provider:"aws-polly",voice:puterVoice,language:puterLang});
+   const puter=await loadPuterForVoiceFallback();
+   if(!puter?.ai?.txt2speech)throw new Error("PUTER_NOT_READY");
+   const audio=await puter.ai.txt2speech(part,{provider:"aws-polly",voice:puterVoice,language:puterLang});
    if(!audio?.src)throw new Error("PUTER_AUDIO_EMPTY");
    const r=await fetch(audio.src);
    if(!r.ok)throw new Error("PUTER_AUDIO_"+r.status);
