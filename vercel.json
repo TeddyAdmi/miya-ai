@@ -10,7 +10,7 @@
       "maxDuration": 60
     },
     "api/agnes-video.js": {
-      "maxDuration": 60
+      "maxDuration": 120
     },
     "api/agnes-video-status.js": {
       "maxDuration": 30

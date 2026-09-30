@@ -1484,7 +1484,7 @@ async function generateAgnesVideo(prompt){
      xhr.open("POST","/api/agnes-video",true);
      xhr.setRequestHeader("Content-Type","application/json");
      xhr.setRequestHeader("Accept","application/json");
-     xhr.timeout=120000;
+     xhr.timeout=180000;
      xhr.ontimeout=()=>finish(reject,new Error("Agnes не ответил за 120 секунд"));
      xhr.onerror=()=>finish(reject,new Error("Не удалось соединиться с Agnes"));
      xhr.onabort=()=>finish(reject,new Error("Запрос Agnes был отменён браузером"));
