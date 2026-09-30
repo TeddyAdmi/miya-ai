@@ -2286,3 +2286,36 @@ html.composer-hit-area .composer-input-row>textarea#composerInput{
 }
 /* First six videos get metadata immediately; the rest stay lazy. */
 .video-result-grid .media-card video{will-change:auto!important}
+
+
+/* Miya Voice */
+.side-btn[data-mode="voice"] .icon-voice,
+.mobile-tabs [data-mode="voice"] .icon-voice,
+.hero-mark.voice .icon-voice{position:relative;display:inline-block;width:20px;height:20px;border:2px solid currentColor;border-radius:50%}
+.side-btn[data-mode="voice"] .icon-voice:before,
+.mobile-tabs [data-mode="voice"] .icon-voice:before,
+.hero-mark.voice .icon-voice:before{content:"";position:absolute;left:5px;top:3px;width:6px;height:9px;border:1.8px solid currentColor;border-radius:5px}
+.side-btn[data-mode="voice"] .icon-voice:after,
+.mobile-tabs [data-mode="voice"] .icon-voice:after,
+.hero-mark.voice .icon-voice:after{content:"";position:absolute;left:3px;top:10px;width:10px;height:5px;border-bottom:1.8px solid currentColor;border-radius:0 0 8px 8px}
+.voice-options{display:none;align-items:center;gap:8px;flex-wrap:wrap;padding-top:8px}
+.voice-options.show{display:flex}
+.voice-range{display:flex;align-items:center;gap:7px;height:34px;padding:0 10px;border:1px solid var(--border,#273149);border-radius:10px;background:var(--panel,#0d1525);font-size:12px;white-space:nowrap}
+.voice-range span{opacity:.72}.voice-range input{width:82px}.voice-range b{min-width:22px;text-align:right;font-size:11px}
+.voice-wall{display:flex;flex-direction:column;gap:14px;width:min(900px,100%);margin:20px auto;padding:0 18px 140px}
+.voice-generating,.voice-result-card,.voice-library-card{border:1px solid var(--border,#273149);background:var(--panel,#0d1525);border-radius:16px;padding:18px;box-sizing:border-box}
+.voice-generating-name,.voice-result-title{font-weight:700;font-size:15px}
+.voice-generating{display:flex;align-items:center;gap:14px}.voice-generating>b{font-size:13px}
+.voice-progress{flex:1;height:7px;background:rgba(127,127,127,.18);border-radius:99px;overflow:hidden}
+.voice-progress span{display:block;width:12%;height:100%;border-radius:inherit;background:currentColor}
+.voice-result-meta{font-size:12px;opacity:.62;margin:5px 0 12px}
+.voice-result-card audio,.voice-library-card audio{width:100%;margin:8px 0}
+.voice-result-actions{display:flex;gap:8px}
+.voice-play,.voice-download,.voice-library-card>button{border:1px solid var(--border,#273149);background:transparent;color:inherit;border-radius:10px;padding:9px 13px;cursor:pointer}
+.voice-download{background:rgba(127,127,127,.12)}
+.voice-library-card p{font-size:12px;line-height:1.45;opacity:.65;max-height:64px;overflow:auto}
+.library-audio-wall{margin-top:18px}
+@media(max-width:760px){
+ .voice-options{gap:6px}.voice-range{flex:1;min-width:145px}.voice-range input{width:65px}
+ .voice-wall{padding-left:10px;padding-right:10px}
+}
