@@ -148,10 +148,6 @@ async function handler(req, res) {
     }
 
     if (!result.ok) {
-      result = await callVireonix("auto");
-    }
-
-    if (!result.ok) {
       result = await callFaucet("auto:fast");
     }
 
