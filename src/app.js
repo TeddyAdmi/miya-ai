@@ -1246,7 +1246,7 @@ async function requestChat(){
      headers:{"Content-Type":"application/json","Accept":"application/json"},
      body:JSON.stringify({
        messages:chatMessages,
-       imageBase64:referenceImage||""
+       imageBase64:(mode==="chat"&&chatAttachmentFile&&referenceImage)?referenceImage:""
      }),
      signal:AbortSignal.timeout(90000)
    });
