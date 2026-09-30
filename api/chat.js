@@ -193,11 +193,17 @@ async function handler(req, res) {
       }
     }
 
-    // Try LLM7 first. It has a keyless anonymous free tier for turbo models.
-    // Faucet remains a server-side fallback if LLM7 is temporarily unavailable.
-    let result = await callLlm7("gpt-oss:20b");
+    // LLM7 and Faucet are both unreachable from the Vercel runtime.
+    // Try several known keyless LLM7 model aliases; stop at the first success.
+    const llm7Models = ["gpt-oss:20b", "llama-3.3-70b", "qwen2.5-72b-instruct"];
+    let result = null;
 
-    if (!result.ok) {
+    for (const model of llm7Models) {
+      result = await callLlm7(model);
+      if (result.ok) break;
+    }
+
+    if (!result?.ok) {
       result = await callFaucet("auto:fast");
     }
 
