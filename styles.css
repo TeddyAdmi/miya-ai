@@ -2226,6 +2226,10 @@ body.light .generation-loading .progress-model{color:#71859a}
   pointer-events:auto!important;
 }
 
+.composer-input-row>textarea#composerInput::-webkit-scrollbar{width:4px!important}
+.composer-input-row>textarea#composerInput::-webkit-scrollbar-track{background:transparent!important}
+.composer-input-row>textarea#composerInput::-webkit-scrollbar-thumb{background:rgba(120,145,175,.55)!important;border-radius:999px!important}
+
 /* Video wall must stay below the fixed composer. The videos remain clickable
    everywhere else, but can never cover the prompt at the bottom. */
 .main{position:relative!important;z-index:0!important}
@@ -2256,8 +2260,10 @@ body.light .generation-loading .progress-model{color:#71859a}
   position:relative!important;
   z-index:2147483647!important;
   pointer-events:auto!important;
-  min-height:72px!important;
-  max-height:120px!important;
+  min-height:76px!important;
+  max-height:76px!important;
+  overflow-y:auto!important;
+  scrollbar-width:thin!important;
   user-select:text!important;
   -moz-user-select:text!important;
   -webkit-user-select:text!important;
