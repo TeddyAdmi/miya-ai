@@ -2393,3 +2393,23 @@ body.light .composer.voice-mode .composer-trash:hover,
 body.light .composer.voice-mode .voice-tool:hover{
   background:#edf3f9!important;color:#182436!important;
 }
+
+
+/* Voice selects: dropdown panels must open downward when possible. */
+.composer.voice-mode .voice-options{
+  overflow:visible!important;
+  position:relative!important;
+  z-index:20!important;
+}
+.composer.voice-mode .voice-options .select-pill{
+  position:relative!important;
+  z-index:21!important;
+  transform:none!important;
+}
+/* Keep the native select anchored to the prompt row; do not use any upward
+   positioning from generic option/dropdown styles. */
+.composer.voice-mode .voice-options select{
+  margin-top:0!important;
+  margin-bottom:0!important;
+  vertical-align:middle!important;
+}
