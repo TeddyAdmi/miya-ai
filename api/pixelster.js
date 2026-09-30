@@ -18,7 +18,7 @@ async function handler(req,res){
         duration:Number(body.duration)||10,
         imageBase64
       }),
-      signal:AbortSignal.timeout(290000)
+      signal:AbortSignal.timeout(65000)
     });
     const raw=await upstream.text();
     let data={};try{data=raw?JSON.parse(raw):{}}catch{}
