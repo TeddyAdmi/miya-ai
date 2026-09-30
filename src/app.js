@@ -1608,13 +1608,15 @@ async function generateOmegaT2V(prompt){
  try{
    const ratio=String($("#videoRatio")?.value||"16:9");
    const ratioValue=["16:9","9:16","1:1"].includes(ratio)?ratio:"16:9";
-   const omegaRatio=ratioValue==="16:9"?"landscape":ratioValue==="9:16"?"portrait":"square";
-   const maxWidth=ratioValue==="16:9"?1920:ratioValue==="9:16"?1080:1536;
-   const maxHeight=ratioValue==="16:9"?1080:ratioValue==="9:16"?1920:1536;
+   const durationText=String($("#videoDuration")?.value||"5 сек");
+   const requestedDuration=Math.max(1,Math.min(10,Number(durationText.match(/\\d+/)?.[0]||5)));
    const actionPrompt=[
      "STRICT VIDEO PROMPT ADHERENCE.",
      "Treat the user's description as a locked storyboard, not as inspiration.",
      "If the user says dog, generate a dog. Preserve the exact species, number of subjects and important objects named by the user.",
+     "ONLY the subjects, characters, animals, objects and actions explicitly named by the user are allowed. Never invent additional people, characters, animals, vehicles, props or story events.",
+     "If the user describes one subject, there must be exactly one unless the user explicitly requests more.",
+     "A location such as a forest is only a setting; it does not authorize adding people or other characters.",
      "Perform every requested action clearly and in the exact order: turn around means visibly turn around; walk means walk; run means run; sit means sit; stand means stand; jump means jump; fly means fly; look means look; pick up means pick up; put down means put down.",
      "Do not omit, merge, reorder, replace or reinterpret named actions. Do not turn a requested action into a static pose or replace subject movement with camera movement.",
      "Keep subjects anatomically correct and temporally consistent: no extra subjects, limbs, tails, wings, heads or duplicate objects; no fused bodies, warped faces or sudden identity changes.",
@@ -1624,6 +1626,8 @@ async function generateOmegaT2V(prompt){
      "Cinematic styling must never override the requested action.",
      "For sound, use only sounds appropriate to the described scene and actions; do not add unrelated sound.",
      "PROMPT ADHERENCE IS MORE IMPORTANT THAN CREATIVITY.",
+     `OUTPUT FORMAT: ${ratioValue}.`,
+     `REQUESTED DURATION: ${requestedDuration} seconds.`,
      "USER VIDEO DESCRIPTION:",
      String(prompt||"")
    ].join("\n");
@@ -1634,13 +1638,8 @@ async function generateOmegaT2V(prompt){
      body:JSON.stringify({
        action:"generate",
        prompt:actionPrompt,
-       ratio:omegaRatio,
-       aspectRatio:ratioValue,
-       width:maxWidth,
-       height:maxHeight,
-       resolution:"1080p",
-       quality:"high",
-       duration:5,
+       ratio:ratioValue,
+       duration:requestedDuration,
        sound:true
      })
    });
