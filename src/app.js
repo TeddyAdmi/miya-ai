@@ -226,9 +226,9 @@ function saveMedia(type,url,prompt="",model=""){
 function removeBrokenMediaItem(item,card){
  // Never delete library records just because a provider URL is temporarily
  // unavailable. The IndexedDB cache may still contain the original image.
- if(card)card.classList.add("media-load-error");
+ 
 }
-async function resolveMediaUrl(item){
+async async function resolveMediaUrl(item){
  if(!item?.url)return "";
  try{
   const cached=await getCachedMedia(item.id);
@@ -562,7 +562,6 @@ function buildMediaCard(item,{video=false}={}){
      mediaFailed=true;
      media.removeAttribute("src");
      media.alt="Изображение недоступно";
-     card.classList.add("media-load-error");
    });
    // Prefer the persistent IndexedDB copy. Never request dead legacy Vheer
    // result URLs. If no local copy exists, keep the card as a placeholder.
@@ -574,7 +573,6 @@ function buildMediaCard(item,{video=false}={}){
        media.load();
      }else if(/^https?:\/\/access\.vheer\.com\/results\//i.test(rawUrl)){
        media.alt="Старая копия изображения";
-       card.classList.add("media-load-error");
      }
    }).catch(()=>{
      const rawUrl=String(item.url||"");
@@ -583,7 +581,6 @@ function buildMediaCard(item,{video=false}={}){
        media.load();
      }else{
        media.alt="Старая копия изображения";
-       card.classList.add("media-load-error");
      }
    });
    const isAgnesPreview=/^Agnes Image/i.test(String(item.model||""));
