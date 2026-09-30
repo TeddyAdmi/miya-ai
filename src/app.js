@@ -887,7 +887,7 @@ function showImage(url,prompt="",model="FLUX Dev"){
 }
 async function generateAgnesImage(prompt){
  if(videoGenerationBusy){}
- showLoading();$("#composerSend").disabled=true;
+ showLoading();if($("#composerSend"))$("#composerSend").disabled=true;
  const model="Agnes Image 2.5 Flash";
  const loader=$("#canvas .generation-loading");
  const ring=loader?.querySelector(".progress-circle");
@@ -930,7 +930,7 @@ async function generateAgnesImage(prompt){
  }catch(e){
    $("#canvas .generation-loading")?.remove();
    if(composerProgress)composerProgress.textContent="";
-   $("#composerStatus").textContent=model+" · ошибка";
+   if($("#composerStatus"))$("#composerStatus").textContent=model+" · ошибка";
    toast("Agnes Image: "+(e?.message||"не удалось создать изображение"));
  }finally{
    $("#composerSend").disabled=false;
@@ -1410,7 +1410,7 @@ async function generateAgnesVideo(prompt, retryAttempt=0){
      const progressEl=$("#composerProgress"); if(progressEl) progressEl.textContent="99%";
      videoGenerationBusy=false;
      $("#composerSend").disabled=false;
-     $("#composerStatus").textContent="Agnes Video · лимит бесплатного доступа · можно повторить через "+retryAfter+" сек.";
+     if($("#composerStatus"))$("#composerStatus").textContent="Agnes Video · лимит бесплатного доступа · можно повторить через "+retryAfter+" сек.";
      toast("Agnes Video сейчас ограничен бесплатным лимитом. Кнопка снова доступна. Подожди "+retryAfter+" сек. и отправь запрос ещё раз.");
      return;
    }
@@ -1425,7 +1425,7 @@ async function generateAgnesVideo(prompt, retryAttempt=0){
      ?" · очередь Flash переполнена → v2.0"
      :"";
    if(created.fallbackFrom){
-     $("#composerStatus").textContent="Agnes Video v2.0 · резервный запуск…";
+     if($("#composerStatus"))$("#composerStatus").textContent="Agnes Video v2.0 · резервный запуск…";
      updateVideoProgress("Agnes Video v2.0",8,"Flash занят, запускаю резервную очередь…");
    }
    let final=null;
@@ -1456,16 +1456,16 @@ async function generateAgnesVideo(prompt, retryAttempt=0){
    stopProgress(100,"готово");
    updateVideoProgress(shownModel,100,"готово");
    removeGenerationLoading();renderVideoLibrary();if(item)scrollImagesToTop();
-   $("#composerStatus").textContent=shownModel+" · готово"+fallbackNotice;
+   if($("#composerStatus"))$("#composerStatus").textContent=shownModel+" · готово"+fallbackNotice;
    toast(created.fallbackFrom
      ?"Agnes: Flash занят, видео создано через v2.0"
      :"Agnes: видео создано");
  }catch(e){
-   stopProgress(99,"ошибка");paintVideoProgress(99);removeGenerationLoading();$("#composerProgress").textContent="99%";
+   stopProgress(99,"ошибка");paintVideoProgress(99);removeGenerationLoading();if($("#composerProgress"))$("#composerProgress").textContent="99%";
    $("#composerStatus").textContent=model+" · ошибка";
    toast("Agnes: "+(e?.message||"не удалось создать видео"));
  }finally{
-   videoGenerationBusy=false;$("#composerSend").disabled=false;
+   videoGenerationBusy=false;if($("#composerSend"))$("#composerSend").disabled=false;
  }
 }
 async function generateVideo(prompt){
