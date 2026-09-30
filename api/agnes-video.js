@@ -100,16 +100,22 @@ module.exports = async function handler(req, res) {
     let fallbackFrom=null;
     let result=await createUpstream(buildPayload(requestedModel));
 
-    // Agnes documents 503 as a busy/unavailable condition and recommends
-    // retry/backoff. If the free Flash queue is still full, transparently
-    // try the legacy v2.0 video endpoint instead of returning a misleading 502.
-    if(
+    // Flash can be rejected either because its queue is full (503) or
+    // because the shared free video pool is rate-limited (429). In both cases
+    // try v2.0 exactly once on the server. This prevents the browser from
+    // waiting 65 seconds and sending another Flash request.
+    const flashUnavailable=
       requestedModel==="agnes-video-2.5-flash" &&
-      result?.upstream?.status===503 &&
-      /queue\s+is\s+full|queue_full|service\s+busy/i.test(
-        String(result?.data?.error?.message||result?.data?.message||result?.raw||"")
-      )
-    ){
+      (
+        (result?.upstream?.status===503 &&
+          /queue\s+is\s+full|queue_full|service\s+busy/i.test(
+            String(result?.data?.error?.message||result?.data?.message||result?.raw||"")
+          ))
+        ||
+        result?.upstream?.status===429
+      );
+
+    if(flashUnavailable){
       fallbackFrom=requestedModel;
       actualModel="agnes-video-v2.0";
       result=await createUpstream(buildPayload(actualModel));
