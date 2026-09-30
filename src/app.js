@@ -1291,23 +1291,17 @@ async function generateMotionVideo(prompt){
    const ratioValue=String($("#videoRatio")?.value||"auto");
    const ratio=["auto","9:16","16:9"].includes(ratioValue)?ratioValue:"auto";
    const motionPrompt=[
-     "Create one continuous cinematic image-to-video shot from the supplied image.",
-     "Preserve the original subject identity, face, anatomy, clothing, composition, environment and visual style.",
-     "Keep the subject itself stable and natural. Do not invent new actions, objects, characters or scene changes.",
-     "CAMERA MOVEMENT: DIVE & RISE.",
-     "Start with a controlled cinematic descent toward the subject, as if the camera is smoothly diving downward and moving closer.",
-     "Continue the forward/downward movement through the scene with natural parallax and realistic depth, passing close to the subject without colliding with it or changing its identity.",
-     "Then smoothly pull upward and rise above the subject, revealing more of the surrounding environment from a higher angle.",
-     "The camera path must be one continuous fluid arc: descend and approach, pass close, then rise. No sudden cuts, spins, shakes, teleporting or abrupt direction changes.",
-     "Use realistic motion blur, stable anatomy, coherent physics, temporal consistency and natural depth. Keep effects subtle.",
-     "Do not add humans, animals, props, weather or unrelated events that the user did not request.",
-     "USER MOTION REQUEST:",
+     "Animate the supplied image as one continuous cinematic shot.",
+     "Preserve the subject, face, anatomy, clothing, scene and style.",
+     "Camera movement: dive toward the subject, pass close with natural parallax, then rise above it.",
+     "Smooth continuous motion, realistic depth, stable anatomy, no cuts, shakes, spins or new objects.",
+     "User motion request:",
      prompt
    ].join("\n");
    updateVideoProgress(model,1,"отправляю запрос…");
    // Route PixelSter through Miya's server so Firefox never sees the upstream
    // ahm7xmakki.com CORS failure. The server has the full 120s function window.
-   const pixelSource=await compactPixelSterSource(source);
+   const pixelSource=await compactPixelSterSource(source,768);
    const response=await fetch("/api/pixelster",{
      method:"POST",
      headers:{"Content-Type":"application/json","Accept":"application/json"},
