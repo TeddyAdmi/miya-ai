@@ -63,24 +63,12 @@ export default async function handler(req,res){
       motion:4,
       ratio
     };
-    const gateways=[
-      "https://api.omegatech.app",
-      "https://omegatech-api.dixonomega.tech"
-    ];
-    let gateway=gateways[0];
-    let response=await fetch(gateway+"/api/ai/wan",{
+
+    const response=await fetch("https://api.omegatech.app/api/ai/wan",{
       method:"POST",
       headers:{"Content-Type":"application/json"},
       body:JSON.stringify(requestBody)
     });
-    if(response.status===404){
-      gateway=gateways[1];
-      response=await fetch(gateway+"/api/ai/wan",{
-        method:"POST",
-        headers:{"Content-Type":"application/json"},
-        body:JSON.stringify(requestBody)
-      });
-    }
 
     let text=await response.text();
     let payload=null;
@@ -90,7 +78,7 @@ export default async function handler(req,res){
       let completed=false;
       for(let i=0;i<120;i++){
         await new Promise(r=>setTimeout(r,5000));
-        const poll=await fetch(gateway+"/api/ai/wan",{
+        const poll=await fetch("https://api.omegatech.app/api/ai/wan",{
           method:"POST",
           headers:{"Content-Type":"application/json"},
           body:JSON.stringify({action:"result",sessionId:String(payload.sessionId)})
