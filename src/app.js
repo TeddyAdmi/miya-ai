@@ -1797,11 +1797,52 @@ if(videoModelSelect)videoModelSelect.addEventListener("change",()=>{
 $("#composerInput").addEventListener("input",syncInput);
 const composerInput=$("#composerInput");
 if(composerInput){
- // Video elements are kept out of the hit-test entirely; the media card
- // still opens the video viewer on click. This prevents Firefox from treating
- // the video preview as the prompt target when the fixed composer overlaps it.
+ // The video wall sits immediately behind the fixed composer. Firefox can
+ // sometimes resolve a right-click to the underlying HTML5 <video> before
+ // the textarea receives the context-menu event. On right-button mousedown,
+ // temporarily place the textarea exactly under the pointer so Firefox builds
+ // its native textarea menu (Paste/Copy/Cut) instead of "Copy Video Link".
+ const restorePromptHitTarget=()=>{
+   if(!composerInput.dataset.contextHitPatch)return;
+   const s=composerInput.dataset.contextHitPatch.split("|");
+   composerInput.style.position=s[0]||"";
+   composerInput.style.left=s[1]||"";
+   composerInput.style.top=s[2]||"";
+   composerInput.style.width=s[3]||"";
+   composerInput.style.height=s[4]||"";
+   composerInput.style.opacity=s[5]||"";
+   composerInput.style.pointerEvents=s[6]||"";
+   delete composerInput.dataset.contextHitPatch;
+ };
  composerInput.addEventListener("contextmenu",e=>{e.stopPropagation();},true);
- composerInput.addEventListener("mousedown",e=>{if(e.button===2)e.stopPropagation();},true);
+ composerInput.addEventListener("mousedown",e=>{
+   if(e.button!==2){e.stopPropagation();return}
+   e.stopPropagation();
+   if(mode!=="video")return;
+   const rect=composerInput.getBoundingClientRect();
+   if(e.clientX<rect.left||e.clientX>rect.right||e.clientY<rect.top||e.clientY>rect.bottom)return;
+ });
+ document.addEventListener("mousedown",e=>{
+   if(e.button!==2||mode!=="video"||composerInput.contains(e.target))return;
+   const rect=composerInput.getBoundingClientRect();
+   if(e.clientX<rect.left||e.clientX>rect.right||e.clientY<rect.top||e.clientY>rect.bottom)return;
+   const target=e.target?.closest?.("video,.media-card");
+   if(!target)return;
+   composerInput.dataset.contextHitPatch=[
+     composerInput.style.position,composerInput.style.left,composerInput.style.top,
+     composerInput.style.width,composerInput.style.height,composerInput.style.opacity,
+     composerInput.style.pointerEvents
+   ].join("|");
+   composerInput.style.position="fixed";
+   composerInput.style.left=Math.round(e.clientX)+"px";
+   composerInput.style.top=Math.round(e.clientY)+"px";
+   composerInput.style.width="2px";
+   composerInput.style.height="2px";
+   composerInput.style.opacity="0";
+   composerInput.style.pointerEvents="auto";
+   composerInput.focus({preventScroll:true});
+   setTimeout(restorePromptHitTarget,1200);
+ },true);
 }
 $("#composerInput").addEventListener("paste",e=>{
  const text=e.clipboardData?.getData("text/plain");
