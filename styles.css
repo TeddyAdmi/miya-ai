@@ -1376,6 +1376,14 @@ body.light .composer-options .composer-trash:hover{
 }
 
 /* Video prompt controls: trash follows the ratio selector. */
+
+/* Restore the native, instant video model dropdown. */
+#videoModel.select-pill{
+  appearance:auto!important;
+  -moz-appearance:auto!important;
+  background-image:none!important;
+  cursor:pointer!important;
+}
 .video-options .video-trash{
   flex:0 0 38px!important;width:38px!important;height:38px!important;
   padding:0!important;display:grid!important;place-items:center!important;
