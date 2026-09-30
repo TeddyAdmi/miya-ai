@@ -144,7 +144,11 @@ async function handler(req, res) {
     let result = await callBlockRun("nvidia/gpt-oss-20b");
 
     if (!result.ok) {
-      result = await callBlockRun("nvidia/nemotron-3.5-super");
+      result = await callBlockRun("nvidia/nemotron-3.5-lightning");
+    }
+
+    if (!result.ok) {
+      result = await callBlockRun("nvidia/nemotron-3-nano-omni-30b-a3b-reasoning");
     }
 
     if (result.ok) {
