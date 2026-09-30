@@ -1422,6 +1422,7 @@ async function generateAgnesVideo(prompt, retryAttempt=0){
          remaining=Math.max(0,Math.ceil((until-Date.now())/1000));
        }
        updateVideoProgress(model,5,"повтор…");
+       videoGenerationBusy=false;
        return await generateAgnesVideo(prompt,retryAttempt+1);
      }
 
