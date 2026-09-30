@@ -1623,63 +1623,6 @@ document.addEventListener("click",e=>{
  setMode(target,true);
  if(target==="video")requestAnimationFrame(()=>$("#videoModel")?.focus({preventScroll:true}));
 },true);
-function initVideoModelDropdown(){
- const select=$("#videoModel");
- if(!select||select.dataset.customDropdownReady==="1")return;
- select.dataset.customDropdownReady="1";
- const wrap=document.createElement("div");
- wrap.className="video-model-select-wrap";
- select.parentNode.insertBefore(wrap,select);
- wrap.appendChild(select);
- select.classList.add("is-custom-hidden");
- const trigger=document.createElement("button");
- trigger.type="button";
- trigger.className="video-model-trigger";
- trigger.setAttribute("aria-haspopup","listbox");
- trigger.setAttribute("aria-expanded","false");
- const menu=document.createElement("div");
- menu.className="video-model-menu";
- menu.setAttribute("role","listbox");
- const refresh=()=>{
-   trigger.textContent=select.options[select.selectedIndex]?.textContent||select.value||"Выбрать модель";
-   menu.querySelectorAll(".video-model-option").forEach((btn,i)=>{
-     const active=i===select.selectedIndex;
-     btn.classList.toggle("active",active);
-     btn.setAttribute("aria-selected",active?"true":"false");
-   });
- };
- [...select.options].forEach((option,index)=>{
-   const btn=document.createElement("button");
-   btn.type="button";
-   btn.className="video-model-option";
-   btn.setAttribute("role","option");
-   btn.textContent=option.textContent;
-   btn.onclick=()=>{
-     select.selectedIndex=index;
-     select.dispatchEvent(new Event("change",{bubbles:true}));
-     refresh();
-     wrap.classList.remove("open");
-     trigger.setAttribute("aria-expanded","false");
-   };
-   menu.appendChild(btn);
- });
- trigger.onclick=e=>{
-   e.stopPropagation();
-   const open=wrap.classList.toggle("open");
-   trigger.setAttribute("aria-expanded",open?"true":"false");
- };
- select.addEventListener("change",refresh);
- wrap.append(trigger,menu);
- document.addEventListener("click",e=>{
-   if(!wrap.contains(e.target)){
-     wrap.classList.remove("open");
-     trigger.setAttribute("aria-expanded","false");
-   }
- },true);
- refresh();
-}
-initVideoModelDropdown();
-
 const videoModelSelect=$("#videoModel");
 if(videoModelSelect)videoModelSelect.addEventListener("change",()=>{
  resetVideoProgress();
