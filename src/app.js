@@ -561,12 +561,26 @@ function buildMediaCard(item,{video=false}={}){
      mediaFailed=true;
      removeBrokenMediaItem(item,card);
    });
-   // Prefer the persistent IndexedDB copy. This keeps old images visible even
-   // when the original provider URL or the JPEG proxy is no longer available.
+   // Prefer the persistent IndexedDB copy. Never request dead legacy Vheer
+   // result URLs: they only create noisy browser network errors.
    resolveMediaUrl(item).then(url=>{
-     if(url&&!mediaFailed){media.src=url;media.load();}
-     else media.src=String(item.url||"");
-   }).catch(()=>{media.src=String(item.url||"")});
+     if(url&&!mediaFailed){media.src=url;media.load();return}
+     const rawUrl=String(item.url||"");
+     if(/^https?:\\/\\/access\\.vheer\\.com\\/results\\//i.test(rawUrl)){
+       mediaFailed=true;
+       card.classList.add("media-load-error");
+       return;
+     }
+     if(rawUrl&&!mediaFailed){media.src=rawUrl;media.load();}
+   }).catch(()=>{
+     const rawUrl=String(item.url||"");
+     if(/^https?:\\/\\/access\\.vheer\\.com\\/results\\//i.test(rawUrl)){
+       mediaFailed=true;
+       card.classList.add("media-load-error");
+       return;
+     }
+     if(rawUrl&&!mediaFailed){media.src=rawUrl;media.load();}
+   });
    const isAgnesPreview=/^Agnes Image/i.test(String(item.model||""));
    media.loading=isAgnesPreview?"lazy":"eager";
    media.fetchPriority=isAgnesPreview?"low":"high";
