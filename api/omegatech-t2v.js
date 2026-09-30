@@ -18,19 +18,16 @@ export default async function handler(req,res){
      * real duration control and accepts a negative prompt.
      */
     const prompt=[
-      "Generate ONLY the scene described by the USER DESCRIPTION.",
-      "The user description is the complete storyboard. Do not continue or reuse any previous scene.",
-      "Do not invent, restore or remember characters, people, animals, vehicles, weapons, uniforms, props or events from another generation.",
-      "If the user names one subject, generate exactly one of that subject.",
-      "A location is only a location and must never introduce additional characters.",
-      "Follow every requested action literally and in the exact order.",
-      "Use realistic physical motion and coherent cause and effect.",
-      "Keep anatomy stable and correct. No duplicate subjects, extra limbs, heads, tails, wings or appendages.",
-      "No text, logos, subtitles, decorative effects, random action or cinematic story additions unless explicitly requested.",
-      "Requested output aspect ratio: "+ratio+". Prefer a true widescreen composition for 16:9.",
-      "USER DESCRIPTION:",
-      userPrompt
-    ].join("\n");
+      "Generate only the scene described by the user.",
+      "Do not add characters, animals, vehicles, weapons, props or events that the user did not request.",
+      "If one subject is named, generate exactly one.",
+      "Follow the requested action in the requested order.",
+      "Keep realistic physics and correct anatomy.",
+      "No text, logos, subtitles or random cinematic additions.",
+      "Aspect ratio: "+ratio+".",
+      "USER:",
+      userPrompt.slice(0,1500)
+    ].join(" ");
 
     const lower=userPrompt.toLowerCase();
     const asksPeople=/\b(man|woman|person|people|human|soldier|soldiers|military|boy|girl|child|children|crowd|человек|люди|мужчина|женщина|солдат|солдаты|военные|ребенок|дети)\b/i.test(lower);
@@ -45,8 +42,7 @@ export default async function handler(req,res){
       "unrequested actions",
       "extra subjects",
       "duplicate subjects",
-      "scene continuation from a previous generation",
-      "previous prompt content"
+      "previous scene content"
     ];
     if(!asksPeople) negativeParts.push("people, humans, soldiers, military, armed men, uniforms");
     if(!asksAnimals) negativeParts.push("animals");
