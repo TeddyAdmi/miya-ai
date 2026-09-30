@@ -20,6 +20,12 @@
     },
     "api/agnes-video-proxy.js": {
       "maxDuration": 300
+    },
+    "api/omegatech-t2v.js": {
+      "maxDuration": 300
+    },
+    "api/omegatech-video.js": {
+      "maxDuration": 60
     }
   }
 }
