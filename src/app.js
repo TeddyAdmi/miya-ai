@@ -1406,13 +1406,26 @@ async function generateAgnesVideo(prompt, retryAttempt=0){
          65
        )
      );
-     stopProgress(99,"лимит");paintVideoProgress(99);removeGenerationLoading();
-     const progressEl=$("#composerProgress"); if(progressEl) progressEl.textContent="99%";
-     videoGenerationBusy=false;
-     $("#composerSend").disabled=false;
-     if($("#composerStatus"))$("#composerStatus").textContent="Agnes Video · лимит бесплатного доступа · можно повторить через "+retryAfter+" сек.";
-     toast("Agnes Video сейчас ограничен бесплатным лимитом. Кнопка снова доступна. Подожди "+retryAfter+" сек. и отправь запрос ещё раз.");
-     return;
+
+     // Agnes free access can return 429 for the shared one-minute window.
+     // Keep this generation locked and retry once automatically instead of
+     // re-enabling the button and allowing duplicate POST requests.
+     if(retryAttempt<1){
+       const until=Date.now()+retryAfter*1000;
+       const progressEl=$("#composerProgress");
+       let remaining=retryAfter;
+       while(remaining>0){
+         const pct=Math.max(1,Math.min(99,Math.round(1+((retryAfter-remaining)/Math.max(1,retryAfter))*4)));
+         updateVideoProgress(model,pct,"ожидание "+remaining+" сек.");
+         if(progressEl)progressEl.textContent=String(pct)+"%";
+         await new Promise(r=>setTimeout(r,Math.min(1000,Math.max(250,until-Date.now()))));
+         remaining=Math.max(0,Math.ceil((until-Date.now())/1000));
+       }
+       updateVideoProgress(model,5,"повтор…");
+       return await generateAgnesVideo(prompt,retryAttempt+1);
+     }
+
+     throw new Error("Agnes: бесплатный лимит ещё не снят. Попробуйте позже.");
    }
 
    if(!create.ok||!created.videoId){
