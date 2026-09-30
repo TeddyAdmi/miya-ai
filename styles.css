@@ -2321,7 +2321,45 @@ html.composer-hit-area .composer-input-row>textarea#composerInput{
 }
 
 
-/* Voice prompt: no attachment plus button; unified copy/clear icon treatment */
+
+/* Voice controls: keep all five main blocks on one line on desktop. */
+.composer.voice-mode .voice-options{
+  display:flex!important;
+  flex-wrap:nowrap!important;
+  align-items:center!important;
+  gap:6px!important;
+  overflow:visible!important;
+  white-space:nowrap!important;
+}
+.composer.voice-mode .voice-options > .select-pill{
+  flex:0 1 auto!important;
+  min-width:0!important;
+  width:auto!important;
+}
+.composer.voice-mode #voiceLanguage{width:125px!important}
+.composer.voice-mode #voiceGender{width:112px!important}
+.composer.voice-mode #voiceSelect{width:190px!important}
+.composer.voice-mode .voice-range{
+  flex:0 0 158px!important;
+  width:158px!important;
+  min-width:158px!important;
+  box-sizing:border-box!important;
+  gap:6px!important;
+  padding:0 8px!important;
+}
+.composer.voice-mode .voice-range input{width:66px!important;min-width:0!important}
+.composer.voice-mode .voice-range b{min-width:20px!important}
+@media(max-width:900px){
+  .composer.voice-mode .voice-options{overflow-x:auto!important;scrollbar-width:thin!important}
+}
+@media(max-width:760px){
+  .composer.voice-mode .voice-options{gap:5px!important}
+  .composer.voice-mode #voiceLanguage{width:112px!important}
+  .composer.voice-mode #voiceGender{width:102px!important}
+  .composer.voice-mode #voiceSelect{width:160px!important}
+  .composer.voice-mode .voice-range{flex-basis:145px!important;width:145px!important;min-width:145px!important}
+}
+\n/* Voice prompt: no attachment plus button; unified copy/clear icon treatment */
 .composer.voice-mode .composer-left-actions,
 .composer.voice-mode #composerAttachment{display:none!important}
 .composer.voice-mode .composer-copy,
