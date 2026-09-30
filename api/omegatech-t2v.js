@@ -49,26 +49,8 @@ export default async function handler(req,res){
     const negativePrompt=negativeParts.join(", ");
 
     const cleanPrompt=userPrompt.slice(0,1500);
-    const modelsResponse=await fetch("https://api.omegatech.app/api/ai/Argen",{
-      method:"POST",
-      headers:{"Content-Type":"application/json"},
-      body:JSON.stringify({action:"models"})
-    });
-    const modelsText=await modelsResponse.text();
-    let modelsPayload=null;
-    try{modelsPayload=JSON.parse(modelsText)}catch{}
-    const videoModels=[];
-    const collect=(v)=>{
-      if(!v)return;
-      if(Array.isArray(v)){v.forEach(collect);return;}
-      if(typeof v!=="object")return;
-      const id=v.modelId||v.model||v.id;
-      const raw=JSON.stringify(v).toLowerCase();
-      if(id && (raw.includes("video")||v.engine||v.videoType)) videoModels.push(v);
-      Object.values(v).forEach(collect);
-    };
-    collect(modelsPayload);
-    const selected=videoModels[0]||{};
+
+    // Primary: OmegaTech Argen / DroodStudio video.
     const argenBody={
       action:"video",
       prompt:cleanPrompt,
@@ -77,22 +59,33 @@ export default async function handler(req,res){
       videoDuration:requestedDuration,
       videoResolution:"720p"
     };
-    const modelId=selected.modelId||selected.model||selected.id;
-    if(modelId) argenBody.modelId=String(modelId);
-    if(selected.engine) argenBody.engine=String(selected.engine);
-    if(selected.videoType) argenBody.videoType=String(selected.videoType);
+
     let response=await fetch("https://api.omegatech.app/api/ai/Argen",{
       method:"POST",
       headers:{"Content-Type":"application/json"},
       body:JSON.stringify(argenBody)
     });
 
+    // If Argen is temporarily broken, switch to the separate Wan2 video model.
+    if(!response.ok){
+      response=await fetch("https://api.omegatech.app/api/ai/Wan2-create",{
+        method:"POST",
+        headers:{"Content-Type":"application/json"},
+        body:JSON.stringify({
+          prompt:cleanPrompt,
+          duration:requestedDuration,
+          ratio,
+          resolution:"720p"
+        })
+      });
+    }
+
     let text=await response.text();
     let payload=null;
     try{payload=JSON.parse(text)}catch{}
 
     if(!response.ok){
-      return res.status(502).json({success:false,error:"OmegaTech Argen upstream error",upstreamStatus:response.status,details:text.slice(0,2000)});
+      return res.status(502).json({success:false,error:"OmegaTech video upstream error",upstreamStatus:response.status,details:text.slice(0,2000)});
     }
     res.status(200).setHeader("Content-Type","application/json").send(text);
   }catch(error){
