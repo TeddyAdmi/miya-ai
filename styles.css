@@ -2299,64 +2299,7 @@ html.composer-hit-area .composer-input-row>textarea#composerInput{
    dropdown that uses the same glass/panel language as the workspace. */
 .video-model-select-wrap{position:relative;display:inline-flex;flex:0 0 auto}
 .video-model-select-wrap>.select-pill{width:100%}
-.video-model-select-wrap>.select-pill.is-custom-hidden{
-  position:absolute!important;width:1px!important;height:1px!important;
-  opacity:0!important;pointer-events:none!important;
-}
-.video-model-trigger{
-  appearance:none!important;
-  border:1px solid #1a4b78!important;
-  background:#0b223b!important;
-  color:#a9bad0!important;
-  border-radius:7px!important;
-  min-width:170px!important;
-  height:34px!important;
-  padding:0 30px 0 10px!important;
-  font-size:11px!important;
-  font-weight:700!important;
-  line-height:1!important;
-  text-align:left!important;
-  position:relative!important;
-  box-shadow:0 6px 18px rgba(0,0,0,.12)!important;
-}
-.video-model-trigger::after{
-  content:"";position:absolute;right:11px;top:50%;width:6px;height:6px;
-  border-right:1.5px solid #7690ad;border-bottom:1.5px solid #7690ad;
-  transform:translateY(-65%) rotate(45deg);transition:.16s ease;
-}
-.video-model-select-wrap.open .video-model-trigger::after{
-  transform:translateY(-30%) rotate(225deg);
-}
-.video-model-trigger:hover,.video-model-select-wrap.open .video-model-trigger{
-  border-color:#4d70a4!important;background:#102b49!important;color:#eef5ff!important;
-}
-.video-model-menu{
-  position:absolute;left:0;bottom:calc(100% + 7px);min-width:230px;
-  max-width:330px;padding:6px;display:none;z-index:1000000;
-  border:1px solid rgba(61,104,150,.72);border-radius:11px;
-  background:rgba(8,24,43,.98);box-shadow:0 18px 48px rgba(0,0,0,.42);
-  backdrop-filter:blur(18px);
-}
-.video-model-select-wrap.open .video-model-menu{display:block}
-.video-model-option{
-  width:100%;min-height:36px;padding:8px 10px;border:0;border-radius:7px;
-  background:transparent;color:#9fb2c8;font-size:11px;font-weight:600;
-  line-height:1.2;text-align:left;display:flex;align-items:center;
-  cursor:pointer;
-}
-.video-model-option:hover{background:#132e4d;color:#fff}
-.video-model-option.active{background:linear-gradient(90deg,rgba(91,75,190,.42),rgba(49,104,165,.24));color:#fff}
-body.light .video-model-trigger{
-  background:#f4f7fa!important;color:#52657b!important;border-color:#d3deea!important;
-}
-body.light .video-model-trigger:hover,body.light .video-model-select-wrap.open .video-model-trigger{
-  background:#fff!important;border-color:#b9c8d9!important;color:#22334a!important;
-}
-body.light .video-model-menu{
-  background:rgba(255,255,255,.99);border-color:#d6e0ec;
-  box-shadow:0 18px 48px rgba(30,55,85,.18);
-}
-body.light .video-model-option{color:#52657b}
+.video-model-select-wrap>.select-pillbody.light .video-model-option{color:#52657b}
 body.light .video-model-option:hover{background:#eef3f8;color:#1e2e43}
 body.light .video-model-option.active{background:#eeeafd;color:#3f347c}
 @media(max-width:800px){
