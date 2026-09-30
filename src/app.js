@@ -228,7 +228,7 @@ function removeBrokenMediaItem(item,card){
  // unavailable. The IndexedDB cache may still contain the original image.
  
 }
-async async function resolveMediaUrl(item){
+async function resolveMediaUrl(item){
  if(!item?.url)return "";
  try{
   const cached=await getCachedMedia(item.id);
