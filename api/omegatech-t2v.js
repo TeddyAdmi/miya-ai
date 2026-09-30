@@ -70,44 +70,22 @@ export default async function handler(req,res){
       body:JSON.stringify(requestBody)
     });
 
-    if(response.status===404){
-      const modelsResponse=await fetch("https://api.omegatech.app/api/ai/Argen",{
+    if(response.status===404 || !response.ok){
+      const qwenResponse=await fetch("https://api.omegatech.app/api/ai/Qwen-text-to-video",{
         method:"POST",
         headers:{"Content-Type":"application/json"},
-        body:JSON.stringify({action:"models"})
+        body:JSON.stringify({prompt,ratio,duration:requestedDuration})
       });
-      const modelsText=await modelsResponse.text();
-      let modelsPayload=null;
-      try{modelsPayload=JSON.parse(modelsText)}catch{}
-      const candidates=[];
-      const walk=(value)=>{
-        if(!value)return;
-        if(Array.isArray(value)){value.forEach(walk);return;}
-        if(typeof value!=="object")return;
-        const id=value.modelId||value.model||value.id;
-        const hay=JSON.stringify(value).toLowerCase();
-        if(id && hay.includes("video")) candidates.push(value);
-        Object.values(value).forEach(walk);
-      };
-      walk(modelsPayload);
-      const chosen=candidates[0]||{};
-      const argenBody={
-        action:"video",
-        prompt,
-        negativePrompt,
-        ratio,
-        videoDuration:requestedDuration,
-        videoResolution:"720p"
-      };
-      const modelId=chosen.modelId||chosen.model||chosen.id;
-      if(modelId) argenBody.modelId=String(modelId);
-      if(chosen.engine) argenBody.engine=String(chosen.engine);
-      if(chosen.videoType) argenBody.videoType=String(chosen.videoType);
-      response=await fetch("https://api.omegatech.app/api/ai/Argen",{
-        method:"POST",
-        headers:{"Content-Type":"application/json"},
-        body:JSON.stringify(argenBody)
-      });
+      if(qwenResponse.ok){
+        response=qwenResponse;
+      }else{
+        const txtResponse=await fetch("https://api.omegatech.app/api/ai/Txt2video",{
+          method:"POST",
+          headers:{"Content-Type":"application/json"},
+          body:JSON.stringify({action:"generate",prompt,ratio,sound:Boolean(body.sound)})
+        });
+        response=txtResponse;
+      }
     }
 
     let text=await response.text();
