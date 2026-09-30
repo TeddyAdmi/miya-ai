@@ -10,7 +10,7 @@ module.exports = async function handler(req, res) {
 
   try {
     const rawUrl = typeof req.query?.url === "string" ? req.query.url.trim() : "";
-    if (!/^https?:\\/\\//i.test(rawUrl)) {
+    if (!/^https?:\/\//i.test(rawUrl)) {
       return res.status(400).json({ ok: false, error: "IMAGE_URL_REQUIRED" });
     }
 
