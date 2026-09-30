@@ -1377,13 +1377,6 @@ body.light .composer-options .composer-trash:hover{
 
 /* Video prompt controls: trash follows the ratio selector. */
 
-/* Restore the native, instant video model dropdown. */
-#videoModel.select-pill{
-  appearance:auto!important;
-  -moz-appearance:auto!important;
-  background-image:none!important;
-  cursor:pointer!important;
-}
 .video-options .video-trash{
   flex:0 0 38px!important;width:38px!important;height:38px!important;
   padding:0!important;display:grid!important;place-items:center!important;
@@ -2293,16 +2286,3 @@ html.composer-hit-area .composer-input-row>textarea#composerInput{
 }
 /* First six videos get metadata immediately; the rest stay lazy. */
 .video-result-grid .media-card video{will-change:auto!important}
-
-
-/* Miya-style video model dropdown: replace Firefox/OS native popup with a
-   dropdown that uses the same glass/panel language as the workspace. */
-.video-model-select-wrap{position:relative;display:inline-flex;flex:0 0 auto}
-.video-model-select-wrap>.select-pill{width:100%}
-.video-model-select-wrap>.select-pillbody.light .video-model-option{color:#52657b}
-body.light .video-model-option:hover{background:#eef3f8;color:#1e2e43}
-body.light .video-model-option.active{background:#eeeafd;color:#3f347c}
-@media(max-width:800px){
-  .video-model-trigger{min-width:150px!important;font-size:10px!important}
-  .video-model-menu{min-width:200px;max-width:calc(100vw - 28px)}
-}
