@@ -2101,6 +2101,17 @@ body.light .generation-loading .progress-model{color:#71859a}
 .video-result-grid .media-card video{will-change:auto!important}
 
 
+
+/* Keep the video model menu above the four-line prompt area. */
+.composer{overflow:visible!important}
+.composer-input-row{z-index:1!important;overflow:visible!important}
+.video-options{
+  position:relative!important;
+  z-index:2000!important;
+  overflow:visible!important;
+  isolation:isolate!important;
+}
+.video-options #videoModel{z-index:2001!important}
 /* Restore the original prompt mechanics: normal flex textarea, yesterday's height. */
 .composer-input-row{position:relative!important;display:flex!important;align-items:flex-end!important;pointer-events:auto!important}
 .composer-input-row>textarea#composerInput{
