@@ -2319,3 +2319,39 @@ html.composer-hit-area .composer-input-row>textarea#composerInput{
  .voice-options{gap:6px}.voice-range{flex:1;min-width:145px}.voice-range input{width:65px}
  .voice-wall{padding-left:10px;padding-right:10px}
 }
+
+
+/* Voice prompt: no attachment plus button; unified copy/clear icon treatment */
+.composer.voice-mode .composer-left-actions,
+.composer.voice-mode #composerAttachment{display:none!important}
+.composer.voice-mode .composer-copy,
+.composer.voice-mode .composer-trash,
+.composer.voice-mode .voice-tool{
+  width:38px!important;height:38px!important;min-width:38px!important;
+  padding:0!important;display:grid!important;place-items:center!important;
+  border:0!important;border-radius:9px!important;
+  background:transparent!important;
+  color:#aeb9c9!important;
+}
+.composer.voice-mode .composer-copy svg,
+.composer.voice-mode .composer-trash svg,
+.composer.voice-mode .voice-tool svg{
+  width:17px!important;height:17px!important;
+  fill:none!important;stroke:currentColor!important;
+  stroke-width:1.8!important;stroke-linecap:round!important;stroke-linejoin:round!important;
+}
+.composer.voice-mode .composer-copy:hover,
+.composer.voice-mode .composer-trash:hover,
+.composer.voice-mode .voice-tool:hover{
+  background:rgba(120,150,190,.12)!important;color:#d9e2ef!important;
+}
+body.light .composer.voice-mode .composer-copy,
+body.light .composer.voice-mode .composer-trash,
+body.light .composer.voice-mode .voice-tool{
+  color:#59677a!important;
+}
+body.light .composer.voice-mode .composer-copy:hover,
+body.light .composer.voice-mode .composer-trash:hover,
+body.light .composer.voice-mode .voice-tool:hover{
+  background:#edf3f9!important;color:#182436!important;
+}
