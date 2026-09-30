@@ -1654,7 +1654,8 @@ async function generateVideo(prompt){
    return;
   }
  }
- if(selectedModel==="OmegaTech T2V") return generateOmegaT2V(prompt);\n if(selectedModel==="Agnes Video 2.5"||selectedModel==="Agnes Video 2.5 Flash"||selectedModel==="Agnes Video v2.0") return generateAgnesVideo(prompt);
+ if(selectedModel==="OmegaTech T2V") return generateOmegaT2V(prompt);
+ if(selectedModel==="Agnes Video 2.5"||selectedModel==="Agnes Video 2.5 Flash"||selectedModel==="Agnes Video v2.0") return generateAgnesVideo(prompt);
  if(videoGenerationBusy){
    toast("Видео уже создаётся. Дождитесь завершения текущего запроса.");
    return;
