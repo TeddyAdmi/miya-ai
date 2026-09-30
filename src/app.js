@@ -655,6 +655,7 @@ if(composerInput){
    }
  },true);
 }
+}
 $("#composerInput").addEventListener("paste",e=>{
  const text=e.clipboardData?.getData("text/plain");
  if(text==null)return;
