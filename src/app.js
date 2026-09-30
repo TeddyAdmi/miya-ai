@@ -1608,13 +1608,29 @@ async function generateOmegaT2V(prompt){
  try{
    const ratio=String($("#videoRatio")?.value||"16:9");
    const ratioValue=["16:9","9:16","1:1"].includes(ratio)?ratio:"16:9";
+   const actionPrompt=[
+     "STRICT VIDEO PROMPT ADHERENCE.",
+     "Treat the user's description as a locked storyboard, not as inspiration.",
+     "If the user says dog, generate a dog. Preserve the exact species, number of subjects and important objects named by the user.",
+     "Perform every requested action clearly and in the exact order: turn around means visibly turn around; walk means walk; run means run; sit means sit; stand means stand; jump means jump; fly means fly; look means look; pick up means pick up; put down means put down.",
+     "Do not omit, merge, reorder, replace or reinterpret named actions. Do not turn a requested action into a static pose or replace subject movement with camera movement.",
+     "Keep subjects anatomically correct and temporally consistent: no extra subjects, limbs, tails, wings, heads or duplicate objects; no fused bodies, warped faces or sudden identity changes.",
+     "Do not add characters, animals, props, weather, locations, transformations, text, music or story events that the user did not request.",
+     "Preserve the requested scene and ending. If the user specifies where a subject ends, show that ending clearly.",
+     "Use realistic physical motion, coherent cause-and-effect, stable camera continuity, natural motion blur, believable lighting and photorealistic detail.",
+     "Cinematic styling must never override the requested action.",
+     "For sound, use only sounds appropriate to the described scene and actions; do not add unrelated sound.",
+     "PROMPT ADHERENCE IS MORE IMPORTANT THAN CREATIVITY.",
+     "USER VIDEO DESCRIPTION:",
+     String(prompt||"")
+   ].join("\n");
    updateVideoProgress("OmegaTech T2V",1,"создание…");
    const response=await fetch("/api/omegatech-t2v",{
      method:"POST",
      headers:{"Content-Type":"application/json"},
      body:JSON.stringify({
        action:"generate",
-       prompt:String(prompt||""),
+       prompt:actionPrompt,
        ratio:ratioValue,
        sound:true
      })
