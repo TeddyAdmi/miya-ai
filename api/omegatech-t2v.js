@@ -54,6 +54,7 @@ export default async function handler(req,res){
         width:ratio==="16:9"?1280:ratio==="9:16"?720:1024,
         height:ratio==="16:9"?720:ratio==="9:16"?1280:1024,
         sound:true
+        })
       });
     } catch (primaryError) {
       // Redundant official gateway fallback.
