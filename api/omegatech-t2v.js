@@ -6,19 +6,52 @@ export default async function handler(req,res){
 
   try{
     const body=typeof req.body==="string"?JSON.parse(req.body||"{}"):(req.body||{});
-    const userPrompt=String(body.prompt||"").trim().slice(0,1500);\n    const lower=userPrompt.toLowerCase();\n\n    const animalMap=[\n      [/\\bкабан(?:а|у|ом|е|ы|ов|ам|ами|ах)?\\b/i,"one wild boar"],\n      [/\\bсвин(?:ья|ью|ьи|ей|ьи|ьи)?\\b/i,"one pig"],\n      [/\\bсобак(?:а|у|ой|и|е|у|ами)?\\b/i,"one dog"],\n      [/\\bкот(?:а|у|ом|е|ы|ов|ами)?\\b/i,"one cat"],\n      [/\\bлошад(?:ь|и|ью|ей|ями)?\\b/i,"one horse"],\n      [/\\bволк(?:а|у|ом|е|и|ов|ами)?\\b/i,"one wolf"],\n      [/\\bмедвед(?:ь|я|ю|ем|е|и|ей|ями)?\\b/i,"one bear"],\n      [/\\bлиса(?:у|ой|ы|е|ми)?\\b/i,"one fox"],\n      [/\\bолень(?:я|ю|ем|е|и|ей|ями)?\\b/i,"one deer"],\n      [/\\bор[её]л(?:а|у|ом|е|ы|ов|ами)?\\b/i,"one eagle"]\n    ];\n    let explicitSubject=null;\n    for(const [re,en] of animalMap){ if(re.test(lower)){ explicitSubject=en; break; } }\n\n    const personWords=/\\b(человек|люди|мужчина|женщина|девушка|парень|солдат|солдаты|военные|ребенок|дети|man|woman|person|people|girl|boy|soldier|soldiers)\\b/i;\n    const vehicleWords=/\\b(машин|автомобил|авто|vehicle|car|truck|мотоцикл|самолет|вертолет)\\b/i;\n    const negative=explicitSubject && !personWords.test(lower)\n      ? "ABSOLUTELY NO humans, women, men, girls, boys, soldiers, military, dogs, cats or other animals. NO extra subjects. NO bench, house, car or other object unless explicitly requested."\n      : "ABSOLUTELY NO unrequested characters, animals, vehicles, weapons, props, dialogue, text or events.";
-    const ratio=["16:9","9:16","1:1"].includes(body.ratio)?body.ratio:"16:9";
+    const userPrompt=String(body.prompt||"").trim().slice(0,1200);
+    if(!userPrompt){
+      return res.status(400).json({success:false,error:"Prompt is empty"});
+    }
 
-    // This is the OmegaTech endpoint that was directly verified working:
-    // POST /api/ai/Txt2video -> HTTP 200 -> data.videoUrl (ready MP4).
-    // Do not route this through Argen, Wan2 or Sora.
+    const ratio=["16:9","9:16","1:1"].includes(body.ratio)?body.ratio:"16:9";
+    const requestedDuration=Math.max(1,Math.min(10,Number(body.duration)||5));
+
+    const dimensions={
+      "16:9":{width:1920,height:1080,ratio:"landscape"},
+      "9:16":{width:1080,height:1920,ratio:"portrait"},
+      "1:1":{width:1080,height:1080,ratio:"square"}
+    }[ratio];
+
+    const lower=userPrompt.toLowerCase();
+    const animalMatch=lower.match(/\b(кабан|свинья|собака|кот|кошка|лошадь|волк|медведь|лиса|олень|орел|птица|животное|dog|cat|horse|boar|pig|wolf|bear|fox|deer|eagle|bird|animal)\b/i);
+    const peopleMatch=lower.match(/\b(человек|люди|мужчина|женщина|девушка|парень|ребенок|дети|солдат|солдаты|военные|man|woman|girl|boy|person|people|soldier|soldiers)\b/i);
+
+    const guard=animalMatch && !peopleMatch
+      ? "Exactly one requested animal only. No humans, soldiers, military, dogs, cats, other animals or extra subjects unless explicitly named."
+      : "Only the subjects explicitly named by the user. No unrequested people, animals, vehicles, weapons, props or events.";
+
+    const finalPrompt=[
+      "STRICT VIDEO PROMPT. FOLLOW THE USER DESCRIPTION EXACTLY.",
+      "Do not invent or replace subjects.",
+      "Perform the requested action exactly as written.",
+      "If one subject is named, show exactly one subject.",
+      guard,
+      "No dialogue, music, text, subtitles, logos or cinematic story additions unless requested.",
+      "Realistic anatomy, physics and continuous motion.",
+      "USER SCENE: "+userPrompt
+    ].join(" ");
+
     const upstream=await fetch("https://api.omegatech.app/api/ai/Txt2video",{
       method:"POST",
       headers:{"Content-Type":"application/json"},
       body:JSON.stringify({
         action:"generate",
-        prompt:userPrompt,
-        ratio,
+        prompt:finalPrompt,
+        ratio:dimensions.ratio,
+        aspectRatio:ratio,
+        width:dimensions.width,
+        height:dimensions.height,
+        resolution:"1080p",
+        quality:"high",
+        duration:requestedDuration,
         sound:false
       })
     });
@@ -45,7 +78,7 @@ export default async function handler(req,res){
       });
     }
 
-    const videoUrl=String(data?.data?.videoUrl||"").trim();
+    const videoUrl=String(data?.data?.videoUrl||data?.videoUrl||"").trim();
 
     if(!videoUrl){
       return res.status(502).json({
