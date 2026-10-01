@@ -15,7 +15,7 @@ export default async function handler(req,res){
       body:JSON.stringify({
         action:"generate",
         prompt,
-        ratio:"16:9",
+        ratio:"landscape",
         aspectRatio:"16:9",
         width:1280,
         height:720,
