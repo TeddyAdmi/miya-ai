@@ -1,5 +1,5 @@
 export default async function handler(req,res){
-  if(req.method!=="GET"){
+  if(req.method!=="GET"&&req.method!=="HEAD"){
     res.setHeader("Allow","GET");
     return res.status(405).json({error:"Method not allowed"});
   }
@@ -17,6 +17,20 @@ export default async function handler(req,res){
 
     if(target.protocol!=="https:"||!allowedHost||!allowedPath){
       return res.status(400).json({error:"Invalid OmegaTech video URL"});
+    }
+
+    const probe=String(req.query?.probe||"") === "1";
+    if(probe){
+      let upstream;
+      try{ upstream=await fetch(target.toString(),{method:"HEAD",cache:"no-store"}); }
+      catch{
+        upstream=await fetch(target.toString(),{headers:{"Range":"bytes=0-0"},cache:"no-store"});
+      }
+      if(!upstream.ok && upstream.status!==206){
+        return res.status(upstream.status).json({error:"Upstream video is not ready",upstreamStatus:upstream.status});
+      }
+      res.setHeader("Cache-Control","no-store");
+      return res.status(200).json({ok:true,ready:true,status:upstream.status});
     }
 
     const upstream=await fetch(target.toString());
