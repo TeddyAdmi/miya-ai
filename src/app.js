@@ -1658,7 +1658,7 @@ async function generateOmegaT2V(prompt){
    const readyStarted=Date.now();
    while(Date.now()-readyStarted<10*60*1000){
      try{
-       const finalResponse=await fetch(videoUrl,{method:"GET",cache:"no-store",signal:AbortSignal.timeout(120000)});
+       const finalResponse=await fetch(videoUrl,{method:"GET",headers:{Range:"bytes=0-1","Cache-Control":"no-cache"},cache:"no-store",signal:AbortSignal.timeout(120000)});
        const contentRange=String(finalResponse.headers.get("content-range")||"");
        if(finalResponse.status===206 && finalResponse.ok && /^bytes\s+0-\d+\/\d+$/i.test(contentRange)){
          videoReady=true;
