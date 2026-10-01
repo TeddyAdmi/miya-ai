@@ -12,18 +12,16 @@ export default async function handler(req,res){
     // Keep the user's prompt short; OmegaTech rejects requests over 2000 characters.
     const prompt=requestedPrompt.slice(0,1900)+"\n\n[UNIQUE GENERATION ID: "+generationId+"]";
 
+    // Use only the parameters documented by OmegaTech for Txt2video.
+    // Extra width/height/orientation fields are not part of this endpoint's schema.
     const payload={
       action:"generate",
       prompt,
       ratio:"16:9",
-      aspect_ratio:"16:9",
-      orientation:"landscape",
-      width:1280,
-      height:720,
       sound:body.sound!==false
     };
 
-    const requestUrl="https://omegatech-api.dixonomega.tech/api/ai/Txt2video?request_id="+encodeURIComponent(generationId)+"&ratio=16%3A9&aspect_ratio=16%3A9&orientation=landscape&width=1280&height=720";
+    const requestUrl="https://omegatech-api.dixonomega.tech/api/ai/Txt2video?request_id="+encodeURIComponent(generationId);
 
     let response;
     try{
@@ -37,7 +35,7 @@ export default async function handler(req,res){
       });
     }catch(primaryError){
       response=await fetch(
-        "https://api.omegatech.app/api/ai/Txt2video?request_id="+encodeURIComponent(generationId)+"&ratio=16%3A9&aspect_ratio=16%3A9&orientation=landscape&width=1280&height=720",
+        "https://api.omegatech.app/api/ai/Txt2video?request_id="+encodeURIComponent(generationId),
         {
           method:"POST",
           headers:{
