@@ -41,7 +41,9 @@ export default async function handler(req,res){
       "Unique generation: "+generationId
     ].join(" ");
 
-    const upstream=await fetch("https://omegatech-api.dixonomega.tech/api/ai/Txt2video",{
+    let upstream;
+    try {
+      upstream=await fetch("https://omegatech-api.dixonomega.tech/api/ai/Txt2video",{
       method:"POST",
       headers:{"Content-Type":"application/json"},
       body:JSON.stringify({
@@ -52,8 +54,23 @@ export default async function handler(req,res){
         width:ratio==="16:9"?1280:ratio==="9:16"?720:1024,
         height:ratio==="16:9"?720:ratio==="9:16"?1280:1024,
         sound:true
-      })
-    });
+      });
+    } catch (primaryError) {
+      // Redundant official gateway fallback.
+      upstream=await fetch("https://api.omegatech.app/api/ai/Txt2video",{
+        method:"POST",
+        headers:{"Content-Type":"application/json"},
+        body:JSON.stringify({
+          action:"generate",
+          prompt:finalPrompt,
+          ratio:upstreamRatio,
+          aspectRatio:ratio,
+          width:ratio==="16:9"?1280:ratio==="9:16"?720:1024,
+          height:ratio==="16:9"?720:ratio==="9:16"?1280:1024,
+          sound:true
+        })
+      });
+    }
 
     const raw=await upstream.text();
 
