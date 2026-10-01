@@ -646,6 +646,7 @@ function openVideoFromImage(url){
  $("#composerSendText").textContent=m.send;$("#composerStatus").textContent="Agnes Video 2.5 Flash · изображение готово";
  $(".image-settings").style.display="none";$("#videoOptions").classList.add("show");
  $("#videoModel").value="OmegaTech T2V";
+ updateVideoRatioVisibility();
  document.querySelectorAll("[data-mode]").forEach(x=>x.classList.toggle("active",x.dataset.mode==="video"));
  $("#chatMenuToggle")?.classList.remove("active");$("#chatSubmenu")?.classList.add("suppressed");
  setComposerAttachment(referenceImage);renderVideoLibrary();syncInput();$("#composerInput").focus();
@@ -1832,6 +1833,11 @@ function setVideoRatioDefault(){
  const d=$("#videoDuration"); if(d) d.value="5 сек";
  const progress=$("#composerProgress"); if(progress) progress.textContent="";
 }
+function updateVideoRatioVisibility(){
+ const el=$("#videoRatio");
+ const model=String($("#videoModel")?.value||"");
+ if(el) el.style.display=model==="OmegaTech T2V"?"none":"";
+}
 function setMode(next,render=true){
  const target=String(next||"chat");
  if(!modes[target])return;
@@ -1937,6 +1943,7 @@ document.addEventListener("click",e=>{
 },true);
 const videoModelSelect=$("#videoModel");
 if(videoModelSelect)videoModelSelect.addEventListener("change",()=>{
+ updateVideoRatioVisibility();
  resetVideoProgress();
  if(mode==="video"){
    $("#composerStatus").textContent=videoModelSelect.value+" · готов";
