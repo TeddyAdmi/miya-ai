@@ -9,71 +9,95 @@ export default async function handler(req,res){
     const incoming=String(body.prompt||"").trim();
     const marker="USER VIDEO DESCRIPTION:";
     const markerIndex=incoming.lastIndexOf(marker);
-    const userPrompt=(markerIndex>=0?incoming.slice(markerIndex+marker.length):incoming).trim().slice(0,1300);
+    const userPrompt=(markerIndex>=0?incoming.slice(markerIndex+marker.length):incoming).trim().slice(0,1350);
 
     if(!userPrompt){
       return res.status(400).json({success:false,error:"Prompt is empty"});
     }
 
-    // Txt2video officially documents only these three ratio values.
-    // Do not translate them to "landscape/portrait/square" or send
-    // undocumented width/height/aspectRatio fields.
     const ratio=["16:9","9:16","1:1"].includes(String(body.ratio))
       ? String(body.ratio)
       : "16:9";
 
+    // Omega's T2V backend has historically responded more reliably
+    // to semantic ratio names than literal UI ratios.
+    const upstreamRatio={
+      "16:9":"landscape",
+      "9:16":"portrait",
+      "1:1":"square"
+    }[ratio];
+
+    const width={
+      "16:9":1280,
+      "9:16":720,
+      "1:1":1024
+    }[ratio];
+
+    const height={
+      "16:9":720,
+      "9:16":1280,
+      "1:1":1024
+    }[ratio];
+
     const sound=body.sound!==false;
     const generationId=crypto.randomUUID();
 
-    // Keep the user's scene intact and keep ALL control instructions
-    // inside the upstream 2000-character prompt limit.
+    const ratioInstruction={
+      "16:9":"MANDATORY OUTPUT: 16:9 WIDE HORIZONTAL LANDSCAPE VIDEO, 1280x720. The final video frame must be wider than it is tall. Do not generate vertical 9:16 video.",
+      "9:16":"MANDATORY OUTPUT: 9:16 VERTICAL PORTRAIT VIDEO, 720x1280. Do not generate landscape video.",
+      "1:1":"MANDATORY OUTPUT: 1:1 SQUARE VIDEO, 1024x1024."
+    }[ratio];
+
     const finalPrompt=[
-      "VIDEO GENERATION RULES:",
+      "Create a new photorealistic video from the USER SCENE below.",
       "The USER SCENE is the only source of truth.",
-      "Follow every named subject, number, object, location and action exactly.",
-      "Preserve the action order and show each action clearly; never replace an action with a camera move or a static pose.",
-      "Do not add people, animals, vehicles, props, weather, locations or events that are not named.",
-      "Keep one continuous coherent scene with stable identities and realistic physics.",
-      "The requested aspect ratio is mandatory. Do not rotate, crop or reinterpret the frame into another ratio.",
-      "No text, subtitles or logos.",
+      "Follow the exact subjects, number of subjects, clothing, objects, location and actions named by the user.",
+      "Do not replace, omit, reorder or reinterpret the requested actions.",
+      "Do not add people, animals, vehicles, props, weather, locations or story events that are not explicitly requested.",
+      "Keep the same subject identities and requested clothing throughout the entire video.",
+      "No subtitles, captions, logos or unrelated events.",
+      ratioInstruction,
       "USER SCENE:",
       userPrompt,
-      "OUTPUT RATIO:",
-      ratio,
-      "GENERATION ID:",
+      "UNIQUE GENERATION:",
       generationId
     ].join(" ").slice(0,1950);
 
     const payload={
       action:"generate",
       prompt:finalPrompt,
-      ratio,
+      ratio:upstreamRatio,
+      width,
+      height,
       sound
     };
 
     let upstream;
-    let upstreamHost="";
 
     try{
-      upstreamHost="https://omegatech-api.dixonomega.tech";
-      upstream=await fetch(upstreamHost+"/api/ai/Txt2video?request_id="+encodeURIComponent(generationId),{
-        method:"POST",
-        headers:{
-          "Content-Type":"application/json",
-          "Cache-Control":"no-cache"
-        },
-        body:JSON.stringify(payload)
-      });
+      upstream=await fetch(
+        "https://omegatech-api.dixonomega.tech/api/ai/Txt2video?request_id="+encodeURIComponent(generationId),
+        {
+          method:"POST",
+          headers:{
+            "Content-Type":"application/json",
+            "Cache-Control":"no-cache"
+          },
+          body:JSON.stringify(payload)
+        }
+      );
     }catch(primaryError){
-      upstreamHost="https://api.omegatech.app";
-      upstream=await fetch(upstreamHost+"/api/ai/Txt2video?request_id="+encodeURIComponent(generationId),{
-        method:"POST",
-        headers:{
-          "Content-Type":"application/json",
-          "Cache-Control":"no-cache"
-        },
-        body:JSON.stringify(payload)
-      });
+      upstream=await fetch(
+        "https://api.omegatech.app/api/ai/Txt2video?request_id="+encodeURIComponent(generationId),
+        {
+          method:"POST",
+          headers:{
+            "Content-Type":"application/json",
+            "Cache-Control":"no-cache"
+          },
+          body:JSON.stringify(payload)
+        }
+      );
     }
 
     const raw=await upstream.text();
