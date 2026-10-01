@@ -12,15 +12,18 @@ export default async function handler(req,res){
     if(!userPrompt)return res.status(400).json({success:false,error:"Prompt is empty"});
 
     const requestedRatio=["16:9","9:16"].includes(String(body.ratio))?String(body.ratio):"16:9";
-    const ratio=requestedRatio==="16:9"?"landscape":"portrait";
+    // Txt2video's public docs expose ratio but do not document its enum values.
+    // Send the literal UI ratio plus explicit dimensions so the upstream has
+    // an unambiguous 16:9/9:16 target instead of relying on "landscape"/"portrait".
+    const ratio=requestedRatio;
+    const width=requestedRatio==="16:9"?1280:720;
+    const height=requestedRatio==="16:9"?720:1280;
     const sound=body.sound!==false;
     const generationId=crypto.randomUUID();
 
-    const ratioInstruction={
-      "landscape":"MANDATORY OUTPUT: 16:9 WIDE HORIZONTAL LANDSCAPE VIDEO.",
-      "portrait":"MANDATORY OUTPUT: 9:16 VERTICAL PORTRAIT VIDEO.",
-      "1:1":"MANDATORY OUTPUT: 1:1 SQUARE VIDEO. WIDTH AND HEIGHT MUST BE EQUAL."
-    }[ratio];
+    const ratioInstruction=requestedRatio==="16:9"
+      ?"MANDATORY OUTPUT: 16:9 WIDE HORIZONTAL VIDEO. Target canvas: 1280x720. Do not output portrait."
+      :"MANDATORY OUTPUT: 9:16 VERTICAL PORTRAIT VIDEO. Target canvas: 720x1280. Do not output landscape.";
 
     const finalPrompt=[
       "Create a new photorealistic video from the USER SCENE below.",
@@ -35,7 +38,7 @@ export default async function handler(req,res){
       "UNIQUE GENERATION:",generationId
     ].join(" ").slice(0,1950);
 
-    const payload={action:"generate",prompt:finalPrompt,ratio,sound};
+    const payload={action:"generate",prompt:finalPrompt,ratio,width,height,sound};
 
     let upstream;
     try{
