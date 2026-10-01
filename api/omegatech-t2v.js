@@ -6,7 +6,17 @@ export default async function handler(req,res){
 
   try{
     const body=typeof req.body==="string"?JSON.parse(req.body||"{}"):(req.body||{});
-    const userPrompt=String(body.prompt||"").trim().slice(0,1200);
+    const incoming=String(body.prompt||"").trim();
+
+    // The frontend wraps the real user description after this marker.
+    // Extract it before any length limit so the model cannot lose the actual scene.
+    const marker="USER VIDEO DESCRIPTION:";
+    const markerIndex=incoming.lastIndexOf(marker);
+    const userPrompt=(markerIndex>=0
+      ? incoming.slice(markerIndex+marker.length)
+      : incoming
+    ).trim().slice(0,1800);
+
     if(!userPrompt){
       return res.status(400).json({success:false,error:"Prompt is empty"});
     }
@@ -25,18 +35,19 @@ export default async function handler(req,res){
     const peopleMatch=lower.match(/\b(человек|люди|мужчина|женщина|девушка|парень|ребенок|дети|солдат|солдаты|военные|man|woman|girl|boy|person|people|soldier|soldiers)\b/i);
 
     const guard=animalMatch && !peopleMatch
-      ? "Exactly one requested animal only. No humans, soldiers, military, dogs, cats, other animals or extra subjects unless explicitly named."
-      : "Only the subjects explicitly named by the user. No unrequested people, animals, vehicles, weapons, props or events.";
+      ? "Exactly one requested animal only. Do not add humans, soldiers, military, dogs, cats, other animals or extra subjects."
+      : "Only the subjects explicitly named by the user. Do not add unrequested people, animals, vehicles, weapons, props or events.";
 
+    // Put the user's actual scene FIRST. This is critical for this T2V backend:
+    // the model must see the requested subject/action before the guard instructions.
     const finalPrompt=[
-      "STRICT VIDEO PROMPT. FOLLOW THE USER DESCRIPTION EXACTLY.",
-      "Do not invent or replace subjects.",
-      "Perform the requested action exactly as written.",
-      "If one subject is named, show exactly one subject.",
+      "USER VIDEO SCENE: "+userPrompt,
+      "Generate this exact scene. Do not replace the main subject.",
+      "Follow the named action exactly and show real continuous motion, not a static image with camera movement.",
+      "Keep the same subject throughout the entire clip. No morphing, disappearing objects, identity changes or frozen-image zoom.",
       guard,
-      "No dialogue, music, text, subtitles, logos or cinematic story additions unless requested.",
-      "Realistic anatomy, physics and continuous motion.",
-      "USER SCENE: "+userPrompt
+      "Photorealistic natural motion. No text, subtitles, logos, dialogue or unrelated events.",
+      "OUTPUT COMPOSITION: "+ratio+"."
     ].join(" ");
 
     const upstream=await fetch("https://api.omegatech.app/api/ai/Txt2video",{
