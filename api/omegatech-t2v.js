@@ -34,6 +34,7 @@ export default async function handler(req,res){
           "versionCode":"85",
           "Ctry-Target":"others",
           "Device-Id":deviceID,
+          "Sign":"68d6165b72a7f2d8d17b0dc6fe9691abdf77c583",
           "Cache-Control":"no-cache"
         }
       });
@@ -86,6 +87,7 @@ export default async function handler(req,res){
           "versionCode":"85",
           "Ctry-Target":"others",
           "Device-Id":deviceID,
+          "Sign":"68d6165b72a7f2d8d17b0dc6fe9691abdf77c583",
           "Cache-Control":"no-cache"
         },
         body:JSON.stringify({
