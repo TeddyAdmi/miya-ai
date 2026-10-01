@@ -5,13 +5,25 @@ export default async function handler(req,res){
   }
   try{
     const raw=String(req.query?.url||"");
-    if(!raw||!/^https:\/\/sora\.aritek\.app\/generated\//i.test(raw)){
+    let target;
+    try{ target=new URL(raw); }catch{
       return res.status(400).json({error:"Invalid OmegaTech video URL"});
     }
-    const upstream=await fetch(raw);
+
+    const allowedHost=/^(?:sora|cdn|video|media)\.aritek\.app$/i.test(target.hostname);
+    const allowedPath=target.hostname.toLowerCase()==="sora.aritek.app"
+      ? target.pathname.startsWith("/generated/")
+      : true;
+
+    if(target.protocol!=="https:"||!allowedHost||!allowedPath){
+      return res.status(400).json({error:"Invalid OmegaTech video URL"});
+    }
+
+    const upstream=await fetch(target.toString());
     if(!upstream.ok){
       return res.status(upstream.status).json({error:"Upstream video request failed"});
     }
+
     const type=upstream.headers.get("content-type")||"video/mp4";
     const buffer=Buffer.from(await upstream.arrayBuffer());
     res.setHeader("Content-Type",type);
