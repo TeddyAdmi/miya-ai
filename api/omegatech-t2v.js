@@ -39,7 +39,7 @@ export default async function handler(req,res){
       "Photorealistic natural motion, coherent action, stable subject identity.",
       "No text, subtitles, logos or unrelated events.",
       "Unique generation: "+generationId
-    ].join(" ");
+    ].join(" ").slice(0,1900);
 
     let upstream;
     try {
