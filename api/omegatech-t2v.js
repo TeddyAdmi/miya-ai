@@ -9,16 +9,18 @@ export default async function handler(req,res){
     const requestedPrompt=String(body.prompt||"").trim();
     const generationId=crypto.randomUUID();
 
-    // Keep the user's prompt short; OmegaTech rejects requests over 2000 characters.
     const prompt=requestedPrompt.slice(0,1900)+"\n\n[UNIQUE GENERATION ID: "+generationId+"]";
 
-    // Use only the parameters documented by OmegaTech for Txt2video.
-    // Extra width/height/orientation fields are not part of this endpoint's schema.
+    // Match the internal Aritek T2V client request shape.
+    // versionCode is used by the underlying txt2videov3 client.
     const payload={
       action:"generate",
       prompt,
       ratio:"16:9",
-      sound:body.sound!==false
+      sound:body.sound!==false,
+      deviceID:generationId.replace(/-/g,"").slice(0,16),
+      used:[],
+      versionCode:51
     };
 
     const requestUrl="https://omegatech-api.dixonomega.tech/api/ai/Txt2video?request_id="+encodeURIComponent(generationId);
