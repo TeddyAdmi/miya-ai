@@ -12,12 +12,10 @@ export default async function handler(req,res){
     if(!userPrompt)return res.status(400).json({success:false,error:"Prompt is empty"});
 
     const requestedRatio=["16:9","9:16"].includes(String(body.ratio))?String(body.ratio):"16:9";
-    // Txt2video's public docs expose ratio but do not document its enum values.
-    // Send the literal UI ratio plus explicit dimensions so the upstream has
-    // an unambiguous 16:9/9:16 target instead of relying on "landscape"/"portrait".
-    const ratio=requestedRatio;
-    const width=requestedRatio==="16:9"?1280:720;
-    const height=requestedRatio==="16:9"?720:1280;
+    // OmegaTech Txt2video uses named aspect-ratio values. The public docs
+    // expose the ratio field but hide its select options; the video backend
+    // expects landscape/portrait rather than literal 16:9/9:16.
+    const ratio=requestedRatio==="16:9"?"landscape":"portrait";
     const sound=body.sound!==false;
     const generationId=crypto.randomUUID();
 
@@ -38,7 +36,7 @@ export default async function handler(req,res){
       "UNIQUE GENERATION:",generationId
     ].join(" ").slice(0,1950);
 
-    const payload={action:"generate",prompt:finalPrompt,ratio,width,height,sound};
+    const payload={action:"generate",prompt:finalPrompt,ratio,sound};
 
     let upstream;
     try{
