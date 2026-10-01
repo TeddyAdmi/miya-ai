@@ -11,17 +11,11 @@ export default async function handler(req,res){
     const userPrompt=(markerIndex>=0?incoming.slice(markerIndex+marker.length):incoming).trim().slice(0,1350);
     if(!userPrompt)return res.status(400).json({success:false,error:"Prompt is empty"});
 
-    const requestedRatio=["16:9","9:16"].includes(String(body.ratio))?String(body.ratio):"16:9";
-    // OmegaTech Txt2video uses named aspect-ratio values. The public docs
-    // expose the ratio field but hide its select options; the video backend
-    // expects landscape/portrait rather than literal 16:9/9:16.
-    const ratio=requestedRatio;
+    const ratio="16:9";
     const sound=body.sound!==false;
     const generationId=crypto.randomUUID();
 
-    const ratioInstruction=requestedRatio==="16:9"
-      ?"MANDATORY OUTPUT: 16:9 WIDE HORIZONTAL VIDEO. Target canvas: 1280:720. Do not output portrait."
-      :"MANDATORY OUTPUT: 9:16 VERTICAL PORTRAIT VIDEO. Target canvas: 720:1280. Do not output landscape.";
+    const ratioInstruction="MANDATORY OUTPUT: 16:9 WIDE HORIZONTAL VIDEO. Target canvas: 1280x720. Do not output portrait.";
 
     const finalPrompt=[
       "Create a new photorealistic video from the USER SCENE below.",
