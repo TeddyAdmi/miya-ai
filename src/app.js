@@ -1651,7 +1651,22 @@ async function generateOmegaT2V(prompt){
    }
    const remoteVideoUrl=String(data.data.videoUrl);
    const videoUrl="/api/omegatech-video?url="+encodeURIComponent(remoteVideoUrl);
-   updateVideoProgress("OmegaTech T2V",99,"видео получено…");
+   // Omega can return the final URL before the CDN file is actually ready.
+   // Keep the UI at 99% until our proxy confirms HTTP 200 for the media.
+   updateVideoProgress("OmegaTech T2V",99,"проверяю готовность видео…");
+   let videoReady=false;
+   const readyStarted=Date.now();
+   while(Date.now()-readyStarted<10*60*1000){
+     try{
+       const probe=await fetch(videoUrl+"&probe=1",{cache:"no-store",headers:{"Accept":"application/json"},signal:AbortSignal.timeout(30000)});
+       if(probe.status===200){
+         const probeData=await probe.json().catch(()=>({}));
+         if(probeData?.ready){videoReady=true;break;}
+       }
+     }catch{}
+     await new Promise(r=>setTimeout(r,5000));
+   }
+   if(!videoReady)throw new Error("OmegaTech: видео получено, но CDN ещё не подтвердил HTTP 200");
    const item=saveMedia("video",videoUrl,prompt,"OmegaTech T2V · Video + Audio");
    stopProgress(100,"готово");
    updateVideoProgress("OmegaTech T2V",100,"готово");
