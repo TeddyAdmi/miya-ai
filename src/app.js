@@ -1651,8 +1651,7 @@ async function generateOmegaT2V(prompt){
    }
    const remoteVideoUrl=String(data.data.videoUrl);
    const videoUrl="/api/omegatech-video?url="+encodeURIComponent(remoteVideoUrl);
-   // HTTP 200 is only an intermediate/full proxy response and must NOT mean ready.
-   // Omega is ready ONLY when the final range request returns HTTP 206.
+   // HTTP 206 is the readiness signal from the video proxy.
    updateVideoProgress("OmegaTech T2V",99,"загрузка видео…");
    let videoReady=false;
    const readyStarted=Date.now();
@@ -1661,13 +1660,8 @@ async function generateOmegaT2V(prompt){
        const rangeResponse=await fetch(videoUrl,{method:"GET",headers:{Range:"bytes=0-1","Cache-Control":"no-cache"},cache:"no-store",signal:AbortSignal.timeout(120000)});
        const contentRange=String(rangeResponse.headers.get("content-range")||"");
        if(rangeResponse.status===206 && rangeResponse.ok && /^bytes\s+0-\d+\/\d+$/i.test(contentRange)){
-         // 206 only proves that the MP4 supports ranged delivery. Now make
-         // the same full request the player makes and wait for its HTTP 200.
-         const fullResponse=await fetch(videoUrl,{method:"GET",headers:{"Cache-Control":"no-cache"},cache:"no-store",signal:AbortSignal.timeout(120000)});
-         if(fullResponse.status===200 && fullResponse.ok){
-           videoReady=true;
-           break;
-         }
+         videoReady=true;
+         break;
        }
      }catch{}
      await new Promise(r=>setTimeout(r,5000));
