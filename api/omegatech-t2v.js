@@ -7,7 +7,8 @@ export default async function handler(req,res){
     const body=typeof req.body==="string"?JSON.parse(req.body||"{}"):(req.body||{});
     const requestedPrompt=String(body.prompt||"").trim();
     const uniqueGeneration=crypto.randomUUID();
-    const prompt=requestedPrompt+"\n\n[UNIQUE GENERATION ID: "+uniqueGeneration+"]";
+    // OmegaTech rejects prompts over 2000 characters. Keep the full request within its limit while preserving a unique ID.
+    const prompt=requestedPrompt.slice(0,1900)+"\n\n[UNIQUE GENERATION ID: "+uniqueGeneration+"]";
     const response=await fetch("https://api.omegatech.app/api/ai/Txt2video",{
       method:"POST",
       headers:{"Content-Type":"application/json"},
