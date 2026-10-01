@@ -23,6 +23,7 @@ export default async function handler(req,res){
 
     const ratio=["16:9","9:16","1:1"].includes(body.ratio)?body.ratio:"16:9";
     const requestedDuration=Math.max(1,Math.min(10,Number(body.duration)||5));
+    const upstreamRatio={"16:9":"landscape","9:16":"portrait","1:1":"square"}[ratio];
 
     const finalPrompt=[
       userPrompt,
@@ -39,8 +40,8 @@ export default async function handler(req,res){
       body:JSON.stringify({
         action:"generate",
         prompt:finalPrompt,
-        ratio,
-        sound:false
+        ratio:upstreamRatio,
+        sound:true
       })
     });
 
