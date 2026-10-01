@@ -11,10 +11,7 @@ export default async function handler(req,res){
     const userPrompt=(markerIndex>=0?incoming.slice(markerIndex+marker.length):incoming).trim().slice(0,1350);
     if(!userPrompt)return res.status(400).json({success:false,error:"Prompt is empty"});
 
-    const ratio=["16:9","9:16","1:1"].includes(String(body.ratio))?String(body.ratio):"16:9";
-    const upstreamRatio={"16:9":"landscape","9:16":"portrait","1:1":"square"}[ratio];
-    const width={"16:9":1280,"9:16":720,"1:1":1024}[ratio];
-    const height={"16:9":720,"9:16":1280,"1:1":1024}[ratio];
+    const ratio=["16:9","9:16"].includes(String(body.ratio))?String(body.ratio):"16:9";
     const sound=body.sound!==false;
     const generationId=crypto.randomUUID();
 
@@ -37,7 +34,7 @@ export default async function handler(req,res){
       "UNIQUE GENERATION:",generationId
     ].join(" ").slice(0,1950);
 
-    const payload={action:"generate",prompt:finalPrompt,ratio:upstreamRatio,width,height,sound};
+    const payload={action:"generate",prompt:finalPrompt,ratio,sound};
 
     let upstream;
     try{
