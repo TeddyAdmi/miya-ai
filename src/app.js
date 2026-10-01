@@ -1607,7 +1607,7 @@ async function generateOmegaT2V(prompt){
  const stopProgress=startVideoProgress("OmegaTech T2V");
  try{
    const ratio=String($("#videoRatio")?.value||"16:9");
-   const ratioValue=["16:9","9:16","1:1"].includes(ratio)?ratio:"16:9";
+   const ratioValue=["16:9","9:16"].includes(ratio)?ratio:"16:9";
    const durationText=String($("#videoDuration")?.value||"5 сек");
    const requestedDuration=Math.max(1,Math.min(10,Number(durationText.match(/\\d+/)?.[0]||5)));
    const actionPrompt=[
@@ -1651,22 +1651,23 @@ async function generateOmegaT2V(prompt){
    }
    const remoteVideoUrl=String(data.data.videoUrl);
    const videoUrl="/api/omegatech-video?url="+encodeURIComponent(remoteVideoUrl);
-   // Do not mark Omega as ready on the probe response.
-   // The UI becomes "готово" only after the actual final MP4 GET returns HTTP 200.
+   // HTTP 200 is only an intermediate/full proxy response and must NOT mean ready.
+   // Omega is ready ONLY when the final range request returns HTTP 206.
    updateVideoProgress("OmegaTech T2V",99,"загрузка видео…");
    let videoReady=false;
    const readyStarted=Date.now();
    while(Date.now()-readyStarted<10*60*1000){
      try{
        const finalResponse=await fetch(videoUrl,{method:"GET",cache:"no-store",signal:AbortSignal.timeout(120000)});
-       if((finalResponse.status===200 || finalResponse.status===206) && finalResponse.ok){
+       const contentRange=String(finalResponse.headers.get("content-range")||"");
+       if(finalResponse.status===206 && finalResponse.ok && /^bytes\s+0-\d+\/\d+$/i.test(contentRange)){
          videoReady=true;
          break;
        }
      }catch{}
      await new Promise(r=>setTimeout(r,5000));
    }
-   if(!videoReady)throw new Error("OmegaTech: финальный MP4 не подтвердил HTTP 200/206");
+   if(!videoReady)throw new Error("OmegaTech: финальный MP4 не подтвердил HTTP 206");
    const item=saveMedia("video",videoUrl,prompt,"OmegaTech T2V · Video + Audio");
    stopProgress(100,"готово");
    updateVideoProgress("OmegaTech T2V",100,"готово");
