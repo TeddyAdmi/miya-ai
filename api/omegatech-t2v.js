@@ -5,12 +5,15 @@ export default async function handler(req,res){
   }
   try{
     const body=typeof req.body==="string"?JSON.parse(req.body||"{}"):(req.body||{});
+    const requestedPrompt=String(body.prompt||"").trim();
+    const uniqueGeneration=crypto.randomUUID();
+    const prompt=requestedPrompt+"\n\n[UNIQUE GENERATION ID: "+uniqueGeneration+"]";
     const response=await fetch("https://api.omegatech.app/api/ai/Txt2video",{
       method:"POST",
       headers:{"Content-Type":"application/json"},
       body:JSON.stringify({
         action:"generate",
-        prompt:String(body.prompt||""),
+        prompt,
         ratio:["16:9","9:16","1:1"].includes(body.ratio)?body.ratio:"16:9",
         sound:body.sound!==false
       })
