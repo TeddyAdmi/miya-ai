@@ -25,13 +25,20 @@ export default async function handler(req,res){
     const requestedDuration=Math.max(1,Math.min(10,Number(body.duration)||5));
     const upstreamRatio={"16:9":"landscape","9:16":"portrait","1:1":"square"}[ratio];
 
+    // Keep the user's scene first and make every request unique so the
+    // upstream T2V service cannot fall back to a previous/default storyboard.
+    const generationId=crypto.randomUUID();
     const finalPrompt=[
       userPrompt,
-      "Single continuous photorealistic video scene.",
-      "Show the main subject and action exactly as described.",
-      "Do not invent a different subject or story.",
-      "Natural continuous motion; keep the same subject throughout the clip.",
-      "No text, subtitles, logos or dialogue."
+      "CREATE A COMPLETELY NEW VIDEO FOR THIS REQUEST.",
+      "The user's scene is the only source of truth.",
+      "Do not reuse, copy or substitute any previous/default/demo scene.",
+      "Do not add soldiers, military scenes, people, animals, vehicles or objects unless explicitly named by the user.",
+      "Show the exact named subject and exact requested action continuously from beginning to end.",
+      "For 16:9: use a WIDE HORIZONTAL LANDSCAPE FRAME, not portrait or vertical composition.",
+      "Photorealistic natural motion, coherent action, stable subject identity.",
+      "No text, subtitles, logos or unrelated events.",
+      "Unique generation: "+generationId
     ].join(" ");
 
     const upstream=await fetch("https://api.omegatech.app/api/ai/Txt2video",{
@@ -41,6 +48,9 @@ export default async function handler(req,res){
         action:"generate",
         prompt:finalPrompt,
         ratio:upstreamRatio,
+        aspectRatio:ratio,
+        width:ratio==="16:9"?1280:ratio==="9:16"?720:1024,
+        height:ratio==="16:9"?720:ratio==="9:16"?1280:1024,
         sound:true
       })
     });
