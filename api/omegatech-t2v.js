@@ -14,7 +14,10 @@ export default async function handler(req,res){
       body:JSON.stringify({
         action:"generate",
         prompt,
-        ratio:["16:9","9:16","1:1"].includes(body.ratio)?body.ratio:"16:9",
+        ratio:"16:9",
+        aspectRatio:"16:9",
+        width:1280,
+        height:720,
         sound:body.sound!==false
       })
     });
