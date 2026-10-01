@@ -13,6 +13,29 @@ export default async function handler(req,res){
 
   try{
     const body=typeof req.body==="string"?JSON.parse(req.body||"{}"):(req.body||{});
+
+    if(body.debug==="home"){
+      const generationId=crypto.randomUUID();
+      const deviceID="miya_"+generationId.replace(/-/g,"").slice(0,16);
+      const r=await fetch("https://t2v.aritek.app/api/v2/t2v/home?v=85",{
+        method:"GET",
+        headers:{
+          "User-Agent":"okhttp/4.12.0",
+          "versionCode":"85",
+          "Ctry-Target":"others",
+          "Device-Id":deviceID,
+          "Sign":"68d6165b72a7f2d8d17b0dc6fe9691abdf77c583",
+          "Cache-Control":"no-cache"
+        }
+      });
+      const t=await r.text();
+      return res.status(200).json({
+        success:r.ok,
+        upstreamStatus:r.status,
+        upstreamBody:safeBody(t)
+      });
+    }
+
     const requestedPrompt=String(body.prompt||"").trim();
 
     if(!requestedPrompt){
