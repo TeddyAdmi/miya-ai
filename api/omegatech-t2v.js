@@ -11,16 +11,21 @@ export default async function handler(req,res){
 
     const prompt=requestedPrompt.slice(0,1900)+"\n\n[UNIQUE GENERATION ID: "+generationId+"]";
 
-    // Match the internal Aritek T2V client request shape.
-    // versionCode is used by the underlying txt2videov3 client.
+    // Pass the native Aritek T2V fields through OmegaTech.
+    // ratio is kept for OmegaTech; aspect_ratio/versionCode/etc. mirror
+    // the underlying txt2videov3 client shape.
     const payload={
       action:"generate",
       prompt,
       ratio:"16:9",
+      aspect_ratio:"16:9",
       sound:body.sound!==false,
+      ai_sound:body.sound===false?0:1,
+      ctry_target:"others",
       deviceID:generationId.replace(/-/g,"").slice(0,16),
+      isPremium:0,
       used:[],
-      versionCode:51
+      versionCode:72
     };
 
     const requestUrl="https://omegatech-api.dixonomega.tech/api/ai/Txt2video?request_id="+encodeURIComponent(generationId);
