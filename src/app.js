@@ -1659,14 +1659,14 @@ async function generateOmegaT2V(prompt){
    while(Date.now()-readyStarted<10*60*1000){
      try{
        const finalResponse=await fetch(videoUrl,{method:"GET",cache:"no-store",signal:AbortSignal.timeout(120000)});
-       if(finalResponse.status===200 && finalResponse.ok){
+       if((finalResponse.status===200 || finalResponse.status===206) && finalResponse.ok){
          videoReady=true;
          break;
        }
      }catch{}
      await new Promise(r=>setTimeout(r,5000));
    }
-   if(!videoReady)throw new Error("OmegaTech: финальный MP4 не подтвердил HTTP 200");
+   if(!videoReady)throw new Error("OmegaTech: финальный MP4 не подтвердил HTTP 200/206");
    const item=saveMedia("video",videoUrl,prompt,"OmegaTech T2V · Video + Audio");
    stopProgress(100,"готово");
    updateVideoProgress("OmegaTech T2V",100,"готово");

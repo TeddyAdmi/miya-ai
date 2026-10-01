@@ -11,13 +11,14 @@ export default async function handler(req,res){
     const userPrompt=(markerIndex>=0?incoming.slice(markerIndex+marker.length):incoming).trim().slice(0,1350);
     if(!userPrompt)return res.status(400).json({success:false,error:"Prompt is empty"});
 
-    const ratio=["16:9","9:16"].includes(String(body.ratio))?String(body.ratio):"16:9";
+    const requestedRatio=["16:9","9:16"].includes(String(body.ratio))?String(body.ratio):"16:9";
+    const ratio=requestedRatio==="16:9"?"landscape":"portrait";
     const sound=body.sound!==false;
     const generationId=crypto.randomUUID();
 
     const ratioInstruction={
-      "16:9":"MANDATORY OUTPUT: 16:9 WIDE HORIZONTAL LANDSCAPE VIDEO.",
-      "9:16":"MANDATORY OUTPUT: 9:16 VERTICAL PORTRAIT VIDEO.",
+      "landscape":"MANDATORY OUTPUT: 16:9 WIDE HORIZONTAL LANDSCAPE VIDEO.",
+      "portrait":"MANDATORY OUTPUT: 9:16 VERTICAL PORTRAIT VIDEO.",
       "1:1":"MANDATORY OUTPUT: 1:1 SQUARE VIDEO. WIDTH AND HEIGHT MUST BE EQUAL."
     }[ratio];
 
