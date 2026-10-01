@@ -1650,22 +1650,34 @@ async function generateOmegaT2V(prompt){
    }
    const remoteVideoUrl=String(data.data.videoUrl);
    const videoUrl="/api/omegatech-video?url="+encodeURIComponent(remoteVideoUrl);
-   // HTTP 206 is the readiness signal from the video proxy.
-   updateVideoProgress("OmegaTech T2V",99,"загрузка видео…");
+   // The video is ready when the generated MP4 can actually be opened by the browser.
+// Do not use a fixed 206/200 sequence as a readiness signal.
+   updateVideoProgress("OmegaTech T2V",99,"проверка видео…");
    let videoReady=false;
    const readyStarted=Date.now();
    while(Date.now()-readyStarted<10*60*1000){
      try{
-       const rangeResponse=await fetch(videoUrl,{method:"GET",headers:{Range:"bytes=0-1","Cache-Control":"no-cache"},cache:"no-store",signal:AbortSignal.timeout(120000)});
-       const contentRange=String(rangeResponse.headers.get("content-range")||"");
-       if(rangeResponse.status===206 && rangeResponse.ok && /^bytes\s+0-\d+\/\d+$/i.test(contentRange)){
-         videoReady=true;
-         break;
-       }
+       const probe=document.createElement("video");
+       probe.preload="metadata";
+       probe.muted=true;
+       probe.playsInline=true;
+       const readyPromise=new Promise(resolve=>{
+         let done=false;
+         const finish=ok=>{if(done)return;done=true;resolve(ok)};
+         probe.onloadedmetadata=()=>finish(Number.isFinite(probe.duration)&&probe.duration>0);
+         probe.onerror=()=>finish(false);
+         setTimeout(()=>finish(false),15000);
+       });
+       probe.src=videoUrl;
+       probe.load();
+       videoReady=await readyPromise;
+       probe.removeAttribute("src");
+       probe.load();
+       if(videoReady)break;
      }catch{}
-     await new Promise(r=>setTimeout(r,5000));
+     await new Promise(r=>setTimeout(r,3000));
    }
-   if(!videoReady)throw new Error("OmegaTech: финальный MP4 не подтвердил HTTP 206");
+   if(!videoReady)throw new Error("OmegaTech: MP4 ещё нельзя открыть в браузере");
    const item=saveMedia("video",videoUrl,prompt,"OmegaTech T2V · Video + Audio");
    stopProgress(100,"готово");
    updateVideoProgress("OmegaTech T2V",100,"готово");
