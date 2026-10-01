@@ -1,88 +1,93 @@
 export default async function handler(req,res){
   if(req.method!=="POST"){
     res.setHeader("Allow","POST");
-    return res.status(405).json({error:"Method not allowed"});
+    return res.status(405).json({success:false,error:"Method not allowed"});
   }
 
   try{
     const body=typeof req.body==="string"?JSON.parse(req.body||"{}"):(req.body||{});
-    const requestedDuration=Math.max(1,Math.min(10,Number(body.duration)||5));
+    const prompt=String(body.prompt||"").trim().slice(0,1500);
     const ratio=["16:9","9:16","1:1"].includes(body.ratio)?body.ratio:"16:9";
-    const userPrompt=String(body.prompt||"").trim();
+    const duration=Math.max(1,Math.min(10,Number(body.duration)||5));
 
-    const prompt=[
-      "Create exactly the scene described by the user.",
-      "Do not add any unrequested people, animals, vehicles, weapons, objects, props, events, dialogue, music or voice.",
+    const finalPrompt=[
+      "Create exactly this video scene and nothing else.",
+      "Do not add unrequested people, animals, vehicles, weapons, objects, props, dialogue, music, voice, text, logos or events.",
       "Do not invent extra characters or actions.",
-      "If the user names one subject, show exactly that subject.",
-      "Follow the requested action and sequence exactly.",
-      "Photorealistic natural motion, correct anatomy and physics.",
-      "No text, logos, subtitles or captions.",
-      "The requested video duration is exactly "+requestedDuration+" seconds.",
-      "The requested aspect ratio is "+ratio+".",
-      "USER PROMPT: "+userPrompt.slice(0,1500)
+      "Follow the requested action exactly.",
+      "Photorealistic natural motion and correct anatomy.",
+      "Aspect ratio "+ratio+". Duration "+duration+" seconds.",
+      "USER: "+prompt
     ].join(" ");
 
-    // Argen is temporarily unusable: OmegaTech reports that it cannot obtain
-    // a guest account with diamonds. Use the independent Sora gateway instead.
-    const response=await fetch("https://api.omegatech.app/api/ai/Sora",{
+    const upstream=await fetch("https://api.omegatech.app/api/ai/Sora",{
       method:"POST",
       headers:{"Content-Type":"application/json"},
       body:JSON.stringify({
         action:"generate",
-        prompt,
+        prompt:finalPrompt,
         wait:true,
-        timeout:240,\n        ratio,\n        duration:requestedDuration
+        timeout:240
       })
     });
 
-    const text=await response.text();
-    let payload=null;
-    try{payload=JSON.parse(text)}catch{}
+    const raw=await upstream.text();
 
-    if(!response.ok){
+    if(!upstream.ok){
       return res.status(502).json({
         success:false,
         error:"OmegaTech Sora upstream error",
-        upstreamStatus:response.status,
-        details:text.slice(0,2000)
+        upstreamStatus:upstream.status,
+        details:raw.slice(0,3000)
       });
     }
 
-    function findVideoUrl(value,depth=0){
-      if(depth>6||value==null)return null;
+    let data;
+    try{
+      data=JSON.parse(raw);
+    }catch{
+      return res.status(502).json({
+        success:false,
+        error:"OmegaTech Sora returned invalid JSON",
+        details:raw.slice(0,3000)
+      });
+    }
+
+    function findUrl(value){
       if(typeof value==="string"){
-        const m=value.match(/https?:\/\/[^"\s]+\.(?:mp4|webm)(?:\?[^"\s]*)?/i);
-        return m?m[0]:null;
+        if(value.startsWith("https://")&&(value.includes(".mp4")||value.includes(".webm"))) return value;
+        return null;
       }
       if(Array.isArray(value)){
         for(const item of value){
-          const found=findVideoUrl(item,depth+1);
+          const found=findUrl(item);
           if(found)return found;
         }
         return null;
       }
-      if(typeof value==="object"){
-        for(const [key,val] of Object.entries(value)){
-          if(/video.?url|url|download.?url|output/i.test(key)){
-            const found=findVideoUrl(val,depth+1);
+      if(value&&typeof value==="object"){
+        const preferred=["videoUrl","video_url","downloadUrl","download_url","url","output"];
+        for(const key of preferred){
+          if(Object.prototype.hasOwnProperty.call(value,key)){
+            const found=findUrl(value[key]);
             if(found)return found;
           }
         }
-        for(const val of Object.values(value)){
-          const found=findVideoUrl(val,depth+1);
+        for(const key of Object.keys(value)){
+          const found=findUrl(value[key]);
           if(found)return found;
         }
       }
       return null;
     }
 
-    const videoUrl=findVideoUrl(payload)||findVideoUrl(text);
+    const videoUrl=findUrl(data);
+
     if(!videoUrl){
       return res.status(502).json({
         success:false,
         error:"OmegaTech Sora returned no video URL",
-        details:text.slice(0,3000)
+        details:JSON.stringify(data).slice(0,4000)
       });
     }
 
@@ -94,7 +99,8 @@ export default async function handler(req,res){
   }catch(error){
     return res.status(500).json({
       success:false,
-      error:String(error?.message||error||"OmegaTech request failed")
+      error:"OmegaTech video function failed",
+      details:String(error&&error.message?error.message:error)
     });
   }
 }
