@@ -1610,27 +1610,10 @@ async function generateOmegaT2V(prompt){
    const ratioValue="16:9";
    const durationText=String($("#videoDuration")?.value||"5 сек");
    const requestedDuration=Math.max(1,Math.min(10,Number(durationText.match(/\\d+/)?.[0]||5)));
-   const actionPrompt=[
-     "STRICT VIDEO PROMPT ADHERENCE.",
-     "Treat the user's description as a locked storyboard, not as inspiration.",
-     "If the user says dog, generate a dog. Preserve the exact species, number of subjects and important objects named by the user.",
-     "ONLY the subjects, characters, animals, objects and actions explicitly named by the user are allowed. Never invent additional people, characters, animals, vehicles, props or story events.",
-     "If the user describes one subject, there must be exactly one unless the user explicitly requests more.",
-     "A location such as a forest is only a setting; it does not authorize adding people or other characters.",
-     "Perform every requested action clearly and in the exact order: turn around means visibly turn around; walk means walk; run means run; sit means sit; stand means stand; jump means jump; fly means fly; look means look; pick up means pick up; put down means put down.",
-     "Do not omit, merge, reorder, replace or reinterpret named actions. Do not turn a requested action into a static pose or replace subject movement with camera movement.",
-     "Keep subjects anatomically correct and temporally consistent: no extra subjects, limbs, tails, wings, heads or duplicate objects; no fused bodies, warped faces or sudden identity changes.",
-     "Do not add characters, animals, props, weather, locations, transformations, text, music or story events that the user did not request.",
-     "Preserve the requested scene and ending. If the user specifies where a subject ends, show that ending clearly.",
-     "Use realistic physical motion, coherent cause-and-effect, stable camera continuity, natural motion blur, believable lighting and photorealistic detail.",
-     "Cinematic styling must never override the requested action.",
-     "For sound, use only sounds appropriate to the described scene and actions; do not add unrelated sound.",
-     "PROMPT ADHERENCE IS MORE IMPORTANT THAN CREATIVITY.",
-     `OUTPUT FORMAT: ${ratioValue}.`,
-     `REQUESTED DURATION: ${requestedDuration} seconds.`,
-     "USER VIDEO DESCRIPTION:",
-     String(prompt||"")
-   ].join("\n");
+   // OmegaTech has a 2000-character prompt limit. Keep this request minimal so
+   // the user's actual description reaches the model unchanged.
+   const userPrompt=String(prompt||"").trim();
+   const actionPrompt=userPrompt;
    updateVideoProgress("OmegaTech T2V",1,"создание…");
    const response=await fetch("/api/omegatech-t2v",{
      method:"POST",
