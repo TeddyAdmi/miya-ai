@@ -33,17 +33,27 @@ export default async function handler(req,res){
       return res.status(200).json({ok:true,ready:true,status:upstream.status});
     }
 
-    const upstream=await fetch(target.toString());
-    if(!upstream.ok){
+    const range=req.headers?.range;
+    const upstreamHeaders={};
+    if(range)upstreamHeaders.Range=String(range);
+    const upstream=await fetch(target.toString(),{headers:upstreamHeaders,cache:"no-store"});
+    if(!upstream.ok && upstream.status!==206){
       return res.status(upstream.status).json({error:"Upstream video request failed"});
     }
 
     const type=upstream.headers.get("content-type")||"video/mp4";
-    const buffer=Buffer.from(await upstream.arrayBuffer());
+    const contentLength=upstream.headers.get("content-length");
+    const contentRange=upstream.headers.get("content-range");
+    const acceptRanges=upstream.headers.get("accept-ranges")||"bytes";
     res.setHeader("Content-Type",type);
-    res.setHeader("Content-Length",String(buffer.length));
+    res.setHeader("Accept-Ranges",acceptRanges);
+    if(contentLength)res.setHeader("Content-Length",contentLength);
+    if(contentRange)res.setHeader("Content-Range",contentRange);
     res.setHeader("Cache-Control","public, max-age=14400");
-    return res.status(200).send(buffer);
+    if(req.method==="HEAD")return res.status(upstream.status).end();
+    const buffer=Buffer.from(await upstream.arrayBuffer());
+    if(!contentLength)res.setHeader("Content-Length",String(buffer.length));
+    return res.status(upstream.status).send(buffer);
   }catch(error){
     return res.status(500).json({error:String(error?.message||error||"OmegaTech video proxy failed")});
   }
