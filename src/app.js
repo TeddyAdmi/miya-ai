@@ -1606,8 +1606,7 @@ async function generateOmegaT2V(prompt){
  showLoading();$("#composerSend").disabled=true;
  const stopProgress=startVideoProgress("OmegaTech T2V");
  try{
-   const ratio=String($("#videoRatio")?.value||"16:9");
-   const ratioValue=["16:9","9:16"].includes(ratio)?ratio:"16:9";
+   const ratioValue="16:9";
    const durationText=String($("#videoDuration")?.value||"5 сек");
    const requestedDuration=Math.max(1,Math.min(10,Number(durationText.match(/\\d+/)?.[0]||5)));
    const actionPrompt=[
