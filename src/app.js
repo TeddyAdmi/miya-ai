@@ -1658,11 +1658,16 @@ async function generateOmegaT2V(prompt){
    const readyStarted=Date.now();
    while(Date.now()-readyStarted<10*60*1000){
      try{
-       const finalResponse=await fetch(videoUrl,{method:"GET",headers:{Range:"bytes=0-1","Cache-Control":"no-cache"},cache:"no-store",signal:AbortSignal.timeout(120000)});
-       const contentRange=String(finalResponse.headers.get("content-range")||"");
-       if(finalResponse.status===206 && finalResponse.ok && /^bytes\s+0-\d+\/\d+$/i.test(contentRange)){
-         videoReady=true;
-         break;
+       const rangeResponse=await fetch(videoUrl,{method:"GET",headers:{Range:"bytes=0-1","Cache-Control":"no-cache"},cache:"no-store",signal:AbortSignal.timeout(120000)});
+       const contentRange=String(rangeResponse.headers.get("content-range")||"");
+       if(rangeResponse.status===206 && rangeResponse.ok && /^bytes\s+0-\d+\/\d+$/i.test(contentRange)){
+         // 206 only proves that the MP4 supports ranged delivery. Now make
+         // the same full request the player makes and wait for its HTTP 200.
+         const fullResponse=await fetch(videoUrl,{method:"GET",headers:{"Cache-Control":"no-cache"},cache:"no-store",signal:AbortSignal.timeout(120000)});
+         if(fullResponse.status===200 && fullResponse.ok){
+           videoReady=true;
+           break;
+         }
        }
      }catch{}
      await new Promise(r=>setTimeout(r,5000));
