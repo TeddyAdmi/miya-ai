@@ -15,13 +15,15 @@ export default async function handler(req,res){
     const payload={
       action:"generate",
       prompt,
-      ratio:"landscape",
+      ratio:"16:9",
+      aspect_ratio:"16:9",
+      orientation:"landscape",
       width:1280,
       height:720,
       sound:body.sound!==false
     };
 
-    const requestUrl="https://omegatech-api.dixonomega.tech/api/ai/Txt2video?request_id="+encodeURIComponent(generationId);
+    const requestUrl="https://omegatech-api.dixonomega.tech/api/ai/Txt2video?request_id="+encodeURIComponent(generationId)+"&ratio=16%3A9&aspect_ratio=16%3A9&orientation=landscape&width=1280&height=720";
 
     let response;
     try{
@@ -35,7 +37,7 @@ export default async function handler(req,res){
       });
     }catch(primaryError){
       response=await fetch(
-        "https://api.omegatech.app/api/ai/Txt2video?request_id="+encodeURIComponent(generationId),
+        "https://api.omegatech.app/api/ai/Txt2video?request_id="+encodeURIComponent(generationId)+"&ratio=16%3A9&aspect_ratio=16%3A9&orientation=landscape&width=1280&height=720",
         {
           method:"POST",
           headers:{
