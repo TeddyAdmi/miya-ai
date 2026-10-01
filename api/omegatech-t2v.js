@@ -15,7 +15,7 @@ export default async function handler(req,res){
     // OmegaTech Txt2video uses named aspect-ratio values. The public docs
     // expose the ratio field but hide its select options; the video backend
     // expects landscape/portrait rather than literal 16:9/9:16.
-    const ratio=requestedRatio==="16:9"?"landscape":"portrait";
+    const ratio=requestedRatio==="16:9"?"portrait":"landscape";
     const sound=body.sound!==false;
     const generationId=crypto.randomUUID();
 
