@@ -41,7 +41,7 @@ export default async function handler(req,res){
       "Unique generation: "+generationId
     ].join(" ");
 
-    const upstream=await fetch("https://api.omegatech.app/api/ai/Txt2video",{
+    const upstream=await fetch("https://omegatech-api.dixonomega.tech/api/ai/Txt2video",{
       method:"POST",
       headers:{"Content-Type":"application/json"},
       body:JSON.stringify({
