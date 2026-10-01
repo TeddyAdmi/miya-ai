@@ -3,97 +3,63 @@ export default async function handler(req,res){
     res.setHeader("Allow","POST");
     return res.status(405).json({error:"Method not allowed"});
   }
-  const safeBody=(text)=>{
-    const s=String(text||"").slice(0,4000);
-    return s.replace(/("?(?:token|access_token|authorization|sign|auth)"?\s*[:=]\s*")[^"]+(")/gi,"$1[REDACTED]$2").replace(/Bearer\s+[A-Za-z0-9._-]+/gi,"Bearer [REDACTED]");
-  };
-  const parseJson=(text)=>{try{return JSON.parse(text);}catch(error){return null;}};
-  const extractUrl=(data)=>data?.data?.url||data?.url||data?.data?.video_url||data?.video_url||data?.data?.videoUrl||data?.videoUrl||null;
-  const extractJobId=(data)=>data?.data?.jobId||data?.data?.job_id||data?.jobId||data?.job_id||data?.data?.id||data?.id||null;
 
   try{
     const body=typeof req.body==="string"?JSON.parse(req.body||"{}"):(req.body||{});
-    const prompt=String(body.prompt||"").trim().slice(0,1900);
-    if(!prompt)return res.status(400).json({success:false,error:"Prompt is required"});
+    const requestedPrompt=String(body.prompt||"").trim();
+    const generationId=crypto.randomUUID();
 
-    const deviceID="miya_"+crypto.randomUUID().replace(/-/g,"").slice(0,16);
-    const sign="68d6165b72a7f2d8d17b0dc6fe9691abdf77c583";
-    const headers={"User-Agent":"okhttp/5.1.0","versionCode":"23","Ctry-Target":"others","Device-Id":deviceID,"Sign":sign,"Cache-Control":"no-cache"};
-    const diagnostics={endpoint:"https://t2p.aritek.app",session:null,generation:null,statusPoll:null};
+    const prompt=requestedPrompt.slice(0,1900)+"\n\n[UNIQUE GENERATION ID: "+generationId+"]";
 
-    let sessionResponse;
+    // Pass the native Aritek T2V fields through OmegaTech.
+    // ratio is kept for OmegaTech; aspect_ratio/versionCode/etc. mirror
+    // the underlying txt2videov3 client shape.
+    const payload={
+      action:"generate",
+      prompt,
+      ratio:"16:9",
+      aspect_ratio:"16:9",
+      sound:body.sound!==false,
+      ai_sound:body.sound===false?0:1,
+      ctry_target:"others",
+      deviceID:generationId.replace(/-/g,"").slice(0,16),
+      isPremium:0,
+      used:[],
+      versionCode:72
+    };
+
+    const requestUrl="https://omegatech-api.dixonomega.tech/api/ai/Txt2video?request_id="+encodeURIComponent(generationId);
+
+    let response;
     try{
-      sessionResponse=await fetch("https://t2p.aritek.app/api/v1/user/info",{method:"GET",headers});
-    }catch(error){
-      return res.status(502).json({success:false,error:"T2P_SESSION_NETWORK_ERROR",message:String(error?.message||error),diagnostics});
-    }
-
-    const sessionText=await sessionResponse.text();
-    const sessionData=parseJson(sessionText);
-    const token=sessionData?.data?.token;
-    diagnostics.session={
-      httpStatus:sessionResponse.status,
-      ok:sessionResponse.ok,
-      body:safeBody(sessionText),
-      json:Boolean(sessionData),
-      tokenPresent:Boolean(token),
-      responseKeys:sessionData&&typeof sessionData==="object"?Object.keys(sessionData):[]
-    };
-
-    if(!sessionResponse.ok||!token){
-      return res.status(502).json({
-        success:false,
-        error:"T2P_SESSION_FAILED",
-        upstreamStatus:sessionResponse.status,
-        upstreamBody:safeBody(sessionText),
-        tokenPresent:Boolean(token),
-        sessionJson:sessionData?{...sessionData,data:sessionData.data?{...sessionData.data,token:sessionData.data.token?"[REDACTED]":undefined}:sessionData.data}:null,
-        diagnostics
-      });
-    }
-
-    const videoResponse=await fetch("https://t2p.aritek.app/api/v1/video/t2v",{
-      method:"POST",
-      headers:{...headers,"Content-Type":"application/json","Authorization":"Bearer "+token},
-      body:JSON.stringify({prompt,versionCode:23,deviceID,isPremium:0,ctry_target:"others",used:[],aspect_ratio:"16:9",ai_sound:body.sound!==false?1:0})
-    });
-    const videoText=await videoResponse.text();
-    const videoData=parseJson(videoText);
-    const directUrl=extractUrl(videoData);
-    const jobId=extractJobId(videoData);
-
-    diagnostics.generation={
-      httpStatus:videoResponse.status,
-      ok:videoResponse.ok,
-      body:safeBody(videoText),
-      json:Boolean(videoData),
-      directUrlPresent:Boolean(directUrl),
-      jobId:jobId||null,
-      responseKeys:videoData&&typeof videoData==="object"?Object.keys(videoData):[]
-    };
-
-    if(!videoResponse.ok||!videoData)return res.status(502).json({success:false,error:"T2P_GENERATION_FAILED",diagnostics});
-    if(directUrl)return res.status(200).json({success:true,mode:"t2p-diagnostic",diagnostics});
-    if(!jobId)return res.status(502).json({success:false,error:"T2P_JOB_ID_MISSING",diagnostics});
-
-    for(let i=0;i<30;i++){
-      await new Promise(resolve=>setTimeout(resolve,2000));
-      const statusResponse=await fetch("https://t2p.aritek.app/api/v1/generate/status",{
+      response=await fetch(requestUrl,{
         method:"POST",
-        headers:{...headers,"Content-Type":"application/json","Authorization":"Bearer "+token},
-        body:JSON.stringify({ids:[jobId]})
+        headers:{
+          "Content-Type":"application/json",
+          "Cache-Control":"no-cache"
+        },
+        body:JSON.stringify(payload)
       });
-      const statusText=await statusResponse.text();
-      const statusData=parseJson(statusText);
-      const statusUrl=extractUrl(statusData);
-      diagnostics.statusPoll={attempt:i+1,httpStatus:statusResponse.status,ok:statusResponse.ok,body:safeBody(statusText),json:Boolean(statusData),urlPresent:Boolean(statusUrl)};
-      if(statusResponse.ok&&statusUrl){
-        diagnostics.statusPoll.url=statusUrl;
-        return res.status(200).json({success:true,mode:"t2p-diagnostic",diagnostics});
-      }
+    }catch(primaryError){
+      response=await fetch(
+        "https://api.omegatech.app/api/ai/Txt2video?request_id="+encodeURIComponent(generationId),
+        {
+          method:"POST",
+          headers:{
+            "Content-Type":"application/json",
+            "Cache-Control":"no-cache"
+          },
+          body:JSON.stringify(payload)
+        }
+      );
     }
-    return res.status(504).json({success:false,error:"T2P_STATUS_TIMEOUT",diagnostics});
+
+    const text=await response.text();
+    res.status(response.status).setHeader("Content-Type","application/json").send(text);
   }catch(error){
-    return res.status(500).json({success:false,error:String(error?.message||error||"T2P request failed")});
+    res.status(500).json({
+      success:false,
+      error:String(error?.message||error||"OmegaTech request failed")
+    });
   }
 }
