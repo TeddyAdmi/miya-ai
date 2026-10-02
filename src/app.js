@@ -1746,6 +1746,30 @@ async function generateOmegaT2V(prompt){
    if($("#composerSend"))$("#composerSend").disabled=false;
  }
 }
+async function generateFreeAIVideo(prompt){
+ if(videoGenerationBusy){toast("Видео уже создаётся. Дождитесь завершения текущего запроса.");return}
+ videoGenerationBusy=true;
+ const source=referenceImage||"";
+ showLoading();$("#composerSend").disabled=true;
+ const stopProgress=startVideoProgress("FreeAIVideo VIDEOX");
+ try{
+   const ratio=String($("#videoRatio")?.value||"16:9");
+   const size=ratio==="9:16"?"1080x1920":ratio==="1:1"?"1080x1080":"1920x1080";
+   const response=await fetch("/api/freeaivideo-video",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({prompt:String(prompt||"").trim(),image:source,ratio,size,with_audio:true,quality:"speed",fps:30})});
+   const raw=await response.text();let data=null;try{data=JSON.parse(raw)}catch{}
+   if(!response.ok||!data?.success||!data?.videoUrl)throw new Error(String(data?.message||data?.error||raw||"FreeAIVideo не вернул видео").slice(0,500));
+   updateVideoProgress("FreeAIVideo VIDEOX",99,"видео получено…");
+   const item=saveMedia("video",data.videoUrl,prompt,"FreeAIVideo VIDEOX · Video + Audio");
+   stopProgress(100,"готово");updateVideoProgress("FreeAIVideo VIDEOX",100,"готово");removeGenerationLoading();renderVideoLibrary();
+   if(item)scrollImagesToTop();
+ }catch(e){
+   stopProgress(null,"ошибка");removeGenerationLoading();
+   if($("#composerProgress"))$("#composerProgress").textContent="";
+   if($("#composerStatus"))$("#composerStatus").textContent="FreeAIVideo VIDEOX · ошибка";
+   toast("FreeAIVideo: "+(e?.message||"не удалось создать видео"));
+ }finally{videoGenerationBusy=false;$("#composerSend").disabled=false}
+}
+
 async function generateVideo(prompt){
  refreshLtxQuotaState();
  const selectedModel=String($("#videoModel")?.value||"LTX-2.3 Distilled");
@@ -1758,6 +1782,7 @@ async function generateVideo(prompt){
   }
  }
  if(selectedModel==="NovAI CogVideoX-Flash") return generateNovaiVideo(prompt);
+ if(selectedModel==="FreeAIVideo VIDEOX") return generateFreeAIVideo(prompt);
  if(selectedModel==="OmegaTech T2V") return generateOmegaT2V(prompt);
  if(selectedModel==="Agnes Video 2.5"||selectedModel==="Agnes Video 2.5 Flash"||selectedModel==="Agnes Video v2.0") return generateAgnesVideo(prompt);
  if(videoGenerationBusy){
