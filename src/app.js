@@ -1601,6 +1601,74 @@ async function generateAgnesVideo(prompt){
    videoGenerationBusy=false;if($("#composerSend"))$("#composerSend").disabled=false;
  }
 }
+async function generateNovaiVideo(prompt){
+ if(videoGenerationBusy){toast("Видео уже создаётся. Дождитесь завершения текущего запроса.");return}
+ videoGenerationBusy=true;
+ showLoading();$("#composerSend").disabled=true;
+ const model="NovAI CogVideoX-Flash";
+ const stopProgress=startVideoProgress(model);
+ try{
+   updateVideoProgress(model,1,"создание…");
+   const response=await fetch("/api/novai-video",{
+     method:"POST",
+     headers:{"Content-Type":"application/json","Accept":"application/json"},
+     body:JSON.stringify({prompt})
+   });
+   const raw=await response.text();
+   let data={};try{data=raw?JSON.parse(raw):{}}catch{}
+   if(!response.ok||!data?.id){
+     throw new Error(String(data?.message||data?.error||raw||"NovAI не создал задачу").slice(0,500));
+   }
+
+   const taskId=String(data.id);
+   let final=null;
+   const started=Date.now();
+
+   while(Date.now()-started<15*60*1000){
+     await new Promise(r=>setTimeout(r,5000));
+     const statusResponse=await fetch("/api/novai-video?id="+encodeURIComponent(taskId),{
+       headers:{"Accept":"application/json"},
+       signal:AbortSignal.timeout(30000)
+     });
+     const statusRaw=await statusResponse.text();
+     let status={};try{status=statusRaw?JSON.parse(statusRaw):{}}catch{}
+     if(!statusResponse.ok){
+       throw new Error(String(status?.message||status?.detail||status?.error||statusRaw||"NovAI status error").slice(0,500));
+     }
+
+     const state=String(status.task_status||status.status||"").toUpperCase();
+     if(state==="SUCCESS"||state==="COMPLETED"){
+       final=status;
+       break;
+     }
+     if(state==="FAILED"||state==="ERROR"){
+       throw new Error(String(status?.message||status?.error||"NovAI генерация завершилась ошибкой").slice(0,500));
+     }
+   }
+
+   const videoUrl=String(final?.video_result?.[0]?.url||"").trim();
+   if(!videoUrl)throw new Error("NovAI не вернул готовый MP4 за 15 минут");
+
+   updateVideoProgress(model,99,"видео получено…");
+   const item=saveMedia("video",videoUrl,prompt,model+" · 720p · 6 сек");
+   stopProgress(100,"готово");
+   updateVideoProgress(model,100,"готово");
+   removeGenerationLoading();
+   renderVideoLibrary();
+   if(item)scrollImagesToTop();
+   if($("#composerStatus"))$("#composerStatus").textContent=model+" · готово";
+   toast("NovAI: видео создано");
+ }catch(e){
+   stopProgress(null,"ошибка");
+   removeGenerationLoading();
+   if($("#composerProgress"))$("#composerProgress").textContent="";
+   if($("#composerStatus"))$("#composerStatus").textContent=model+" · ошибка";
+   toast("NovAI: "+(e?.message||"не удалось создать видео"));
+ }finally{
+   videoGenerationBusy=false;
+   if($("#composerSend"))$("#composerSend").disabled=false;
+ }
+}
 async function generateOmegaT2V(prompt){
  if(videoGenerationBusy){toast("Видео уже создаётся. Дождитесь завершения текущего запроса.");return}
  videoGenerationBusy=true;
@@ -1689,6 +1757,7 @@ async function generateVideo(prompt){
    return;
   }
  }
+ if(selectedModel==="NovAI CogVideoX-Flash") return generateNovaiVideo(prompt);
  if(selectedModel==="OmegaTech T2V") return generateOmegaT2V(prompt);
  if(selectedModel==="Agnes Video 2.5"||selectedModel==="Agnes Video 2.5 Flash"||selectedModel==="Agnes Video v2.0") return generateAgnesVideo(prompt);
  if(videoGenerationBusy){
