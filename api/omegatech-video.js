@@ -14,7 +14,7 @@ export default async function handler(req,res){
       const run=async(image)=>fetch(endpoint,{
         method:"POST",
         headers:{"Authorization":"Bearer "+token,"Content-Type":"application/json","Accept":"application/json"},
-        body:JSON.stringify({task:"caption",image,caption_length:"long",stream:false,max_tokens:1200}),
+        body:JSON.stringify({task:"query",image,question,reasoning:false,stream:false,max_tokens:1200}),
         signal:AbortSignal.timeout(55000)
       });
       let response=await run(source.toString());
