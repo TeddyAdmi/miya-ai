@@ -20,7 +20,7 @@ const runCloudflareTest = async () => {
   if (status) status.textContent = "Cloudflare Workers AI · проверка…";
 
   try {
-    const response = await fetch("/api/cloudflare-test", {
+    const response = await fetch("/api/omegatech-video", {
       method: "POST",
       headers: { "Content-Type": "application/json", "Accept": "application/json" },
       body: JSON.stringify({ prompt })
