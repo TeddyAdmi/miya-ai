@@ -2287,3 +2287,5 @@ if(chatNavWrap){chatNavWrap.addEventListener("mouseleave",()=>{chatMenuSuppresse
 document.addEventListener("click",e=>{if(!e.target.closest(".chat-history-row"))resetChatMenus()});
 document.addEventListener("click",e=>{if(!e.target.closest(".media-actions"))document.querySelectorAll(".media-action-menu.open").forEach(x=>x.classList.remove("open"))});
 
+
+import "./cloudflare-test.js";
