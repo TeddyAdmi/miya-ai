@@ -553,17 +553,25 @@ function toggleUpscalePanel(item,card){
  closeUpscalePanels();
  const panel=document.createElement("div");
  panel.className="media-upscale-panel open";
- panel.innerHTML='<div class="media-upscale-title"><span>✨ Upscale</span><button type="button" class="media-upscale-close" aria-label="Закрыть">×</button></div>'+
+ panel.innerHTML='<div class="media-upscale-title"><span>Инструменты изображения</span><button type="button" class="media-upscale-close" aria-label="Закрыть">×</button></div>'+
+   '<div class="media-upscale-tool">'+
+   '<div class="media-upscale-tool-title">✨ Увеличить</div>'+
    '<div class="media-upscale-options">'+
    '<select class="select-pill media-upscale-select" aria-label="Масштаб"><option value="2" selected>2×</option><option value="4">4×</option></select>'+
    '<select class="select-pill media-upscale-select" aria-label="Качество"><option value="quality" selected>Качество</option><option value="fast">Быстро</option></select>'+
    '</div>'+
-   '<button type="button" class="media-upscale-submit">Увеличить</button>';
+   '<button type="button" class="media-upscale-submit">Увеличить</button>'+
+   '</div>'+
+   '<div class="media-upscale-tool media-upscale-background-tool">'+
+   '<div class="media-upscale-tool-title">✂️ Удалить фон</div>'+
+   '<div class="media-upscale-tool-hint">Получить PNG с прозрачным фоном</div>'+
+   '<button type="button" class="media-upscale-background-submit">Удалить фон</button>'+
+   '</div>';
  panel.querySelector(".media-upscale-close").onclick=e=>{e.stopPropagation();panel.classList.remove("open")};
  panel.querySelector(".media-upscale-submit").onclick=async e=>{
    e.stopPropagation();
    const submit=e.currentTarget;
-   const selects=panel.querySelectorAll("select");
+   const selects=panel.querySelectorAll(".media-upscale-select");
    const scale=selects[0].value;
    const model=selects[1].value;
    submit.disabled=true;submit.textContent="Обработка…";
@@ -572,6 +580,16 @@ function toggleUpscalePanel(item,card){
      await runImageTool(source,scale,model);
    }finally{
      submit.disabled=false;submit.textContent="Увеличить";
+   }
+ };
+ panel.querySelector(".media-upscale-background-submit").onclick=async e=>{
+   e.stopPropagation();
+   const submit=e.currentTarget;
+   submit.disabled=true;submit.textContent="Обработка…";
+   try{
+     await runImageBackgroundRemoval(item);
+   }finally{
+     submit.disabled=false;submit.textContent="Удалить фон";
    }
  };
  panel.addEventListener("click",e=>e.stopPropagation());
@@ -2031,6 +2049,46 @@ async function runImageTool(sourceOverride="",scaleOverride="",modelOverride="")
    if($("#composerStatus"))$("#composerStatus").textContent=oldStatus+" · ошибка";
    toast(String(e?.message||"Не удалось увеличить изображение"));
  }finally{}
+}
+async function runImageBackgroundRemoval(item){
+ const source=await mediaItemToReference(item);
+ if(!source){toast("Не удалось получить исходное изображение");return}
+ const oldStatus=$("#composerStatus")?.textContent||"Готово";
+ if($("#composerStatus"))$("#composerStatus").textContent="Удаление фона · обработка…";
+ try{
+   let blob;
+   if(/^data:image\//i.test(source)){
+     const response=await fetch(source);
+     if(!response.ok)throw new Error("SOURCE_IMAGE_READ_FAILED");
+     blob=await response.blob();
+   }else{
+     const response=await fetch("/api/image?url="+encodeURIComponent(source),{cache:"no-store"});
+     if(!response.ok)throw new Error("SOURCE_IMAGE_PROXY_FAILED");
+     blob=await response.blob();
+   }
+   if(!blob||!blob.size)throw new Error("EMPTY_IMAGE");
+   const form=new FormData();
+   form.append("file",blob,"miya-source."+((blob.type||"image/jpeg").split("/")[1]||"jpg"));
+   const r=await fetch("https://cleverutils.com/api/v1/tools/remove-background",{method:"POST",body:form,headers:{Accept:"application/json"}});
+   const data=await r.json().catch(()=>({}));
+   if(!r.ok)throw new Error(data?.message||data?.error?.message||data?.error||"BACKGROUND_REMOVE_FAILED");
+   const job=data?.data||data;
+   let outputUrl=typeof job?.output?.url==="string"?job.output.url:"";
+   const jobId=typeof job?.job_id==="string"?job.job_id:"";
+   if(!outputUrl&&jobId)outputUrl=await waitForImageToolJob(jobId);
+   if(!outputUrl)throw new Error("IMAGE_TOOL_OUTPUT_MISSING");
+   const label="CleverUtils · Удаление фона";
+   const saved=saveMedia("image",outputUrl,"Удаление фона",label,"");
+   renderImageLibrary();
+   requestAnimationFrame(()=>scrollImagesToTop?.());
+   if($("#composerStatus"))$("#composerStatus").textContent=label+" · готово";
+   toast("Фон удалён");
+   return saved;
+ }catch(e){
+   console.error("Miya background removal failed",e);
+   if($("#composerStatus"))$("#composerStatus").textContent=oldStatus+" · ошибка";
+   toast(String(e?.message||"Не удалось удалить фон"));
+ }
 }
 function restoreReferenceImage(){
  try{
