@@ -1018,6 +1018,57 @@ async function generateAgnesImage(prompt){
  }
 }
 
+async function generateModelScopeImage(prompt){
+ const model="ModelScope · Z-Image-Turbo";
+ showLoading();
+ $("#composerSend").disabled=true;
+ const loader=$("#canvas .generation-loading");
+ const ring=loader?.querySelector(".progress-circle");
+ const percent=ring?.querySelector(".progress-percent");
+ const bar=loader?.querySelector(".generation-progress-bar span");
+ const composerProgress=$("#composerProgress");
+ let value=1;
+ const timer=setInterval(()=>{
+   value=Math.min(92,value+(value<55?4:1));
+   if(ring)ring.style.setProperty("--progress",value+"%");
+   if(percent)percent.textContent=value+"%";
+   if(bar)bar.style.width=value+"%";
+   if(composerProgress)composerProgress.textContent=value+"%";
+   $("#composerStatus").textContent=model+" · создание…";
+ },900);
+ try{
+   if(referenceImage)throw new Error("ModelScope Z-Image-Turbo сейчас подключён только для Text → Image; убери исходное изображение");
+   const response=await fetch("/api/modelscope-image",{
+     method:"POST",
+     headers:{"Content-Type":"application/json","Accept":"application/json"},
+     body:JSON.stringify({prompt}),
+     signal:AbortSignal.timeout(210000)
+   });
+   const raw=await response.text();
+   let data={};try{data=raw?JSON.parse(raw):{}}catch{}
+   if(!response.ok||!data.imageUrl)throw new Error(String(data.message||data.error||raw||"ModelScope не вернул изображение").slice(0,600));
+   clearInterval(timer);
+   if(ring)ring.style.setProperty("--progress","100%");
+   if(percent)percent.textContent="100%";
+   if(bar)bar.style.width="100%";
+   if(composerProgress)composerProgress.textContent="100%";
+   showImage(data.imageUrl,prompt,data.model||model);
+   $("#composerInput").value="";
+   syncInput();
+   $("#composerStatus").textContent=(data.model||model)+" · готово";
+   setTimeout(()=>$("#canvas .generation-loading")?.remove(),350);
+   toast("ModelScope: изображение создано");
+ }catch(e){
+   clearInterval(timer);
+   $("#canvas .generation-loading")?.remove();
+   if(composerProgress)composerProgress.textContent="";
+   $("#composerStatus").textContent=model+" · ошибка";
+   toast("ModelScope: "+(e?.message||"не удалось создать изображение"));
+ }finally{
+   $("#composerSend").disabled=false;
+ }
+}
+
 async function generateImage(prompt){
  const selectedModel=String($("#composerModel")?.value||"").trim();
  const useAgnesImage=/^Agnes Image/i.test(selectedModel);
