@@ -1038,7 +1038,7 @@ async function generateModelScopeImage(prompt){
  },900);
  try{
    if(referenceImage)throw new Error("ModelScope Z-Image-Turbo сейчас подключён только для Text → Image; убери исходное изображение");
-   const response=await fetch("/api/modelscope-image",{
+   const response=await fetch("/api/image",{
      method:"POST",
      headers:{"Content-Type":"application/json","Accept":"application/json"},
      body:JSON.stringify({prompt}),

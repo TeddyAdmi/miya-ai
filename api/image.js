@@ -2,6 +2,32 @@ module.exports = async function imageHandler(req, res) {
   res.setHeader("Cache-Control", "no-store");
   res.setHeader("Content-Type", "application/json; charset=utf-8");
 
+  if (req.method === "GET") {
+    try {
+      const raw = String(req.query?.url || "").trim();
+      if (!raw) return res.status(400).json({ ok: false, error: "IMAGE_URL_REQUIRED" });
+      const target = new URL(raw);
+      const host = target.hostname.toLowerCase();
+      const allowed =
+        host === "modelscope.cn" ||
+        host.endsWith(".modelscope.cn") ||
+        host.endsWith(".aliyuncs.com") ||
+        host.endsWith(".oss-cn-beijing.aliyuncs.com");
+      if (target.protocol !== "https:" || !allowed) {
+        return res.status(400).json({ ok: false, error: "IMAGE_URL_HOST_NOT_ALLOWED" });
+      }
+      const upstream = await fetch(target.toString(), { cache: "no-store" });
+      if (!upstream.ok) return res.status(upstream.status).json({ ok: false, error: "IMAGE_PROXY_FAILED", upstreamStatus: upstream.status });
+      const type = upstream.headers.get("content-type") || "image/jpeg";
+      if (!/^image\//i.test(type)) return res.status(502).json({ ok: false, error: "UPSTREAM_NOT_IMAGE" });
+      res.setHeader("Content-Type", type);
+      res.setHeader("Cache-Control", "public, max-age=86400");
+      return res.status(200).send(Buffer.from(await upstream.arrayBuffer()));
+    } catch (error) {
+      return res.status(500).json({ ok: false, error: String(error?.message || error || "Image proxy failed") });
+    }
+  }
+
   if (req.method !== "POST") {
     return res.status(405).json({ ok: false, error: "METHOD_NOT_ALLOWED" });
   }
@@ -12,6 +38,101 @@ module.exports = async function imageHandler(req, res) {
     if (!prompt) return res.status(400).json({ ok: false, error: "PROMPT_REQUIRED" });
 
     const ratio = typeof body.ratio === "string" ? body.ratio : "16:9";
+
+    if (model === "ModelScope · Z-Image-Turbo") {
+      const token = String(process.env.MODELSCOPE_TOKEN || "").trim();
+      if (!token) return res.status(500).json({ ok: false, error: "MODELSCOPE_TOKEN_NOT_CONFIGURED" });
+
+      const response = await fetch("https://api-inference.modelscope.cn/v1/images/generations", {
+        method: "POST",
+        headers: {
+          "Authorization": "Bearer " + token,
+          "Content-Type": "application/json",
+          "X-ModelScope-Async-Mode": "true"
+        },
+        body: JSON.stringify({
+          model: "Tongyi-MAI/Z-Image-Turbo",
+          prompt: prompt.slice(0, 4000)
+        }),
+        signal: AbortSignal.timeout(55000)
+      });
+
+      const raw = await response.text();
+      let data = {};
+      try { data = raw ? JSON.parse(raw) : {}; } catch {}
+
+      if (!response.ok) {
+        return res.status(response.status).json({
+          ok: false,
+          error: "MODELSCOPE_GENERATION_FAILED",
+          message: String(data?.message || data?.error || raw).slice(0, 1200),
+          upstreamStatus: response.status
+        });
+      }
+
+      let imageUrl = String(
+        data?.output_images?.[0] ||
+        data?.images?.[0]?.url ||
+        data?.image_url ||
+        ""
+      );
+      const taskId = String(data?.task_id || "").trim();
+
+      if (taskId && !imageUrl) {
+        const deadline = Date.now() + 180000;
+        while (Date.now() < deadline) {
+          await new Promise(r => setTimeout(r, 2500));
+          const statusResponse = await fetch(
+            "https://api-inference.modelscope.cn/v1/tasks/" + encodeURIComponent(taskId),
+            {
+              headers: {
+                "Authorization": "Bearer " + token,
+                "X-ModelScope-Task-Type": "image_generation"
+              },
+              cache: "no-store"
+            }
+          );
+          const statusRaw = await statusResponse.text();
+          let statusData = {};
+          try { statusData = statusRaw ? JSON.parse(statusRaw) : {}; } catch {}
+          const state = String(statusData?.task_status || "").toUpperCase();
+
+          if (state === "SUCCEED" || state === "SUCCESS" || state === "COMPLETED") {
+            imageUrl = String(
+              statusData?.output_images?.[0] ||
+              statusData?.images?.[0]?.url ||
+              statusData?.image_url ||
+              ""
+            );
+            if (imageUrl) break;
+          }
+          if (state === "FAILED" || state === "ERROR") {
+            return res.status(502).json({
+              ok: false,
+              error: "MODELSCOPE_TASK_FAILED",
+              message: String(statusData?.message || statusData?.error || "Task failed").slice(0, 1200),
+              taskId
+            });
+          }
+        }
+      }
+
+      if (!imageUrl) {
+        return res.status(504).json({ ok: false, error: "MODELSCOPE_IMAGE_TIMEOUT", taskId: taskId || null });
+      }
+
+      return res.status(200).json({
+        ok: true,
+        mode: "image",
+        status: "completed",
+        provider: "ModelScope",
+        model: "Tongyi-MAI/Z-Image-Turbo",
+        taskId: taskId || null,
+        imageUrl: "/api/image?url=" + encodeURIComponent(imageUrl),
+        imageUrls: ["/api/image?url=" + encodeURIComponent(imageUrl)],
+        count: 1
+      });
+    }
     const model = typeof body.model === "string" ? body.model.trim() : "Flux Dev";
     const options = body.options && typeof body.options === "object" ? body.options : {};
     const imageUrl = typeof options.imageUrl === "string" ? options.imageUrl.trim() : "";
