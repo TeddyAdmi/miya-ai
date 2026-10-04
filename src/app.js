@@ -1956,8 +1956,7 @@ async function runImageTool(){
  if(!source){toast("Сначала создай или загрузи изображение");return}
  const scale=String($("#imageUpscaleScale")?.value||"2");
  const model=String($("#imageUpscaleModel")?.value||"quality");
- const button=$("#imageUpscaleButton");
- if(button)button.disabled=true;
+ 
  const oldStatus=$("#composerStatus")?.textContent||"Готово";
  if($("#composerStatus"))$("#composerStatus").textContent="AI Upscale · обработка…";
  try{
@@ -1981,8 +1980,7 @@ async function runImageTool(){
    if($("#composerStatus"))$("#composerStatus").textContent=oldStatus+" · ошибка";
    toast(String(e?.message||"Не удалось увеличить изображение"));
  }finally{
-   if(button)button.disabled=false;
- }
+   }
 }
 function restoreReferenceImage(){
  try{
@@ -2124,7 +2122,10 @@ if(composerInput){
 $("#composerInput").addEventListener("keydown",e=>{if(e.key==="Enter"&&!e.shiftKey){e.preventDefault();$("#composerSend").click()}});
 $("#composerSend").addEventListener("click",async()=>{
  const value=$("#composerInput").value.trim();
- if(!value){toast(mode==="chat"?"Напиши сообщение":mode==="video"?"Опиши видео":"Опиши, что создать или изменить");return}
+ if(!value){
+   if(mode==="images"&&getImageToolSource()){await runImageTool();return}
+   toast(mode==="chat"?"Напиши сообщение":mode==="video"?"Опиши видео":"Опиши, что создать или изменить");return
+ }
  if(mode==="images"){await generateImage(value);return}
  if(mode==="video"){await generateVideo(value);return}
  if(mode==="voice"){await generateVoice(value);return}
@@ -2181,7 +2182,6 @@ $("#composerModel")?.addEventListener("change",()=>{
   }
 });
 $("#improve")?.addEventListener("click",improveComposerPrompt);
-$("#imageUpscaleButton")?.addEventListener("click",runImageTool);
 $("#copyPrompt")?.addEventListener("click",copyComposerPrompt);
 $("#videoImprove")?.addEventListener("click",improveComposerPrompt);
 $("#videoCopyPrompt")?.addEventListener("click",copyComposerPrompt);
