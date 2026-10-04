@@ -1943,7 +1943,7 @@ async function waitForImageToolJob(jobId){
  const started=Date.now();
  while(Date.now()-started<60000){
    await new Promise(r=>setTimeout(r,1800));
-   const r=await fetch("/api/image-tools?jobId="+encodeURIComponent(jobId),{cache:"no-store"});
+   const r=await fetch("/api/image?jobId="+encodeURIComponent(jobId),{cache:"no-store"});
    const data=await r.json().catch(()=>({}));
    if(!r.ok||data?.ok===false)throw new Error(data?.message||data?.error||"IMAGE_TOOL_STATUS_FAILED");
    if(data.outputUrl)return data.outputUrl;
@@ -1951,56 +1951,38 @@ async function waitForImageToolJob(jobId){
  }
  throw new Error("IMAGE_TOOL_TIMEOUT");
 }
-async function runImageTool(action){
+async function runImageTool(){
  const source=getImageToolSource();
  if(!source){toast("Сначала создай или загрузи изображение");return}
  const scale=String($("#imageUpscaleScale")?.value||"2");
  const model=String($("#imageUpscaleModel")?.value||"quality");
- const button=action==="upscale"?$("#imageUpscaleButton"):$("#imageRemoveBgButton");
+ const button=$("#imageUpscaleButton");
  if(button)button.disabled=true;
  const oldStatus=$("#composerStatus")?.textContent||"Готово";
- if($("#composerStatus"))$("#composerStatus").textContent=action==="upscale"
-   ? "AI Upscale · обработка…"
-   : "Удаление фона · обработка…";
+ if($("#composerStatus"))$("#composerStatus").textContent="AI Upscale · обработка…";
  try{
-   const payload={action};
+   const payload={action:"upscale",scale,model};
    if(/^data:image\\//i.test(source))payload.imageData=source;else payload.imageUrl=source;
-   if(action==="upscale"){payload.scale=scale;payload.model=model}
-   const r=await fetch("/api/image-tools",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(payload)});
+   const r=await fetch("/api/image",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(payload)});
    const data=await r.json().catch(()=>({}));
    if(!r.ok||data?.ok===false)throw new Error(data?.message||data?.error||"IMAGE_TOOL_FAILED");
    let outputUrl=String(data.outputUrl||"");
    if(!outputUrl&&data.jobId)outputUrl=await waitForImageToolJob(data.jobId);
    if(!outputUrl)throw new Error("IMAGE_TOOL_OUTPUT_MISSING");
-   const label=action==="upscale"
-     ? "CleverUtils · AI Upscale "+scale+"x"
-     : "CleverUtils · Удаление фона";
-   const item=saveMedia("image",outputUrl,action==="upscale"?"AI upscale "+scale+"x":"Удаление фона",label,action==="remove-background"?"png":"");
+   const label="CleverUtils · AI Upscale "+scale+"x";
+   const item=saveMedia("image",outputUrl,"AI upscale "+scale+"x",label,"");
    renderImageLibrary();
    requestAnimationFrame(()=>scrollImagesToTop?.());
    if($("#composerStatus"))$("#composerStatus").textContent=label+" · готово";
-   toast(action==="upscale"?"Upscale "+scale+"x готов":"Фон удалён · PNG готов");
+   toast("Upscale "+scale+"x готов");
    return item;
  }catch(e){
-   console.error("Miya image tool failed",e);
+   console.error("Miya image upscale failed",e);
    if($("#composerStatus"))$("#composerStatus").textContent=oldStatus+" · ошибка";
-   toast(String(e?.message||"Не удалось обработать изображение"));
+   toast(String(e?.message||"Не удалось увеличить изображение"));
  }finally{
    if(button)button.disabled=false;
  }
-}
-function prepareBackgroundReplacement(){
- const source=getImageToolSource();
- if(!source){toast("Сначала создай или загрузи изображение");return}
- referenceImage=source;
- try{sessionStorage.setItem("miyaReferenceImage",referenceImage)}catch{}
- setComposerAttachment(referenceImage);
- $("#composerModel").value="FLUX Kontext Dev";
- $("#composerRatio").value="auto";
- $("#composerInput").value="Замени фон на: ";
- $("#composerStatus").textContent="FLUX Kontext Dev · опиши новый фон";
- $("#composerInput").focus();
- syncInput();
 }
 function restoreReferenceImage(){
  try{
@@ -2199,9 +2181,7 @@ $("#composerModel")?.addEventListener("change",()=>{
   }
 });
 $("#improve")?.addEventListener("click",improveComposerPrompt);
-$("#imageUpscaleButton")?.addEventListener("click",()=>runImageTool("upscale"));
-$("#imageRemoveBgButton")?.addEventListener("click",()=>runImageTool("remove-background"));
-$("#imageReplaceBgButton")?.addEventListener("click",prepareBackgroundReplacement);
+$("#imageUpscaleButton")?.addEventListener("click",runImageTool);
 $("#copyPrompt")?.addEventListener("click",copyComposerPrompt);
 $("#videoImprove")?.addEventListener("click",improveComposerPrompt);
 $("#videoCopyPrompt")?.addEventListener("click",copyComposerPrompt);
