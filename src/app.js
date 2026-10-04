@@ -2218,13 +2218,25 @@ let speechChunks=[];
 let speechBaseText="";
 let speechMimeType="";
 
+function setSpeechMicIdle(){
+  const mic=$("#composerMic");
+  if(!mic)return;
+  mic.classList.remove("recording");
+  mic.setAttribute("aria-label","Начать голосовой ввод");
+  mic.title="Голосовой ввод";
+  mic.innerHTML='<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 14.5a3.5 3.5 0 0 0 3.5-3.5V6a3.5 3.5 0 0 0-7 0v5a3.5 3.5 0 0 0 3.5 3.5Z"/><path d="M19 11a7 7 0 0 1-14 0"/><path d="M12 18v3M8 21h8"/></svg>';
+}
+function setSpeechMicRecording(){
+  const mic=$("#composerMic");
+  if(!mic)return;
+  mic.classList.add("recording");
+  mic.setAttribute("aria-label","Завершить запись и распознать голос");
+  mic.title="Завершить запись и вставить текст";
+  mic.innerHTML='<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8.5"/><path d="m8.2 12.1 2.3 2.3 5.3-5.3"/></svg>';
+}
 function speechSetIdle(){
   const mic=$("#composerMic");
-  if(mic){
-    mic.classList.remove("recording");
-    mic.setAttribute("aria-label","Начать голосовой ввод");
-    mic.title="Голосовой ввод";
-  }
+  if(mic)setSpeechMicIdle();
   const status=$("#composerStatus");
   if(status)status.textContent=modes[mode]?.status||"Готово";
   const canvas=$("#composerVoiceVisualizer");
@@ -2236,8 +2248,8 @@ function speechSetIdle(){
 function ensureSpeechVisualizer(){
   let canvas=$("#composerVoiceVisualizer");
   if(canvas)return canvas;
-  const composer=$("#composer");
-  if(!composer)return null;
+  const row=document.querySelector(".composer-input-row");
+  if(!row)return null;
   canvas=document.createElement("canvas");
   canvas.id="composerVoiceVisualizer";
   canvas.width=192;
@@ -2246,15 +2258,16 @@ function ensureSpeechVisualizer(){
   Object.assign(canvas.style,{
     position:"absolute",
     left:"52px",
-    bottom:"31px",
-    width:"192px",
-    height:"28px",
+    top:"50%",
+    transform:"translateY(-50%)",
+    width:"150px",
+    height:"24px",
     display:"none",
     pointerEvents:"none",
-    zIndex:"4",
+    zIndex:"1004",
     opacity:".95"
   });
-  composer.appendChild(canvas);
+  row.appendChild(canvas);
   return canvas;
 }
 
@@ -2414,9 +2427,7 @@ async function startSpeechRecording(){
     recorder.start(250);
     const mic=$("#composerMic");
     if(mic){
-      mic.classList.add("recording");
-      mic.setAttribute("aria-label","Остановить голосовой ввод");
-      mic.title="Остановить голосовой ввод";
+      setSpeechMicRecording();
     }
     const status=$("#composerStatus");
     if(status)status.textContent="Слушаю… говори спокойно";

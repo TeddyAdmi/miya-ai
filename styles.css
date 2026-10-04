@@ -2405,3 +2405,35 @@ body.light .composer.voice-mode .voice-tool:hover{
   margin-bottom:0!important;
   vertical-align:middle!important;
 }
+
+
+/* Voice recording visualizer stays inside the prompt row and never occupies the model/options row. */
+#composerVoiceVisualizer{
+  position:absolute!important;
+  left:52px!important;
+  top:50%!important;
+  bottom:auto!important;
+  width:150px!important;
+  height:24px!important;
+  transform:translateY(-50%)!important;
+  pointer-events:none!important;
+  z-index:1004!important;
+  opacity:.95!important;
+}
+#composerVoiceVisualizer + *{ }
+.mic.recording{
+  color:#b56cff!important;
+  background:rgba(181,108,255,.14)!important;
+}
+.mic.recording svg{
+  width:20px!important;
+  height:20px!important;
+  filter:drop-shadow(0 0 5px rgba(181,108,255,.55));
+}
+@media(max-width:760px){
+  #composerVoiceVisualizer{
+    left:46px!important;
+    width:118px!important;
+    height:22px!important;
+  }
+}
