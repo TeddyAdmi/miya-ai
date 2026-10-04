@@ -71,7 +71,7 @@ module.exports = async function imageHandler(req, res) {
         const match = dataInput.match(/^data:(image\\/[^;]+);base64,(.+)$/i);
         if (!match) return res.status(400).json({ ok:false, error:"INVALID_IMAGE_DATA" });
         mime = match[1].toLowerCase();
-        bytes = Buffer.from(match[2].replace(/\\s+/g,""), "base64");
+        bytes = Buffer.from(match[2].replace(/\s+/g,""), "base64");
         filename = "miya-upload." + (mime.split("/")[1] === "jpeg" ? "jpg" : mime.split("/")[1]);
       } else if (urlInput) {
         let target;
