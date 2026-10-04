@@ -32,7 +32,7 @@ export default async function handler(req,res){
         raw=await response.text();
         try{data=raw?JSON.parse(raw):{}}catch{data={}};
       }
-      const answer=data?.result?.answer||data?.result?.caption||data?.result?.text||data?.answer||data?.caption||data?.text||"";
+      const answer=data?.result?.result?.answer||data?.result?.answer||data?.result?.result?.caption||data?.result?.caption||data?.result?.result?.text||data?.result?.text||data?.answer||data?.caption||data?.text||"";
       return res.status(response.status).json({ok:response.ok&&!!answer,provider:"Cloudflare Workers AI",model:"@cf/moondream/moondream3.1-9B-A2B",status:response.status,answer,error:response.ok?null:(data?.errors?.[0]?.message||data?.error||"Cloudflare Vision request failed"),debug:{topLevelKeys:Object.keys(data||{}),resultKeys:Object.keys(data?.result||{}),raw:raw.slice(0,4000)}});
     }catch(error){return res.status(502).json({ok:false,error:"CLOUDFLARE_VISION_TEST_FAILED",message:String(error?.message||error||"Vision test failed")});}
   }
