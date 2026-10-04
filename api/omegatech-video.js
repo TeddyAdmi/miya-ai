@@ -7,6 +7,22 @@ export default async function handler(req,res){
       const body=typeof req.body==="string"?JSON.parse(req.body||"{}"):(req.body||{});
       const prompt=String(body.prompt||"").trim().slice(0,2500);
 
+      if(body.cloudflareVision===true){
+        const image=String(body.image||"").trim();
+        const question=String(body.question||"Что изображено на этой картинке? Опиши сюжет, стиль, композицию, свет, цвета и важные детали.").trim().slice(0,2000);
+        if(!/^data:image\/(?:png|jpeg|jpg|webp);base64,/i.test(image)) return res.status(400).json({ok:false,error:"IMAGE_REQUIRED"});
+        const response=await fetch("https://api.cloudflare.com/client/v4/accounts/"+encodeURIComponent(account)+"/ai/run/@cf/moondream/moondream3.1-9B-A2B",{
+          method:"POST",
+          headers:{"Authorization":"Bearer "+token,"Content-Type":"application/json","Accept":"application/json"},
+          body:JSON.stringify({task:"query",image,question,reasoning:false,max_tokens:1200}),
+          signal:AbortSignal.timeout(55000)
+        });
+        const raw=await response.text();
+        let data={}; try{data=raw?JSON.parse(raw):{}}catch{data={}};
+        const answer=data?.result?.answer||data?.result?.caption||"";
+        return res.status(response.status).json({ok:response.ok&&!!answer,provider:"Cloudflare Workers AI",model:"@cf/moondream/moondream3.1-9B-A2B",status:response.status,answer});
+      }
+
       if(body.cloudflareVideo===true){
         if(!prompt)return res.status(400).json({ok:false,error:"PROMPT_REQUIRED"});
         const resolution=["480P","720P","1080P"].includes(String(body.resolution||""))?String(body.resolution):"480P";
