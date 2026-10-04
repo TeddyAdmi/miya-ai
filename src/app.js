@@ -2208,14 +2208,15 @@ if(composerAttach){
    else toast("На «+» нужно положить файл изображения");
  });
 }
-let speechRecognition=null;
-let speechBaseText="";
+let speechRecorder=null;
 let speechStream=null;
 let speechAudioContext=null;
 let speechSource=null;
-let speechProcessor=null;
-let speechSamples=[];
-let speechSampleRate=16000;
+let speechAnalyser=null;
+let speechVisualizerFrame=0;
+let speechChunks=[];
+let speechBaseText="";
+let speechMimeType="";
 
 function speechSetIdle(){
   const mic=$("#composerMic");
@@ -2226,47 +2227,65 @@ function speechSetIdle(){
   }
   const status=$("#composerStatus");
   if(status)status.textContent=modes[mode]?.status||"Готово";
+  const canvas=$("#composerVoiceVisualizer");
+  if(canvas)canvas.style.display="none";
+  if(speechVisualizerFrame)cancelAnimationFrame(speechVisualizerFrame);
+  speechVisualizerFrame=0;
 }
 
-function downsampleSpeech(samples,inputRate,outputRate){
-  if(inputRate===outputRate)return samples;
-  const ratio=inputRate/outputRate;
-  const length=Math.round(samples.length/ratio);
-  const output=new Float32Array(length);
-  for(let i=0;i<length;i++){
-    const start=Math.floor(i*ratio);
-    const end=Math.min(Math.floor((i+1)*ratio),samples.length);
-    let sum=0,count=0;
-    for(let j=start;j<end;j++){sum+=samples[j];count++}
-    output[i]=count?sum/count:0;
-  }
-  return output;
+function ensureSpeechVisualizer(){
+  let canvas=$("#composerVoiceVisualizer");
+  if(canvas)return canvas;
+  const composer=$("#composer");
+  if(!composer)return null;
+  canvas=document.createElement("canvas");
+  canvas.id="composerVoiceVisualizer";
+  canvas.width=192;
+  canvas.height=28;
+  canvas.setAttribute("aria-hidden","true");
+  Object.assign(canvas.style,{
+    position:"absolute",
+    left:"52px",
+    bottom:"31px",
+    width:"192px",
+    height:"28px",
+    display:"none",
+    pointerEvents:"none",
+    zIndex:"4",
+    opacity:".95"
+  });
+  composer.appendChild(canvas);
+  return canvas;
 }
 
-function encodeWav(samples,sampleRate){
-  const buffer=new ArrayBuffer(44+samples.length*2);
-  const view=new DataView(buffer);
-  const writeString=(offset,value)=>{for(let i=0;i<value.length;i++)view.setUint8(offset+i,value.charCodeAt(i))};
-  writeString(0,"RIFF");
-  view.setUint32(4,36+samples.length*2,true);
-  writeString(8,"WAVE");
-  writeString(12,"fmt ");
-  view.setUint32(16,16,true);
-  view.setUint16(20,1,true);
-  view.setUint16(22,1,true);
-  view.setUint32(24,sampleRate,true);
-  view.setUint32(28,sampleRate*2,true);
-  view.setUint16(32,2,true);
-  view.setUint16(34,16,true);
-  writeString(36,"data");
-  view.setUint32(40,samples.length*2,true);
-  let offset=44;
-  for(let i=0;i<samples.length;i++){
-    const sample=Math.max(-1,Math.min(1,samples[i]));
-    view.setInt16(offset,sample<0?sample*0x8000:sample*0x7fff,true);
-    offset+=2;
-  }
-  return new Blob([buffer],{type:"audio/wav"});
+function speechDraw(){
+  const canvas=ensureSpeechVisualizer();
+  const analyser=speechAnalyser;
+  if(!canvas||!analyser)return;
+  const ctx=canvas.getContext("2d");
+  const data=new Uint8Array(analyser.frequencyBinCount);
+  const draw=()=>{
+    if(!speechAnalyser)return;
+    analyser.getByteFrequencyData(data);
+    ctx.clearRect(0,0,canvas.width,canvas.height);
+    const bars=32;
+    const gap=3;
+    const width=(canvas.width-gap*(bars-1))/bars;
+    for(let i=0;i<bars;i++){
+      const index=Math.min(data.length-1,Math.floor(i*data.length/bars));
+      const value=data[index]/255;
+      const height=Math.max(3,value*23);
+      const x=i*(width+gap);
+      const y=(canvas.height-height)/2;
+      ctx.beginPath();
+      ctx.roundRect(x,y,width,height,2);
+      ctx.fillStyle="rgba(188,160,255,.9)";
+      ctx.fill();
+    }
+    speechVisualizerFrame=requestAnimationFrame(draw);
+  };
+  cancelAnimationFrame(speechVisualizerFrame);
+  draw();
 }
 
 async function blobToDataUrl(blob){
@@ -2279,50 +2298,50 @@ async function blobToDataUrl(blob){
 }
 
 async function finishSpeechRecording(){
+  const recorder=speechRecorder;
+  if(!recorder)return;
+  speechRecorder=null;
+  if(recorder.state!=="inactive")recorder.stop();
+}
+
+async function processSpeechRecording(){
   const stream=speechStream;
   const context=speechAudioContext;
   const source=speechSource;
-  const processor=speechProcessor;
-  const samples=speechSamples;
-  const inputRate=context?.sampleRate||48000;
-
-  speechStream=null;speechAudioContext=null;speechSource=null;speechProcessor=null;speechSamples=[];
-  try{processor?.disconnect()}catch{}
+  const analyser=speechAnalyser;
+  const chunks=speechChunks.slice();
+  const mime=speechMimeType||"audio/ogg";
+  speechStream=null;
+  speechAudioContext=null;
+  speechSource=null;
+  speechAnalyser=null;
+  speechChunks=[];
   try{source?.disconnect()}catch{}
+  try{analyser?.disconnect()}catch{}
   try{stream?.getTracks().forEach(track=>track.stop())}catch{}
   try{await context?.close()}catch{}
-
-  if(!samples.length){
+  if(!chunks.length){
     speechSetIdle();
     toast("Не удалось записать голос");
     return;
   }
-
-  const mono=downsampleSpeech(samples,inputRate,speechSampleRate);
-  const wav=encodeWav(mono,speechSampleRate);
-  if(wav.size<1000){
+  const blob=new Blob(chunks,{type:mime});
+  if(blob.size<1000){
     speechSetIdle();
     toast("Запись слишком короткая");
     return;
   }
-
-  const mic=$("#composerMic"),status=$("#composerStatus");
-  if(mic){
-    mic.classList.add("recording");
-    mic.setAttribute("aria-label","Распознаю голос");
-    mic.title="Распознаю голос…";
-  }
+  const status=$("#composerStatus");
   if(status)status.textContent="Распознаю голос…";
-
   try{
-    const audio=await blobToDataUrl(wav);
+    const audio=await blobToDataUrl(blob);
     const response=await fetch("https://ahm7xmakki.com/api/transcribe",{
       method:"POST",
       headers:{"Content-Type":"application/json"},
       body:JSON.stringify({
         audio,
-        filename:"miya-voice.wav",
-        mime:"audio/wav",
+        filename:mime.includes("ogg")?"miya-voice.ogg":"miya-voice.webm",
+        mime,
         language:"ru",
         model:"turbo"
       })
@@ -2331,7 +2350,6 @@ async function finishSpeechRecording(){
     if(!response.ok)throw new Error("TRANSCRIBE_"+response.status);
     const text=String(data?.text||data?.transcript||"").trim();
     if(!text)throw new Error("TRANSCRIPT_EMPTY");
-
     const input=$("#composerInput");
     if(input){
       const prefix=speechBaseText.trim();
@@ -2356,41 +2374,46 @@ async function startSpeechRecording(){
   }
   try{
     const stream=await navigator.mediaDevices.getUserMedia({
-      audio:{
-        channelCount:1,
-        echoCancellation:true,
-        noiseSuppression:true,
-        autoGainControl:true
-      }
+      audio:{channelCount:1,echoCancellation:true,noiseSuppression:true,autoGainControl:true}
     });
+    const supported=[
+      "audio/ogg;codecs=opus",
+      "audio/webm;codecs=opus",
+      "audio/ogg",
+      "audio/webm"
+    ];
+    const mime=supported.find(type=>MediaRecorder.isTypeSupported(type))||"";
+    const recorder=mime
+      ? new MediaRecorder(stream,{mimeType:mime,audioBitsPerSecond:64000})
+      : new MediaRecorder(stream);
     const AudioContextClass=window.AudioContext||window.webkitAudioContext;
     if(!AudioContextClass)throw new Error("AUDIO_CONTEXT_UNSUPPORTED");
-
     const context=new AudioContextClass();
     await context.resume();
     const source=context.createMediaStreamSource(stream);
-    const processor=context.createScriptProcessor(4096,1,1);
+    const analyser=context.createAnalyser();
+    analyser.fftSize=256;
+    analyser.smoothingTimeConstant=.72;
+    source.connect(analyser);
+
     speechStream=stream;
     speechAudioContext=context;
     speechSource=source;
-    speechProcessor=processor;
-    speechSamples=[];
-
-    processor.onaudioprocess=e=>{
-      if(!speechAudioContext)return;
-      const input=e.inputBuffer.getChannelData(0);
-      const copy=new Float32Array(input.length);
-      copy.set(input);
-      speechSamples.push(copy);
-      const output=e.outputBuffer.getChannelData(0);
-      output.fill(0);
+    speechAnalyser=analyser;
+    speechChunks=[];
+    speechMimeType=recorder.mimeType||mime||"audio/webm";
+    speechBaseText=$("#composerInput")?.value.trim()||"";
+    recorder.ondataavailable=e=>{
+      if(e.data?.size)speechChunks.push(e.data);
     };
-
-    source.connect(processor);
-    processor.connect(context.destination);
-
+    recorder.onerror=()=>toast("Ошибка записи микрофона");
+    recorder.onstop=()=>processSpeechRecording();
+    speechRecorder=recorder;
+    const canvas=ensureSpeechVisualizer();
+    if(canvas)canvas.style.display="block";
+    speechDraw();
+    recorder.start(250);
     const mic=$("#composerMic");
-    speechBaseText=$("#composerInput").value.trim();
     if(mic){
       mic.classList.add("recording");
       mic.setAttribute("aria-label","Остановить голосовой ввод");
@@ -2401,7 +2424,7 @@ async function startSpeechRecording(){
   }catch(error){
     console.error("Miya microphone start failed",error);
     try{speechStream?.getTracks().forEach(track=>track.stop())}catch{}
-    speechStream=null;speechAudioContext=null;speechSource=null;speechProcessor=null;speechSamples=[];
+    speechRecorder=null;speechStream=null;speechAudioContext=null;speechSource=null;speechAnalyser=null;
     speechSetIdle();
     if(error?.name==="NotAllowedError")toast("Разреши Miya доступ к микрофону в Firefox");
     else toast("Не удалось открыть микрофон");
@@ -2409,12 +2432,13 @@ async function startSpeechRecording(){
 }
 
 $("#composerMic").onclick=async()=>{
-  if(speechStream){
+  if(speechRecorder){
     await finishSpeechRecording();
     return;
   }
   await startSpeechRecording();
 };
+document.querySelector('.mobile-tabs [data-mode="voice"]')?.remove();
 const emojiButton=$("#composerEmoji");
 const emojiPanel=$("#emojiPanel");
 const starterIdeas=[
