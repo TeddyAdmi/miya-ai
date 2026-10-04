@@ -1240,44 +1240,29 @@ function addChatMessage(text,isUser,image="",isError=false){
 }
 async function requestChat(){
  const status=$("#composerStatus");
- status.textContent=chatAttachmentFile&&referenceImage?"Miya · анализ изображения…":"Miya думает…";
+ const hasVisionImage=mode==="chat"&&chatAttachmentFile&&/^data:image\//i.test(String(referenceImage||""));
+ status.textContent=hasVisionImage?"Miya · анализ изображения…":"Miya думает…";
  $("#composerSend").disabled=true;
  try{
-   const hasVisionImage=mode==="chat"&&chatAttachmentFile&&/^data:image\//i.test(String(referenceImage||""));
-   const response=hasVisionImage
-     ? await fetch("/api/omegatech-video",{
-         method:"POST",
-         headers:{"Content-Type":"application/json","Accept":"application/json"},
-         body:JSON.stringify({cloudflareVision:true,image:referenceImage,question:String(chatMessages[chatMessages.length-1]?.content||"Что изображено на этой картинке? Опиши её подробно.")}),
-         signal:AbortSignal.timeout(90000)
-       })
-     : await fetch("/api/chat",{
-         method:"POST",
-         headers:{"Content-Type":"application/json","Accept":"application/json"},
-         body:JSON.stringify({messages:chatMessages,imageBase64:""}),
-         signal:AbortSignal.timeout(90000)
-       });
+   const response=await fetch("/api/chat",{
+     method:"POST",
+     headers:{"Content-Type":"application/json","Accept":"application/json"},
+     body:JSON.stringify({messages:chatMessages,imageBase64:hasVisionImage?String(referenceImage||""):""}),
+     signal:AbortSignal.timeout(90000)
+   });
    const data=await response.json().catch(()=>({}));
-   const answer=hasVisionImage
-     ? String(data?.answer||"").trim()
-     : String(data?.text||"").trim();
-   const serverMessage=typeof data?.message==="string"
-     ? data.message
-     : typeof data?.error==="string"
-       ? data.error
-       : "Не удалось получить ответ Miya";
+   const answer=String(data?.text||"").trim();
+   const serverMessage=typeof data?.message==="string"?data.message:typeof data?.error==="string"?data.error:"Не удалось получить ответ Miya";
    if(!response.ok||!answer)throw new Error(serverMessage);
    chatMessages.push({role:"assistant",content:answer});
    addChatMessage(answer,false);
    saveCurrentChat();
-   status.textContent=hasVisionImage?"Miya · Vision · Moondream 3.1":(data.model==="VisionSter"?"Miya · VisionChat":"Miya · Free Text");
+   status.textContent=hasVisionImage?"Miya · "+String(data?.model||data?.provider||"Vision")+" · готово":(data.model==="VisionSter"?"Miya · VisionChat":"Miya · Free Text");
  }catch(e){
    const message=String(e?.message||"Не удалось получить ответ Miya");
    addChatMessage(message,false,"",true);
    status.textContent="AI Chat · ошибка · можно повторить";
- }finally{
-   $("#composerSend").disabled=false;
- }
+ }finally{$("#composerSend").disabled=false;}
 }
 function removeGenerationLoading(){
  const loader=$("#canvas .generation-loading");
@@ -2293,5 +2278,3 @@ if(chatNavWrap){chatNavWrap.addEventListener("mouseleave",()=>{chatMenuSuppresse
 document.addEventListener("click",e=>{if(!e.target.closest(".chat-history-row"))resetChatMenus()});
 document.addEventListener("click",e=>{if(!e.target.closest(".media-actions"))document.querySelectorAll(".media-action-menu.open").forEach(x=>x.classList.remove("open"))});
 
-
-import "./cloudflare-test.js";

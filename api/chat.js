@@ -29,64 +29,30 @@ async function handler(req, res) {
       "Помогай с текстами, идеями, сценариями, промптами, изображениями и видео. " +
       "Отвечай полезно и по существу.";
 
-    if (imageBase64) {
-      const visionPayload = {
-        image: imageBase64,
-        userPrompt: cleanMessages[cleanMessages.length - 1].content,
-        messages: cleanMessages.slice(-12).map(m => ({
-          type: m.role === "assistant" ? "ai" : "user",
-          content: m.content
-        }))
-      };
+    const lastUserText = cleanMessages[cleanMessages.length - 1].content;
 
-      try {
-        const controller = new AbortController();
-        const timer = setTimeout(() => controller.abort(), 25000);
-        const upstream = await fetch("https://ahm7xmakki.com/api/imgchat", {
-          method: "POST",
-          headers: { "Content-Type": "application/json", "Accept": "application/json" },
-          body: JSON.stringify(visionPayload),
-          signal: controller.signal
-        });
-        clearTimeout(timer);
-
-        const raw = await upstream.text();
-        let data = {};
-        try { data = raw ? JSON.parse(raw) : {}; } catch {}
-
-        const answer = String(data?.response || data?.text || data?.message || "").trim();
-        if (upstream.ok && answer) {
-          return res.status(200).json({
-            ok: true, mode: "chat", text: answer,
-            model: "VisionSter", provider: "AHM7 Vision"
-          });
-        }
-
-        return res.status(502).json({
-          ok: false,
-          error: "VISION_UPSTREAM_FAILED",
-          message: "Сервис анализа изображения временно недоступен.",
-          upstreamStatus: upstream.status
-        });
-      } catch (error) {
-        return res.status(502).json({
-          ok: false,
-          error: "VISION_UPSTREAM_FAILED",
-          message: "Не удалось подключиться к сервису анализа изображения.",
-          detail: String(error?.message || error)
-        });
+    const blockRunMessages = cleanMessages.slice(-12).map((m, index, arr) => {
+      if (imageBase64 && index === arr.length - 1 && m.role === "user") {
+        return {
+          role: "user",
+          content: [
+            { type: "text", text: m.content },
+            { type: "image_url", image_url: { url: imageBase64 } }
+          ]
+        };
       }
-    }
+      return m;
+    });
 
     const chatPayload = {
       messages: [
         { role: "system", content: system },
-        ...cleanMessages.slice(-12)
+        ...blockRunMessages
       ],
       max_tokens: 1024
     };
 
-    async function callBlockRun(model) {
+    async function callBlockRun(model, payload = chatPayload) {
       const started = Date.now();
       try {
         const response = await fetch("https://blockrun.ai/api/v1/chat/completions", {
@@ -95,8 +61,8 @@ async function handler(req, res) {
             "Content-Type": "application/json",
             "Accept": "application/json"
           },
-          body: JSON.stringify({ ...chatPayload, model }),
-          signal: AbortSignal.timeout(20000)
+          body: JSON.stringify({ ...payload, model }),
+          signal: AbortSignal.timeout(imageBase64 ? 30000 : 20000)
         });
 
         const raw = await response.text();
@@ -140,24 +106,65 @@ async function handler(req, res) {
     }
 
 
-    // Primary free keyless provider. Fall back only if it fails.
-    let result = await callBlockRun("nvidia/gpt-oss-20b");
+    let result;
 
-    if (!result.ok) {
-      result = await callBlockRun("nvidia/nemotron-3.5-lightning");
-    }
-
-    if (!result.ok) {
+    if (imageBase64) {
       result = await callBlockRun("nvidia/nemotron-3-nano-omni-30b-a3b-reasoning");
+      if (!result.ok) result = await callBlockRun("nvidia/llama-3.2-11b-vision");
+
+      if (result.ok) {
+        return res.status(200).json({
+          ok: true, mode: "chat", text: result.text,
+          model: result.model, provider: result.provider, vision: true
+        });
+      }
+
+      try {
+        const controller = new AbortController();
+        const timer = setTimeout(() => controller.abort(), 25000);
+        const upstream = await fetch("https://ahm7xmakki.com/api/imgchat", {
+          method: "POST",
+          headers: { "Content-Type": "application/json", "Accept": "application/json" },
+          body: JSON.stringify({
+            image: imageBase64,
+            userPrompt: lastUserText,
+            messages: cleanMessages.slice(-12).map(m => ({
+              type: m.role === "assistant" ? "ai" : "user", content: m.content
+            }))
+          }),
+          signal: controller.signal
+        });
+        clearTimeout(timer);
+        const raw = await upstream.text();
+        let data = {};
+        try { data = raw ? JSON.parse(raw) : {}; } catch {}
+        const answer = String(data?.response || data?.text || data?.message || "").trim();
+        if (upstream.ok && answer) {
+          return res.status(200).json({
+            ok: true, mode: "chat", text: answer,
+            model: "VisionSter", provider: "AHM7 Vision", vision: true
+          });
+        }
+      } catch {}
+
+      return res.status(502).json({
+        ok: false,
+        error: "VISION_UPSTREAM_FAILED",
+        message: "Бесплатные сервисы анализа изображения временно недоступны.",
+        upstream: result.provider || "BlockRun",
+        upstreamStatus: result.status,
+        upstreamError: result.upstreamError
+      });
     }
+
+    result = await callBlockRun("nvidia/gpt-oss-20b");
+    if (!result.ok) result = await callBlockRun("nvidia/nemotron-3.5-lightning");
+    if (!result.ok) result = await callBlockRun("nvidia/nemotron-3-nano-omni-30b-a3b-reasoning");
 
     if (result.ok) {
       return res.status(200).json({
-        ok: true,
-        mode: "chat",
-        text: result.text,
-        model: result.model,
-        provider: result.provider
+        ok: true, mode: "chat", text: result.text,
+        model: result.model, provider: result.provider
       });
     }
 
