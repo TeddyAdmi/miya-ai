@@ -2502,6 +2502,13 @@ body.light .composer.voice-mode .voice-tool:hover{
 .media-upscale-options{display:flex;gap:6px;margin-bottom:7px}
 .media-upscale-select{min-width:0!important;flex:1;font-size:9px!important;padding:6px 20px 6px 7px!important}
 .media-upscale-submit{width:100%;height:31px;border-radius:7px;background:linear-gradient(135deg,#b25cff,#695dff);color:#fff;font-size:10px;font-weight:800}
+.media-upscale-tool{padding:8px 0;border-top:1px solid rgba(145,168,193,.14)}
+.media-upscale-tool:first-of-type{border-top:0;padding-top:0}
+.media-upscale-tool-title{font-size:10px;font-weight:800;margin-bottom:6px}
+.media-upscale-tool-hint{font-size:9px;color:#91a8c1;margin:-1px 0 7px}
+.media-upscale-background-submit{width:100%;height:31px;border-radius:7px;background:rgba(126,147,173,.12);color:inherit;font-size:10px;font-weight:800;border:1px solid rgba(145,168,193,.18)}
+.media-upscale-background-submit:hover{background:rgba(126,147,173,.2)}
+.media-upscale-background-submit:disabled{opacity:.55;cursor:wait}
 .media-upscale-submit:disabled{opacity:.55;cursor:wait}
 .media-upscale-action svg{width:15px;height:15px;fill:none;stroke:currentColor;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
 body.light .media-upscale-panel{background:rgba(255,255,255,.98);border-color:#d6e0eb;box-shadow:0 16px 38px rgba(30,55,85,.2)}
