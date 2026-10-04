@@ -542,6 +542,42 @@ async function mediaItemToReference(item){
  }catch{}
  return item.url;
 }
+function closeUpscalePanels(except){
+ document.querySelectorAll(".media-upscale-panel.open").forEach(panel=>{
+   if(panel!==except)panel.classList.remove("open");
+ });
+}
+function toggleUpscalePanel(item,card){
+ const existing=card.querySelector(".media-upscale-panel");
+ if(existing){closeUpscalePanels(existing);existing.classList.toggle("open");return}
+ closeUpscalePanels();
+ const panel=document.createElement("div");
+ panel.className="media-upscale-panel open";
+ panel.innerHTML='<div class="media-upscale-title"><span>✨ Upscale</span><button type="button" class="media-upscale-close" aria-label="Закрыть">×</button></div>'+
+   '<div class="media-upscale-options">'+
+   '<select class="select-pill media-upscale-select" aria-label="Масштаб"><option value="2" selected>2×</option><option value="4">4×</option></select>'+
+   '<select class="select-pill media-upscale-select" aria-label="Качество"><option value="quality" selected>Качество</option><option value="fast">Быстро</option></select>'+
+   '</div>'+
+   '<button type="button" class="media-upscale-submit">Увеличить</button>';
+ panel.querySelector(".media-upscale-close").onclick=e=>{e.stopPropagation();panel.classList.remove("open")};
+ panel.querySelector(".media-upscale-submit").onclick=async e=>{
+   e.stopPropagation();
+   const submit=e.currentTarget;
+   const selects=panel.querySelectorAll("select");
+   const scale=selects[0].value;
+   const model=selects[1].value;
+   submit.disabled=true;submit.textContent="Обработка…";
+   try{
+     const source=await mediaItemToReference(item);
+     await runImageTool(source,scale,model);
+   }finally{
+     submit.disabled=false;submit.textContent="Увеличить";
+   }
+ };
+ panel.addEventListener("click",e=>e.stopPropagation());
+ card.appendChild(panel);
+ return panel;
+}
 function buildMediaCard(item,{video=false}={}){
  const card=document.createElement("div");card.className="media-card";
  let media=null,mediaFailed=false;
@@ -616,6 +652,7 @@ function buildMediaCard(item,{video=false}={}){
  const menu=document.createElement("div");menu.className="media-action-menu";
  if(!video){
   const promptBtn=document.createElement("button");promptBtn.innerHTML='<span class="action-icon action-svg"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 5h14v14H5z"/><path d="M8 9h8M8 12h6M8 15h4"/></svg></span><span>Промт</span>';promptBtn.onclick=e=>{e.stopPropagation();menu.classList.remove("open");showPrompt(item)};
+  const upscaleBtn=document.createElement("button");upscaleBtn.type="button";upscaleBtn.className="media-action media-upscale-action";upscaleBtn.setAttribute("aria-label","Upscale");upscaleBtn.setAttribute("data-tooltip","Upscale");upscaleBtn.innerHTML='<svg viewBox="0 0 24 24" aria-hidden="true"><path d="m12 3 1.7 5.3L19 10l-5.3 1.7L12 17l-1.7-5.3L5 10l5.3-1.7L12 3Z"/><path d="m19 15 .8 2.2L22 18l-.8-2.2L19 15Z"/></svg>';upscaleBtn.onclick=e=>{e.stopPropagation();toggleUpscalePanel(item,card)};
   const editBtn=document.createElement("button");editBtn.innerHTML='<span class="action-icon action-svg"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m4 16.5-.8 3.3 3.3-.8L18.7 6.8a2.2 2.2 0 0 1 3.1 3.1L6.5 19l-3.3.8.8-3.3Z"/><path d="m14.2 5.8 4 4"/></svg></span><span>Изменить картинку</span>';editBtn.onclick=async e=>{e.stopPropagation();menu.classList.remove("open");openEditor(await mediaItemToReference(item))};
   const videoBtn=document.createElement("button");videoBtn.innerHTML='<span class="action-icon action-svg"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="5" width="17" height="14" rx="2"/><path d="m10 9 5 3-5 3Z"/></svg></span><span>Сделать видео</span>';videoBtn.onclick=async e=>{e.stopPropagation();menu.classList.remove("open");openVideoFromImage(await mediaItemToReference(item))};
   const copyBtn=document.createElement("button");copyBtn.innerHTML='<span class="action-icon action-svg"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M15 9V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v7a2 2 0 0 0 2 2h3"/></svg></span><span>Копировать</span>';copyBtn.onclick=async e=>{e.stopPropagation();menu.classList.remove("open");try{const response=await fetch(item.url,{headers:{Accept:"image/*"}});if(!response.ok)throw new Error();const blob=await response.blob();if(!navigator.clipboard?.write||!window.ClipboardItem)throw new Error();const bitmap=await createImageBitmap(blob);const canvas=document.createElement("canvas");canvas.width=bitmap.width;canvas.height=bitmap.height;const ctx=canvas.getContext("2d");ctx.fillStyle="#fff";ctx.fillRect(0,0,canvas.width,canvas.height);ctx.drawImage(bitmap,0,0);bitmap.close();const jpeg=await new Promise(resolve=>canvas.toBlob(resolve,"image/jpeg",.95));if(!jpeg)throw new Error();await navigator.clipboard.write([new ClipboardItem({"image/jpeg":jpeg})]);toast("JPG скопирован")}catch{toast("Не удалось скопировать картинку")}};
@@ -1951,16 +1988,16 @@ async function waitForImageToolJob(jobId){
  }
  throw new Error("IMAGE_TOOL_TIMEOUT");
 }
-async function runImageTool(){
- const source=getImageToolSource();
+async function runImageTool(sourceOverride="",scaleOverride="",modelOverride=""){
+ const source=String(sourceOverride||getImageToolSource()).trim();
  if(!source){toast("Сначала создай или загрузи изображение");return}
- const scale=String($("#imageUpscaleScale")?.value||"2");
- const model=String($("#imageUpscaleModel")?.value||"quality");
+ const scale=String(scaleOverride||$("#imageUpscaleScale")?.value||"2");
+ const model=String(modelOverride||$("#imageUpscaleModel")?.value||"quality");
  const oldStatus=$("#composerStatus")?.textContent||"Готово";
  if($("#composerStatus"))$("#composerStatus").textContent="AI Upscale · обработка…";
  try{
    let blob;
-   if(/^data:image\\//i.test(source)){
+   if(/^data:image\//i.test(source)){
      const response=await fetch(source);
      if(!response.ok)throw new Error("SOURCE_IMAGE_READ_FAILED");
      blob=await response.blob();
@@ -2041,7 +2078,6 @@ function setMode(next,render=true){
  const composerSendText=$("#composerSendText"); if(composerSendText) composerSendText.textContent=m.send;
  const composerStatus=$("#composerStatus"); if(composerStatus) composerStatus.textContent=m.status;
  const imageSettings=$(".image-settings"); if(imageSettings) imageSettings.style.display=target==="images"?"flex":"none";
- const imageTools=$("#imageTools"); if(imageTools) imageTools.classList.toggle("show",target==="images");
  const voiceOptions=$("#voiceOptions"); if(voiceOptions) voiceOptions.classList.toggle("show",target==="voice");
  const videoOptions=$("#videoOptions"); if(videoOptions) videoOptions.classList.toggle("show",target==="video");
 
@@ -2136,7 +2172,6 @@ $("#composerInput").addEventListener("keydown",e=>{if(e.key==="Enter"&&!e.shiftK
 $("#composerSend").addEventListener("click",async()=>{
  const value=$("#composerInput").value.trim();
  if(!value){
-   if(mode==="images"&&getImageToolSource()){await runImageTool();return}
    toast(mode==="chat"?"Напиши сообщение":mode==="video"?"Опиши видео":"Опиши, что создать или изменить");return
  }
  if(mode==="images"){await generateImage(value);return}
