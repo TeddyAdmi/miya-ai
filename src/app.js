@@ -2257,7 +2257,7 @@ function ensureSpeechVisualizer(){
   canvas.setAttribute("aria-hidden","true");
   Object.assign(canvas.style,{
     position:"absolute",
-    left:"50%",
+    left:"48px",
     top:"50%",
     transform:"translate(-50%,-50%)",
     width:"150px",
