@@ -14,6 +14,14 @@ async function handler(req, res) {
       .map(m => ({ role: m.role, content: m.content.slice(0, 12000) }));
 
     const imageBase64 = typeof body.imageBase64 === "string" ? body.imageBase64.trim() : "";
+    const imageBytesApprox = imageBase64 ? Math.floor((imageBase64.length * 3) / 4) : 0;
+    if (imageBase64 && imageBytesApprox > 120000) {
+      return res.status(413).json({
+        ok: false,
+        error: "IMAGE_TOO_LARGE",
+        message: "Изображение слишком большое для бесплатного vision-запроса."
+      });
+    }
 
     if (!cleanMessages.length || cleanMessages[cleanMessages.length - 1].role !== "user") {
       return res.status(400).json({
@@ -110,7 +118,6 @@ async function handler(req, res) {
 
     if (imageBase64) {
       result = await callBlockRun("nvidia/nemotron-3-nano-omni-30b-a3b-reasoning");
-      if (!result.ok) result = await callBlockRun("nvidia/llama-3.2-11b-vision");
 
       if (result.ok) {
         return res.status(200).json({
