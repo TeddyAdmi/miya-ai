@@ -1041,7 +1041,7 @@ async function generateModelScopeImage(prompt){
    const response=await fetch("/api/image",{
      method:"POST",
      headers:{"Content-Type":"application/json","Accept":"application/json"},
-     body:JSON.stringify({prompt}),
+     body:JSON.stringify({prompt,model}),
      signal:AbortSignal.timeout(210000)
    });
    const raw=await response.text();
