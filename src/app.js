@@ -1961,7 +1961,7 @@ async function runImageTool(){
  if($("#composerStatus"))$("#composerStatus").textContent="AI Upscale · обработка…";
  try{
    const payload={action:"upscale",scale,model};
-   if(/^data:image\\//i.test(source))payload.imageData=source;else payload.imageUrl=source;
+   if(/^data:image\//i.test(source))payload.imageData=source;else payload.imageUrl=source;
    const r=await fetch("/api/image",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(payload)});
    const data=await r.json().catch(()=>({}));
    if(!r.ok||data?.ok===false)throw new Error(data?.message||data?.error||"IMAGE_TOOL_FAILED");
