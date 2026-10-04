@@ -1240,31 +1240,37 @@ function addChatMessage(text,isUser,image="",isError=false){
 }
 async function requestChat(){
  const status=$("#composerStatus");
- status.textContent="Miya думает…";
+ status.textContent=chatAttachmentFile&&referenceImage?"Miya · анализ изображения…":"Miya думает…";
  $("#composerSend").disabled=true;
  try{
-   const response=await fetch("/api/chat",{
-     method:"POST",
-     headers:{"Content-Type":"application/json","Accept":"application/json"},
-     body:JSON.stringify({
-       messages:chatMessages,
-       imageBase64:(mode==="chat"&&chatAttachmentFile&&referenceImage)?referenceImage:""
-     }),
-     signal:AbortSignal.timeout(90000)
-   });
+   const hasVisionImage=mode==="chat"&&chatAttachmentFile&&/^data:image\//i.test(String(referenceImage||""));
+   const response=hasVisionImage
+     ? await fetch("/api/omegatech-video",{
+         method:"POST",
+         headers:{"Content-Type":"application/json","Accept":"application/json"},
+         body:JSON.stringify({cloudflareVision:true,image:referenceImage,question:String(chatMessages[chatMessages.length-1]?.content||"Что изображено на этой картинке? Опиши её подробно.")}),
+         signal:AbortSignal.timeout(90000)
+       })
+     : await fetch("/api/chat",{
+         method:"POST",
+         headers:{"Content-Type":"application/json","Accept":"application/json"},
+         body:JSON.stringify({messages:chatMessages,imageBase64:""}),
+         signal:AbortSignal.timeout(90000)
+       });
    const data=await response.json().catch(()=>({}));
+   const answer=hasVisionImage
+     ? String(data?.answer||"").trim()
+     : String(data?.text||"").trim();
    const serverMessage=typeof data?.message==="string"
      ? data.message
      : typeof data?.error==="string"
        ? data.error
        : "Не удалось получить ответ Miya";
-   if(!response.ok||!data.text)throw new Error(serverMessage);
-   const answer=String(data.text).trim();
-   if(!answer)throw new Error("Miya не вернула текст ответа");
+   if(!response.ok||!answer)throw new Error(serverMessage);
    chatMessages.push({role:"assistant",content:answer});
    addChatMessage(answer,false);
    saveCurrentChat();
-   status.textContent=data.model==="VisionSter"?"Miya · VisionChat":"Miya · Free Text";
+   status.textContent=hasVisionImage?"Miya · Vision · Moondream 3.1":(data.model==="VisionSter"?"Miya · VisionChat":"Miya · Free Text");
  }catch(e){
    const message=String(e?.message||"Не удалось получить ответ Miya");
    addChatMessage(message,false,"",true);

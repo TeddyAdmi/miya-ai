@@ -33,7 +33,7 @@ export default async function handler(req,res){
         try{data=raw?JSON.parse(raw):{}}catch{data={}};
       }
       const answer=data?.result?.result?.answer||data?.result?.answer||data?.result?.result?.caption||data?.result?.caption||data?.result?.result?.text||data?.result?.text||data?.answer||data?.caption||data?.text||"";
-      return res.status(response.status).json({ok:response.ok&&!!answer,provider:"Cloudflare Workers AI",model:"@cf/moondream/moondream3.1-9B-A2B",status:response.status,answer,error:response.ok?null:(data?.errors?.[0]?.message||data?.error||"Cloudflare Vision request failed"),debug:{topLevelKeys:Object.keys(data||{}),resultKeys:Object.keys(data?.result||{}),raw:raw.slice(0,4000)}});
+      return res.status(response.status).json({ok:response.ok&&!!answer,provider:"Cloudflare Workers AI",model:"@cf/moondream/moondream3.1-9B-A2B",status:response.status,answer,error:response.ok?null:(data?.errors?.[0]?.message||data?.error||"Cloudflare Vision request failed")});
     }catch(error){return res.status(502).json({ok:false,error:"CLOUDFLARE_VISION_TEST_FAILED",message:String(error?.message||error||"Vision test failed")});}
   }
 
@@ -57,8 +57,8 @@ export default async function handler(req,res){
         });
         const raw=await response.text();
         let data={}; try{data=raw?JSON.parse(raw):{}}catch{data={}};
-        const answer=data?.result?.answer||data?.result?.caption||"";
-        return res.status(response.status).json({ok:response.ok&&!!answer,provider:"Cloudflare Workers AI",model:"@cf/moondream/moondream3.1-9B-A2B",status:response.status,answer});
+        const answer=data?.result?.result?.answer||data?.result?.answer||data?.result?.result?.caption||data?.result?.caption||"";
+        return res.status(response.status).json({ok:response.ok&&!!answer,provider:"Cloudflare Workers AI",model:"@cf/moondream/moondream3.1-9B-A2B",status:response.status,answer,error:response.ok?null:(data?.errors?.[0]?.message||data?.error||"Cloudflare Vision request failed")});
       }
 
       if(body.cloudflareVideo===true){
