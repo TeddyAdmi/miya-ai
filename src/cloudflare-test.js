@@ -3,7 +3,7 @@ const addCloudflareTestOption = () => {
   if (!select || select.querySelector('option[data-cloudflare-test="1"]')) return;
   const option = document.createElement("option");
   option.value = "Cloudflare Wan 3.0";
-  option.textContent = "☁ Cloudflare Wan 3.0";
+  option.textContent = "☁ Cloudflare Wan 3.0 · требуется баланс";
   option.dataset.cloudflareTest = "1";
   select.appendChild(option);
 };
