@@ -26,9 +26,6 @@
     },
     "api/omegatech-video.js": {
       "maxDuration": 60
-    },
-    "api/freeaivideo-video.js": {
-      "maxDuration": 300
     }
   }
 }
