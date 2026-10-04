@@ -38,15 +38,19 @@ const runCloudflareTest = async () => {
         video.src = "/api/omegatech-video?url=" + encodeURIComponent(data.videoUrl);
         canvas.appendChild(video);
       }
-      const card = document.createElement("div");
-      card.style.cssText = "max-width:760px;margin:40px auto;padding:24px;border-radius:20px;background:rgba(20,20,35,.72);border:1px solid rgba(160,120,255,.25);color:inherit;white-space:pre-wrap;font-family:inherit;";
-      const title = document.createElement("h3");
-      title.textContent = ok ? "☁ Cloudflare Wan 3.0 работает" : "☁ Cloudflare Wan 3.0: ошибка";
-      const pre = document.createElement("pre");
-      pre.style.cssText = "margin-top:16px;white-space:pre-wrap;overflow:auto;font:13px/1.5 ui-monospace,SFMono-Regular,Consolas,monospace;";
-      pre.textContent = JSON.stringify(data, null, 2);
-      card.append(title, pre);
-      canvas.appendChild(card);
+      if (canvas && !ok) {
+        const card = document.createElement("div");
+        card.style.cssText = "max-width:760px;margin:40px auto;padding:24px;border-radius:20px;background:rgba(20,20,35,.72);border:1px solid rgba(160,120,255,.25);color:inherit;font-family:inherit;";
+        const title = document.createElement("h3");
+        title.textContent = "☁ Cloudflare Wan 3.0 недоступен";
+        const message = document.createElement("p");
+        message.style.cssText = "margin-top:12px;line-height:1.6;";
+        message.textContent = response.status === 402
+          ? "Cloudflare сообщает, что для этого AI Gateway сейчас недостаточно средств. Код ответа: 402."
+          : "Cloudflare не вернул готовое видео. Код ответа: " + response.status + ".";
+        card.append(title, message);
+        canvas.appendChild(card);
+      }
     }
 
     if (status) status.textContent = ok
