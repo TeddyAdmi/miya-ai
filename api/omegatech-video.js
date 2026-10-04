@@ -13,12 +13,12 @@ export default async function handler(req,res){
       const response=await fetch("https://api.cloudflare.com/client/v4/accounts/"+encodeURIComponent(account)+"/ai/run/@cf/moondream/moondream3.1-9B-A2B",{
         method:"POST",
         headers:{"Authorization":"Bearer "+token,"Content-Type":"application/json","Accept":"application/json"},
-        body:JSON.stringify({task:"query",image:source.toString(),question,reasoning:false,max_tokens:1200}),
+        body:JSON.stringify({task:"caption",image:source.toString(),caption_length:"long",stream:false,max_tokens:1200}),
         signal:AbortSignal.timeout(55000)
       });
       const raw=await response.text();
       let data={}; try{data=raw?JSON.parse(raw):{}}catch{data={}};
-      const answer=data?.result?.answer||data?.result?.caption||"";
+      const answer=data?.result?.answer||data?.result?.caption||data?.result?.text||"";
       return res.status(response.status).json({ok:response.ok&&!!answer,provider:"Cloudflare Workers AI",model:"@cf/moondream/moondream3.1-9B-A2B",status:response.status,answer});
     }catch(error){return res.status(502).json({ok:false,error:"CLOUDFLARE_VISION_TEST_FAILED",message:String(error?.message||error||"Vision test failed")});}
   }
