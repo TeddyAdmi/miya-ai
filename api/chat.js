@@ -117,13 +117,35 @@ async function handler(req, res) {
     let result;
 
     if (imageBase64) {
-      result = await callBlockRun("nvidia/nemotron-3-nano-omni-30b-a3b-reasoning");
+      // BlockRun's free tier may auto-route an unavailable model to a
+      // non-vision model. Never accept such a reroute as a vision result.
+      const visionModels = new Set([
+        "nvidia/nemotron-3-nano-omni-30b-a3b-reasoning",
+        "nvidia/llama-3.2-11b-vision"
+      ]);
 
-      if (result.ok) {
-        return res.status(200).json({
-          ok: true, mode: "chat", text: result.text,
-          model: result.model, provider: result.provider, vision: true
-        });
+      const visionCandidates = [
+        "nvidia/nemotron-3-nano-omni-30b-a3b-reasoning",
+        "nvidia/llama-3.2-11b-vision"
+      ];
+
+      for (const model of visionCandidates) {
+        result = await callBlockRun(model);
+
+        if (result.ok && visionModels.has(result.model)) {
+          return res.status(200).json({
+            ok: true, mode: "chat", text: result.text,
+            model: result.model, provider: result.provider, vision: true
+          });
+        }
+
+        if (result.ok) {
+          result = {
+            ...result,
+            ok: false,
+            upstreamError: `BlockRun rerouted vision request to non-vision model: ${result.model}`
+          };
+        }
       }
 
       try {
