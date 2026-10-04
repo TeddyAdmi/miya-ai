@@ -7,7 +7,7 @@ export default async function handler(req,res){
       const imageUrl=String(req.query?.imageUrl||"").trim();
       let source;
       try{source=new URL(imageUrl);}catch{return res.status(400).json({ok:false,error:"INVALID_IMAGE_URL"});}
-      const allowedHost=/^(?:thumb\\.)?wikimedia\\.org$/i.test(source.hostname)||/^commons\\.wikimedia\\.org$/i.test(source.hostname);
+      const allowedHost=/^(?:thumb\.)?wikimedia\.org$/i.test(source.hostname)||/^commons\.wikimedia\.org$/i.test(source.hostname);
       if(source.protocol!=="https:"||!allowedHost)return res.status(400).json({ok:false,error:"IMAGE_HOST_NOT_ALLOWED"});
       const question=String(req.query?.question||"Что изображено на этой картинке? Опиши сюжет, стиль, композицию, свет, цвета и важные детали.").trim().slice(0,2000);
       const response=await fetch("https://api.cloudflare.com/client/v4/accounts/"+encodeURIComponent(account)+"/ai/run/@cf/moondream/moondream3.1-9B-A2B",{
