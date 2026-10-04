@@ -5,11 +5,30 @@ export default async function handler(req,res){
       const token=String(process.env.CLOUDFLARE_API_TOKEN||"").trim();
       if(!account||!token)return res.status(500).json({ok:false,error:"CLOUDFLARE_ENV_MISSING",message:"CLOUDFLARE_ACCOUNT_ID или CLOUDFLARE_API_TOKEN не настроен в Vercel."});
       const body=typeof req.body==="string"?JSON.parse(req.body||"{}"):(req.body||{});
-      const prompt=String(body.prompt||"Проверка Cloudflare Workers AI из Miya Studio. Ответь одним словом: работает.").trim().slice(0,2000);
-      const response=await fetch(`https://api.cloudflare.com/client/v4/accounts/${encodeURIComponent(account)}/ai/run/@cf/meta/llama-3.1-8b-instruct`,{
+      const prompt=String(body.prompt||"").trim().slice(0,2500);
+
+      if(body.cloudflareVideo===true){
+        if(!prompt)return res.status(400).json({ok:false,error:"PROMPT_REQUIRED"});
+        const resolution=["480P","720P","1080P"].includes(String(body.resolution||""))?String(body.resolution):"480P";
+        const ratio=["adaptive","16:9","9:16","1:1","4:3","3:4"].includes(String(body.ratio||""))?String(body.ratio):"16:9";
+        const duration=Math.max(1,Math.min(15,Number(body.duration)||5));
+        const response=await fetch("https://api.cloudflare.com/client/v4/accounts/"+encodeURIComponent(account)+"/ai/run",{
+          method:"POST",
+          headers:{"Authorization":"Bearer "+token,"Content-Type":"application/json","Accept":"application/json"},
+          body:JSON.stringify({model:"alibaba/wan-3.0",input:{prompt,resolution,ratio,duration}}),
+          signal:AbortSignal.timeout(55000)
+        });
+        const raw=await response.text();
+        let data={}; try{data=raw?JSON.parse(raw):{}}catch{data={raw:raw.slice(0,4000)}}
+        const videoUrl=data?.result?.video||data?.result?.video_url||null;
+        return res.status(response.status).json({ok:response.ok&&!!videoUrl,provider:"Cloudflare Workers AI",model:"alibaba/wan-3.0",status:response.status,videoUrl,response:data});
+      }
+
+      const promptForText=prompt||"Проверка Cloudflare Workers AI из Miya Studio. Ответь одним словом: работает.";
+      const response=await fetch("https://api.cloudflare.com/client/v4/accounts/"+encodeURIComponent(account)+"/ai/run/@cf/meta/llama-3.1-8b-instruct",{
         method:"POST",
         headers:{"Authorization":"Bearer "+token,"Content-Type":"application/json","Accept":"application/json"},
-        body:JSON.stringify({prompt}),
+        body:JSON.stringify({prompt:promptForText}),
         signal:AbortSignal.timeout(55000)
       });
       const raw=await response.text();
@@ -17,6 +36,7 @@ export default async function handler(req,res){
       return res.status(response.status).json({ok:response.ok,provider:"Cloudflare Workers AI",model:"@cf/meta/llama-3.1-8b-instruct",status:response.status,response:data});
     }catch(error){return res.status(502).json({ok:false,error:"CLOUDFLARE_REQUEST_FAILED",message:String(error?.message||error||"Cloudflare request failed")});}
   }
+
 
 
   if(req.method!=="GET"&&req.method!=="HEAD"){
@@ -30,7 +50,9 @@ export default async function handler(req,res){
       return res.status(400).json({error:"Invalid OmegaTech video URL"});
     }
 
-    const allowedHost=/^(?:sora|cdn|video|media)\.aritek\.app$/i.test(target.hostname);
+    const isAritek=/^(?:sora|cdn|video|media)\.aritek\.app$/i.test(target.hostname);
+    const isCloudflare=target.hostname.toLowerCase()==="examples.aig.cloudflare.com";
+    const allowedHost=isAritek||isCloudflare;
     const allowedPath=target.hostname.toLowerCase()==="sora.aritek.app"
       ? target.pathname.startsWith("/generated/")
       : true;
