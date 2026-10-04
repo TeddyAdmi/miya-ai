@@ -1071,6 +1071,7 @@ async function generateModelScopeImage(prompt){
 
 async function generateImage(prompt){
  const selectedModel=String($("#composerModel")?.value||"").trim();
+ if(selectedModel==="ModelScope · Z-Image-Turbo")return generateModelScopeImage(prompt);
  const useAgnesImage=/^Agnes Image/i.test(selectedModel);
  if(useAgnesImage){
   return generateAgnesImage(prompt);
