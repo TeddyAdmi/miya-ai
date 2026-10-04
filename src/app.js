@@ -1956,17 +1956,31 @@ async function runImageTool(){
  if(!source){toast("Сначала создай или загрузи изображение");return}
  const scale=String($("#imageUpscaleScale")?.value||"2");
  const model=String($("#imageUpscaleModel")?.value||"quality");
- 
  const oldStatus=$("#composerStatus")?.textContent||"Готово";
  if($("#composerStatus"))$("#composerStatus").textContent="AI Upscale · обработка…";
  try{
-   const payload={action:"upscale",scale,model};
-   if(/^data:image\//i.test(source))payload.imageData=source;else payload.imageUrl=source;
-   const r=await fetch("/api/image",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(payload)});
+   let blob;
+   if(/^data:image\\//i.test(source)){
+     const response=await fetch(source);
+     if(!response.ok)throw new Error("SOURCE_IMAGE_READ_FAILED");
+     blob=await response.blob();
+   }else{
+     const response=await fetch("/api/image?url="+encodeURIComponent(source),{cache:"no-store"});
+     if(!response.ok)throw new Error("SOURCE_IMAGE_PROXY_FAILED");
+     blob=await response.blob();
+   }
+   if(!blob||!blob.size)throw new Error("EMPTY_IMAGE");
+   const form=new FormData();
+   form.append("file",blob,"miya-source."+((blob.type||"image/jpeg").split("/")[1]||"jpg"));
+   form.append("scale",scale);
+   form.append("model",model);
+   const r=await fetch("https://cleverutils.com/api/v1/tools/upscale-image",{method:"POST",body:form,headers:{Accept:"application/json"}});
    const data=await r.json().catch(()=>({}));
-   if(!r.ok||data?.ok===false)throw new Error(data?.message||data?.error||"IMAGE_TOOL_FAILED");
-   let outputUrl=String(data.outputUrl||"");
-   if(!outputUrl&&data.jobId)outputUrl=await waitForImageToolJob(data.jobId);
+   if(!r.ok)throw new Error(data?.message||data?.error?.message||data?.error||"IMAGE_TOOL_FAILED");
+   const job=data?.data||data;
+   let outputUrl=typeof job?.output?.url==="string"?job.output.url:"";
+   const jobId=typeof job?.job_id==="string"?job.job_id:"";
+   if(!outputUrl&&jobId)outputUrl=await waitForImageToolJob(jobId);
    if(!outputUrl)throw new Error("IMAGE_TOOL_OUTPUT_MISSING");
    const label="CleverUtils · AI Upscale "+scale+"x";
    const item=saveMedia("image",outputUrl,"AI upscale "+scale+"x",label,"");
@@ -1979,8 +1993,7 @@ async function runImageTool(){
    console.error("Miya image upscale failed",e);
    if($("#composerStatus"))$("#composerStatus").textContent=oldStatus+" · ошибка";
    toast(String(e?.message||"Не удалось увеличить изображение"));
- }finally{
-   }
+ }finally{}
 }
 function restoreReferenceImage(){
  try{
