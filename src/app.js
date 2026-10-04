@@ -211,11 +211,11 @@ async function getCachedMedia(id){
   return await new Promise((resolve,reject)=>{const tx=db.transaction("media","readonly");const r=tx.objectStore("media").get(id);r.onsuccess=()=>resolve(r.result||null);r.onerror=()=>reject(r.error)});
  }catch{return null}
 }
-function saveMedia(type,url,prompt="",model=""){
+function saveMedia(type,url,prompt="",model="",format=""){
  if(!url)return;
  const id=type+"-"+Date.now()+"-"+Math.random().toString(36).slice(2);
  const normalizedUrl=type==="image"?jpegImageUrl(url):String(url||"");
- const item={id,type,url:normalizedUrl,prompt:String(prompt||""),model:String(model||((type==="image")?"FLUX Dev":"LTX")),createdAt:Date.now()};
+ const item={id,type,url:normalizedUrl,prompt:String(prompt||""),model:String(model||((type==="image")?"FLUX Dev":"LTX")),format:String(format||""),createdAt:Date.now()};
  const items=getLibrary();items.unshift(item);
  try{localStorage.setItem(LIB_KEY,JSON.stringify(items.slice(0,500)))}catch{
    try{localStorage.setItem(LIB_KEY,JSON.stringify(items.slice(0,100)))}catch{}
@@ -275,8 +275,21 @@ function closeMediaMenus(){document.querySelectorAll(".media-menu.open").forEach
 function showDownloadMenu(item,anchor){
  closeMediaMenus();
  const menu=document.createElement("div");menu.className="media-menu open";
- const b=document.createElement("button");b.type="button";b.innerHTML='<span class="media-menu-icon action-svg"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4v11M8 11l4 4 4-4M5 19h14"/></svg></span><span>Скачать JPG</span>';
- b.onclick=e=>{e.stopPropagation();menu.remove();downloadImage(item.url)};menu.appendChild(b);
+ const isPng=String(item?.format||"").toLowerCase()==="png";
+ const b=document.createElement("button");b.type="button";b.innerHTML='<span class="media-menu-icon action-svg"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4v11M8 11l4 4 4-4M5 19h14"/></svg></span><span>Скачать '+(isPng?"PNG":"JPG")+'</span>';
+ b.onclick=async e=>{
+   e.stopPropagation();menu.remove();
+   if(!isPng){downloadImage(item.url);return}
+   try{
+     const response=await fetch(item.url,{mode:"cors"});
+     if(!response.ok)throw new Error("DOWNLOAD_HTTP_"+response.status);
+     const blob=await response.blob();
+     const objectUrl=URL.createObjectURL(blob);
+     const a=document.createElement("a");a.href=objectUrl;a.download="miya-background-removed.png";document.body.appendChild(a);a.click();a.remove();
+     setTimeout(()=>URL.revokeObjectURL(objectUrl),1000);
+   }catch{toast("Не удалось сохранить PNG")}
+ };
+ menu.appendChild(b);
  document.body.appendChild(menu);
  const r=anchor.getBoundingClientRect();menu.style.left=Math.min(window.innerWidth-menu.offsetWidth-8,Math.max(8,r.right-menu.offsetWidth))+"px";menu.style.top=Math.min(window.innerHeight-menu.offsetHeight-8,r.bottom+7)+"px";
  setTimeout(()=>document.addEventListener("click",()=>menu.remove(),{once:true}),0);
@@ -1920,6 +1933,75 @@ async function generateVideo(prompt){
    $("#composerSend").disabled=false;
  }
 }
+function getImageToolSource(){
+ const ref=String(referenceImage||"").trim();
+ if(ref)return ref;
+ const latest=getLibrary().find(x=>x?.type==="image"&&x?.url);
+ return String(latest?.url||"").trim();
+}
+async function waitForImageToolJob(jobId){
+ const started=Date.now();
+ while(Date.now()-started<60000){
+   await new Promise(r=>setTimeout(r,1800));
+   const r=await fetch("/api/image-tools?jobId="+encodeURIComponent(jobId),{cache:"no-store"});
+   const data=await r.json().catch(()=>({}));
+   if(!r.ok||data?.ok===false)throw new Error(data?.message||data?.error||"IMAGE_TOOL_STATUS_FAILED");
+   if(data.outputUrl)return data.outputUrl;
+   if(String(data.status||"").toLowerCase()==="error")throw new Error("IMAGE_TOOL_JOB_FAILED");
+ }
+ throw new Error("IMAGE_TOOL_TIMEOUT");
+}
+async function runImageTool(action){
+ const source=getImageToolSource();
+ if(!source){toast("Сначала создай или загрузи изображение");return}
+ const scale=String($("#imageUpscaleScale")?.value||"2");
+ const model=String($("#imageUpscaleModel")?.value||"quality");
+ const button=action==="upscale"?$("#imageUpscaleButton"):$("#imageRemoveBgButton");
+ if(button)button.disabled=true;
+ const oldStatus=$("#composerStatus")?.textContent||"Готово";
+ if($("#composerStatus"))$("#composerStatus").textContent=action==="upscale"
+   ? "AI Upscale · обработка…"
+   : "Удаление фона · обработка…";
+ try{
+   const payload={action};
+   if(/^data:image\\//i.test(source))payload.imageData=source;else payload.imageUrl=source;
+   if(action==="upscale"){payload.scale=scale;payload.model=model}
+   const r=await fetch("/api/image-tools",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(payload)});
+   const data=await r.json().catch(()=>({}));
+   if(!r.ok||data?.ok===false)throw new Error(data?.message||data?.error||"IMAGE_TOOL_FAILED");
+   let outputUrl=String(data.outputUrl||"");
+   if(!outputUrl&&data.jobId)outputUrl=await waitForImageToolJob(data.jobId);
+   if(!outputUrl)throw new Error("IMAGE_TOOL_OUTPUT_MISSING");
+   const label=action==="upscale"
+     ? "CleverUtils · AI Upscale "+scale+"x"
+     : "CleverUtils · Удаление фона";
+   const item=saveMedia("image",outputUrl,action==="upscale"?"AI upscale "+scale+"x":"Удаление фона",label,action==="remove-background"?"png":"");
+   renderImageLibrary();
+   requestAnimationFrame(()=>scrollImagesToTop?.());
+   if($("#composerStatus"))$("#composerStatus").textContent=label+" · готово";
+   toast(action==="upscale"?"Upscale "+scale+"x готов":"Фон удалён · PNG готов");
+   return item;
+ }catch(e){
+   console.error("Miya image tool failed",e);
+   if($("#composerStatus"))$("#composerStatus").textContent=oldStatus+" · ошибка";
+   toast(String(e?.message||"Не удалось обработать изображение"));
+ }finally{
+   if(button)button.disabled=false;
+ }
+}
+function prepareBackgroundReplacement(){
+ const source=getImageToolSource();
+ if(!source){toast("Сначала создай или загрузи изображение");return}
+ referenceImage=source;
+ try{sessionStorage.setItem("miyaReferenceImage",referenceImage)}catch{}
+ setComposerAttachment(referenceImage);
+ $("#composerModel").value="FLUX Kontext Dev";
+ $("#composerRatio").value="auto";
+ $("#composerInput").value="Замени фон на: ";
+ $("#composerStatus").textContent="FLUX Kontext Dev · опиши новый фон";
+ $("#composerInput").focus();
+ syncInput();
+}
 function restoreReferenceImage(){
  try{
   referenceImage=referenceImage||sessionStorage.getItem("miyaReferenceImage")||"";
@@ -1966,6 +2048,7 @@ function setMode(next,render=true){
  const composerSendText=$("#composerSendText"); if(composerSendText) composerSendText.textContent=m.send;
  const composerStatus=$("#composerStatus"); if(composerStatus) composerStatus.textContent=m.status;
  const imageSettings=$(".image-settings"); if(imageSettings) imageSettings.style.display=target==="images"?"flex":"none";
+ const imageTools=$("#imageTools"); if(imageTools) imageTools.classList.toggle("show",target==="images");
  const voiceOptions=$("#voiceOptions"); if(voiceOptions) voiceOptions.classList.toggle("show",target==="voice");
  const videoOptions=$("#videoOptions"); if(videoOptions) videoOptions.classList.toggle("show",target==="video");
 
@@ -2116,6 +2199,9 @@ $("#composerModel")?.addEventListener("change",()=>{
   }
 });
 $("#improve")?.addEventListener("click",improveComposerPrompt);
+$("#imageUpscaleButton")?.addEventListener("click",()=>runImageTool("upscale"));
+$("#imageRemoveBgButton")?.addEventListener("click",()=>runImageTool("remove-background"));
+$("#imageReplaceBgButton")?.addEventListener("click",prepareBackgroundReplacement);
 $("#copyPrompt")?.addEventListener("click",copyComposerPrompt);
 $("#videoImprove")?.addEventListener("click",improveComposerPrompt);
 $("#videoCopyPrompt")?.addEventListener("click",copyComposerPrompt);

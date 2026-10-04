@@ -2437,3 +2437,59 @@ body.light .composer.voice-mode .voice-tool:hover{
     height:22px!important;
   }
 }
+
+
+/* Miya image tools */
+.image-tools{
+  display:none;
+  align-items:center;
+  gap:10px;
+  flex-wrap:wrap;
+  padding:8px 0 2px;
+}
+.image-tools.show{display:flex}
+.image-tool-group{
+  display:flex;
+  align-items:center;
+  gap:7px;
+}
+.image-tool-label{
+  font-size:11px;
+  font-weight:700;
+  opacity:.58;
+  white-space:nowrap;
+}
+.image-tool-select{
+  min-width:96px;
+}
+.image-tool-btn{
+  min-height:34px;
+  padding:0 12px;
+  border:1px solid var(--border,#273149);
+  border-radius:10px;
+  background:rgba(127,127,127,.08);
+  color:inherit;
+  font:inherit;
+  font-size:12px;
+  font-weight:700;
+  cursor:pointer;
+  transition:.16s ease;
+}
+.image-tool-btn:hover{
+  background:rgba(120,96,255,.14);
+  border-color:rgba(120,96,255,.45);
+}
+.image-tool-btn:disabled{
+  opacity:.45;
+  cursor:wait;
+}
+.image-tool-note{
+  font-size:10px;
+  opacity:.42;
+  white-space:nowrap;
+}
+@media(max-width:760px){
+  .image-tools{align-items:stretch}
+  .image-tool-group{flex-wrap:wrap}
+  .image-tool-note{width:100%;white-space:normal}
+}

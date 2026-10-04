@@ -3,6 +3,30 @@ module.exports = async function imageHandler(req, res) {
   res.setHeader("Content-Type", "application/json; charset=utf-8");
 
   if (req.method === "GET") {
+    const jobId = String(req.query?.jobId || "").trim();
+    if (jobId) {
+      try {
+        const upstreamJob = await fetch("https://cleverutils.com/api/v1/jobs/" + encodeURIComponent(jobId), {
+          headers: { Accept:"application/json" },
+          signal: AbortSignal.timeout(15000)
+        });
+        const rawJob = await upstreamJob.text();
+        let dataJob = {};
+        try { dataJob = rawJob ? JSON.parse(rawJob) : {}; } catch {}
+        if (!upstreamJob.ok) {
+          return res.status(502).json({ok:false,error:"CLEVERUTILS_JOB_HTTP",upstreamStatus:upstreamJob.status,upstreamBody:rawJob.slice(0,800)});
+        }
+        const job = dataJob?.data || dataJob;
+        return res.status(200).json({
+          ok:true,
+          status:String(job?.status || "processing"),
+          jobId:String(job?.job_id || jobId),
+          outputUrl:typeof job?.output?.url==="string" ? job.output.url : ""
+        });
+      } catch (error) {
+        return res.status(502).json({ok:false,error:"CLEVERUTILS_JOB_HANDLER_ERROR",message:String(error?.message||error||"Job status failed")});
+      }
+    }
     try {
       const raw = String(req.query?.url || "").trim();
       if (!raw) return res.status(400).json({ ok: false, error: "IMAGE_URL_REQUIRED" });
@@ -34,6 +58,99 @@ module.exports = async function imageHandler(req, res) {
 
   try {
     const body = typeof req.body === "string" ? JSON.parse(req.body) : (req.body || {});
+
+    const action = typeof body.action === "string" ? body.action.trim() : "";
+    if (action === "upscale" || action === "remove-background") {
+      let bytes;
+      let mime = "image/jpeg";
+      let filename = "miya-image.jpg";
+      const dataInput = typeof body.imageData === "string" ? body.imageData.trim() : "";
+      const urlInput = typeof body.imageUrl === "string" ? body.imageUrl.trim() : "";
+
+      if (dataInput) {
+        const match = dataInput.match(/^data:(image\\/[^;]+);base64,(.+)$/i);
+        if (!match) return res.status(400).json({ ok:false, error:"INVALID_IMAGE_DATA" });
+        mime = match[1].toLowerCase();
+        bytes = Buffer.from(match[2].replace(/\\s+/g,""), "base64");
+        filename = "miya-upload." + (mime.split("/")[1] === "jpeg" ? "jpg" : mime.split("/")[1]);
+      } else if (urlInput) {
+        let target;
+        try { target = new URL(urlInput); } catch {
+          return res.status(400).json({ ok:false, error:"INVALID_IMAGE_URL" });
+        }
+        const host = target.hostname.toLowerCase();
+        const allowed =
+          host === "ahm7xmakki.com" || host.endsWith(".ahm7xmakki.com") ||
+          host === "modelscope.cn" || host.endsWith(".modelscope.cn") ||
+          host.endsWith(".aliyuncs.com") ||
+          host === "sora.aritek.app" || host.endsWith(".aritek.app") ||
+          host === "cleverutils.com" || host.endsWith(".cleverutils.com");
+        if (target.protocol !== "https:" || !allowed) {
+          return res.status(400).json({ ok:false, error:"IMAGE_URL_HOST_NOT_ALLOWED" });
+        }
+        const source = await fetch(target.toString(), { headers:{Accept:"image/*"}, signal:AbortSignal.timeout(20000) });
+        if (!source.ok) return res.status(400).json({ ok:false, error:"SOURCE_IMAGE_FETCH_FAILED", upstreamStatus:source.status });
+        mime = (source.headers.get("content-type") || "image/jpeg").split(";")[0].toLowerCase();
+        if (!/^image\\//i.test(mime)) return res.status(400).json({ ok:false, error:"SOURCE_NOT_IMAGE" });
+        bytes = Buffer.from(await source.arrayBuffer());
+        const ext = mime.split("/")[1] || "jpeg";
+        filename = "miya-source." + (ext === "jpeg" ? "jpg" : ext);
+      } else {
+        return res.status(400).json({ ok:false, error:"IMAGE_REQUIRED" });
+      }
+
+      if (!bytes?.length) return res.status(400).json({ ok:false, error:"EMPTY_IMAGE" });
+      if (bytes.length > 20 * 1024 * 1024) {
+        return res.status(413).json({ ok:false, error:"IMAGE_TOO_LARGE", message:"Для AI upscale CleverUtils принимает изображения до 20 MB." });
+      }
+
+      const form = new FormData();
+      form.append("file", new Blob([bytes], { type:mime }), filename);
+      const endpoint = "https://cleverutils.com/api/v1/tools/" + action;
+
+      if (action === "upscale") {
+        const scale = String(body.scale || "2");
+        const model = String(body.model || "quality");
+        if (!["2","3","4"].includes(scale)) return res.status(400).json({ok:false,error:"INVALID_SCALE"});
+        if (!["fast","quality"].includes(model)) return res.status(400).json({ok:false,error:"INVALID_MODEL"});
+        form.append("scale", scale);
+        form.append("model", model);
+      }
+
+      const upstreamTool = await fetch(endpoint, {
+        method:"POST",
+        body:form,
+        headers:{Accept:"application/json"},
+        signal:AbortSignal.timeout(55000)
+      });
+      const rawTool = await upstreamTool.text();
+      let dataTool = {};
+      try { dataTool = rawTool ? JSON.parse(rawTool) : {}; } catch {}
+
+      if (!upstreamTool.ok) {
+        return res.status(502).json({
+          ok:false,
+          error:"CLEVERUTILS_UPSTREAM_HTTP",
+          upstreamStatus:upstreamTool.status,
+          upstreamBody:rawTool.slice(0,1000)
+        });
+      }
+
+      const job = dataTool?.data || dataTool;
+      const outputUrl =
+        typeof job?.output?.url === "string" ? job.output.url :
+        typeof job?.output_url === "string" ? job.output_url : "";
+
+      return res.status(200).json({
+        ok:true,
+        provider:"CleverUtils",
+        action,
+        status:String(job?.status || (outputUrl ? "done" : "processing")),
+        jobId:typeof job?.job_id === "string" ? job.job_id : "",
+        outputUrl
+      });
+    }
+
     const prompt = typeof body.prompt === "string" ? body.prompt.trim() : "";
     if (!prompt) return res.status(400).json({ ok: false, error: "PROMPT_REQUIRED" });
 
