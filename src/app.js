@@ -2335,15 +2335,14 @@ async function processSpeechRecording(){
   if(status)status.textContent="Распознаю голос…";
   try{
     const audio=await blobToDataUrl(blob);
-    const response=await fetch("https://ahm7xmakki.com/api/transcribe",{
+    const response=await fetch("/api/cloudflare-transcribe",{
       method:"POST",
       headers:{"Content-Type":"application/json"},
       body:JSON.stringify({
         audio,
         filename:mime.includes("ogg")?"miya-voice.ogg":"miya-voice.webm",
         mime,
-        language:"ru",
-        model:"turbo"
+        language:"ru"
       })
     });
     const data=await response.json().catch(()=>null);
