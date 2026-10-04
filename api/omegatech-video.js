@@ -10,14 +10,28 @@ export default async function handler(req,res){
       const allowedHost=/^(?:thumb\.)?wikimedia\.org$/i.test(source.hostname)||/^commons\.wikimedia\.org$/i.test(source.hostname);
       if(source.protocol!=="https:"||!allowedHost)return res.status(400).json({ok:false,error:"IMAGE_HOST_NOT_ALLOWED"});
       const question=String(req.query?.question||"Что изображено на этой картинке? Опиши сюжет, стиль, композицию, свет, цвета и важные детали.").trim().slice(0,2000);
-      const response=await fetch("https://api.cloudflare.com/client/v4/accounts/"+encodeURIComponent(account)+"/ai/run/@cf/moondream/moondream3.1-9B-A2B",{
+      const endpoint="https://api.cloudflare.com/client/v4/accounts/"+encodeURIComponent(account)+"/ai/run/@cf/moondream/moondream3.1-9B-A2B";
+      const run=async(image)=>fetch(endpoint,{
         method:"POST",
         headers:{"Authorization":"Bearer "+token,"Content-Type":"application/json","Accept":"application/json"},
-        body:JSON.stringify({task:"caption",image:source.toString(),caption_length:"long",stream:false,max_tokens:1200}),
+        body:JSON.stringify({task:"caption",image,caption_length:"long",stream:false,max_tokens:1200}),
         signal:AbortSignal.timeout(55000)
       });
-      const raw=await response.text();
+      let response=await run(source.toString());
+      let raw=await response.text();
       let data={}; try{data=raw?JSON.parse(raw):{}}catch{data={}};
+      if(response.status>=500){
+        const img=await fetch(source.toString(),{headers:{"User-Agent":"Mozilla/5.0 MiyaStudio/1.0","Accept":"image/avif,image/webp,image/jpeg,image/png,*/*"},signal:AbortSignal.timeout(15000)});
+        if(!img.ok)return res.status(502).json({ok:false,provider:"Cloudflare Workers AI",model:"@cf/moondream/moondream3.1-9B-A2B",status:img.status,answer:"",error:"IMAGE_FETCH_FAILED"});
+        const bytes=Buffer.from(await img.arrayBuffer());
+        if(bytes.length>10*1024*1024)return res.status(413).json({ok:false,error:"IMAGE_TOO_LARGE"});
+        const type=img.headers.get("content-type")||"image/jpeg";
+        if(!/^image\/(?:jpeg|jpg|png|webp)$/i.test(type))return res.status(400).json({ok:false,error:"IMAGE_TYPE_UNSUPPORTED"});
+        const b64="data:"+type.split(";")[0]+";base64,"+bytes.toString("base64");
+        response=await run(b64);
+        raw=await response.text();
+        try{data=raw?JSON.parse(raw):{}}catch{data={}};
+      }
       const answer=data?.result?.answer||data?.result?.caption||data?.result?.text||"";
       return res.status(response.status).json({ok:response.ok&&!!answer,provider:"Cloudflare Workers AI",model:"@cf/moondream/moondream3.1-9B-A2B",status:response.status,answer,error:response.ok?null:(data?.errors?.[0]?.message||data?.error||"Cloudflare Vision request failed")});
     }catch(error){return res.status(502).json({ok:false,error:"CLOUDFLARE_VISION_TEST_FAILED",message:String(error?.message||error||"Vision test failed")});}
