@@ -60,7 +60,7 @@ module.exports = async function imageHandler(req, res) {
     const body = typeof req.body === "string" ? JSON.parse(req.body) : (req.body || {});
 
     const action = typeof body.action === "string" ? body.action.trim() : "";
-    if (action === "upscale" || action === "remove-background") {
+    if (action === "upscale") {
       let bytes;
       let mime = "image/jpeg";
       let filename = "miya-image.jpg";
@@ -106,7 +106,7 @@ module.exports = async function imageHandler(req, res) {
 
       const form = new FormData();
       form.append("file", new Blob([bytes], { type:mime }), filename);
-      const endpoint = "https://cleverutils.com/api/v1/tools/" + action;
+      const endpoint = "https://cleverutils.com/api/v1/tools/upscale-image";
 
       if (action === "upscale") {
         const scale = String(body.scale || "2");
@@ -144,7 +144,7 @@ module.exports = async function imageHandler(req, res) {
       return res.status(200).json({
         ok:true,
         provider:"CleverUtils",
-        action,
+        action:"upscale",
         status:String(job?.status || (outputUrl ? "done" : "processing")),
         jobId:typeof job?.job_id === "string" ? job.job_id : "",
         outputUrl
