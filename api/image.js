@@ -68,7 +68,7 @@ module.exports = async function imageHandler(req, res) {
       const urlInput = typeof body.imageUrl === "string" ? body.imageUrl.trim() : "";
 
       if (dataInput) {
-        const match = dataInput.match(/^data:(image\\/[^;]+);base64,(.+)$/i);
+        const match = dataInput.match(/^data:(image\/[^;]+);base64,(.+)$/i);
         if (!match) return res.status(400).json({ ok:false, error:"INVALID_IMAGE_DATA" });
         mime = match[1].toLowerCase();
         bytes = Buffer.from(match[2].replace(/\s+/g,""), "base64");
@@ -91,7 +91,7 @@ module.exports = async function imageHandler(req, res) {
         const source = await fetch(target.toString(), { headers:{Accept:"image/*"}, signal:AbortSignal.timeout(20000) });
         if (!source.ok) return res.status(400).json({ ok:false, error:"SOURCE_IMAGE_FETCH_FAILED", upstreamStatus:source.status });
         mime = (source.headers.get("content-type") || "image/jpeg").split(";")[0].toLowerCase();
-        if (!/^image\\//i.test(mime)) return res.status(400).json({ ok:false, error:"SOURCE_NOT_IMAGE" });
+        if (!/^image\//i.test(mime)) return res.status(400).json({ ok:false, error:"SOURCE_NOT_IMAGE" });
         bytes = Buffer.from(await source.arrayBuffer());
         const ext = mime.split("/")[1] || "jpeg";
         filename = "miya-source." + (ext === "jpeg" ? "jpg" : ext);
