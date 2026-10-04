@@ -2410,12 +2410,12 @@ body.light .composer.voice-mode .voice-tool:hover{
 /* Voice recording visualizer stays inside the prompt row and never occupies the model/options row. */
 #composerVoiceVisualizer{
   position:absolute!important;
-  left:52px!important;
+  left:50%!important;
   top:50%!important;
   bottom:auto!important;
   width:150px!important;
   height:24px!important;
-  transform:translateY(-50%)!important;
+  transform:translate(-50%,-50%)!important;
   pointer-events:none!important;
   z-index:1004!important;
   opacity:.95!important;
@@ -2432,7 +2432,7 @@ body.light .composer.voice-mode .voice-tool:hover{
 }
 @media(max-width:760px){
   #composerVoiceVisualizer{
-    left:46px!important;
+    left:50%!important;
     width:118px!important;
     height:22px!important;
   }
