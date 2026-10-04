@@ -1238,16 +1238,45 @@ function addChatMessage(text,isUser,image="",isError=false){
  stream.appendChild(row);
  scrollChatToLatest("smooth");
 }
+async function prepareChatVisionImage(dataUrl){
+  if(!/^data:image\//i.test(String(dataUrl||""))) return "";
+  try{
+    const image=await new Promise((resolve,reject)=>{
+      const img=new Image();
+      img.onload=()=>resolve(img);
+      img.onerror=reject;
+      img.src=dataUrl;
+    });
+    const sourceW=image.naturalWidth||image.width;
+    const sourceH=image.naturalHeight||image.height;
+    const canvas=document.createElement("canvas");
+    const ctx=canvas.getContext("2d",{alpha:false});
+    for(const maxSide of [768,640,512]){
+      const scale=Math.min(1,maxSide/Math.max(sourceW,sourceH));
+      canvas.width=Math.max(1,Math.round(sourceW*scale));
+      canvas.height=Math.max(1,Math.round(sourceH*scale));
+      ctx.drawImage(image,0,0,canvas.width,canvas.height);
+      for(const quality of [.62,.52,.42]){
+        const out=canvas.toDataURL("image/jpeg",quality);
+        if(out.length<=110000) return out;
+      }
+    }
+    return canvas.toDataURL("image/jpeg",.35);
+  }catch{
+    return dataUrl;
+  }
+}
 async function requestChat(){
  const status=$("#composerStatus");
  const hasVisionImage=mode==="chat"&&chatAttachmentFile&&/^data:image\//i.test(String(referenceImage||""));
  status.textContent=hasVisionImage?"Miya · анализ изображения…":"Miya думает…";
  $("#composerSend").disabled=true;
  try{
+   const chatImage=hasVisionImage?await prepareChatVisionImage(String(referenceImage||"")):"";
    const response=await fetch("/api/chat",{
      method:"POST",
      headers:{"Content-Type":"application/json","Accept":"application/json"},
-     body:JSON.stringify({messages:chatMessages,imageBase64:hasVisionImage?String(referenceImage||""):""}),
+     body:JSON.stringify({messages:chatMessages,imageBase64:chatImage}),
      signal:AbortSignal.timeout(90000)
    });
    const data=await response.json().catch(()=>({}));
