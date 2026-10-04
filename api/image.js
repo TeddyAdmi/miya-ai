@@ -39,6 +39,7 @@ module.exports = async function imageHandler(req, res) {
 
     const ratio = typeof body.ratio === "string" ? body.ratio : "16:9";
 
+    const model = typeof body.model === "string" ? body.model.trim() : "Flux Dev";
     if (model === "ModelScope · Z-Image-Turbo") {
       const token = String(process.env.MODELSCOPE_TOKEN || "").trim();
       if (!token) return res.status(500).json({ ok: false, error: "MODELSCOPE_TOKEN_NOT_CONFIGURED" });
@@ -133,7 +134,6 @@ module.exports = async function imageHandler(req, res) {
         count: 1
       });
     }
-    const model = typeof body.model === "string" ? body.model.trim() : "Flux Dev";
     const options = body.options && typeof body.options === "object" ? body.options : {};
     const imageUrl = typeof options.imageUrl === "string" ? options.imageUrl.trim() : "";
     const imageBase64 = typeof options.imageBase64 === "string" ? options.imageBase64.trim() : "";
