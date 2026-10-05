@@ -129,6 +129,7 @@ module.exports = async function imageHandler(req, res) {
       form.append("scale", scale);
       form.append("model", model);
 
+      const qualityTimeoutMs = 105000;
       const upstreamTool = await fetch(endpoint, {
         method:"POST",
         body:form,
