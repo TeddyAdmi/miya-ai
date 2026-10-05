@@ -2134,6 +2134,67 @@ async function waitForImageToolJob(jobId){
  throw new Error("IMAGE_TOOL_TIMEOUT");
 }
 
+async function cleverUtilsMcpRequest(payload){
+ const response=await fetch("https://cleverutils.com/mcp",{
+   method:"POST",
+   headers:{"Content-Type":"application/json","Accept":"application/json, text/event-stream"},
+   body:JSON.stringify(payload),
+   cache:"no-store"
+ });
+ const textBody=await response.text();
+ if(!response.ok)throw new Error("CLEVERUTILS_MCP_HTTP_"+response.status);
+ try{return JSON.parse(textBody)}catch{}
+ for(const line of textBody.split(/\r?\n/)){
+   const value=line.trim();
+   if(!value.startsWith("data:"))continue;
+   try{return JSON.parse(value.slice(5).trim())}catch{}
+ }
+ throw new Error("CLEVERUTILS_MCP_INVALID_RESPONSE");
+}
+async function cleverUtilsMcpUpscale(source,scale,model){
+ let file=String(source||"").trim();
+ if(!file)return "";
+ if(!/^data:image\//i.test(file)){
+   const response=await fetch(file,{cache:"no-store"});
+   if(!response.ok)throw new Error("SOURCE_IMAGE_FETCH_FAILED");
+   const blob=await response.blob();
+   file=await new Promise((resolve,reject)=>{
+     const reader=new FileReader();
+     reader.onload=()=>resolve(String(reader.result||""));
+     reader.onerror=()=>reject(reader.error||new Error("SOURCE_IMAGE_READ_FAILED"));
+     reader.readAsDataURL(blob);
+   });
+ }
+ const init=await cleverUtilsMcpRequest({
+   jsonrpc:"2.0",id:1,method:"initialize",
+   params:{protocolVersion:"2025-06-18",capabilities:{},clientInfo:{name:"Miya Studio",version:"1.0"}}
+ });
+ if(init?.error)throw new Error(String(init.error.message||"CLEVERUTILS_MCP_INITIALIZE_FAILED"));
+ const call=await cleverUtilsMcpRequest({
+   jsonrpc:"2.0",id:2,method:"tools/call",
+   params:{name:"upscale_image",arguments:{file,scale:Number(scale),model}}
+ });
+ if(call?.error)throw new Error(String(call.error.message||"CLEVERUTILS_MCP_UPSCALE_FAILED"));
+ const root=call?.result||call;
+ const directLink=Array.isArray(root?.content)
+   ? root.content.find(x=>x?.type==="resource_link"&&typeof x.uri==="string")?.uri||""
+   : "";
+ if(directLink)return directLink;
+ let found="";
+ const walk=(value,seen=new Set())=>{
+   if(!value||found)return;
+   if(typeof value==="string"){
+     if(/^https?:\/\//i.test(value))found=value;
+     return;
+   }
+   if(typeof value!=="object"||seen.has(value))return;
+   seen.add(value);
+   if(Array.isArray(value)){value.forEach(v=>walk(v,seen));return}
+   Object.values(value).forEach(v=>walk(v,seen));
+ };
+ walk(root);
+ return found;
+}
 async function runImageTool(sourceOverride="",scaleOverride="",modelOverride=""){
  const source=String(sourceOverride||getImageToolSource()).trim();
  if(!source){toast("Сначала создай или загрузи изображение");return}
@@ -2145,69 +2206,16 @@ async function runImageTool(sourceOverride="",scaleOverride="",modelOverride="")
  const model=String(modelOverride||"quality");
  const oldStatus=$("#composerStatus")?.textContent||"Готово";
  if($("#composerStatus"))$("#composerStatus").textContent="AI Upscale · обработка…";
-
  try{
-   let outputUrl="";
-   let jobId="";
-
-   // Send the image directly from the browser to CleverUtils. Their REST API
-   // supports browser CORS, so long-running Real-ESRGAN work does not consume
-   // Vercel's serverless-function timeout.
-   const form=new FormData();
-   if(/^data:image\//i.test(source)){
-     if(!/^data:image\/(?:jpeg|png|webp);base64,/i.test(source)){
-       throw new Error("UNSUPPORTED_SOURCE_IMAGE");
-     }
-     const blob=await fetch(source).then(r=>r.blob());
-     const mime=(blob.type||"image/jpeg").toLowerCase();
-     const ext=mime==="image/png"?"png":mime==="image/webp"?"webp":"jpg";
-     form.append("file",blob,"miya-source."+ext);
-   }else{
-     const sourceResponse=await fetch(source,{cache:"no-store"});
-     if(!sourceResponse.ok)throw new Error("SOURCE_IMAGE_FETCH_FAILED");
-     const blob=await sourceResponse.blob();
-     const mime=(blob.type||"image/jpeg").toLowerCase();
-     const ext=mime==="image/png"?"png":mime==="image/webp"?"webp":"jpg";
-     form.append("file",blob,"miya-source."+ext);
-   }
-   form.append("scale",scale);
-   form.append("model",model);
-
-   const direct=await fetch("https://cleverutils.com/api/v1/tools/upscale-image",{
-     method:"POST",
-     body:form,
-     headers:{Accept:"application/json"},
-     cache:"no-store"
-   });
-
-   const data=await direct.json().catch(()=>({}));
-   if(!direct.ok){
-     throw new Error(
-       data?.message ||
-       data?.error?.message ||
-       data?.error ||
-       "CLEVERUTILS_UPSCALE_FAILED"
-     );
-   }
-
-   const job=data?.data||data;
-   outputUrl=String(job?.output?.url||job?.output_url||"").trim();
-   jobId=String(job?.job_id||job?.id||"").trim();
-
-   if(!outputUrl&&jobId){
-     outputUrl=await waitForCleverUtilsJob(jobId);
-   }
+   const outputUrl=await cleverUtilsMcpUpscale(source,scale,model);
    if(!outputUrl)throw new Error("IMAGE_TOOL_OUTPUT_MISSING");
-
    const label="CleverUtils · AI Upscale "+scale+"x";
    const item=saveMedia("image",outputUrl,"AI upscale "+scale+"x",label,"");
    renderImageLibrary();
    requestAnimationFrame(()=>scrollImagesToTop?.());
-
    if($("#composerStatus"))$("#composerStatus").textContent=label+" · готово";
    toast("Upscale "+scale+"x готов");
    return item;
-
  }catch(e){
    console.error("Miya image upscale failed",e);
    if($("#composerStatus"))$("#composerStatus").textContent=oldStatus+" · ошибка";
