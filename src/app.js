@@ -636,8 +636,8 @@ function toggleUpscalePanel(item,card){
      // stores external results through /api/image-jpeg, so this guarantees
      // that upscale receives real JPEG bytes instead of a cached provider blob
      // whose MIME/container may be unsupported.
-     const source=String(item?.url||"").trim();
-     await runImageTool(source,scale,model);
+     const source=await mediaItemToReference(item);
+     await runImageTool(String(source||item?.url||"").trim(),scale,model);
    }finally{
      submit.disabled=false;submit.textContent="Увеличить";
    }
@@ -2157,21 +2157,26 @@ async function runImageTool(sourceOverride="",scaleOverride="",modelOverride="")
  try{
    let outputUrl="";
    if(model==="quality"){
-     // Unwrap Miya image proxy URLs to the original public URL before using MCP.
+     // Quality uses CleverUtils MCP. Prefer cached image bytes (data URL) so
+     // expiring/slow provider URLs never have to be fetched again.
      let mcpSource="";
      try{
-       if(/^https:\/\//i.test(source)) mcpSource=source;
+       if(/^data:image\/(jpeg|png|webp);base64,/i.test(source)) mcpSource=source;
+       else if(/^https:\/\//i.test(source)) mcpSource=source;
        else if(/^\/api\/image(?:-jpeg)?\?url=/i.test(source)){
          mcpSource=new URL(source,window.location.origin).searchParams.get("url")||"";
        }else if(source.startsWith(window.location.origin+"/api/image")){
          mcpSource=new URL(source).searchParams.get("url")||"";
        }
      }catch{}
-     if(/^https:\/\//i.test(mcpSource)){
+     if(/^data:image\/(jpeg|png|webp);base64,/i.test(mcpSource)||/^https:\/\//i.test(mcpSource)){
+       const payload={action:"upscale-mcp",scale,model:"quality"};
+       if(/^data:image\//i.test(mcpSource)) payload.imageData=mcpSource;
+       else payload.imageUrl=mcpSource;
        const response=await fetch("/api/image",{
          method:"POST",
          headers:{"Content-Type":"application/json","Accept":"application/json"},
-         body:JSON.stringify({action:"upscale-mcp",imageUrl:mcpSource,scale,model:"quality"})
+         body:JSON.stringify(payload)
        });
        const data=await response.json().catch(()=>({}));
        if(!response.ok||data?.ok===false)throw new Error(data?.message||data?.error||"IMAGE_TOOL_FAILED");
