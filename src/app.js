@@ -631,7 +631,11 @@ function toggleUpscalePanel(item,card){
    const model=selects[1].value;
    submit.disabled=true;submit.textContent="Обработка…";
    try{
-     const source=await mediaItemToReference(item);
+     // Use the library's normalized image URL for CleverUtils. The library
+     // stores external results through /api/image-jpeg, so this guarantees
+     // that upscale receives real JPEG bytes instead of a cached provider blob
+     // whose MIME/container may be unsupported.
+     const source=String(item?.url||"").trim();
      await runImageTool(source,scale,model);
    }finally{
      submit.disabled=false;submit.textContent="Увеличить";
@@ -2112,8 +2116,16 @@ async function runImageTool(sourceOverride="",scaleOverride="",modelOverride="")
      if(!response.ok)throw new Error("SOURCE_IMAGE_READ_FAILED");
      blob=await response.blob();
    }else{
-     const response=await fetch("/api/image?url="+encodeURIComponent(source),{cache:"no-store"});
+     let response;
+     try{
+       const isLocal=/^\//.test(source)||source.startsWith(window.location.origin+"/");
+       response=await fetch(isLocal?source:"/api/image?url="+encodeURIComponent(source),{cache:"no-store"});
+     }catch{
+       throw new Error("SOURCE_IMAGE_READ_FAILED");
+     }
      if(!response.ok)throw new Error("SOURCE_IMAGE_PROXY_FAILED");
+     const type=String(response.headers.get("content-type")||"").split(";")[0].toLowerCase();
+     if(!/^image\//i.test(type))throw new Error("SOURCE_NOT_IMAGE");
      blob=await response.blob();
    }
    if(!blob||!blob.size)throw new Error("EMPTY_IMAGE");
