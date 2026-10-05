@@ -638,7 +638,7 @@ function toggleUpscalePanel(item,card){
      // that upscale receives real JPEG bytes instead of a cached provider blob
      // whose MIME/container may be unsupported.
      const source=await mediaItemToReference(item);
-     await runImageTool(String(source||item?.url||"").trim(),scale,model);
+     await runImageTool(String(source||item?.url||"").trim(),scale);
    }finally{
      submit.disabled=false;submit.textContent="Увеличить";
    }
