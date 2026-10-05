@@ -192,7 +192,7 @@ function warmMediaCache(items){
   /* Do not background-download whole videos: their native preload handles the
      first frame/metadata. IndexedDB warming is only for image previews. */
   const list=Array.isArray(items)
-    ? items.filter(x=>x?.id&&x?.url&&x.type==="image").slice(0,12)
+    ? items.filter(x=>x?.id&&x?.url&&x.type==="image"&&!isInvalidImageToolSource(x.url)).slice(0,12)
     : [];
   if(!list.length)return;
   const run=async()=>{
@@ -216,8 +216,10 @@ async function getCachedMedia(id){
 }
 function saveMedia(type,url,prompt="",model="",format=""){
  if(!url)return;
+ const rawUrl=String(url||"").trim();
+ if(type==="image"&&isInvalidImageToolSource(rawUrl))return;
  const id=type+"-"+Date.now()+"-"+Math.random().toString(36).slice(2);
- const normalizedUrl=type==="image"?jpegImageUrl(url):String(url||"");
+ const normalizedUrl=type==="image"?jpegImageUrl(rawUrl):rawUrl;
  const item={id,type,url:normalizedUrl,prompt:String(prompt||""),model:String(model||((type==="image")?"FLUX Dev":"LTX")),format:String(format||""),createdAt:Date.now()};
  const items=getLibrary();items.unshift(item);
  try{localStorage.setItem(LIB_KEY,JSON.stringify(items.slice(0,500)))}catch{
@@ -537,13 +539,20 @@ function openVideoViewer(item){
  modal.__videoNav?.();modal.classList.add("open");document.body.classList.add("image-viewer-open");
 }
 async function mediaItemToReference(item){
+ if(!item?.id)return "";
  try{
   const cached=await getCachedMedia(item.id);
   if(cached?.blob){
-   return await new Promise((resolve,reject)=>{const reader=new FileReader();reader.onload=()=>resolve(String(reader.result||""));reader.onerror=()=>reject(reader.error);reader.readAsDataURL(cached.blob)})
+   return await new Promise((resolve,reject)=>{
+    const reader=new FileReader();
+    reader.onload=()=>resolve(String(reader.result||""));
+    reader.onerror=()=>reject(reader.error);
+    reader.readAsDataURL(cached.blob);
+   });
   }
  }catch{}
- return item.url;
+ const value=String(item?.url||"").trim();
+ return isInvalidImageToolSource(value)?"":value;
 }
 
 function positionFloatingMediaOverlay(el,anchor,kind){
@@ -635,12 +644,15 @@ function toggleUpscalePanel(item,card){
    const scale=panel.querySelector(".media-upscale-select")?.value||"2";
    submit.disabled=true;submit.textContent="Обработка…";
    try{
-     // Use the library's normalized image URL for CleverUtils. The library
-     // stores external results through /api/image-jpeg, so this guarantees
-     // that upscale receives real JPEG bytes instead of a cached provider blob
-     // whose MIME/container may be unsupported.
+     // Resolve the clicked library item itself. Never fall back to item.url
+     // after mediaItemToReference rejects it: old library entries can contain
+     // cleverutils.com/ and that is an HTML page, not an image.
      const source=await mediaItemToReference(item);
-     await runImageTool(String(source||item?.url||"").trim(),scale);
+     if(!source){
+       toast("У этого изображения нет доступного файла. Выбери другое изображение.");
+       return;
+     }
+     await runImageTool(String(source).trim(),scale);
    }finally{
      submit.disabled=false;submit.textContent="Увеличить";
    }
