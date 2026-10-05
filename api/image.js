@@ -143,6 +143,14 @@ module.exports = async function imageHandler(req, res) {
       const model = String(body.model || "quality");
       if (!imageUrl && !/^data:image\//i.test(imageData)) return res.status(400).json({ok:false,error:"IMAGE_REQUIRED"});
       if (imageUrl && !/^https:\/\//i.test(imageUrl)) return res.status(400).json({ok:false,error:"IMAGE_URL_REQUIRED"});
+      if (imageUrl) {
+        try {
+          const sourceUrl = new URL(imageUrl);
+          if (sourceUrl.pathname === "/" && !sourceUrl.search && !sourceUrl.hash && /(?:^|\.)cleverutils\.com$/i.test(sourceUrl.hostname)) {
+            return res.status(400).json({ok:false,error:"MCP_SOURCE_INVALID",message:"Источник изображения указывает на главную страницу CleverUtils, а не на готовое изображение."});
+          }
+        } catch {}
+      }
       if (imageData && !/^data:image\/(jpeg|png|webp);base64,/i.test(imageData)) return res.status(400).json({ok:false,error:"INVALID_IMAGE_DATA"});
       if (["2","3","4"].includes(scale) === false) return res.status(400).json({ok:false,error:"INVALID_SCALE"});
       if (!["fast","quality"].includes(model)) return res.status(400).json({ok:false,error:"INVALID_MODEL"});
@@ -193,7 +201,7 @@ module.exports = async function imageHandler(req, res) {
       const urlCandidates = [];
       const addCandidate = value => {
         const candidate = String(value || "").trim().replace(/[),.]+$/, "");
-        if (/^https?:\\/\\//i.test(candidate)) urlCandidates.push(candidate);
+        if (/^https?:\/\//i.test(candidate)) urlCandidates.push(candidate);
       };
       const collectUrls = value => {
         if (typeof value === "string") {
