@@ -1026,7 +1026,8 @@ async function runImageOcr(file){
  catch(e){$("#canvas").innerHTML='<div class="ocr-loading-wrap"><div class="ocr-loading-card"><h3>Не удалось распознать текст</h3><p>'+escapeHtml(e?.message||"Ошибка OCR")+'</p><button type="button" class="ocr-again-btn" id="ocrRetryBtn">Повторить</button></div></div>';$("#ocrRetryBtn").onclick=()=>$("#ocrToolButton")?.click();$("#composerStatus").textContent="Image to Text · ошибка";toast("OCR: "+(e?.message||"не удалось распознать изображение"))}
  finally{if(send)send.disabled=false}
 }
-\nfunction toast(message){
+
+function toast(message){
  let t=$("#toast");if(!t){t=document.createElement("div");t.id="toast";t.className="toast";document.body.appendChild(t)}
  t.textContent=message;t.classList.add("show");clearTimeout(window.__toast);
  window.__toast=setTimeout(()=>t.classList.remove("show"),2600)
