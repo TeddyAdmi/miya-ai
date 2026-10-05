@@ -2124,65 +2124,87 @@ async function runImageTool(sourceOverride="",scaleOverride="",modelOverride="")
  const model=String(modelOverride||"quality");
  const oldStatus=$("#composerStatus")?.textContent||"Готово";
  if($("#composerStatus"))$("#composerStatus").textContent="AI Upscale · обработка…";
+
  try{
-   let blob;
-   // ВАЖНО: CleverUtils принимает исходный файл лучше всего. Не перекодируем
-   // его через canvas/PNG — именно эта промежуточная конверсия приводила к
-   // HTTP 415 UNSUPPORTED_MIME после долгой обработки.
+   // CleverUtils принимает обычный multipart напрямую, но его публичный
+   // upscaler сейчас иногда отклоняет даже валидные JPEG из browser Blob
+   // с UNSUPPORTED_MIME. Miya уже имеет серверный CleverUtils MCP bridge,
+   // который принимает data:image/... и сам передаёт файл в Real-ESRGAN.
+   // Используем этот путь: без CORS, без ручного multipart и без потери
+   // исходных байтов изображения.
+   let body={action:"upscale-mcp",scale,model};
+
    if(/^data:image\//i.test(source)){
-     const response=await fetch(source);
-     if(!response.ok)throw new Error("SOURCE_IMAGE_READ_FAILED");
-     blob=await response.blob();
+     if(!/^data:image\/(?:jpeg|png|webp);base64,/i.test(source)){
+       throw new Error("UNSUPPORTED_SOURCE_IMAGE");
+     }
+     body.imageData=source;
    }else{
-     const isLocal=source.startsWith("/")||source.startsWith(window.location.origin+"/");
-     const response=await fetch(
-       isLocal
-         ? source
-         : "/api/image-jpeg?url="+encodeURIComponent(source),
-       {cache:"no-store"}
-     );
-     if(!response.ok)throw new Error("SOURCE_IMAGE_PROXY_FAILED");
-     blob=await response.blob();
+     body.imageUrl=source;
    }
-   if(!blob||!blob.size)throw new Error("EMPTY_IMAGE");
 
-   const form=new FormData();
-   const type=String(blob.type||"image/jpeg").split(";")[0].toLowerCase();
-   const ext=type==="image/png"?"png":type==="image/webp"?"webp":type==="image/gif"?"gif":"jpg";
-   form.append("file",blob,"miya-source."+ext);
-   form.append("scale",scale);
-   form.append("model",model);
-
-   const r=await fetch("https://cleverutils.com/api/v1/tools/upscale-image",{
+   const r=await fetch("/api/image",{
      method:"POST",
-     body:form,
-     headers:{Accept:"application/json"}
+     headers:{
+       "Content-Type":"application/json",
+       "Accept":"application/json"
+     },
+     body:JSON.stringify(body),
+     cache:"no-store"
    });
+
    const data=await r.json().catch(()=>({}));
-   if(!r.ok)throw new Error(data?.message||data?.error?.message||data?.error||"IMAGE_TOOL_FAILED");
 
-   const job=data?.data||data;
-   let outputUrl=typeof job?.output?.url==="string"
-     ? job.output.url
-     : String(job?.outputUrl||"");
-   const jobId=typeof job?.job_id==="string"
-     ? job.job_id
-     : String(job?.jobId||"");
+   if(!r.ok||data?.ok===false){
+     throw new Error(
+       data?.message ||
+       data?.error?.message ||
+       data?.error ||
+       "IMAGE_TOOL_FAILED"
+     );
+   }
 
-   if(!outputUrl&&jobId)outputUrl=await waitForImageToolJob(jobId);
-   if(!outputUrl)throw new Error("IMAGE_TOOL_OUTPUT_MISSING");
+   let outputUrl=String(data?.outputUrl||"").trim();
+   const jobId=String(data?.jobId||"").trim();
+
+   if(!outputUrl&&jobId){
+     outputUrl=await waitForImageToolJob(jobId);
+   }
+
+   if(!outputUrl){
+     throw new Error("IMAGE_TOOL_OUTPUT_MISSING");
+   }
 
    const label="CleverUtils · AI Upscale "+scale+"x";
-   const item=saveMedia("image",outputUrl,"AI upscale "+scale+"x",label,"");
+   const item=saveMedia(
+     "image",
+     outputUrl,
+     "AI upscale "+scale+"x",
+     label,
+     ""
+   );
+
    renderImageLibrary();
    requestAnimationFrame(()=>scrollImagesToTop?.());
-   if($("#composerStatus"))$("#composerStatus").textContent=label+" · готово";
+
+   if($("#composerStatus")){
+     $("#composerStatus").textContent=label+" · готово";
+   }
+
    toast("Upscale "+scale+"x готов");
    return item;
+
  }catch(e){
    console.error("Miya image upscale failed",e);
-   if($("#composerStatus"))$("#composerStatus").textContent=oldStatus+" · ошибка";
-   toast(String(e?.message||"Не удалось увеличить изображение"));
+
+   if($("#composerStatus")){
+     $("#composerStatus").textContent=oldStatus+" · ошибка";
+   }
+
+   toast(String(
+     e?.message ||
+     "Не удалось увеличить изображение"
+   ));
  }
 }
 async function runImageBackgroundRemoval(item){
