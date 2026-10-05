@@ -134,7 +134,7 @@ module.exports = async function imageHandler(req, res) {
         method:"POST",
         body:form,
         headers:{Accept:"application/json"},
-        signal:AbortSignal.timeout(55000)
+        signal:AbortSignal.timeout(qualityTimeoutMs)
       });
       const rawTool = await upstreamTool.text();
       let dataTool = {};
