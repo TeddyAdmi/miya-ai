@@ -136,36 +136,6 @@ module.exports = async function imageHandler(req, res) {
     const body = typeof req.body === "string" ? JSON.parse(req.body) : (req.body || {});
 
     const action = typeof body.action === "string" ? body.action.trim() : "";
-
-    if (action === "image-to-text") {
-      const dataUrl = String(body.base64 || "").trim();
-      if (!/^data:image\//i.test(dataUrl)) return res.status(400).json({ok:false,error:"IMAGE_REQUIRED"});
-      const match = dataUrl.match(/^data:([^;,]+);base64,(.+)$/s);
-      if (!match) return res.status(400).json({ok:false,error:"INVALID_IMAGE_DATA"});
-      const mime = String(match[1] || "image/jpeg").toLowerCase();
-      const buffer = Buffer.from(match[2], "base64");
-      if (!buffer.length) return res.status(400).json({ok:false,error:"EMPTY_IMAGE"});
-      if (buffer.length > 20 * 1024 * 1024) return res.status(413).json({ok:false,error:"IMAGE_TOO_LARGE"});
-      const form = new FormData();
-      form.append("file", new Blob([buffer], {type:mime}), String(body.name || "miya-image.jpg"));
-      const upstream = await fetch("https://cleverutils.com/api/v1/tools/image-to-text", {
-        method:"POST",
-        body:form,
-        headers:{Accept:"application/json"},
-        signal:AbortSignal.timeout(80000)
-      });
-      const raw = await upstream.text();
-      let data = {};
-      try { data = raw ? JSON.parse(raw) : {}; } catch {}
-      if (!upstream.ok) {
-        return res.status(upstream.status).json({
-          ok:false,
-          error:data?.error?.code || data?.error || "OCR_UPSTREAM_ERROR",
-          message:data?.error?.message || data?.message || raw || ("CleverUtils HTTP " + upstream.status)
-        });
-      }
-      return res.status(200).json({ok:true,text:String(data?.text ?? data?.data?.text ?? "")});
-    }
     if (action === "upscale-mcp") {
       const imageUrl = typeof body.imageUrl === "string" ? body.imageUrl.trim() : "";
       const imageData = typeof body.imageData === "string" ? body.imageData.trim() : "";
