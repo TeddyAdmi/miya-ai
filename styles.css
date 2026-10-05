@@ -2554,3 +2554,11 @@ body.light .media-upscale-background-submit{color:#fff!important}
 .media-overlay-floating{position:fixed!important;z-index:100000!important;max-height:min(70vh,420px)!important;}
 .media-overlay-floating.media-action-menu{overflow-y:auto!important;overflow-x:hidden!important;}
 .media-overlay-floating.media-upscale-panel{pointer-events:auto!important;}
+
+/* Final image-tool polish: compact 2x/4x control matches the background-removal tool. */
+.media-upscale-options{align-items:center}
+.media-upscale-select{height:28px!important;border-radius:7px!important;font-size:10px!important;font-weight:800!important;padding:5px 22px 5px 8px!important}
+.media-upscale-tool-title{font-size:10px}
+.media-upscale-tool-hint{font-size:9px}
+.media-upscale-buttons{margin-top:8px}
+.media-upscale-submit,.media-upscale-background-submit{height:30px;border-radius:8px;font-size:10px}
