@@ -202,6 +202,17 @@ module.exports = async function imageHandler(req, res) {
         const match = fallback.match(/https?:\/\/[^\\s"']+/i);
         if (match) outputUrl = match[0].replace(/[),.]+$/,"");
       }
+      // Normalize the legacy singular CleverUtils host if the MCP provider
+      // returns it. The singular hostname is not a real provider endpoint.
+      if (outputUrl) {
+        try {
+          const normalized = new URL(outputUrl);
+          if (normalized.hostname.toLowerCase() === "cleverutil" || normalized.hostname.toLowerCase() === "cleverutil.com") {
+            normalized.hostname = "cleverutils.com";
+            outputUrl = normalized.toString();
+          }
+        } catch {}
+      }
       if (!outputUrl) return res.status(502).json({ok:false,error:"CLEVERUTILS_MCP_OUTPUT_MISSING",upstreamBody:rawMcp.slice(0,2000)});
       return res.status(200).json({ok:true,provider:"CleverUtils MCP",action:"upscale",status:"done",outputUrl});
     }
