@@ -2132,6 +2132,7 @@ async function runImageTool(sourceOverride="",scaleOverride="",modelOverride="")
  const oldStatus=$("#composerStatus")?.textContent||"Готово";
  if($("#composerStatus"))$("#composerStatus").textContent="AI Upscale · обработка…";
  try{
+   let outputUrl="";
    if(model==="quality"){
      let backendSource=source;
      try{
@@ -2150,7 +2151,7 @@ async function runImageTool(sourceOverride="",scaleOverride="",modelOverride="")
      const data=await r.json().catch(()=>({}));
      if(!r.ok)throw new Error(data?.message||data?.error?.message||data?.error||"IMAGE_TOOL_FAILED");
      const job=data?.data||data;
-     let outputUrl=typeof job?.output?.url==="string"?job.output.url:String(job?.outputUrl||"");
+     outputUrl=typeof job?.output?.url==="string"?job.output.url:String(job?.outputUrl||"");
      const jobId=typeof job?.job_id==="string"?job.job_id:String(job?.jobId||"");
      if(!outputUrl&&jobId)outputUrl=await waitForImageToolJob(jobId);
      if(!outputUrl)throw new Error("IMAGE_TOOL_OUTPUT_MISSING");
@@ -2183,7 +2184,7 @@ async function runImageTool(sourceOverride="",scaleOverride="",modelOverride="")
      const data=await r.json().catch(()=>({}));
      if(!r.ok)throw new Error(data?.message||data?.error?.message||data?.error||"IMAGE_TOOL_FAILED");
      const job=data?.data||data;
-     let outputUrl=typeof job?.output?.url==="string"?job.output.url:"";
+     outputUrl=typeof job?.output?.url==="string"?job.output.url:"";
      const jobId=typeof job?.job_id==="string"?job.job_id:"";
      if(!outputUrl&&jobId)outputUrl=await waitForImageToolJob(jobId);
      if(!outputUrl)throw new Error("IMAGE_TOOL_OUTPUT_MISSING");

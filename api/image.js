@@ -127,7 +127,6 @@ module.exports = async function imageHandler(req, res) {
 
       form.append("scale", scale);
       form.append("model", model);
-      }
 
       const upstreamTool = await fetch(endpoint, {
         method:"POST",
