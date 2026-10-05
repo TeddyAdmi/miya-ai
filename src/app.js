@@ -2185,7 +2185,7 @@ async function runImageTool(sourceOverride="",scaleOverride="",modelOverride="")
        if(!response.ok)throw new Error("SOURCE_IMAGE_READ_FAILED");
        blob=await response.blob();
      }else{
-       const isLocal=/^\\//.test(source)||source.startsWith(window.location.origin+"/");
+       const isLocal=source.startsWith("/")||source.startsWith(window.location.origin+"/");
        const response=await fetch(
          isLocal
            ? source
