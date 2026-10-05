@@ -2157,38 +2157,49 @@ async function runImageTool(sourceOverride="",scaleOverride="",modelOverride="")
  try{
    let outputUrl="";
    if(model==="quality"){
-     // CleverUtils accepts the Quality POST reliably from the browser, while
-     // Vercel's server-side POST can occasionally hang for the full function
-     // timeout. Keep job creation direct, then poll job status through Miya
-     // and download the final binary through Miya's backend output proxy.
-     let blob;
-     if(String(source||"").startsWith("data:image/")){
-       const response=await fetch(source);
-       if(!response.ok)throw new Error("SOURCE_IMAGE_READ_FAILED");
-       blob=await response.blob();
+     // CleverUtils documents an MCP URL-input path. Use it for public image
+     // URLs so the provider fetches the original file itself instead of
+     // re-encoding it into browser multipart/form-data (which was returning
+     // 415 UNSUPPORTED_MIME on the REST Quality endpoint).
+     if(/^https:\/\//i.test(source)){
+       const response=await fetch("/api/image",{
+         method:"POST",
+         headers:{"Content-Type":"application/json","Accept":"application/json"},
+         body:JSON.stringify({action:"upscale-mcp",imageUrl:source,scale,model:"quality"})
+       });
+       const data=await response.json().catch(()=>({}));
+       if(!response.ok||data?.ok===false)throw new Error(data?.message||data?.error||"IMAGE_TOOL_FAILED");
+       outputUrl=String(data?.outputUrl||"");
+       if(!outputUrl)throw new Error("IMAGE_TOOL_OUTPUT_MISSING");
      }else{
-       const isLocal=String(source||"").startsWith("/")||source.startsWith(window.location.origin+"/");
-       const response=await fetch(isLocal?source:"/api/image-jpeg?url="+encodeURIComponent(source),{cache:"no-store"});
-       if(!response.ok)throw new Error("SOURCE_IMAGE_PROXY_FAILED");
-       blob=await response.blob();
+       // Data/local images have no public URL for CleverUtils MCP, so keep the
+       // multipart REST path only for those cases.
+       let blob;
+       if(String(source||"").startsWith("data:image/")){
+         const response=await fetch(source);
+         if(!response.ok)throw new Error("SOURCE_IMAGE_READ_FAILED");
+         blob=await response.blob();
+       }else{
+         const isLocal=String(source||"").startsWith("/")||source.startsWith(window.location.origin+"/");
+         const response=await fetch(isLocal?source:"/api/image-jpeg?url="+encodeURIComponent(source),{cache:"no-store"});
+         if(!response.ok)throw new Error("SOURCE_IMAGE_PROXY_FAILED");
+         blob=await response.blob();
+       }
+       if(!blob||!blob.size)throw new Error("EMPTY_IMAGE");
+       const uploadFile=await makeCleverUtilsImageFile(blob);
+       const form=new FormData();
+       form.append("file",uploadFile);
+       form.append("scale",scale);
+       form.append("model","quality");
+       const r=await fetch("https://cleverutils.com/api/v1/tools/upscale-image",{method:"POST",body:form,headers:{Accept:"application/json"}});
+       const data=await r.json().catch(()=>({}));
+       if(!r.ok)throw new Error(data?.message||data?.error?.message||data?.error||"IMAGE_TOOL_FAILED");
+       const job=data?.data||data;
+       outputUrl=typeof job?.output?.url==="string"?job.output.url:String(job?.outputUrl||"");
+       const jobId=typeof job?.job_id==="string"?job.job_id:String(job?.jobId||"");
+       if(jobId)outputUrl=await waitForImageToolJob(jobId);
+       if(!outputUrl)throw new Error("IMAGE_TOOL_OUTPUT_MISSING");
      }
-     if(!blob||!blob.size)throw new Error("EMPTY_IMAGE");
-     // CleverUtils Quality rejects the browser-normalized PNG in some cases.
-     // The Miya image proxy already returns JPEG, so preserve a supported JPEG
-     // payload instead of converting it to PNG.
-     const uploadFile=await makeCleverUtilsImageFile(blob);
-     const form=new FormData();
-     form.append("file",uploadFile);
-     form.append("scale",scale);
-     form.append("model","quality");
-     const r=await fetch("https://cleverutils.com/api/v1/tools/upscale-image",{method:"POST",body:form,headers:{Accept:"application/json"}});
-     const data=await r.json().catch(()=>({}));
-     if(!r.ok)throw new Error(data?.message||data?.error?.message||data?.error||"IMAGE_TOOL_FAILED");
-     const job=data?.data||data;
-     outputUrl=typeof job?.output?.url==="string"?job.output.url:String(job?.outputUrl||"");
-     const jobId=typeof job?.job_id==="string"?job.job_id:String(job?.jobId||"");
-     if(jobId)outputUrl=await waitForImageToolJob(jobId);
-     if(!outputUrl)throw new Error("IMAGE_TOOL_OUTPUT_MISSING");
    }else{
      let blob;
      if(/^data:image\//i.test(source)){

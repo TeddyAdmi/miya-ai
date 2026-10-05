@@ -136,6 +136,45 @@ module.exports = async function imageHandler(req, res) {
     const body = typeof req.body === "string" ? JSON.parse(req.body) : (req.body || {});
 
     const action = typeof body.action === "string" ? body.action.trim() : "";
+    if (action === "upscale-mcp") {
+      const imageUrl = typeof body.imageUrl === "string" ? body.imageUrl.trim() : "";
+      const scale = String(body.scale || "2");
+      const model = String(body.model || "quality");
+      if (!/^https:\/\//i.test(imageUrl)) return res.status(400).json({ok:false,error:"IMAGE_URL_REQUIRED"});
+      if (!["2","3","4"].includes(scale)) return res.status(400).json({ok:false,error:"INVALID_SCALE"});
+      if (!["fast","quality"].includes(model)) return res.status(400).json({ok:false,error:"INVALID_MODEL"});
+
+      const mcpResponse = await fetch("https://cleverutils.com/mcp", {
+        method:"POST",
+        headers:{"Content-Type":"application/json","Accept":"application/json"},
+        body:JSON.stringify({jsonrpc:"2.0",id:Date.now(),method:"tools/call",params:{name:"upscale_image",arguments:{file:imageUrl,scale:Number(scale),model}}}),
+        signal:AbortSignal.timeout(90000)
+      });
+      const rawMcp = await mcpResponse.text();
+      let dataMcp = {};
+      try { dataMcp = rawMcp ? JSON.parse(rawMcp) : {}; } catch {}
+      if (!mcpResponse.ok) return res.status(502).json({ok:false,error:"CLEVERUTILS_MCP_HTTP",upstreamStatus:mcpResponse.status,upstreamBody:rawMcp.slice(0,1200)});
+      if (dataMcp?.error) return res.status(502).json({ok:false,error:"CLEVERUTILS_MCP_ERROR",message:String(dataMcp.error?.message||"MCP tool call failed"),upstreamBody:rawMcp.slice(0,1200)});
+
+      let outputUrl = "";
+      const content = Array.isArray(dataMcp?.result?.content) ? dataMcp.result.content : [];
+      for (const item of content) {
+        if (item && typeof item === "object" && item.type === "resource_link") {
+          const candidate = String(item.uri || item.url || "").trim();
+          if (/^https?:\/\//i.test(candidate)) { outputUrl = candidate; break; }
+        }
+        const textValue = item && typeof item.text === "string" ? item.text : "";
+        const match = textValue.match(/https?:\/\/[^\\s"']+/i);
+        if (match) { outputUrl = match[0].replace(/[),.]+$/,""); break; }
+      }
+      if (!outputUrl) {
+        const fallback = JSON.stringify(dataMcp).replace(/\\\//g,"/");
+        const match = fallback.match(/https?:\/\/[^\\s"']+/i);
+        if (match) outputUrl = match[0].replace(/[),.]+$/,"");
+      }
+      if (!outputUrl) return res.status(502).json({ok:false,error:"CLEVERUTILS_MCP_OUTPUT_MISSING",upstreamBody:rawMcp.slice(0,2000)});
+      return res.status(200).json({ok:true,provider:"CleverUtils MCP",action:"upscale",status:"done",outputUrl});
+    }
     if (action === "upscale") {
       let bytes;
       let mime = "image/jpeg";
@@ -421,3 +460,6 @@ module.exports = async function imageHandler(req, res) {
     });
   }
 };
+
+
+module.exports.config = { maxDuration: 60 };
