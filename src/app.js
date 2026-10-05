@@ -2203,12 +2203,105 @@ async function runImageTool(sourceOverride="",scaleOverride="",modelOverride="")
    return;
  }
  const scale=String(scaleOverride||$("#imageUpscaleScale")?.value||"2");
- const model=String(modelOverride||"quality");
+ const model="fast";
  const oldStatus=$("#composerStatus")?.textContent||"Готово";
- if($("#composerStatus"))$("#composerStatus").textContent="AI Upscale · обработка…";
+ if($("#composerStatus"))$("#composerStatus").textContent="AI Upscale · Быстро · обработка…";
  try{
-   const outputUrl=await cleverUtilsMcpUpscale(source,scale,model);
+   let blob;
+   if(/^data:image\\//i.test(source)){
+     const response=await fetch(source,{cache:"no-store"});
+     if(!response.ok)throw new Error("SOURCE_IMAGE_READ_FAILED");
+     blob=await response.blob();
+   }else{
+     let response;
+     try{
+       const isLocal=/^\\//.test(source)||source.startsWith(window.location.origin+"/");
+       response=await fetch(
+         isLocal?source:"/api/image?url="+encodeURIComponent(source),
+         {cache:"no-store"}
+       );
+     }catch{
+       throw new Error("SOURCE_IMAGE_READ_FAILED");
+     }
+     if(!response.ok)throw new Error("SOURCE_IMAGE_PROXY_FAILED");
+     const type=String(response.headers.get("content-type")||"").split(";")[0].toLowerCase();
+     if(!/^image\\//i.test(type))throw new Error("SOURCE_NOT_IMAGE");
+     blob=await response.blob();
+   }
+   if(!blob||!blob.size)throw new Error("EMPTY_IMAGE");
+
+   // Это именно тот исторически рабочий Fast-путь: не MCP и не серверный
+   // multipart-прокси. Отправляем реальные байты файла напрямую CleverUtils.
+   const uploadFile=await makeCleverUtilsImageFile(blob);
+   const form=new FormData();
+   form.append("file",uploadFile);
+   form.append("scale",scale);
+   form.append("model",model);
+
+   const r=await fetch("https://cleverutils.com/api/v1/tools/upscale-image",{
+     method:"POST",
+     body:form,
+     headers:{Accept:"application/json"},
+     cache:"no-store"
+   });
+   const data=await r.json().catch(()=>({}));
+
+   if(!r.ok){
+     // Если REST снова вернёт MIME-ошибку, пробуем второй исторический
+     // транспорт через MCP, но передаём именно raw base64, а не data: URL.
+     const message=String(data?.message||data?.error?.message||data?.error||"");
+     if(r.status===415||/UNSUPPORTED_MIME|corrupted|unsupported format/i.test(message)){
+       const reader=new FileReader();
+       const rawBase64=await new Promise((resolve,reject)=>{
+         reader.onload=()=>{
+           const value=String(reader.result||"");
+           resolve(value.includes(",")?value.slice(value.indexOf(",")+1):value);
+         };
+         reader.onerror=()=>reject(reader.error||new Error("IMAGE_BASE64_READ_FAILED"));
+         reader.readAsDataURL(uploadFile);
+       });
+       const mcpInit=await cleverUtilsMcpRequest({
+         jsonrpc:"2.0",id:Date.now(),method:"initialize",
+         params:{protocolVersion:"2025-06-18",capabilities:{},clientInfo:{name:"Miya Studio",version:"1.0"}}
+       });
+       if(mcpInit?.error)throw new Error(message||"CleverUtils MCP initialize failed");
+       const mcpCall=await cleverUtilsMcpRequest({
+         jsonrpc:"2.0",id:Date.now()+1,method:"tools/call",
+         params:{name:"upscale_image",arguments:{file:rawBase64,scale:Number(scale),model}}
+       });
+       if(mcpCall?.error)throw new Error(String(mcpCall.error.message||message||"CleverUtils MCP failed"));
+       const root=mcpCall?.result||mcpCall;
+       if(root?.isError){
+         const txt=Array.isArray(root.content)?root.content.find(x=>x?.type==="text")?.text:"";
+         throw new Error(String(txt||message||"CleverUtils MCP upscale failed"));
+       }
+       const links=Array.isArray(root?.content)
+         ?root.content.filter(x=>x?.type==="resource_link").map(x=>String(x.uri||x.url||"")).filter(Boolean)
+         :[];
+       if(links[0]) {
+         const label="CleverUtils · AI Upscale "+scale+"x";
+         const item=saveMedia("image",links[0],"AI upscale "+scale+"x",label,"");
+         renderImageLibrary();
+         requestAnimationFrame(()=>scrollImagesToTop?.());
+         if($("#composerStatus"))$("#composerStatus").textContent=label+" · готово";
+         toast("Upscale "+scale+"x готов");
+         return item;
+       }
+       throw new Error("IMAGE_TOOL_OUTPUT_MISSING");
+     }
+     throw new Error(data?.message||data?.error?.message||data?.error||"IMAGE_TOOL_FAILED");
+   }
+
+   const job=data?.data||data;
+   let outputUrl=typeof job?.output?.url==="string"
+     ?job.output.url
+     :String(job?.outputUrl||"");
+   const jobId=typeof job?.job_id==="string"
+     ?job.job_id
+     :String(job?.jobId||"");
+   if(!outputUrl&&jobId)outputUrl=await waitForImageToolJob(jobId);
    if(!outputUrl)throw new Error("IMAGE_TOOL_OUTPUT_MISSING");
+
    const label="CleverUtils · AI Upscale "+scale+"x";
    const item=saveMedia("image",outputUrl,"AI upscale "+scale+"x",label,"");
    renderImageLibrary();
