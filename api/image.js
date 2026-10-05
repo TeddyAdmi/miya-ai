@@ -6,6 +6,64 @@ module.exports = async function imageHandler(req, res) {
 
   if (req.method === "GET") {
     const jobId = String(req.query?.jobId || "").trim();
+    if (jobId && String(req.query?.output || "") === "1") {
+      try {
+        const jobUrl = "https://cleverutils.com/api/v1/jobs/" + encodeURIComponent(jobId) + "/output";
+        let outputResponse;
+        let rawOutput = "";
+        for (let attempt = 0; attempt < 6; attempt++) {
+          outputResponse = await fetch(jobUrl, {
+            headers: { Accept:"image/*" },
+            cache: "no-store",
+            signal: AbortSignal.timeout(30000)
+          });
+          if (outputResponse.ok) break;
+          rawOutput = await outputResponse.text().catch(() => "");
+          if (outputResponse.status !== 429 || attempt === 5) {
+            return res.status(502).json({
+              ok:false,
+              error:"CLEVERUTILS_OUTPUT_HTTP",
+              upstreamStatus:outputResponse.status,
+              upstreamBody:rawOutput.slice(0,800)
+            });
+          }
+          const retryAfter = Number(outputResponse.headers.get("retry-after") || "1");
+          await new Promise(r => setTimeout(r, Math.max(1000, Math.min(retryAfter * 1000, 5000))));
+        }
+
+        const contentType = outputResponse.headers.get("content-type") || "image/png";
+        if (!/^image\\//i.test(contentType)) {
+          const body = await outputResponse.text().catch(() => "");
+          return res.status(502).json({
+            ok:false,
+            error:"CLEVERUTILS_OUTPUT_NOT_IMAGE",
+            upstreamBody:body.slice(0,800)
+          });
+        }
+
+        const outputBuffer = Buffer.from(await outputResponse.arrayBuffer());
+        if (!outputBuffer.length) {
+          return res.status(502).json({
+            ok:false,
+            error:"CLEVERUTILS_OUTPUT_EMPTY"
+          });
+        }
+
+        res.statusCode = 200;
+        res.setHeader("Content-Type", contentType.split(";")[0]);
+        res.setHeader("Content-Length", String(outputBuffer.length));
+        res.setHeader("Cache-Control", "no-store, no-transform");
+        res.setHeader("Content-Disposition", "inline; filename=" + String(jobId) + "-upscaled");
+        return res.end(outputBuffer);
+      } catch (error) {
+        return res.status(502).json({
+          ok:false,
+          error:"CLEVERUTILS_OUTPUT_PROXY_ERROR",
+          message:String(error?.message||error||"Output proxy failed")
+        });
+      }
+    }
+
     if (jobId) {
       try {
         const upstreamJob = await fetch("https://cleverutils.com/api/v1/jobs/" + encodeURIComponent(jobId), {
@@ -45,45 +103,6 @@ module.exports = async function imageHandler(req, res) {
         return res.status(502).json({ok:false,error:"CLEVERUTILS_JOB_HANDLER_ERROR",message:String(error?.message||error||"Job status failed")});
       }
     }
-    if (String(req.query?.output || "") === "1") {
-      try {
-        const jobUrl = "https://cleverutils.com/api/v1/jobs/" + encodeURIComponent(jobId) + "/output";
-        let outputResponse;
-        let rawOutput = "";
-        for (let attempt = 0; attempt < 5; attempt++) {
-          outputResponse = await fetch(jobUrl, {
-            headers: { Accept:"image/*" },
-            cache: "no-store",
-            signal: AbortSignal.timeout(20000)
-          });
-          if (outputResponse.ok) break;
-          rawOutput = await outputResponse.text().catch(() => "");
-          if (outputResponse.status !== 429 || attempt === 4) {
-            return res.status(502).json({
-              ok:false,
-              error:"CLEVERUTILS_OUTPUT_HTTP",
-              upstreamStatus:outputResponse.status,
-              upstreamBody:rawOutput.slice(0,800)
-            });
-          }
-          const retryAfter = Number(outputResponse.headers.get("retry-after") || "1");
-          await new Promise(r => setTimeout(r, Math.max(1000, Math.min(retryAfter * 1000, 3000))));
-        }
-        const contentType = outputResponse.headers.get("content-type") || "image/png";
-        if (!/^image\//i.test(contentType)) {
-          const body = await outputResponse.text().catch(() => "");
-          return res.status(502).json({ok:false,error:"CLEVERUTILS_OUTPUT_NOT_IMAGE",upstreamBody:body.slice(0,800)});
-        }
-        res.statusCode = 200;
-        res.setHeader("Content-Type", contentType.split(";")[0]);
-        res.setHeader("Cache-Control", "no-store");
-        res.setHeader("Content-Disposition", "inline; filename=" + String(jobId) + "-upscaled");
-        return res.end(Buffer.from(await outputResponse.arrayBuffer()));
-      } catch (error) {
-        return res.status(502).json({ok:false,error:"CLEVERUTILS_OUTPUT_PROXY_ERROR",message:String(error?.message||error||"Output proxy failed")});
-      }
-    }
-
     try {
       const raw = String(req.query?.url || "").trim();
       if (!raw) return res.status(400).json({ ok: false, error: "IMAGE_URL_REQUIRED" });
