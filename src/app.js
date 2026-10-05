@@ -2065,7 +2065,7 @@ function getImageToolSource(){
 }
 async function waitForImageToolJob(jobId){
  const started=Date.now();
- while(Date.now()-started<60000){
+ while(Date.now()-started<150000){
    await new Promise(r=>setTimeout(r,1800));
    const r=await fetch("/api/image?jobId="+encodeURIComponent(jobId),{cache:"no-store"});
    const data=await r.json().catch(()=>({}));
@@ -2074,6 +2074,28 @@ async function waitForImageToolJob(jobId){
    if(String(data.status||"").toLowerCase()==="error")throw new Error("IMAGE_TOOL_JOB_FAILED");
  }
  throw new Error("IMAGE_TOOL_TIMEOUT");
+}
+
+async function makeCleverUtilsQualityImageFile(blob){
+ if(!blob?.size)throw new Error("EMPTY_IMAGE");
+ try{
+   const bitmap=await createImageBitmap(blob);
+   if(!bitmap.width||!bitmap.height)throw new Error("IMAGE_DIMENSIONS_INVALID");
+   const canvas=document.createElement("canvas");
+   canvas.width=bitmap.width;
+   canvas.height=bitmap.height;
+   const ctx=canvas.getContext("2d",{alpha:false});
+   if(!ctx)throw new Error("CANVAS_UNAVAILABLE");
+   ctx.fillStyle="#fff";
+   ctx.fillRect(0,0,canvas.width,canvas.height);
+   ctx.drawImage(bitmap,0,0);
+   bitmap.close();
+   const png=await new Promise(resolve=>canvas.toBlob(resolve,"image/png"));
+   if(!png?.size)throw new Error("QUALITY_PNG_CONVERSION_FAILED");
+   return new File([png],"miya-source.png",{type:"image/png"});
+ }catch(error){
+   throw new Error("QUALITY_IMAGE_NORMALIZE_FAILED: "+String(error?.message||error||"PNG conversion failed"));
+ }
 }
 
 async function makeCleverUtilsImageFile(blob){
@@ -2135,29 +2157,33 @@ async function runImageTool(sourceOverride="",scaleOverride="",modelOverride="")
  try{
    let outputUrl="";
    if(model==="quality"){
-     let backendSource=source;
-     try{
-       const parsed=new URL(source,window.location.origin);
-       if(parsed.pathname==="/api/image-jpeg"||parsed.pathname==="/api/image"){
-         backendSource=parsed.searchParams.get("url")||source;
-       }else{
-         backendSource=parsed.href;
-       }
-     }catch{}
-     const r=await fetch("/api/image",{
-       method:"POST",
-       headers:{"Content-Type":"application/json","Accept":"application/json"},
-       body:JSON.stringify({action:"upscale",imageUrl:backendSource,scale,model:"quality"})
-     });
+     // CleverUtils accepts the Quality POST reliably from the browser, while
+     // Vercel's server-side POST can occasionally hang for the full function
+     // timeout. Keep job creation direct, then poll job status through Miya
+     // and download the final binary through Miya's backend output proxy.
+     let blob;
+     if(/^data:image\\//i.test(source)){
+       const response=await fetch(source);
+       if(!response.ok)throw new Error("SOURCE_IMAGE_READ_FAILED");
+       blob=await response.blob();
+     }else{
+       const isLocal=/^\\//.test(source)||source.startsWith(window.location.origin+"/");
+       const response=await fetch(isLocal?source:"/api/image-jpeg?url="+encodeURIComponent(source),{cache:"no-store"});
+       if(!response.ok)throw new Error("SOURCE_IMAGE_PROXY_FAILED");
+       blob=await response.blob();
+     }
+     if(!blob||!blob.size)throw new Error("EMPTY_IMAGE");
+     const uploadFile=await makeCleverUtilsQualityImageFile(blob);
+     const form=new FormData();
+     form.append("file",uploadFile);
+     form.append("scale",scale);
+     form.append("model","quality");
+     const r=await fetch("https://cleverutils.com/api/v1/tools/upscale-image",{method:"POST",body:form,headers:{Accept:"application/json"}});
      const data=await r.json().catch(()=>({}));
      if(!r.ok)throw new Error(data?.message||data?.error?.message||data?.error||"IMAGE_TOOL_FAILED");
      const job=data?.data||data;
      outputUrl=typeof job?.output?.url==="string"?job.output.url:String(job?.outputUrl||"");
      const jobId=typeof job?.job_id==="string"?job.job_id:String(job?.jobId||"");
-     // CleverUtils can mark a Quality job as done before its output endpoint
-     // is ready for download and briefly returns 429 RATE_LIMITED. Always
-     // pass through the job-status wait when a job id exists so we give the
-     // provider cooldown a moment before the browser requests the MP4/image.
      if(jobId)outputUrl=await waitForImageToolJob(jobId);
      if(!outputUrl)throw new Error("IMAGE_TOOL_OUTPUT_MISSING");
    }else{
