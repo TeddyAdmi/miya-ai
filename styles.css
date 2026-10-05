@@ -497,8 +497,7 @@ body.light .workspace:after{
 .chat-nav-wrap .side-menu-toggle{position:relative!important}
 .chat-nav-wrap .side-submenu{
   left:100%!important;
-  top:0!important;
-  transform:none!important;
+  top:0!important;  transform:none!important;
   margin:0!important;
   transition:opacity .12s ease,visibility .12s ease!important;
 }
@@ -997,8 +996,7 @@ body.light .starter-row button{background:#f5f7fa!important}
   position:absolute!important;
   right:2px!important;
   top:50%!important;
-  transform:translateY(-50%)!important;
-  z-index:4!important;
+  transform:translateY(-50%)!important;  z-index:4!important;
 }
 
 
@@ -1497,8 +1495,7 @@ body.light{
 .pill{font-size:9px}
 .chat-bubble{font-size:12px;font-weight:500;line-height:1.65}
 .chat-avatar{font-size:9px}
-.generation-loading b{font-size:14px;font-weight:800}
-.generation-loading span{font-size:11px;font-weight:600}
+.generation-loading b{font-size:14px;font-weight:800}.generation-loading span{font-size:11px;font-weight:600}
 body.light .side-btn{color:#34455b}
 body.light .tool-btn{color:#43566d}
 body.light .workspace-head p,
@@ -1998,7 +1995,6 @@ body.light .chat-selection-actions button{background:#f4f6fa}
 
 .media-card:has(.media-action-menu.open){z-index:100!important}
 .media-action-menu.open{z-index:101!important}
-
 /* Prompt field: the textarea is the full editable surface. Right-click anywhere inside it
    keeps Firefox's native Copy/Paste menu available, including the far-right edge. */
 .composer-input-row{position:relative!important}
@@ -2497,8 +2493,7 @@ body.light .composer.voice-mode .voice-tool:hover{
 .media-upscale-panel{position:absolute;right:8px;top:42px;z-index:12;width:min(220px,calc(100% - 16px));padding:8px;border:1px solid var(--line);border-radius:10px;background:rgba(7,24,43,.98);box-shadow:0 15px 40px rgba(0,0,0,.38);backdrop-filter:blur(16px);opacity:0;visibility:hidden;pointer-events:none;transform:translateY(-5px);transition:opacity .14s ease,visibility .14s ease,transform .14s ease}
 .media-upscale-panel.open{opacity:1;visibility:visible;pointer-events:auto;transform:translateY(0)}
 .media-upscale-title{display:flex;align-items:center;justify-content:space-between;font-size:11px;font-weight:800;margin-bottom:8px}
-.media-upscale-close{width:22px;height:22px;border-radius:6px;background:transparent;color:#91a8c1;font-size:16px;display:grid;place-items:center}
-.media-upscale-close:hover{background:#172b49;color:#fff}
+.media-upscale-close{width:22px;height:22px;border-radius:6px;background:transparent;color:#91a8c1;font-size:16px;display:grid;place-items:center}.media-upscale-close:hover{background:#172b49;color:#fff}
 .media-upscale-tools-grid{display:grid;grid-template-columns:1fr 1fr;gap:7px}
 .media-upscale-tool{min-width:0}
 .media-upscale-options{display:flex;gap:4px;margin:0}
@@ -2587,3 +2582,112 @@ body.ai-editor-open{overflow:hidden}
 .ai-editor-footer{display:grid;flex-shrink:0;grid-template-columns:1fr 1.25fr;gap:8px;margin-top:18px;padding-top:16px;border-top:1px solid rgba(255,255,255,.08)}
 .ai-editor-cancel,.ai-editor-apply{min-height:44px;border-radius:13px;padding:10px 12px;font-weight:800;cursor:pointer}.ai-editor-cancel{border:1px solid rgba(255,255,255,.1);background:rgba(255,255,255,.05);color:#fff}.ai-editor-apply{border:0;background:linear-gradient(135deg,#9b72ff,#7251d9);color:#fff;box-shadow:0 10px 28px rgba(114,81,217,.28)}.ai-editor-apply:disabled{opacity:.42;cursor:not-allowed;box-shadow:none}
 @media(max-width:800px){.ai-editor-dialog{inset:1.5vh 1.5vw;border-radius:20px}.ai-editor-workspace{grid-template-columns:1fr;grid-template-rows:minmax(0,1fr) auto}.ai-editor-sidebar{border-left:0;border-top:1px solid rgba(255,255,255,.08);padding:13px}.ai-editor-stage{padding:12px}.ai-editor-image{max-height:52vh}.ai-editor-sidebar .ai-editor-hint{display:none}.ai-editor-footer{margin-top:10px;padding-top:10px}}
+
+/* MIYA EDITOR — final prompt/model surface alignment */
+.ai-editor-prompt-box{
+  position:absolute!important;
+  left:50%!important;
+  right:auto!important;
+  top:auto!important;
+  bottom:16px!important;
+  transform:translateX(-50%)!important;
+  width:min(520px,calc(100% - 36px))!important;
+  min-width:0!important;
+  padding:12px!important;
+  z-index:30!important;
+  border:1px solid rgba(167,92,255,.34)!important;
+  border-radius:16px!important;
+  background:linear-gradient(145deg,rgba(8,26,48,.97),rgba(11,33,59,.96))!important;
+  box-shadow:0 18px 50px rgba(0,0,0,.42),0 0 0 1px rgba(255,255,255,.025) inset!important;
+  backdrop-filter:blur(18px) saturate(125%)!important;
+  -webkit-backdrop-filter:blur(18px) saturate(125%)!important;
+}
+.ai-editor-prompt-box.open{display:block!important}
+.ai-editor-canvas-wrap:has(.ai-editor-generation:not([hidden])) .ai-editor-prompt-box{
+  display:none!important;
+}
+.ai-editor-prompt-label{
+  color:#a9bdd4!important;
+  opacity:1!important;
+  font-size:9px!important;
+  letter-spacing:.13em!important;
+}
+.ai-editor-prompt-input{
+  min-height:58px!important;
+  border:1px solid #1a4b78!important;
+  border-radius:10px!important;
+  background:rgba(6,20,38,.92)!important;
+  color:#f4f7ff!important;
+  padding:10px!important;
+  font-size:11px!important;
+  caret-color:#f4f7ff!important;
+}
+.ai-editor-prompt-input::placeholder{color:#69819d!important}
+.ai-editor-prompt-input:focus{
+  border-color:rgba(167,92,255,.72)!important;
+  box-shadow:0 0 0 3px rgba(167,92,255,.12)!important;
+}
+.ai-editor-prompt-actions{
+  display:flex!important;
+  justify-content:flex-end!important;
+  gap:6px!important;
+  margin-top:7px!important;
+}
+.ai-editor-prompt-actions button{
+  min-height:34px!important;
+  padding:0 12px!important;
+  border:1px solid #154d83!important;
+  border-radius:8px!important;
+  background:#0b233d!important;
+  color:#a9bdd0!important;
+  font-size:10px!important;
+  font-weight:800!important;
+}
+.ai-editor-prompt-actions button:hover{
+  background:#102943!important;
+  border-color:#2879bb!important;
+  color:#fff!important;
+}
+.ai-editor-prompt-actions .primary{
+  border:0!important;
+  background:linear-gradient(135deg,#b25cff,#695dff)!important;
+  color:#fff!important;
+  box-shadow:0 7px 20px rgba(117,73,217,.25)!important;
+}
+.ai-editor-prompt-actions .primary:hover{
+  background:linear-gradient(135deg,#bd6bff,#7669ff)!important;
+}
+.ai-editor-generation{
+  z-index:35!important;
+}
+.ai-editor-generation-card{
+  border-color:rgba(167,92,255,.34)!important;
+  background:linear-gradient(145deg,rgba(8,26,48,.97),rgba(11,33,59,.96))!important;
+}
+.ai-editor-generation-model{
+  color:#89a9c8!important;
+  opacity:1!important;
+}
+.ai-editor-generation-bar{
+  background:rgba(120,145,175,.18)!important;
+}
+.ai-editor-generation-bar span{
+  background:linear-gradient(90deg,#b25cff,#695dff)!important;
+}
+@media(max-width:980px){
+  .ai-editor-prompt-box{
+    left:18px!important;
+    right:18px!important;
+    bottom:14px!important;
+    width:auto!important;
+    transform:none!important;
+  }
+}
+@media(max-width:800px){
+  .ai-editor-prompt-box{
+    left:10px!important;
+    right:10px!important;
+    bottom:10px!important;
+    width:auto!important;
+  }
+}
