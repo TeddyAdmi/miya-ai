@@ -10,6 +10,7 @@ function jpegImageUrl(url){
   const value=String(url||"").trim();
   if(!value||/^data:image\//i.test(value)||/^blob:/i.test(value))return value;
   if(value.startsWith("/api/image-jpeg?"))return value;
+  if(/^https?:\/\/cleverutils\.com\//i.test(value)||/^https?:\/\/www\.cleverutils\.com\//i.test(value))return value;
   if(/^https?:\/\//i.test(value)){
     return "/api/image-jpeg?url="+encodeURIComponent(value);
   }
