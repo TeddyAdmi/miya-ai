@@ -2162,12 +2162,12 @@ async function runImageTool(sourceOverride="",scaleOverride="",modelOverride="")
      // timeout. Keep job creation direct, then poll job status through Miya
      // and download the final binary through Miya's backend output proxy.
      let blob;
-     if(/^data:image\\//i.test(source)){
+     if(String(source||"").startsWith("data:image/")){
        const response=await fetch(source);
        if(!response.ok)throw new Error("SOURCE_IMAGE_READ_FAILED");
        blob=await response.blob();
      }else{
-       const isLocal=/^\\//.test(source)||source.startsWith(window.location.origin+"/");
+       const isLocal=String(source||"").startsWith("/")||source.startsWith(window.location.origin+"/");
        const response=await fetch(isLocal?source:"/api/image-jpeg?url="+encodeURIComponent(source),{cache:"no-store"});
        if(!response.ok)throw new Error("SOURCE_IMAGE_PROXY_FAILED");
        blob=await response.blob();
