@@ -2546,3 +2546,9 @@ body.light .media-upscale-close:hover{background:#edf3f9;color:#182436}
   border-color:rgba(205,145,255,.7)!important;
 }
 body.light .media-upscale-background-submit{color:#fff!important}
+
+
+/* Open image menus are portaled to <body> so the prompt's stacking context can never cover them. */
+.media-overlay-floating{position:fixed!important;z-index:100000!important;max-height:min(70vh,420px)!important;}
+.media-overlay-floating.media-action-menu{overflow-y:auto!important;overflow-x:hidden!important;}
+.media-overlay-floating.media-upscale-panel{pointer-events:auto!important;}
