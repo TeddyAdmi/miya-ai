@@ -2514,3 +2514,35 @@ body.light .composer.voice-mode .voice-tool:hover{
 body.light .media-upscale-panel{background:rgba(255,255,255,.98);border-color:#d6e0eb;box-shadow:0 16px 38px rgba(30,55,85,.2)}
 body.light .media-upscale-close:hover{background:#edf3f9;color:#182436}
 @media(max-width:800px){.media-upscale-panel{right:6px;top:38px;width:min(235px,calc(100% - 12px))}.media-upscale-title{font-size:10px}}
+
+
+/* Image menus: always above prompt, neighboring cards and card controls. */
+.media-card:has(.media-action-menu.open),
+.media-card:has(.media-upscale-panel.open){
+  position:relative!important;
+  z-index:10000!important;
+}
+.media-action-menu.open,
+.media-upscale-panel.open{
+  z-index:10001!important;
+}
+.media-action-menu{
+  isolation:isolate!important;
+}
+.media-upscale-panel{
+  isolation:isolate!important;
+}
+/* The two image-tool actions use one visual button color. */
+.media-upscale-submit,
+.media-upscale-background-submit{
+  background:linear-gradient(135deg,#b25cff,#695dff)!important;
+  border:1px solid rgba(186,120,255,.48)!important;
+  color:#fff!important;
+  box-shadow:0 7px 18px rgba(105,93,255,.22)!important;
+}
+.media-upscale-submit:hover,
+.media-upscale-background-submit:hover{
+  background:linear-gradient(135deg,#bd68ff,#7568ff)!important;
+  border-color:rgba(205,145,255,.7)!important;
+}
+body.light .media-upscale-background-submit{color:#fff!important}
