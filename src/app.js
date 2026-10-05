@@ -614,7 +614,7 @@ function toggleUpscalePanel(item,card){
    '<div class="media-upscale-tool-title">✨ Увеличить</div>'+
    '<div class="media-upscale-options">'+
    '<select class="select-pill media-upscale-select" aria-label="Масштаб"><option value="2" selected>2×</option><option value="4">4×</option></select>'+
-   '<select class="select-pill media-upscale-select" aria-label="Качество"><option value="quality" selected>Качество</option><option value="fast">Быстро</option></select>'+
+   '<span class="select-pill media-upscale-quality-fixed" aria-label="Качество">Быстро</span>'+
    '</div>'+
    '<button type="button" class="media-upscale-submit">Увеличить</button>'+
    '</div>'+
@@ -627,9 +627,8 @@ function toggleUpscalePanel(item,card){
  panel.querySelector(".media-upscale-submit").onclick=async e=>{
    e.stopPropagation();
    const submit=e.currentTarget;
-   const selects=panel.querySelectorAll(".media-upscale-select");
-   const scale=selects[0].value;
-   const model=selects[1].value;
+   const scale=panel.querySelector(".media-upscale-select")?.value||"2";
+   const model="fast";
    submit.disabled=true;submit.textContent="Обработка…";
    try{
      // Use the library's normalized image URL for CleverUtils. The library
