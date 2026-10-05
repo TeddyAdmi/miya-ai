@@ -2101,81 +2101,10 @@ async function waitForImageToolJob(jobId){
  throw new Error("IMAGE_TOOL_TIMEOUT");
 }
 
-async function makeCleverUtilsQualityImageFile(blob){
- if(!blob?.size)throw new Error("EMPTY_IMAGE");
- try{
-   const bitmap=await createImageBitmap(blob);
-   if(!bitmap.width||!bitmap.height)throw new Error("IMAGE_DIMENSIONS_INVALID");
-   const canvas=document.createElement("canvas");
-   canvas.width=bitmap.width;
-   canvas.height=bitmap.height;
-   const ctx=canvas.getContext("2d",{alpha:false});
-   if(!ctx)throw new Error("CANVAS_UNAVAILABLE");
-   ctx.fillStyle="#fff";
-   ctx.fillRect(0,0,canvas.width,canvas.height);
-   ctx.drawImage(bitmap,0,0);
-   bitmap.close();
-   const png=await new Promise(resolve=>canvas.toBlob(resolve,"image/png"));
-   if(!png?.size)throw new Error("QUALITY_PNG_CONVERSION_FAILED");
-   return new File([png],"miya-source.png",{type:"image/png"});
- }catch(error){
-   throw new Error("QUALITY_IMAGE_NORMALIZE_FAILED: "+String(error?.message||error||"PNG conversion failed"));
- }
-}
-
-async function makeCleverUtilsImageFile(blob){
- const rawType=String(blob?.type||"").toLowerCase().split(";")[0].trim();
- const supported=new Set(["image/jpeg","image/png","image/webp","image/gif","image/bmp","image/tiff"]);
- if(blob?.size&&supported.has(rawType)){
-   const ext={ "image/jpeg":"jpg","image/png":"png","image/webp":"webp","image/gif":"gif","image/bmp":"bmp","image/tiff":"tiff" }[rawType]||"jpg";
-   return new File([blob],"miya-source."+ext,{type:rawType});
- }
- if(!blob?.size)throw new Error("EMPTY_IMAGE");
- try{
-   const bitmap=await createImageBitmap(blob);
-   if(!bitmap.width||!bitmap.height)throw new Error("IMAGE_DIMENSIONS_INVALID");
-   const canvas=document.createElement("canvas");
-   canvas.width=bitmap.width;canvas.height=bitmap.height;
-   const ctx=canvas.getContext("2d",{alpha:false});
-   if(!ctx)throw new Error("CANVAS_UNAVAILABLE");
-   ctx.fillStyle="#fff";ctx.fillRect(0,0,canvas.width,canvas.height);
-   ctx.drawImage(bitmap,0,0);
-   bitmap.close();
-   const jpg=await new Promise(resolve=>canvas.toBlob(resolve,"image/jpeg",.95));
-   if(!jpg||!jpg.size)throw new Error("IMAGE_NORMALIZE_FAILED");
-   return new File([jpg],"miya-source.jpg",{type:"image/jpeg"});
- }catch(e){
-   console.warn("CleverUtils image MIME normalization failed",e);
-   throw new Error("IMAGE_DECODE_FAILED");
- }
-}
-
-async function makeCleverUtilsQualityFile(blob){
- if(!blob?.size)throw new Error("EMPTY_IMAGE");
- try{
-   const bitmap=await createImageBitmap(blob);
-   if(!bitmap.width||!bitmap.height)throw new Error("IMAGE_DIMENSIONS_INVALID");
-   const canvas=document.createElement("canvas");
-   canvas.width=bitmap.width;canvas.height=bitmap.height;
-   const ctx=canvas.getContext("2d",{alpha:false});
-   if(!ctx)throw new Error("CANVAS_UNAVAILABLE");
-   ctx.fillStyle="#fff";
-   ctx.fillRect(0,0,canvas.width,canvas.height);
-   ctx.drawImage(bitmap,0,0);
-   bitmap.close();
-   const png=await new Promise(resolve=>canvas.toBlob(resolve,"image/png"));
-   if(!png||!png.size)throw new Error("IMAGE_PNG_NORMALIZE_FAILED");
-   return new File([png],"miya-source.png",{type:"image/png"});
- }catch(e){
-   console.warn("CleverUtils quality PNG conversion failed",e);
-   throw new Error("IMAGE_DECODE_FAILED");
- }
-}
-
 async function runImageTool(sourceOverride="",scaleOverride="",modelOverride=""){
  const source=String(sourceOverride||getImageToolSource()).trim();
  if(!source){toast("Сначала создай или загрузи изображение");return}
- if(isCleverUtilsHomepage(source)){
+ if(isInvalidImageToolSource(source)){
    toast("Это старая ссылка CleverUtils. Выбери готовое изображение и попробуй снова.");
    return;
  }
@@ -2184,59 +2113,52 @@ async function runImageTool(sourceOverride="",scaleOverride="",modelOverride="")
  const oldStatus=$("#composerStatus")?.textContent||"Готово";
  if($("#composerStatus"))$("#composerStatus").textContent="AI Upscale · обработка…";
  try{
-   let outputUrl="";
-   if(model==="quality"){
-     // Рабочая схема из предыдущей версии Miya:
-     // 1) получаем реальные байты исходника через Miya proxy;
-     // 2) приводим их к PNG в браузере;
-     // 3) отправляем multipart напрямую в CleverUtils;
-     // 4) получаем job_id;
-     // 5) статус и готовый файл забираем уже через Miya backend.
-     let blob;
-     if(/^data:image\//i.test(source)){
-       const response=await fetch(source);
-       if(!response.ok)throw new Error("SOURCE_IMAGE_READ_FAILED");
-       blob=await response.blob();
-     }else{
-       const isLocal=source.startsWith("/")||source.startsWith(window.location.origin+"/");
-       const response=await fetch(
-         isLocal
-           ? source
-           : "/api/image-jpeg?url="+encodeURIComponent(source),
-         {cache:"no-store"}
-       );
-       if(!response.ok)throw new Error("SOURCE_IMAGE_PROXY_FAILED");
-       blob=await response.blob();
-     }
-     if(!blob||!blob.size)throw new Error("EMPTY_IMAGE");
-
-     const uploadFile=await makeCleverUtilsQualityImageFile(blob);
-     const form=new FormData();
-     form.append("file",uploadFile);
-     form.append("scale",scale);
-     form.append("model","quality");
-
-     const r=await fetch("https://cleverutils.com/api/v1/tools/upscale-image",{
-       method:"POST",
-       body:form,
-       headers:{Accept:"application/json"}
-     });
-     const data=await r.json().catch(()=>({}));
-     if(!r.ok)throw new Error(data?.message||data?.error?.message||data?.error||"IMAGE_TOOL_FAILED");
-
-     const job=data?.data||data;
-     outputUrl=typeof job?.output?.url==="string"
-       ? job.output.url
-       : String(job?.outputUrl||"");
-     const jobId=typeof job?.job_id==="string"
-       ? job.job_id
-       : String(job?.jobId||"");
-
-     if(jobId)outputUrl=await waitForImageToolJob(jobId);
-     if(!outputUrl)throw new Error("IMAGE_TOOL_OUTPUT_MISSING");
+   let blob;
+   // ВАЖНО: CleverUtils принимает исходный файл лучше всего. Не перекодируем
+   // его через canvas/PNG — именно эта промежуточная конверсия приводила к
+   // HTTP 415 UNSUPPORTED_MIME после долгой обработки.
+   if(/^data:image\\//i.test(source)){
+     const response=await fetch(source);
+     if(!response.ok)throw new Error("SOURCE_IMAGE_READ_FAILED");
+     blob=await response.blob();
    }else{
-     throw new Error("IMAGE_TOOL_MODEL_UNSUPPORTED");
+     const isLocal=source.startsWith("/")||source.startsWith(window.location.origin+"/");
+     const response=await fetch(
+       isLocal
+         ? source
+         : "/api/image-jpeg?url="+encodeURIComponent(source),
+       {cache:"no-store"}
+     );
+     if(!response.ok)throw new Error("SOURCE_IMAGE_PROXY_FAILED");
+     blob=await response.blob();
    }
+   if(!blob||!blob.size)throw new Error("EMPTY_IMAGE");
+
+   const form=new FormData();
+   const type=String(blob.type||"image/jpeg").split(";")[0].toLowerCase();
+   const ext=type==="image/png"?"png":type==="image/webp"?"webp":type==="image/gif"?"gif":"jpg";
+   form.append("file",blob,"miya-source."+ext);
+   form.append("scale",scale);
+   form.append("model",model);
+
+   const r=await fetch("https://cleverutils.com/api/v1/tools/upscale-image",{
+     method:"POST",
+     body:form,
+     headers:{Accept:"application/json"}
+   });
+   const data=await r.json().catch(()=>({}));
+   if(!r.ok)throw new Error(data?.message||data?.error?.message||data?.error||"IMAGE_TOOL_FAILED");
+
+   const job=data?.data||data;
+   let outputUrl=typeof job?.output?.url==="string"
+     ? job.output.url
+     : String(job?.outputUrl||"");
+   const jobId=typeof job?.job_id==="string"
+     ? job.job_id
+     : String(job?.jobId||"");
+
+   if(!outputUrl&&jobId)outputUrl=await waitForImageToolJob(jobId);
+   if(!outputUrl)throw new Error("IMAGE_TOOL_OUTPUT_MISSING");
 
    const label="CleverUtils · AI Upscale "+scale+"x";
    const item=saveMedia("image",outputUrl,"AI upscale "+scale+"x",label,"");
