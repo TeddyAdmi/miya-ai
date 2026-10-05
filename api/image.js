@@ -32,7 +32,7 @@ module.exports = async function imageHandler(req, res) {
         }
 
         const contentType = outputResponse.headers.get("content-type") || "image/png";
-        if (!/^image\\//i.test(contentType)) {
+        if (!/^image\//i.test(contentType)) {
           const body = await outputResponse.text().catch(() => "");
           return res.status(502).json({
             ok:false,
