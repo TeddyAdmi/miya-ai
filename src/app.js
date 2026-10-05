@@ -2073,10 +2073,12 @@ async function waitForImageToolJob(jobId){
 
 async function normalizeImageBlobForCleverUtils(blob){
   if(!blob||!blob.size)throw new Error("EMPTY_IMAGE");
-  const type=String(blob.type||"").toLowerCase();
-  if(type==="image/png"||type==="image/jpeg")return blob;
+  // CleverUtils validates the actual multipart bytes, not only the browser MIME.
+  // Always decode and re-encode to a real PNG so mislabeled WebP/AVIF/octet-stream
+  // responses cannot reach the upscale endpoint as a fake image/png.
   try{
     const bitmap=await createImageBitmap(blob);
+    if(!bitmap.width||!bitmap.height)throw new Error("IMAGE_DIMENSIONS_INVALID");
     const canvas=document.createElement("canvas");
     canvas.width=bitmap.width;canvas.height=bitmap.height;
     const ctx=canvas.getContext("2d",{alpha:true});
@@ -2088,8 +2090,8 @@ async function normalizeImageBlobForCleverUtils(blob){
     if(!png||!png.size)throw new Error("IMAGE_NORMALIZE_FAILED");
     return png;
   }catch(e){
-    console.warn("CleverUtils image normalization fallback",e);
-    return new Blob([blob],{type:"image/png"});
+    console.warn("CleverUtils image normalization failed",e);
+    throw new Error("IMAGE_DECODE_FAILED");
   }
 }
 
