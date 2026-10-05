@@ -922,37 +922,50 @@ function ensureVoiceWallStyles(){
  if(document.getElementById("miyaVoiceWallStyles"))return;
  const s=document.createElement("style");s.id="miyaVoiceWallStyles";
  s.textContent=`
-.voice-wall{width:100%;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;align-items:stretch}
-.voice-library-card,.voice-result-card{min-width:0;border:1px solid var(--line);border-radius:12px;background:linear-gradient(145deg,#0b233e,#08192e);padding:13px;box-shadow:0 10px 28px rgba(0,0,0,.12);transition:.18s;display:flex;flex-direction:column;gap:9px}
-.voice-library-card:hover,.voice-result-card:hover{transform:translateY(-2px);border-color:#2879bb;box-shadow:0 15px 34px rgba(0,0,0,.2)}
-.voice-result-title,.voice-library-card>b{font-size:12px;font-weight:900;letter-spacing:-.02em;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.voice-result-meta{font-size:8px;color:#7890aa}
-.voice-card-text{font-size:9px;line-height:1.45;color:#9bb0c8;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden;min-height:39px}
-.voice-player{border:1px solid rgba(104,144,185,.34);border-radius:12px;padding:9px;background:linear-gradient(135deg,rgba(8,27,47,.96),rgba(15,32,56,.9));box-shadow:inset 0 1px 0 rgba(255,255,255,.035)}
-.voice-player-row{display:flex;align-items:center;gap:8px}
-.voice-player-play{width:38px;height:38px;flex:0 0 38px;border-radius:50%;background:linear-gradient(135deg,#b25cff,#695dff);color:#fff;display:grid;place-items:center;font-size:13px;box-shadow:0 7px 18px rgba(117,73,217,.25)}
-.voice-player-time{font-size:8px;color:#a9bad0;font-variant-numeric:tabular-nums;min-width:58px;text-align:right}
-.voice-player-range{width:100%;height:4px;accent-color:#a75cff}
-.voice-player-bottom{display:flex;align-items:center;gap:7px;margin-top:8px}
-.voice-player-volume{width:72px;height:3px;accent-color:#695dff}
-.voice-player-status{font-size:7px;color:#7188a2;flex:1}
-.voice-player-download{width:30px;height:30px;border:1px solid #1a4b78;border-radius:8px;background:#0b233d;color:#a9bdd0;display:grid;place-items:center}
+.voice-wall{width:100%;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px;align-items:stretch}
+.voice-library-card,.voice-result-card{min-width:0;min-height:260px;height:100%;border:1px solid var(--line);border-radius:18px;background:linear-gradient(145deg,#0b233e,#08192e);padding:15px;box-shadow:0 12px 32px rgba(0,0,0,.14);transition:transform .18s,border-color .18s,box-shadow .18s;display:flex;flex-direction:column;gap:10px;cursor:pointer}
+.voice-library-card:hover,.voice-result-card:hover{transform:translateY(-3px);border-color:rgba(166,119,255,.55);box-shadow:0 18px 38px rgba(0,0,0,.22)}
+.voice-library-card:focus-visible{outline:2px solid #a86cff;outline-offset:3px}
+.voice-result-title,.voice-library-card>b{font-size:13px;font-weight:900;letter-spacing:-.02em;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.voice-result-meta{font-size:9px;color:#7890aa}
+.voice-card-text{font-size:10px;line-height:1.5;color:#9bb0c8;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden;min-height:45px}
+.voice-player{border:1px solid rgba(104,144,185,.34);border-radius:12px;padding:7px 8px;background:linear-gradient(135deg,rgba(8,27,47,.96),rgba(15,32,56,.9));box-shadow:inset 0 1px 0 rgba(255,255,255,.035);cursor:default}
+.voice-player-row{display:grid;grid-template-columns:32px minmax(70px,1fr) 54px 30px 30px;align-items:center;gap:7px}
+.voice-player-play{width:32px;height:32px;border:0;border-radius:50%;background:linear-gradient(135deg,#b25cff,#695dff);color:#fff;display:grid;place-items:center;font-size:11px;box-shadow:0 5px 14px rgba(117,73,217,.22);padding:0}
+.voice-player-play svg{width:14px;height:14px;fill:currentColor;stroke:none}
+.voice-player-time{font-size:8px;color:#a9bad0;font-variant-numeric:tabular-nums;min-width:0;text-align:right;white-space:nowrap}
+.voice-player-range,.voice-player-volume{width:100%;height:3px;accent-color:#a75cff;margin:0}
+.voice-player-status{display:none}
+.voice-player-download{width:30px;height:30px;border:1px solid #1a4b78;border-radius:8px;background:#0b233d;color:#a9bdd0;display:grid;place-items:center;padding:0}
 .voice-player-download:hover{background:#102943;color:#fff;border-color:#2879bb}
-.voice-card-actions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px;margin-top:auto}
-.voice-card-action{min-height:32px;border:1px solid rgba(120,158,195,.26);border-radius:8px;background:rgba(255,255,255,.045);color:#b9c9dc;font-size:8px;font-weight:800;display:flex;align-items:center;justify-content:center;gap:5px}
+.voice-player-download svg{width:15px;height:15px}
+.voice-card-actions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px;margin-top:auto}
+.voice-card-action{min-height:34px;border:1px solid rgba(120,158,195,.26);border-radius:9px;background:rgba(255,255,255,.045);color:#b9c9dc;font-size:9px;font-weight:800;display:flex;align-items:center;justify-content:center;gap:6px;cursor:pointer}
 .voice-card-action:hover{background:rgba(157,111,255,.13);border-color:rgba(190,154,255,.34);color:#fff}
 .voice-card-action.danger:hover{background:rgba(255,82,120,.12);border-color:rgba(255,130,155,.32)}
 .voice-card-action svg{width:14px;height:14px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
-.voice-transcript{display:none;padding:9px;border-radius:9px;background:rgba(255,255,255,.035);border:1px solid rgba(120,158,195,.18);font-size:8px;line-height:1.5;color:#a9bdd0;white-space:pre-wrap;max-height:130px;overflow:auto}
+.voice-transcript{display:none;padding:9px;border-radius:9px;background:rgba(255,255,255,.035);border:1px solid rgba(120,158,195,.18);font-size:9px;line-height:1.5;color:#a9bdd0;white-space:pre-wrap;max-height:130px;overflow:auto}
 .voice-transcript.open{display:block}
+.voice-detail-backdrop{position:fixed;inset:0;z-index:2147483600;background:rgba(3,9,18,.66);backdrop-filter:blur(10px);display:grid;place-items:center;padding:24px}
+.voice-detail-dialog{width:min(760px,94vw);max-height:min(820px,92vh);overflow:auto;border:1px solid rgba(170,130,255,.28);border-radius:24px;background:linear-gradient(145deg,#0a1c32,#071322);box-shadow:0 28px 100px rgba(0,0,0,.48);padding:20px;position:relative}
+.voice-detail-head{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;margin-bottom:14px}
+.voice-detail-head h3{margin:2px 0 4px;font-size:22px;letter-spacing:-.03em}
+.voice-detail-eyebrow{font-size:9px;letter-spacing:.16em;font-weight:900;color:#a97bff}
+.voice-detail-close{width:36px;height:36px;border:1px solid rgba(255,255,255,.12);border-radius:10px;background:rgba(255,255,255,.06);color:#fff;font-size:20px;cursor:pointer}
+.voice-detail-card{min-height:0;height:auto;cursor:default;transform:none!important;box-shadow:none!important;border-color:rgba(170,130,255,.22)!important}
+.voice-detail-info{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin:0 0 14px}
+.voice-detail-info>div{padding:10px 12px;border:1px solid rgba(120,158,195,.18);border-radius:10px;background:rgba(255,255,255,.035)}
+.voice-detail-info small{display:block;color:#738aa3;font-size:8px;margin-bottom:4px}
+.voice-detail-info b{font-size:10px;color:#d5e0ec}
 body.light .voice-library-card,body.light .voice-result-card{background:#fff;border-color:#dbe4ee;box-shadow:0 8px 25px rgba(30,55,85,.07)}
 body.light .voice-result-meta,body.light .voice-card-text{color:#71859a}
 body.light .voice-player{background:linear-gradient(135deg,#f7f9fc,#eef3f8);border-color:#d3deea}
 body.light .voice-player-time{color:#5f7085}
 body.light .voice-player-download,.voice-card-action{background:#f4f7fa;color:#52657b;border-color:#d3deea}
+body.light .voice-detail-dialog{background:#fff;border-color:#dbe4ee}
+body.light .voice-detail-close{background:#f4f7fa;color:#273047;border-color:#d3deea}
 @media(max-width:980px){.voice-wall{grid-template-columns:repeat(2,minmax(0,1fr))}}
-@media(max-width:620px){.voice-wall{grid-template-columns:1fr}.voice-library-card,.voice-result-card{padding:11px}}
-`;
+@media(max-width:620px){.voice-wall{grid-template-columns:1fr}.voice-library-card,.voice-result-card{padding:12px;min-height:230px}.voice-player-row{grid-template-columns:32px minmax(50px,1fr) 50px 30px 30px}.voice-detail-info{grid-template-columns:1fr}}`;
  document.head.appendChild(s);
 }
 function voiceIcon(path){return '<svg viewBox="0 0 24 24">'+path+'</svg>'}
@@ -1034,22 +1047,50 @@ async function pollCleverJobJson(jobId){
  for(let i=0;i<90;i++){await new Promise(r=>setTimeout(r,1800));const r=await fetch("https://cleverutils.com/api/v1/jobs/"+encodeURIComponent(jobId),{cache:"no-store"});const d=await r.json().catch(()=>({}));const j=d?.data||d;if(j?.status==="done")return j?.text||j?.result?.text||j?.output?.text||"";if(j?.status==="error"||j?.status==="failed")throw new Error("VOICE_JOB_FAILED")}
  throw new Error("VOICE_JOB_TIMEOUT");
 }
-function createVoiceCard(item,source){
+function createVoiceCard(item,source,options={}){
  ensureVoiceWallStyles();
- const card=document.createElement("article");card.className="voice-library-card";
+ const card=document.createElement("article");card.className="voice-library-card";card.tabIndex=0;
  const title=document.createElement("b");title.className="voice-result-title";title.textContent=item?.model||"Голос";
  const meta=document.createElement("div");meta.className="voice-result-meta";meta.textContent="MP3 · Miya Voice";
  const textEl=document.createElement("div");textEl.className="voice-card-text";textEl.textContent=item?.prompt||"Готовая голосовая запись";
  card.append(title,meta,textEl);
  const player=buildVoicePlayer(source,card);
  const actions=document.createElement("div");actions.className="voice-card-actions";
- const action=(name,label,path,fn,extra="")=>{const b=document.createElement("button");b.type="button";b.className="voice-card-action"+(name==="delete"?" danger":"");b.dataset.voiceAction=name;b.title=label;b.innerHTML=voiceIcon(path)+'<span>'+label+'</span>';b.onclick=fn;actions.appendChild(b);return b};
+ const action=(name,label,path,fn)=>{const b=document.createElement("button");b.type="button";b.className="voice-card-action"+(name==="delete"?" danger":"");b.dataset.voiceAction=name;b.title=label;b.innerHTML=voiceIcon(path)+'<span>'+label+'</span>';b.onclick=e=>{e.stopPropagation();fn()};actions.appendChild(b);return b};
  action("download","Скачать",'<path d="M12 4v11M8 11l4 4 4-4M5 20h14"/>',()=>downloadVoiceSource(player.audio,source));
- action("clean","Очистить",'<path d="M4 12h16M7 7h10M7 17h10"/>',()=>runVoiceCleverTool(item,card,"noise-reduction","Очистка голоса",{strength:"moderate"}));
+ action("clean","Очистить",'<path d="M4 12h16M7 7h10M7 17h10"/>',()=>runVoiceCleverTool(item,card,"noise-reduction","Очистка голоса"));
  action("vocal","Разделить",'<path d="M4 12h5M15 12h5M7 7v10M17 7v10"/><path d="M9 9h6v6H9z"/>',()=>runVoiceCleverTool(item,card,"vocal-remover","Разделение вокала"));
  action("text","Текст",'<path d="M5 6h14M5 12h14M5 18h9"/>',()=>runVoiceCleverTool(item,card,"speech-to-text","Расшифровка",{format:"txt",language:document.querySelector("#voiceLanguage")?.value||"ru"}));
  action("delete","Удалить",'<path d="M5 7h14M9 7V4h6v3M8 7l1 13h6l1-13"/>',()=>confirmDeleteMedia(item,card));
+ if(!options.detail){
+   const open=()=>openVoiceDetail(item,source);
+   card.onclick=e=>{if(e.target.closest("button,input"))return;open()};
+   card.onkeydown=e=>{if((e.key==="Enter"||e.key===" ")&&!e.target.closest("button,input")){e.preventDefault();open()}};
+ }
  return card;
+}
+function openVoiceDetail(item,source){
+ ensureVoiceWallStyles();
+ document.querySelector(".voice-detail-backdrop")?.remove();
+ const backdrop=document.createElement("div");backdrop.className="voice-detail-backdrop";
+ const dialog=document.createElement("section");dialog.className="voice-detail-dialog";dialog.setAttribute("role","dialog");dialog.setAttribute("aria-modal","true");
+ const head=document.createElement("div");head.className="voice-detail-head";
+ const copy=document.createElement("div");const eyebrow=document.createElement("div");eyebrow.className="voice-detail-eyebrow";eyebrow.textContent="MIYA VOICE";
+ const h=document.createElement("h3");h.textContent=item?.model||"Голос";copy.append(eyebrow,h);
+ const close=document.createElement("button");close.type="button";close.className="voice-detail-close";close.setAttribute("aria-label","Закрыть");close.textContent="×";head.append(copy,close);
+ const info=document.createElement("div");info.className="voice-detail-info";
+ const addInfo=(label,value)=>{const box=document.createElement("div");const small=document.createElement("small");small.textContent=label;const val=document.createElement("b");val.textContent=value;box.append(small,val);info.appendChild(box)};
+ addInfo("Модель",String(item?.model||"Голос"));
+ addInfo("Формат",String(item?.format||"MP3").toUpperCase());
+ addInfo("Создан",item?.createdAt?new Date(item.createdAt).toLocaleString("ru-RU"):"—");
+ addInfo("Текст",String(item?.prompt||"Готовая голосовая запись"));
+ const detailCard=createVoiceCard(item,source,{detail:true});detailCard.classList.add("voice-detail-card");
+ dialog.append(head,info,detailCard);backdrop.appendChild(dialog);document.body.appendChild(backdrop);
+ const closeIt=()=>{backdrop.remove();document.removeEventListener("keydown",onKey)};
+ const onKey=e=>{if(e.key==="Escape")closeIt()};
+ close.onclick=closeIt;
+ backdrop.addEventListener("click",e=>{if(e.target===backdrop)closeIt()});
+ document.addEventListener("keydown",onKey);
 }
 function buildVoiceCard(parts,item){
  const blob=new Blob(parts,{type:"audio/mpeg"});const source=()=>Promise.resolve(URL.createObjectURL(blob));
@@ -2507,10 +2548,11 @@ modal.innerHTML=`<div class="ai-editor-backdrop"></div><div class="ai-editor-dia
   modal.__load=async item2=>{currentItem=item2;workingSource="";empty.style.display="flex";empty.textContent="Загрузка изображения…";image.removeAttribute("src");clearMask();resetView();const candidates=[];try{const cached=await getCachedMedia(item2?.id);if(cached?.blob)candidates.push(URL.createObjectURL(cached.blob))}catch{}const url=await mediaItemToReference(item2);if(url){candidates.push(url);const proxied=jpegImageUrl(url);if(proxied!==url)candidates.push(proxied);if(!/^data:image\//i.test(url)&&!/^blob:/i.test(url))candidates.push("/api/image?url="+encodeURIComponent(url))}let ok=false,last=null;for(const candidate of candidates){try{await loadImage(candidate);ok=true;break}catch(e){last=e;try{if(candidate.startsWith("/api/")){await loadBlob(candidate);ok=true;break}}catch(fe){last=fe}}}if(!ok)throw(last||new Error("EDITOR_IMAGE_LOAD_FAILED"));naturalWidth=image.naturalWidth;naturalHeight=image.naturalHeight;if(!naturalWidth||!naturalHeight)throw new Error("EDITOR_IMAGE_DIMENSIONS_INVALID");workingSource=image.src;mask.width=naturalWidth;mask.height=naturalHeight;ctx=mask.getContext("2d",{willReadFrequently:true});if(!ctx)throw new Error("AI_EDITOR_CANVAS_UNAVAILABLE");ctx.clearRect(0,0,naturalWidth,naturalHeight);history=[];redoHistory=[];updateButtons();empty.style.display="none"};
   const setEditorProgress=(p,title,model)=>{if(!generation)return;const v=Math.max(0,Math.min(100,Math.round(p)));if(editorProgressTimer){clearInterval(editorProgressTimer);editorProgressTimer=0}generation.hidden=false;generationTitle.textContent=title||"Создание изменения";generationModel.textContent=model||"AI Editor";generationPercent.textContent=v+"%";generationBar.style.width=v+"%";generation.querySelector(".ai-editor-generation-ring").style.setProperty("--progress",v+"%");if(v<100){let live=v;editorProgressTimer=setInterval(()=>{live=Math.min(99,live+.7);generationPercent.textContent=Math.round(live)+"%";generationBar.style.width=live+"%";generation.querySelector(".ai-editor-generation-ring").style.setProperty("--progress",live+"%");if(live>=99){clearInterval(editorProgressTimer);editorProgressTimer=0}},260)}};
   const hideEditorProgress=()=>{if(editorProgressTimer){clearInterval(editorProgressTimer);editorProgressTimer=0}if(generation)generation.hidden=true};
-  const editorSourceBlob=async()=>{const source=workingSource||image.src;if(!source)throw new Error("EDITOR_SOURCE_EMPTY");const rr=/^data:image\//i.test(source)?await fetch(source):await fetch("/api/image?url="+encodeURIComponent(source),{cache:"no-store"});if(!rr.ok)throw new Error("SOURCE_IMAGE_READ_FAILED");return rr.blob()};
-  const editorOutputData=async url=>{const source=String(url||"");if(!source)throw new Error("IMAGE_TOOL_OUTPUT_MISSING");const rr=/^data:image\//i.test(source)?await fetch(source):await fetch("/api/image?url="+encodeURIComponent(source),{cache:"no-store"});if(!rr.ok)throw new Error("EDITOR_OUTPUT_FETCH_FAILED");const blob=await rr.blob();return await new Promise((resolve,reject)=>{const reader=new FileReader();reader.onload=()=>resolve(String(reader.result||""));reader.onerror=()=>reject(reader.error||new Error("EDITOR_OUTPUT_READ_FAILED"));reader.readAsDataURL(blob)})};
+  const editorFetchImageBlob=async source=>{const value=String(source||"").trim();if(!value)throw new Error("EDITOR_SOURCE_EMPTY");if(/^data:image\\//i.test(value)||/^blob:/i.test(value)){const rr=await fetch(value,{cache:"no-store"});if(!rr.ok)throw new Error("SOURCE_IMAGE_READ_FAILED");return rr.blob()}try{const u=new URL(value,window.location.origin);if(u.origin===window.location.origin){const rr=await fetch(value,{cache:"no-store"});if(!rr.ok)throw new Error("SOURCE_IMAGE_READ_FAILED");return rr.blob()}}catch(e){if(e?.message==="SOURCE_IMAGE_READ_FAILED")throw e}const rr=await fetch("/api/image?url="+encodeURIComponent(value),{cache:"no-store"});if(!rr.ok)throw new Error("SOURCE_IMAGE_READ_FAILED");return rr.blob()};
+  const editorSourceBlob=async()=>editorFetchImageBlob(workingSource||image.src);
+  const editorOutputData=async url=>{const source=String(url||"");if(!source)throw new Error("IMAGE_TOOL_OUTPUT_MISSING");let blob;try{blob=await editorFetchImageBlob(source)}catch{throw new Error("EDITOR_OUTPUT_FETCH_FAILED")}return await new Promise((resolve,reject)=>{const reader=new FileReader();reader.onload=()=>resolve(String(reader.result||""));reader.onerror=()=>reject(reader.error||new Error("EDITOR_OUTPUT_READ_FAILED"));reader.readAsDataURL(blob)})};
   const loadEditorOutput=async url=>{const data=await editorOutputData(url);workingSource=data;await loadImage(data);naturalWidth=image.naturalWidth;naturalHeight=image.naturalHeight;mask.width=naturalWidth;mask.height=naturalHeight;ctx=mask.getContext("2d",{willReadFrequently:true});ctx.clearRect(0,0,naturalWidth,naturalHeight);maskHasPaint=false;paintBounds=null;history=[];redoHistory=[];updateButtons();applyView();empty.style.display="none"};
-  const buildSourceCanvas=async()=>{const source=workingSource||image.src;if(!source)throw new Error("EDITOR_SOURCE_EMPTY");const rr=/^data:image\//i.test(source)?await fetch(source):await fetch("/api/image?url="+encodeURIComponent(source),{cache:"no-store"});if(!rr.ok)throw new Error("SOURCE_IMAGE_READ_FAILED");const blob=await rr.blob();const url=URL.createObjectURL(blob);const img=new Image();await new Promise((res,rej)=>{img.onload=res;img.onerror=()=>rej(new Error("EDITOR_SOURCE_DECODE_FAILED"));img.src=url});URL.revokeObjectURL(url);const canvas=document.createElement("canvas");canvas.width=naturalWidth;canvas.height=naturalHeight;const o=canvas.getContext("2d");o.filter=editorFilter();o.drawImage(img,0,0,naturalWidth,naturalHeight);return canvas};
+  const buildSourceCanvas=async()=>{const source=workingSource||image.src;if(!source)throw new Error("EDITOR_SOURCE_EMPTY");const blob=await editorFetchImageBlob(source);const url=URL.createObjectURL(blob);const img=new Image();await new Promise((res,rej)=>{img.onload=res;img.onerror=()=>rej(new Error("EDITOR_SOURCE_DECODE_FAILED"));img.src=url});URL.revokeObjectURL(url);const canvas=document.createElement("canvas");canvas.width=naturalWidth;canvas.height=naturalHeight;const o=canvas.getContext("2d");o.filter=editorFilter();o.drawImage(img,0,0,naturalWidth,naturalHeight);return canvas};
   const createFromSelection=async()=>{const command=String(promptInput.value||"").trim();const b=getBounds();if(!command||!b)return;if(/(?:удал|убер|стер|remove|erase|delete)/i.test(command)){promptInput.value="";promptBox.classList.remove("open");applyButton.click();return;}promptCreate.disabled=true;promptCreate.textContent="Создание…";setEditorProgress(0,"Создание изменения","FLUX Kontext Dev");try{const base=await buildSourceCanvas();const crop=document.createElement("canvas");crop.width=b.w;crop.height=b.h;crop.getContext("2d").drawImage(base,b.x,b.y,b.w,b.h,0,0,b.w,b.h);setEditorProgress(15,"Создание изменения","FLUX Kontext Dev");const rr=await fetch("/api/image",{method:"POST",headers:{"Content-Type":"application/json","Accept":"application/json"},body:JSON.stringify({mode:"image",provider:"ahm7",prompt:command,model:"FLUX Kontext Dev",ratio:"auto",outputFormat:"jpeg",copies:1,options:{imageBase64:crop.toDataURL("image/jpeg",.9)}})});const data=await rr.json().catch(()=>({}));if(!rr.ok||!data?.imageUrl)throw new Error(String(data?.message||data?.error||"Не удалось создать изменение"));setEditorProgress(82,"Применение изменения","FLUX Kontext Dev");const generatedData=await editorOutputData(data.imageUrl);const generated=new Image();await new Promise((res,rej)=>{generated.onload=res;generated.onerror=()=>rej(new Error("GENERATED_IMAGE_DECODE_FAILED"));generated.src=generatedData});const overlay=document.createElement("canvas");overlay.width=naturalWidth;overlay.height=naturalHeight;const oc=overlay.getContext("2d");oc.drawImage(generated,b.x,b.y,b.w,b.h);oc.globalCompositeOperation="destination-in";oc.drawImage(mask,0,0);base.getContext("2d").drawImage(overlay,0,0);await loadEditorOutput(base.toDataURL("image/jpeg",.93));clearMask();promptInput.value="";promptBox.classList.remove("open");setEditorProgress(100,"Изменение применено","FLUX Kontext Dev");await new Promise(r=>setTimeout(r,450));hideEditorProgress();toast("Изменение применено · пока в редакторе")}catch(err){hideEditorProgress();console.error("Miya AI editor create failed",err);toast(String(err?.message||"Не удалось создать изменение"))}finally{promptCreate.disabled=false;promptCreate.textContent="Создать / применить"}};
   promptBox.querySelector(".ai-editor-prompt-cancel").onclick=()=>{promptInput.value="";promptBox.classList.remove("open")};
   promptCreate.onclick=createFromSelection;
