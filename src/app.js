@@ -9,8 +9,9 @@ const $=s=>document.querySelector(s);
 (function ensureMiyaMediaMoreStyle(){
  if(document.getElementById("miyaMediaDotsFix"))return;
  const st=document.createElement("style");st.id="miyaMediaDotsFix";
- st.textContent=`.media-action.media-more{width:32px!important;height:30px!important;min-width:32px!important;padding:0!important;border:1px solid rgba(255,255,255,.20)!important;border-radius:9px!important;background:rgba(255,255,255,.12)!important;box-shadow:none!important;backdrop-filter:blur(8px)!important;-webkit-backdrop-filter:blur(8px)!important;color:rgba(255,255,255,.96)!important;display:grid!important;place-items:center!important}
-.media-action.media-more:hover{background:rgba(0,0,0,.32)!important;border-color:rgba(255,255,255,.16)!important;color:#fff!important}
+ st.textContent=`.media-card{overflow:visible!important}
+.media-action.media-more{width:32px!important;height:30px!important;min-width:32px!important;padding:0!important;border:1px solid rgba(255,255,255,.34)!important;border-radius:9px!important;background:rgba(255,255,255,.20)!important;box-shadow:0 4px 14px rgba(0,0,0,.16)!important;backdrop-filter:blur(8px)!important;-webkit-backdrop-filter:blur(8px)!important;color:#fff!important;display:grid!important;place-items:center!important}
+.media-action.media-more:hover{background:rgba(0,0,0,.40)!important;border-color:rgba(255,255,255,.42)!important;color:#fff!important}
 .media-action.media-more::after{display:none!important}
 .media-action.media-more svg{width:20px!important;height:20px!important;display:block!important;fill:currentColor!important;stroke:none!important}
 .media-action.media-more svg circle{fill:currentColor!important}
@@ -569,18 +570,25 @@ async function mediaItemToReference(item){
 
 function positionFloatingMediaOverlay(el,anchor,kind){
  if(!el||!anchor)return;
+ if(kind==="menu"){
+   const card=anchor.closest(".media-card");
+   if(card){
+     const cr=card.getBoundingClientRect(),ar=anchor.getBoundingClientRect();
+     el.style.setProperty("position","absolute","important");
+     el.style.setProperty("z-index","100000","important");
+     el.style.setProperty("pointer-events","auto","important");
+     el.style.setProperty("top",Math.round(ar.bottom-cr.top+6)+"px","important");
+     el.style.setProperty("right","8px","important");
+     el.style.setProperty("left","auto","important");
+     el.style.setProperty("display","block","important");
+   }
+   return;
+ }
  const r=anchor.getBoundingClientRect();
  el.style.setProperty("position","fixed","important");
  el.style.setProperty("z-index","100000","important");
  el.style.setProperty("pointer-events","auto","important");
- if(kind==="menu"){
-   const maxTop=Math.max(8,window.innerHeight-el.offsetHeight-8);
-   const top=Math.min(maxTop,Math.max(8,r.bottom+5));
-   el.style.setProperty("top",Math.round(top)+"px","important");
-   el.style.setProperty("right",Math.max(8,Math.round(window.innerWidth-r.right))+"px","important");
-   el.style.setProperty("left","auto","important");
-   el.style.setProperty("display","block","important");
- }else{
+ {
    const width=Math.min(250,Math.max(0,window.innerWidth-16));
    const top=Math.min(window.innerHeight-12,Math.max(8,r.top+42));
    el.style.setProperty("width",width+"px","important");
@@ -592,6 +600,17 @@ function positionFloatingMediaOverlay(el,anchor,kind){
 function floatMediaOverlay(el,anchor,kind){
  if(!el||!anchor)return;
  el.__mediaOverlayAnchor=anchor;
+ if(kind==="menu"){
+   const card=anchor.closest(".media-card");
+   if(card&&el.parentElement!==card){
+     el.__mediaOverlayParent=el.parentElement;
+     el.__mediaOverlayNextSibling=el.nextSibling;
+     card.appendChild(el);
+   }
+   el.classList.add("media-overlay-attached");
+   positionFloatingMediaOverlay(el,anchor,kind);
+   return;
+ }
  if(el.parentElement===document.body){
    el.classList.add("media-overlay-floating");
    positionFloatingMediaOverlay(el,anchor,kind);
@@ -608,7 +627,7 @@ function restoreMediaOverlay(el){
  if(!el||!parent)return;
  if(el.__mediaOverlayNextSibling&&el.__mediaOverlayNextSibling.parentNode===parent)parent.insertBefore(el,el.__mediaOverlayNextSibling);
  else parent.appendChild(el);
- el.classList.remove("media-overlay-floating");
+ el.classList.remove("media-overlay-floating","media-overlay-attached");
  el.style.position="";el.style.zIndex="";el.style.pointerEvents="";el.style.display="";el.style.top="";el.style.right="";el.style.left="";el.style.width="";
  el.__mediaOverlayParent=null;el.__mediaOverlayNextSibling=null;el.__mediaOverlayAnchor=null;
 }
