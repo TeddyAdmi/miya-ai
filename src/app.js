@@ -2154,7 +2154,11 @@ async function runImageTool(sourceOverride="",scaleOverride="",modelOverride="")
      const job=data?.data||data;
      outputUrl=typeof job?.output?.url==="string"?job.output.url:String(job?.outputUrl||"");
      const jobId=typeof job?.job_id==="string"?job.job_id:String(job?.jobId||"");
-     if(!outputUrl&&jobId)outputUrl=await waitForImageToolJob(jobId);
+     // CleverUtils can mark a Quality job as done before its output endpoint
+     // is ready for download and briefly returns 429 RATE_LIMITED. Always
+     // pass through the job-status wait when a job id exists so we give the
+     // provider cooldown a moment before the browser requests the MP4/image.
+     if(jobId)outputUrl=await waitForImageToolJob(jobId);
      if(!outputUrl)throw new Error("IMAGE_TOOL_OUTPUT_MISSING");
    }else{
      let blob;
