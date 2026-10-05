@@ -1,3 +1,5 @@
+const sharp = require("sharp");
+
 module.exports = async function imageHandler(req, res) {
   res.setHeader("Cache-Control", "no-store");
   res.setHeader("Content-Type", "application/json; charset=utf-8");
@@ -104,17 +106,27 @@ module.exports = async function imageHandler(req, res) {
         return res.status(413).json({ ok:false, error:"IMAGE_TOO_LARGE", message:"Для AI upscale CleverUtils принимает изображения до 20 MB." });
       }
 
+      const scale = String(body.scale || "2");
+      const model = String(body.model || "quality");
+      if (!["2","3","4"].includes(scale)) return res.status(400).json({ok:false,error:"INVALID_SCALE"});
+      if (!["fast","quality"].includes(model)) return res.status(400).json({ok:false,error:"INVALID_MODEL"});
+
+      if (model === "quality") {
+        try {
+          bytes = await sharp(bytes).rotate().png().toBuffer();
+          mime = "image/png";
+          filename = "miya-source.png";
+        } catch (error) {
+          return res.status(415).json({ok:false,error:"QUALITY_IMAGE_NORMALIZE_FAILED",message:String(error?.message||error)});
+        }
+      }
+
       const form = new FormData();
       form.append("file", new Blob([bytes], { type:mime }), filename);
       const endpoint = "https://cleverutils.com/api/v1/tools/upscale-image";
 
-      if (action === "upscale") {
-        const scale = String(body.scale || "2");
-        const model = String(body.model || "quality");
-        if (!["2","3","4"].includes(scale)) return res.status(400).json({ok:false,error:"INVALID_SCALE"});
-        if (!["fast","quality"].includes(model)) return res.status(400).json({ok:false,error:"INVALID_MODEL"});
-        form.append("scale", scale);
-        form.append("model", model);
+      form.append("scale", scale);
+      form.append("model", model);
       }
 
       const upstreamTool = await fetch(endpoint, {

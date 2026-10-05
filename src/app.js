@@ -2132,40 +2132,62 @@ async function runImageTool(sourceOverride="",scaleOverride="",modelOverride="")
  const oldStatus=$("#composerStatus")?.textContent||"Готово";
  if($("#composerStatus"))$("#composerStatus").textContent="AI Upscale · обработка…";
  try{
-   let blob;
-   if(/^data:image\//i.test(source)){
-     const response=await fetch(source);
-     if(!response.ok)throw new Error("SOURCE_IMAGE_READ_FAILED");
-     blob=await response.blob();
-   }else{
-     let response;
+   if(model==="quality"){
+     let backendSource=source;
      try{
-       const isLocal=/^\//.test(source)||source.startsWith(window.location.origin+"/");
-       response=await fetch(isLocal?source:"/api/image?url="+encodeURIComponent(source),{cache:"no-store"});
-     }catch{
-       throw new Error("SOURCE_IMAGE_READ_FAILED");
+       const parsed=new URL(source,window.location.origin);
+       if(parsed.pathname==="/api/image-jpeg"||parsed.pathname==="/api/image"){
+         backendSource=parsed.searchParams.get("url")||source;
+       }else{
+         backendSource=parsed.href;
+       }
+     }catch{}
+     const r=await fetch("/api/image",{
+       method:"POST",
+       headers:{"Content-Type":"application/json","Accept":"application/json"},
+       body:JSON.stringify({action:"upscale",imageUrl:backendSource,scale,model:"quality"})
+     });
+     const data=await r.json().catch(()=>({}));
+     if(!r.ok)throw new Error(data?.message||data?.error?.message||data?.error||"IMAGE_TOOL_FAILED");
+     const job=data?.data||data;
+     let outputUrl=typeof job?.output?.url==="string"?job.output.url:String(job?.outputUrl||"");
+     const jobId=typeof job?.job_id==="string"?job.job_id:String(job?.jobId||"");
+     if(!outputUrl&&jobId)outputUrl=await waitForImageToolJob(jobId);
+     if(!outputUrl)throw new Error("IMAGE_TOOL_OUTPUT_MISSING");
+   }else{
+     let blob;
+     if(/^data:image\//i.test(source)){
+       const response=await fetch(source);
+       if(!response.ok)throw new Error("SOURCE_IMAGE_READ_FAILED");
+       blob=await response.blob();
+     }else{
+       let response;
+       try{
+         const isLocal=/^\//.test(source)||source.startsWith(window.location.origin+"/");
+         response=await fetch(isLocal?source:"/api/image?url="+encodeURIComponent(source),{cache:"no-store"});
+       }catch{
+         throw new Error("SOURCE_IMAGE_READ_FAILED");
+       }
+       if(!response.ok)throw new Error("SOURCE_IMAGE_PROXY_FAILED");
+       const type=String(response.headers.get("content-type")||"").split(";")[0].toLowerCase();
+       if(!/^image\//i.test(type))throw new Error("SOURCE_NOT_IMAGE");
+       blob=await response.blob();
      }
-     if(!response.ok)throw new Error("SOURCE_IMAGE_PROXY_FAILED");
-     const type=String(response.headers.get("content-type")||"").split(";")[0].toLowerCase();
-     if(!/^image\//i.test(type))throw new Error("SOURCE_NOT_IMAGE");
-     blob=await response.blob();
+     if(!blob||!blob.size)throw new Error("EMPTY_IMAGE");
+     const uploadFile=await makeCleverUtilsImageFile(blob);
+     const form=new FormData();
+     form.append("file",uploadFile);
+     form.append("scale",scale);
+     form.append("model","fast");
+     const r=await fetch("https://cleverutils.com/api/v1/tools/upscale-image",{method:"POST",body:form,headers:{Accept:"application/json"}});
+     const data=await r.json().catch(()=>({}));
+     if(!r.ok)throw new Error(data?.message||data?.error?.message||data?.error||"IMAGE_TOOL_FAILED");
+     const job=data?.data||data;
+     let outputUrl=typeof job?.output?.url==="string"?job.output.url:"";
+     const jobId=typeof job?.job_id==="string"?job.job_id:"";
+     if(!outputUrl&&jobId)outputUrl=await waitForImageToolJob(jobId);
+     if(!outputUrl)throw new Error("IMAGE_TOOL_OUTPUT_MISSING");
    }
-   if(!blob||!blob.size)throw new Error("EMPTY_IMAGE");
-   const uploadFile=model==="quality"
-     ?await makeCleverUtilsQualityFile(blob)
-     :await makeCleverUtilsImageFile(blob);
-   const form=new FormData();
-   form.append("file",uploadFile);
-   form.append("scale",scale);
-   form.append("model",model);
-   const r=await fetch("https://cleverutils.com/api/v1/tools/upscale-image",{method:"POST",body:form,headers:{Accept:"application/json"}});
-   const data=await r.json().catch(()=>({}));
-   if(!r.ok)throw new Error(data?.message||data?.error?.message||data?.error||"IMAGE_TOOL_FAILED");
-   const job=data?.data||data;
-   let outputUrl=typeof job?.output?.url==="string"?job.output.url:"";
-   const jobId=typeof job?.job_id==="string"?job.job_id:"";
-   if(!outputUrl&&jobId)outputUrl=await waitForImageToolJob(jobId);
-   if(!outputUrl)throw new Error("IMAGE_TOOL_OUTPUT_MISSING");
    const label="CleverUtils · AI Upscale "+scale+"x";
    const item=saveMedia("image",outputUrl,"AI upscale "+scale+"x",label,"");
    renderImageLibrary();
