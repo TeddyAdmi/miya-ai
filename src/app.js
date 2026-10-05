@@ -2100,6 +2100,27 @@ function isInvalidImageToolSource(url){
   }catch{}
   return false;
 }
+async function waitForCleverUtilsJob(jobId){
+ const started=Date.now();
+ while(Date.now()-started<180000){
+   await new Promise(r=>setTimeout(r,1800));
+   const r=await fetch("https://cleverutils.com/api/v1/jobs/"+encodeURIComponent(jobId),{
+     headers:{Accept:"application/json"},
+     cache:"no-store"
+   });
+   const data=await r.json().catch(()=>({}));
+   if(!r.ok)throw new Error(data?.message||data?.error||"CLEVERUTILS_JOB_STATUS_FAILED");
+   const job=data?.data||data;
+   const status=String(job?.status||"processing").toLowerCase();
+   const outputUrl=String(job?.output?.url||job?.output_url||"").trim();
+   if(status==="done"&&outputUrl)return outputUrl;
+   if(["error","failed","canceled","cancelled"].includes(status)){
+     throw new Error(String(job?.error?.message||job?.message||"CLEVERUTILS_JOB_FAILED"));
+   }
+ }
+ throw new Error("CLEVERUTILS_JOB_TIMEOUT");
+}
+
 async function waitForImageToolJob(jobId){
  const started=Date.now();
  while(Date.now()-started<150000){
@@ -2113,6 +2134,86 @@ async function waitForImageToolJob(jobId){
  throw new Error("IMAGE_TOOL_TIMEOUT");
 }
 
+async function runImageTool(sourceOverride="",scaleOverride="",modelOverride=""){
+ const source=String(sourceOverride||getImageToolSource()).trim();
+ if(!source){toast("Сначала создай или загрузи изображение");return}
+ if(isInvalidImageToolSource(source)){
+   toast("Это старая ссылка CleverUtils. Выбери готовое изображение и попробуй снова.");
+   return;
+ }
+ const scale=String(scaleOverride||$("#imageUpscaleScale")?.value||"2");
+ const model=String(modelOverride||"quality");
+ const oldStatus=$("#composerStatus")?.textContent||"Готово";
+ if($("#composerStatus"))$("#composerStatus").textContent="AI Upscale · обработка…";
+
+ try{
+   let outputUrl="";
+   let jobId="";
+
+   // Send the image directly from the browser to CleverUtils. Their REST API
+   // supports browser CORS, so long-running Real-ESRGAN work does not consume
+   // Vercel's serverless-function timeout.
+   const form=new FormData();
+   if(/^data:image\//i.test(source)){
+     if(!/^data:image\/(?:jpeg|png|webp);base64,/i.test(source)){
+       throw new Error("UNSUPPORTED_SOURCE_IMAGE");
+     }
+     const blob=await fetch(source).then(r=>r.blob());
+     const mime=(blob.type||"image/jpeg").toLowerCase();
+     const ext=mime==="image/png"?"png":mime==="image/webp"?"webp":"jpg";
+     form.append("file",blob,"miya-source."+ext);
+   }else{
+     const sourceResponse=await fetch(source,{cache:"no-store"});
+     if(!sourceResponse.ok)throw new Error("SOURCE_IMAGE_FETCH_FAILED");
+     const blob=await sourceResponse.blob();
+     const mime=(blob.type||"image/jpeg").toLowerCase();
+     const ext=mime==="image/png"?"png":mime==="image/webp"?"webp":"jpg";
+     form.append("file",blob,"miya-source."+ext);
+   }
+   form.append("scale",scale);
+   form.append("model",model);
+
+   const direct=await fetch("https://cleverutils.com/api/v1/tools/upscale-image",{
+     method:"POST",
+     body:form,
+     headers:{Accept:"application/json"},
+     cache:"no-store"
+   });
+
+   const data=await direct.json().catch(()=>({}));
+   if(!direct.ok){
+     throw new Error(
+       data?.message ||
+       data?.error?.message ||
+       data?.error ||
+       "CLEVERUTILS_UPSCALE_FAILED"
+     );
+   }
+
+   const job=data?.data||data;
+   outputUrl=String(job?.output?.url||job?.output_url||"").trim();
+   jobId=String(job?.job_id||job?.id||"").trim();
+
+   if(!outputUrl&&jobId){
+     outputUrl=await waitForCleverUtilsJob(jobId);
+   }
+   if(!outputUrl)throw new Error("IMAGE_TOOL_OUTPUT_MISSING");
+
+   const label="CleverUtils · AI Upscale "+scale+"x";
+   const item=saveMedia("image",outputUrl,"AI upscale "+scale+"x",label,"");
+   renderImageLibrary();
+   requestAnimationFrame(()=>scrollImagesToTop?.());
+
+   if($("#composerStatus"))$("#composerStatus").textContent=label+" · готово";
+   toast("Upscale "+scale+"x готов");
+   return item;
+
+ }catch(e){
+   console.error("Miya image upscale failed",e);
+   if($("#composerStatus"))$("#composerStatus").textContent=oldStatus+" · ошибка";
+   toast(String(e?.message||"Не удалось увеличить изображение"));
+ }
+}
 async function runImageTool(sourceOverride="",scaleOverride="",modelOverride=""){
  const source=String(sourceOverride||getImageToolSource()).trim();
  if(!source){toast("Сначала создай или загрузи изображение");return}
