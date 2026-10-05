@@ -85,6 +85,7 @@ module.exports = async function imageHandler(req, res) {
           host === "ahm7xmakki.com" || host.endsWith(".ahm7xmakki.com") ||
           host === "modelscope.cn" || host.endsWith(".modelscope.cn") ||
           host.endsWith(".aliyuncs.com") ||
+          host === "access.vheer.com" || host.endsWith(".access.vheer.com") ||
           host === "sora.aritek.app" || host.endsWith(".aritek.app") ||
           host === "cleverutils.com" || host.endsWith(".cleverutils.com");
         if (target.protocol !== "https:" || !allowed) {
