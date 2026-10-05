@@ -2117,7 +2117,7 @@ async function runImageTool(sourceOverride="",scaleOverride="",modelOverride="")
    // ВАЖНО: CleverUtils принимает исходный файл лучше всего. Не перекодируем
    // его через canvas/PNG — именно эта промежуточная конверсия приводила к
    // HTTP 415 UNSUPPORTED_MIME после долгой обработки.
-   if(/^data:image\\//i.test(source)){
+   if(/^data:image\//i.test(source)){
      const response=await fetch(source);
      if(!response.ok)throw new Error("SOURCE_IMAGE_READ_FAILED");
      blob=await response.blob();
