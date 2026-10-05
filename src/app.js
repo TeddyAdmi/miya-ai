@@ -2215,7 +2215,7 @@ async function runImageTool(sourceOverride="",scaleOverride="",modelOverride="")
    }else{
      let response;
      try{
-       const isLocal=/^\///.test(source)||source.startsWith(window.location.origin+"/");
+       const isLocal=/^\//.test(source)||source.startsWith(window.location.origin+"/");
        response=await fetch(
          isLocal?source:"/api/image?url="+encodeURIComponent(source),
          {cache:"no-store"}
