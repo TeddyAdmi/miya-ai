@@ -546,23 +546,23 @@ async function mediaItemToReference(item){
 function positionFloatingMediaOverlay(el,anchor,kind){
  if(!el||!anchor)return;
  const r=anchor.getBoundingClientRect();
- el.style.position="fixed";
- el.style.zIndex="100000";
- el.style.pointerEvents="auto";
+ el.style.setProperty("position","fixed","important");
+ el.style.setProperty("z-index","100000","important");
+ el.style.setProperty("pointer-events","auto","important");
  if(kind==="menu"){
    const maxTop=Math.max(8,window.innerHeight-el.offsetHeight-8);
    const top=Math.min(maxTop,Math.max(8,r.bottom+5));
-   el.style.top=Math.round(top)+"px";
-   el.style.right=Math.max(8,Math.round(window.innerWidth-r.right))+"px";
-   el.style.left="auto";
-   el.style.display="block";
+   el.style.setProperty("top",Math.round(top)+"px","important");
+   el.style.setProperty("right",Math.max(8,Math.round(window.innerWidth-r.right))+"px","important");
+   el.style.setProperty("left","auto","important");
+   el.style.setProperty("display","block","important");
  }else{
    const width=Math.min(250,Math.max(0,window.innerWidth-16));
    const top=Math.min(window.innerHeight-12,Math.max(8,r.top+42));
-   el.style.width=width+"px";
-   el.style.top=Math.round(top)+"px";
-   el.style.right=Math.max(8,Math.round(window.innerWidth-r.right))+"px";
-   el.style.left="auto";
+   el.style.setProperty("width",width+"px","important");
+   el.style.setProperty("top",Math.round(top)+"px","important");
+   el.style.setProperty("right",Math.max(8,Math.round(window.innerWidth-r.right))+"px","important");
+   el.style.setProperty("left","auto","important");
  }
 }
 function floatMediaOverlay(el,anchor,kind){
