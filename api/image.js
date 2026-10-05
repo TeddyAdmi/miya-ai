@@ -186,24 +186,55 @@ module.exports = async function imageHandler(req, res) {
       if (!mcpResponse.ok) return res.status(502).json({ok:false,error:"CLEVERUTILS_MCP_HTTP",upstreamStatus:mcpResponse.status,upstreamBody:rawMcp.slice(0,1200)});
       if (dataMcp?.error) return res.status(502).json({ok:false,error:"CLEVERUTILS_MCP_ERROR",message:String(dataMcp.error?.message||"MCP tool call failed"),upstreamBody:rawMcp.slice(0,1200)});
 
-      let outputUrl = "";
-      const content = Array.isArray(dataMcp?.result?.content) ? dataMcp.result.content : [];
-      for (const item of content) {
-        if (item && typeof item === "object" && item.type === "resource_link") {
-          const candidate = String(item.uri || item.url || "").trim();
-          if (/^https?:\/\//i.test(candidate)) { outputUrl = candidate; break; }
+      // MCP may return a homepage/resource entry before the real 2-hour
+      // download URL. Never accept cleverutils.com/ as an image result.
+      // Prefer concrete job/output URLs and only then fall back to other
+      // image-looking links.
+      const urlCandidates = [];
+      const addCandidate = value => {
+        const candidate = String(value || "").trim().replace(/[),.]+$/, "");
+        if (/^https?:\\/\\//i.test(candidate)) urlCandidates.push(candidate);
+      };
+      const collectUrls = value => {
+        if (typeof value === "string") {
+          const matches = value.match(/https?:\\/\\/[^\\s"'<>)]+/gi) || [];
+          matches.forEach(addCandidate);
+          return;
         }
-        const textValue = item && typeof item.text === "string" ? item.text : "";
-        const match = textValue.match(/https?:\/\/[^\\s"']+/i);
-        if (match) { outputUrl = match[0].replace(/[),.]+$/,""); break; }
-      }
-      if (!outputUrl) {
-        const fallback = JSON.stringify(dataMcp).replace(/\\\//g,"/");
-        const match = fallback.match(/https?:\/\/[^\\s"']+/i);
-        if (match) outputUrl = match[0].replace(/[),.]+$/,"");
-      }
-      // Normalize the legacy singular CleverUtils host if the MCP provider
-      // returns it. The singular hostname is not a real provider endpoint.
+        if (Array.isArray(value)) {
+          value.forEach(collectUrls);
+          return;
+        }
+        if (value && typeof value === "object") {
+          Object.values(value).forEach(collectUrls);
+        }
+      };
+      collectUrls(dataMcp?.result?.content);
+      collectUrls(dataMcp?.result);
+      collectUrls(dataMcp);
+
+      const uniqueCandidates = [...new Set(urlCandidates)];
+      const scoreUrl = value => {
+        try {
+          const u = new URL(value);
+          const path = u.pathname.toLowerCase();
+          let score = 0;
+          if (u.hostname.toLowerCase() === "cleverutils.com" || u.hostname.toLowerCase() === "www.cleverutils.com") score += 2;
+          if (path === "/" || path === "") return -100;
+          if (/\\/api\\/v1\\/jobs\\/[^/]+\\/output/.test(path)) score += 100;
+          if (/\\/output(?:\\/|$)/.test(path)) score += 80;
+          if (/\\/(download|files?)\\//.test(path)) score += 40;
+          if (/\\.(png|jpe?g|webp|gif)(?:$|[?&])/i.test(path)) score += 30;
+          return score;
+        } catch {
+          return -100;
+        }
+      };
+      uniqueCandidates.sort((a,b) => scoreUrl(b) - scoreUrl(a));
+      let outputUrl = uniqueCandidates.find(candidate => scoreUrl(candidate) > 0) || "";
+
+      // Normalize the legacy singular CleverUtils host if it appears in a
+      // concrete result URL. The homepage itself is never accepted.
       if (outputUrl) {
         try {
           const normalized = new URL(outputUrl);
