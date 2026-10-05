@@ -542,14 +542,59 @@ async function mediaItemToReference(item){
  }catch{}
  return item.url;
 }
+
+function positionFloatingMediaOverlay(el,anchor,kind){
+ if(!el||!anchor)return;
+ const r=anchor.getBoundingClientRect();
+ el.style.position="fixed";
+ el.style.zIndex="100000";
+ if(kind==="menu"){
+   el.style.top=Math.round(r.bottom+5)+"px";
+   el.style.right=Math.max(8,Math.round(window.innerWidth-r.right))+"px";
+   el.style.left="auto";
+ }else{
+   const width=Math.min(250,Math.max(0,window.innerWidth-16));
+   const top=Math.min(window.innerHeight-12,Math.max(8,r.top+42));
+   el.style.width=width+"px";
+   el.style.top=Math.round(top)+"px";
+   el.style.right=Math.max(8,Math.round(window.innerWidth-r.right))+"px";
+   el.style.left="auto";
+ }
+}
+function floatMediaOverlay(el,anchor,kind){
+ if(!el||el.parentElement===document.body){positionFloatingMediaOverlay(el,anchor,kind);return}
+ el.__mediaOverlayParent=el.parentElement;
+ el.__mediaOverlayNextSibling=el.nextSibling;
+ document.body.appendChild(el);
+ el.classList.add("media-overlay-floating");
+ positionFloatingMediaOverlay(el,anchor,kind);
+}
+function restoreMediaOverlay(el){
+ const parent=el?.__mediaOverlayParent;
+ if(!el||!parent)return;
+ if(el.__mediaOverlayNextSibling&&el.__mediaOverlayNextSibling.parentNode===parent)parent.insertBefore(el,el.__mediaOverlayNextSibling);
+ else parent.appendChild(el);
+ el.classList.remove("media-overlay-floating");
+ el.style.position="";el.style.zIndex="";el.style.top="";el.style.right="";el.style.left="";el.style.width="";
+ el.__mediaOverlayParent=null;el.__mediaOverlayNextSibling=null;
+}
+function closeAllMediaMenus(){
+ document.querySelectorAll(".media-action-menu.open").forEach(menu=>{menu.classList.remove("open");restoreMediaOverlay(menu)});
+ document.querySelectorAll(".media-upscale-panel.open").forEach(panel=>{panel.classList.remove("open");restoreMediaOverlay(panel)});
+}
+
 function closeUpscalePanels(except){
  document.querySelectorAll(".media-upscale-panel.open").forEach(panel=>{
-   if(panel!==except)panel.classList.remove("open");
+   if(panel!==except){panel.classList.remove("open");restoreMediaOverlay(panel);}
  });
 }
 function toggleUpscalePanel(item,card){
  const existing=card.querySelector(".media-upscale-panel");
- if(existing){closeUpscalePanels(existing);existing.classList.toggle("open");return}
+ if(existing){
+   if(existing.classList.contains("open")){existing.classList.remove("open");restoreMediaOverlay(existing)}
+   else{closeUpscalePanels(existing);existing.classList.add("open");floatMediaOverlay(existing,card,"panel")}
+   return;
+ }
  closeUpscalePanels();
  const panel=document.createElement("div");
  panel.className="media-upscale-panel open";
@@ -594,6 +639,7 @@ function toggleUpscalePanel(item,card){
  };
  panel.addEventListener("click",e=>e.stopPropagation());
  card.appendChild(panel);
+ floatMediaOverlay(panel,card,"panel");
  return panel;
 }
 function buildMediaCard(item,{video=false}={}){
@@ -679,7 +725,11 @@ function buildMediaCard(item,{video=false}={}){
  }else{
   const deleteBtn=document.createElement("button");deleteBtn.innerHTML='<span class="action-icon">⌫</span><span>Удалить</span>';deleteBtn.onclick=e=>{e.stopPropagation();menu.classList.remove("open");confirmDeleteMedia(item,card)};menu.append(deleteBtn);
  }
- more.onclick=e=>{e.stopPropagation();document.querySelectorAll(".media-action-menu.open").forEach(x=>x!==menu&&x.classList.remove("open"));menu.classList.toggle("open")};
+ more.onclick=e=>{e.stopPropagation();
+   const wasOpen=menu.classList.contains("open");
+   closeAllMediaMenus();
+   if(!wasOpen){menu.classList.add("open");floatMediaOverlay(menu,more,"menu");}
+ };
  actions.append(more,menu);card.appendChild(actions);return card;
 }
 function openVideoFromImage(url){
@@ -2005,6 +2055,29 @@ async function waitForImageToolJob(jobId){
  }
  throw new Error("IMAGE_TOOL_TIMEOUT");
 }
+
+async function normalizeImageBlobForCleverUtils(blob){
+  if(!blob||!blob.size)throw new Error("EMPTY_IMAGE");
+  const type=String(blob.type||"").toLowerCase();
+  if(type==="image/png"||type==="image/jpeg")return blob;
+  try{
+    const bitmap=await createImageBitmap(blob);
+    const canvas=document.createElement("canvas");
+    canvas.width=bitmap.width;canvas.height=bitmap.height;
+    const ctx=canvas.getContext("2d",{alpha:true});
+    if(!ctx)throw new Error("CANVAS_UNAVAILABLE");
+    ctx.clearRect(0,0,canvas.width,canvas.height);
+    ctx.drawImage(bitmap,0,0);
+    bitmap.close();
+    const png=await new Promise(resolve=>canvas.toBlob(resolve,"image/png"));
+    if(!png||!png.size)throw new Error("IMAGE_NORMALIZE_FAILED");
+    return png;
+  }catch(e){
+    console.warn("CleverUtils image normalization fallback",e);
+    return new Blob([blob],{type:"image/png"});
+  }
+}
+
 async function runImageTool(sourceOverride="",scaleOverride="",modelOverride=""){
  const source=String(sourceOverride||getImageToolSource()).trim();
  if(!source){toast("Сначала создай или загрузи изображение");return}
@@ -2023,9 +2096,9 @@ async function runImageTool(sourceOverride="",scaleOverride="",modelOverride="")
      if(!response.ok)throw new Error("SOURCE_IMAGE_PROXY_FAILED");
      blob=await response.blob();
    }
-   if(!blob||!blob.size)throw new Error("EMPTY_IMAGE");
+   blob=await normalizeImageBlobForCleverUtils(blob);
    const form=new FormData();
-   form.append("file",blob,"miya-source."+((blob.type||"image/jpeg").split("/")[1]||"jpg"));
+   form.append("file",blob,"miya-source.png");
    form.append("scale",scale);
    form.append("model",model);
    const r=await fetch("https://cleverutils.com/api/v1/tools/upscale-image",{method:"POST",body:form,headers:{Accept:"application/json"}});
@@ -2065,9 +2138,9 @@ async function runImageBackgroundRemoval(item){
      if(!response.ok)throw new Error("SOURCE_IMAGE_PROXY_FAILED");
      blob=await response.blob();
    }
-   if(!blob||!blob.size)throw new Error("EMPTY_IMAGE");
+   blob=await normalizeImageBlobForCleverUtils(blob);
    const form=new FormData();
-   form.append("file",blob,"miya-source."+((blob.type||"image/jpeg").split("/")[1]||"jpg"));
+   form.append("file",blob,"miya-source.png");
    const r=await fetch("https://cleverutils.com/api/v1/tools/remove-background",{method:"POST",body:form,headers:{Accept:"application/json"}});
    const data=await r.json().catch(()=>({}));
    if(!r.ok)throw new Error(data?.message||data?.error?.message||data?.error||"BACKGROUND_REMOVE_FAILED");
@@ -2686,5 +2759,6 @@ if(chatNavWrap){chatNavWrap.addEventListener("mouseleave",()=>{chatMenuSuppresse
 
 // Close transient chat/media menus when clicking outside them.
 document.addEventListener("click",e=>{if(!e.target.closest(".chat-history-row"))resetChatMenus()});
-document.addEventListener("click",e=>{if(!e.target.closest(".media-actions"))document.querySelectorAll(".media-action-menu.open").forEach(x=>x.classList.remove("open"))});
+document.addEventListener("click",e=>{if(!e.target.closest(".media-actions")&&!e.target.closest(".media-upscale-panel"))closeAllMediaMenus()});
+window.addEventListener("resize",()=>{document.querySelectorAll(".media-action-menu.open").forEach(m=>positionFloatingMediaOverlay(m,m.__mediaOverlayAnchor||document.querySelector(".media-action"),"menu"));document.querySelectorAll(".media-upscale-panel.open").forEach(p=>positionFloatingMediaOverlay(p,p.__mediaOverlayAnchor||p.closest(".media-card"),"panel"))});
 
