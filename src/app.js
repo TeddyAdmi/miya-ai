@@ -2157,15 +2157,21 @@ async function runImageTool(sourceOverride="",scaleOverride="",modelOverride="")
  try{
    let outputUrl="";
    if(model==="quality"){
-     // CleverUtils documents an MCP URL-input path. Use it for public image
-     // URLs so the provider fetches the original file itself instead of
-     // re-encoding it into browser multipart/form-data (which was returning
-     // 415 UNSUPPORTED_MIME on the REST Quality endpoint).
-     if(/^https:\/\//i.test(source)){
+     // Unwrap Miya image proxy URLs to the original public URL before using MCP.
+     let mcpSource="";
+     try{
+       if(/^https:\/\//i.test(source)) mcpSource=source;
+       else if(/^\/api\/image(?:-jpeg)?\?url=/i.test(source)){
+         mcpSource=new URL(source,window.location.origin).searchParams.get("url")||"";
+       }else if(source.startsWith(window.location.origin+"/api/image")){
+         mcpSource=new URL(source).searchParams.get("url")||"";
+       }
+     }catch{}
+     if(/^https:\/\//i.test(mcpSource)){
        const response=await fetch("/api/image",{
          method:"POST",
          headers:{"Content-Type":"application/json","Accept":"application/json"},
-         body:JSON.stringify({action:"upscale-mcp",imageUrl:source,scale,model:"quality"})
+         body:JSON.stringify({action:"upscale-mcp",imageUrl:mcpSource,scale,model:"quality"})
        });
        const data=await response.json().catch(()=>({}));
        if(!response.ok||data?.ok===false)throw new Error(data?.message||data?.error||"IMAGE_TOOL_FAILED");
