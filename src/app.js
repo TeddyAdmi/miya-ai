@@ -2208,14 +2208,14 @@ async function runImageTool(sourceOverride="",scaleOverride="",modelOverride="")
  if($("#composerStatus"))$("#composerStatus").textContent="AI Upscale · Быстро · обработка…";
  try{
    let blob;
-   if(/^data:image\\//i.test(source)){
+   if(/^data:image\//i.test(source)){
      const response=await fetch(source,{cache:"no-store"});
      if(!response.ok)throw new Error("SOURCE_IMAGE_READ_FAILED");
      blob=await response.blob();
    }else{
      let response;
      try{
-       const isLocal=/^\\//.test(source)||source.startsWith(window.location.origin+"/");
+       const isLocal=/^\///.test(source)||source.startsWith(window.location.origin+"/");
        response=await fetch(
          isLocal?source:"/api/image?url="+encodeURIComponent(source),
          {cache:"no-store"}
@@ -2225,7 +2225,7 @@ async function runImageTool(sourceOverride="",scaleOverride="",modelOverride="")
      }
      if(!response.ok)throw new Error("SOURCE_IMAGE_PROXY_FAILED");
      const type=String(response.headers.get("content-type")||"").split(";")[0].toLowerCase();
-     if(!/^image\\//i.test(type))throw new Error("SOURCE_NOT_IMAGE");
+     if(!/^image\//i.test(type))throw new Error("SOURCE_NOT_IMAGE");
      blob=await response.blob();
    }
    if(!blob||!blob.size)throw new Error("EMPTY_IMAGE");
