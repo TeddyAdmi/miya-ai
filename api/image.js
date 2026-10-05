@@ -195,9 +195,9 @@ module.exports = async function imageHandler(req, res) {
         if (!text) return {};
         try { return JSON.parse(text); } catch {}
         const events = text
-          .split(/\\r?\\n/)
+          .split(/\r?\n/)
           .filter(line => /^data:/i.test(line))
-          .map(line => line.replace(/^data:\\s*/i, "").trim())
+          .map(line => line.replace(/^data:\s*/i, "").trim())
           .filter(Boolean);
         for (let i = events.length - 1; i >= 0; i--) {
           try { return JSON.parse(events[i]); } catch {}
@@ -282,7 +282,7 @@ module.exports = async function imageHandler(req, res) {
         const message = contentBlocks
           .filter(block => block?.type === "text")
           .map(block => String(block.text || ""))
-          .join("\\n")
+          .join("\n")
           .trim();
         return res.status(502).json({
           ok:false,
@@ -298,11 +298,11 @@ module.exports = async function imageHandler(req, res) {
       const urlCandidates = [];
       const addCandidate = value => {
         const candidate = String(value || "").trim().replace(/[),.]+$/, "");
-        if (/^https?:\\/\\//i.test(candidate)) urlCandidates.push(candidate);
+        if (/^https?:\/\//i.test(candidate)) urlCandidates.push(candidate);
       };
       const collectUrls = value => {
         if (typeof value === "string") {
-          const matches = value.match(/https?:\\/\\/[^\\s"'<>)]+/gi) || [];
+          const matches = value.match(/https?:\/\/[^\s"'<>)]+/gi) || [];
           matches.forEach(addCandidate);
           return;
         }
@@ -328,10 +328,10 @@ module.exports = async function imageHandler(req, res) {
           const path = u.pathname.toLowerCase();
           let score = 0;
           if (path === "/" || path === "") return -100;
-          if (/\\/api\\/v1\\/jobs\\/[^/]+\\/output/.test(path)) score += 100;
-          if (/\\/output(?:\\/|$)/.test(path)) score += 80;
-          if (/\\/(download|files?)\\//.test(path)) score += 40;
-          if (/\\.(png|jpe?g|webp|gif)(?:$|[?&])/i.test(path)) score += 30;
+          if (/\/api\/v1\/jobs\/[^/]+\/output/.test(path)) score += 100;
+          if (/\/output(?:\/|$)/.test(path)) score += 80;
+          if (/\/(download|files?)\//.test(path)) score += 40;
+          if (/\.(png|jpe?g|webp|gif)(?:$|[?&])/i.test(path)) score += 30;
           return score;
         } catch {
           return -100;
