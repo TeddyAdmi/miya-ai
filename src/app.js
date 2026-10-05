@@ -2132,7 +2132,7 @@ async function runImageTool(sourceOverride="",scaleOverride="",modelOverride="")
    // который принимает data:image/... и сам передаёт файл в Real-ESRGAN.
    // Используем этот путь: без CORS, без ручного multipart и без потери
    // исходных байтов изображения.
-   let body={action:"upscale-mcp",scale,model};
+   let body={action:"upscale",scale,model};
 
    if(/^data:image\//i.test(source)){
      if(!/^data:image\/(?:jpeg|png|webp);base64,/i.test(source)){
