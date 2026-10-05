@@ -2326,7 +2326,6 @@ body.ai-editor-open .composer-input-area{visibility:hidden!important;pointer-eve
   document.body.appendChild(modal);
   modal.querySelector(".ai-editor-close").onclick=e=>{e.preventDefault();e.stopPropagation();closeAiEditor()};
   modal.querySelector(".ai-editor-cancel").onclick=e=>{e.preventDefault();e.stopPropagation();closeAiEditor()};
-  modal.querySelector(".ai-editor-backdrop").onclick=e=>{e.preventDefault();closeAiEditor()};
   modal.addEventListener("click",e=>{if(e.target===modal)closeAiEditor()});
   if(!window.__miyaAiEditorEscapeBound){window.__miyaAiEditorEscapeBound=true;document.addEventListener("keydown",e=>{if(e.key==="Escape"&&document.body.classList.contains("ai-editor-open"))closeAiEditor()})}
   const image=modal.querySelector(".ai-editor-image"),mask=modal.querySelector(".ai-editor-mask"),wrap=modal.querySelector(".ai-editor-canvas-wrap"),empty=modal.querySelector(".ai-editor-empty"),promptBox=modal.querySelector(".ai-editor-prompt-box"),promptInput=modal.querySelector(".ai-editor-prompt-input"),promptCreate=modal.querySelector(".ai-editor-prompt-create");
