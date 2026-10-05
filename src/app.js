@@ -2073,22 +2073,23 @@ async function waitForImageToolJob(jobId){
 
 async function normalizeImageBlobForCleverUtils(blob){
   if(!blob||!blob.size)throw new Error("EMPTY_IMAGE");
-  // CleverUtils validates the actual multipart bytes, not only the browser MIME.
-  // Always decode and re-encode to a real PNG so mislabeled WebP/AVIF/octet-stream
-  // responses cannot reach the upscale endpoint as a fake image/png.
+  // Re-encode to a conventional JPEG with real image bytes. CleverUtils accepts
+  // JPG/PNG/WebP/etc., but its API validates the uploaded bytes, not just the
+  // browser MIME label. JPEG also avoids unusual PNG/alpha decoder edge cases.
   try{
     const bitmap=await createImageBitmap(blob);
     if(!bitmap.width||!bitmap.height)throw new Error("IMAGE_DIMENSIONS_INVALID");
     const canvas=document.createElement("canvas");
     canvas.width=bitmap.width;canvas.height=bitmap.height;
-    const ctx=canvas.getContext("2d",{alpha:true});
+    const ctx=canvas.getContext("2d",{alpha:false});
     if(!ctx)throw new Error("CANVAS_UNAVAILABLE");
-    ctx.clearRect(0,0,canvas.width,canvas.height);
+    ctx.fillStyle="#ffffff";
+    ctx.fillRect(0,0,canvas.width,canvas.height);
     ctx.drawImage(bitmap,0,0);
     bitmap.close();
-    const png=await new Promise(resolve=>canvas.toBlob(resolve,"image/png"));
-    if(!png||!png.size)throw new Error("IMAGE_NORMALIZE_FAILED");
-    return png;
+    const jpg=await new Promise(resolve=>canvas.toBlob(resolve,"image/jpeg",0.95));
+    if(!jpg||!jpg.size)throw new Error("IMAGE_NORMALIZE_FAILED");
+    return jpg;
   }catch(e){
     console.warn("CleverUtils image normalization failed",e);
     throw new Error("IMAGE_DECODE_FAILED");
@@ -2115,7 +2116,7 @@ async function runImageTool(sourceOverride="",scaleOverride="",modelOverride="")
    }
    blob=await normalizeImageBlobForCleverUtils(blob);
    const form=new FormData();
-   form.append("file",blob,"miya-source.png");
+   form.append("file",blob,"miya-source.jpg");
    form.append("scale",scale);
    form.append("model",model);
    const r=await fetch("https://cleverutils.com/api/v1/tools/upscale-image",{method:"POST",body:form,headers:{Accept:"application/json"}});
