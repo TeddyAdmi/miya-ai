@@ -10,7 +10,9 @@ function jpegImageUrl(url){
   const value=String(url||"").trim();
   if(!value||/^data:image\//i.test(value)||/^blob:/i.test(value))return value;
   if(value.startsWith("/api/image-jpeg?"))return value;
-  if(/^https?:\/\/cleverutils\.com\//i.test(value)||/^https?:\/\/www\.cleverutils\.com\//i.test(value))return value;
+  if(/^https?:\/\/(?:www\.)?cleverutils\.com\//i.test(value)){
+    return "/api/image-jpeg?url="+encodeURIComponent(value);
+  }
   if(/^https?:\/\//i.test(value)){
     return "/api/image-jpeg?url="+encodeURIComponent(value);
   }
@@ -221,7 +223,7 @@ function saveMedia(type,url,prompt="",model="",format=""){
  try{localStorage.setItem(LIB_KEY,JSON.stringify(items.slice(0,500)))}catch{
    try{localStorage.setItem(LIB_KEY,JSON.stringify(items.slice(0,100)))}catch{}
  }
- cacheMedia(id,url,type);
+ cacheMedia(id,normalizedUrl,type);
  return item;
 }
 function removeBrokenMediaItem(item,card){
