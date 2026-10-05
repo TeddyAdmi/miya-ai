@@ -2167,24 +2167,64 @@ async function runImageTool(sourceOverride="",scaleOverride="",modelOverride="")
    return;
  }
  const scale=String(scaleOverride||$("#imageUpscaleScale")?.value||"2");
+ const model=String(modelOverride||"quality");
  const oldStatus=$("#composerStatus")?.textContent||"Готово";
  if($("#composerStatus"))$("#composerStatus").textContent="AI Upscale · обработка…";
  try{
-   let payload={action:"upscale-mcp",scale,model:"fast"};
-   if(/^data:image\/(jpeg|png|webp);base64,/i.test(source)) payload.imageData=source;
-   else if(/^https:\/\//i.test(source)) payload.imageUrl=source;
-   else if(source.startsWith("/")||source.startsWith(window.location.origin+"/")) payload.imageUrl=new URL(source,window.location.origin).toString();
-   else throw new Error("IMAGE_SOURCE_INVALID");
-   const response=await fetch("/api/image",{
-     method:"POST",
-     headers:{"Content-Type":"application/json","Accept":"application/json"},
-     body:JSON.stringify(payload),
-     signal:AbortSignal.timeout(180000)
-   });
-   const data=await response.json().catch(()=>({}));
-   if(!response.ok||data?.ok===false)throw new Error(data?.message||data?.error||"IMAGE_TOOL_FAILED");
-   const outputUrl=String(data?.outputUrl||"");
-   if(!outputUrl)throw new Error("IMAGE_TOOL_OUTPUT_MISSING");
+   let outputUrl="";
+   if(model==="quality"){
+     // Рабочая схема из предыдущей версии Miya:
+     // 1) получаем реальные байты исходника через Miya proxy;
+     // 2) приводим их к PNG в браузере;
+     // 3) отправляем multipart напрямую в CleverUtils;
+     // 4) получаем job_id;
+     // 5) статус и готовый файл забираем уже через Miya backend.
+     let blob;
+     if(/^data:image\\//i.test(source)){
+       const response=await fetch(source);
+       if(!response.ok)throw new Error("SOURCE_IMAGE_READ_FAILED");
+       blob=await response.blob();
+     }else{
+       const isLocal=/^\\//.test(source)||source.startsWith(window.location.origin+"/");
+       const response=await fetch(
+         isLocal
+           ? source
+           : "/api/image-jpeg?url="+encodeURIComponent(source),
+         {cache:"no-store"}
+       );
+       if(!response.ok)throw new Error("SOURCE_IMAGE_PROXY_FAILED");
+       blob=await response.blob();
+     }
+     if(!blob||!blob.size)throw new Error("EMPTY_IMAGE");
+
+     const uploadFile=await makeCleverUtilsQualityImageFile(blob);
+     const form=new FormData();
+     form.append("file",uploadFile);
+     form.append("scale",scale);
+     form.append("model","quality");
+
+     const r=await fetch("https://cleverutils.com/api/v1/tools/upscale-image",{
+       method:"POST",
+       body:form,
+       headers:{Accept:"application/json"}
+     });
+     const data=await r.json().catch(()=>({}));
+     if(!r.ok)throw new Error(data?.message||data?.error?.message||data?.error||"IMAGE_TOOL_FAILED");
+
+     const job=data?.data||data;
+     outputUrl=typeof job?.output?.url==="string"
+       ? job.output.url
+       : String(job?.outputUrl||"");
+     const jobId=typeof job?.job_id==="string"
+       ? job.job_id
+       : String(job?.jobId||"");
+
+     if(jobId)outputUrl=await waitForImageToolJob(jobId);
+     if(!outputUrl)throw new Error("IMAGE_TOOL_OUTPUT_MISSING");
+   }else{
+     throw new Error("IMAGE_TOOL_MODEL_UNSUPPORTED");
+   }
+
    const label="CleverUtils · AI Upscale "+scale+"x";
    const item=saveMedia("image",outputUrl,"AI upscale "+scale+"x",label,"");
    renderImageLibrary();
