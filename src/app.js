@@ -2061,19 +2061,32 @@ async function generateVideo(prompt){
  }
 }
 function getImageToolSource(){
- const ref=String(referenceImage||"").trim();
- if(ref && !isCleverUtilsHomepage(ref))return ref;
- const latest=getLibrary().find(x=>x?.type==="image"&&x?.url&&!isCleverUtilsHomepage(x.url));
- return String(latest?.url||"").trim();
+  const ref=String(referenceImage||"").trim();
+  if(ref && !isInvalidImageToolSource(ref))return ref;
+  const latest=getLibrary().find(x=>x?.type==="image"&&x?.url&&!isInvalidImageToolSource(x.url));
+  return String(latest?.url||"").trim();
 }
 function isCleverUtilsHomepage(url){
- try{
-  const u=new URL(String(url||""),window.location.origin);
-  return /^(?:www\.)?cleverutils\.com$/i.test(u.hostname)
-    && u.pathname==="/"
-    && !u.search
-    && !u.hash;
- }catch{return false}
+  try{
+   const u=new URL(String(url||""),window.location.origin);
+   return /^(?:www\.)?cleverutils\.com$/i.test(u.hostname)
+     && u.pathname==="/"
+     && !u.search
+     && !u.hash;
+  }catch{return false}
+}
+function isInvalidImageToolSource(url){
+  const value=String(url||"").trim();
+  if(!value)return true;
+  if(isCleverUtilsHomepage(value))return true;
+  try{
+    const u=new URL(value,window.location.origin);
+    if(u.pathname==="/api/image-jpeg" && u.searchParams.has("url")){
+      const nested=u.searchParams.get("url")||"";
+      if(isCleverUtilsHomepage(nested))return true;
+    }
+  }catch{}
+  return false;
 }
 async function waitForImageToolJob(jobId){
  const started=Date.now();
@@ -2180,7 +2193,7 @@ async function runImageTool(sourceOverride="",scaleOverride="",modelOverride="")
      // 4) получаем job_id;
      // 5) статус и готовый файл забираем уже через Miya backend.
      let blob;
-     if(/^data:image\\//i.test(source)){
+     if(/^data:image\//i.test(source)){
        const response=await fetch(source);
        if(!response.ok)throw new Error("SOURCE_IMAGE_READ_FAILED");
        blob=await response.blob();
