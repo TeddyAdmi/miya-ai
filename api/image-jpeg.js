@@ -46,7 +46,7 @@ module.exports = async function handler(req, res) {
     }
 
     const input = Buffer.from(await upstream.arrayBuffer());
-    if (!input.length || input.length > 12 * 1024 * 1024) {
+    if (!input.length || input.length > 30 * 1024 * 1024) {
       return res.status(413).json({ ok: false, error: "IMAGE_TOO_LARGE" });
     }
 
