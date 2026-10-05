@@ -182,26 +182,123 @@ module.exports = async function imageHandler(req, res) {
         mcpFile = "data:" + sourceType + ";base64," + sourceBytes.toString("base64");
       }
 
-      const mcpResponse = await fetch("https://cleverutils.com/mcp", {
-        method:"POST",
-        headers:{"Content-Type":"application/json","Accept":"application/json"},
-        body:JSON.stringify({jsonrpc:"2.0",id:Date.now(),method:"tools/call",params:{name:"upscale_image",arguments:{file:mcpFile,scale:Number(scale),model}}}),
-        signal:AbortSignal.timeout(180000)
-      });
-      const rawMcp = await mcpResponse.text();
-      let dataMcp = {};
-      try { dataMcp = rawMcp ? JSON.parse(rawMcp) : {}; } catch {}
-      if (!mcpResponse.ok) return res.status(502).json({ok:false,error:"CLEVERUTILS_MCP_HTTP",upstreamStatus:mcpResponse.status,upstreamBody:rawMcp.slice(0,1200)});
-      if (dataMcp?.error) return res.status(502).json({ok:false,error:"CLEVERUTILS_MCP_ERROR",message:String(dataMcp.error?.message||"MCP tool call failed"),upstreamBody:rawMcp.slice(0,1200)});
+      // CleverUtils exposes Streamable HTTP MCP. Discover the tool first,
+      // then call it. The tool result is returned as MCP content/resource_link.
+      const mcpEndpoint = "https://cleverutils.com/mcp";
+      const mcpHeaders = {
+        "Content-Type":"application/json",
+        "Accept":"application/json, text/event-stream"
+      };
 
-      // MCP may return a homepage/resource entry before the real 2-hour
-      // download URL. Never accept cleverutils.com/ as an image result.
-      // Prefer concrete job/output URLs and only then fall back to other
-      // image-looking links.
+      const parseMcpPayload = raw => {
+        const text = String(raw || "").trim();
+        if (!text) return {};
+        try { return JSON.parse(text); } catch {}
+        const events = text
+          .split(/\\r?\\n/)
+          .filter(line => /^data:/i.test(line))
+          .map(line => line.replace(/^data:\\s*/i, "").trim())
+          .filter(Boolean);
+        for (let i = events.length - 1; i >= 0; i--) {
+          try { return JSON.parse(events[i]); } catch {}
+        }
+        return {};
+      };
+
+      const mcpPost = async payload => {
+        const response = await fetch(mcpEndpoint, {
+          method:"POST",
+          headers:mcpHeaders,
+          body:JSON.stringify(payload),
+          signal:AbortSignal.timeout(180000)
+        });
+        const raw = await response.text();
+        const data = parseMcpPayload(raw);
+        if (!response.ok) {
+          const error = data?.error;
+          throw Object.assign(new Error(String(error?.message || "CleverUtils MCP HTTP error")), {
+            code:"CLEVERUTILS_MCP_HTTP",
+            status:response.status,
+            raw:raw.slice(0,2000)
+          });
+        }
+        if (data?.error) {
+          throw Object.assign(new Error(String(data.error?.message || "CleverUtils MCP protocol error")), {
+            code:"CLEVERUTILS_MCP_RPC_ERROR",
+            raw:raw.slice(0,2000)
+          });
+        }
+        return data;
+      };
+
+      // Per CleverUtils' current MCP transport, begin with initialization,
+      // then discover the current tool catalog before invoking upscale_image.
+      await mcpPost({
+        jsonrpc:"2.0",
+        id:Date.now(),
+        method:"initialize",
+        params:{
+          protocolVersion:"2025-06-18",
+          capabilities:{},
+          clientInfo:{name:"Miya Studio",version:"1.0"}
+        }
+      });
+
+      const toolList = await mcpPost({
+        jsonrpc:"2.0",
+        id:Date.now()+1,
+        method:"tools/list",
+        params:{}
+      });
+
+      const tools = Array.isArray(toolList?.result?.tools) ? toolList.result.tools : [];
+      const upscaleTool = tools.find(tool => tool?.name === "upscale_image");
+      if (!upscaleTool) {
+        return res.status(502).json({
+          ok:false,
+          error:"CLEVERUTILS_MCP_TOOL_MISSING",
+          message:"CleverUtils MCP не объявил инструмент upscale_image.",
+          tools:tools.map(tool => String(tool?.name || "")).filter(Boolean).slice(0,50)
+        });
+      }
+
+      const callData = await mcpPost({
+        jsonrpc:"2.0",
+        id:Date.now()+2,
+        method:"tools/call",
+        params:{
+          name:"upscale_image",
+          arguments:{
+            file:mcpFile,
+            scale:Number(scale),
+            model
+          }
+        }
+      });
+
+      const callResult = callData?.result || {};
+      const contentBlocks = Array.isArray(callResult?.content) ? callResult.content : [];
+      if (callResult?.isError) {
+        const message = contentBlocks
+          .filter(block => block?.type === "text")
+          .map(block => String(block.text || ""))
+          .join("\\n")
+          .trim();
+        return res.status(502).json({
+          ok:false,
+          error:"CLEVERUTILS_MCP_TOOL_ERROR",
+          message:message || "CleverUtils upscale_image вернул ошибку.",
+          upstreamBody:JSON.stringify(callResult).slice(0,2000)
+        });
+      }
+
+      // MCP resource_link is the canonical CleverUtils output format.
+      // Also inspect text/structuredContent because different MCP clients
+      // may expose the same resource in slightly different envelopes.
       const urlCandidates = [];
       const addCandidate = value => {
         const candidate = String(value || "").trim().replace(/[),.]+$/, "");
-        if (/^https?:\/\//i.test(candidate)) urlCandidates.push(candidate);
+        if (/^https?:\\/\\//i.test(candidate)) urlCandidates.push(candidate);
       };
       const collectUrls = value => {
         if (typeof value === "string") {
@@ -214,12 +311,15 @@ module.exports = async function imageHandler(req, res) {
           return;
         }
         if (value && typeof value === "object") {
+          if (value.type === "resource_link" && value.uri) addCandidate(value.uri);
+          if (value.resource?.uri) addCandidate(value.resource.uri);
           Object.values(value).forEach(collectUrls);
         }
       };
-      collectUrls(dataMcp?.result?.content);
-      collectUrls(dataMcp?.result);
-      collectUrls(dataMcp);
+
+      collectUrls(contentBlocks);
+      collectUrls(callResult?.structuredContent);
+      collectUrls(callData);
 
       const uniqueCandidates = [...new Set(urlCandidates)];
       const scoreUrl = value => {
@@ -227,7 +327,6 @@ module.exports = async function imageHandler(req, res) {
           const u = new URL(value);
           const path = u.pathname.toLowerCase();
           let score = 0;
-          if (u.hostname.toLowerCase() === "cleverutils.com" || u.hostname.toLowerCase() === "www.cleverutils.com") score += 2;
           if (path === "/" || path === "") return -100;
           if (/\\/api\\/v1\\/jobs\\/[^/]+\\/output/.test(path)) score += 100;
           if (/\\/output(?:\\/|$)/.test(path)) score += 80;
@@ -238,11 +337,10 @@ module.exports = async function imageHandler(req, res) {
           return -100;
         }
       };
-      uniqueCandidates.sort((a,b) => scoreUrl(b) - scoreUrl(a));
-      let outputUrl = uniqueCandidates.find(candidate => scoreUrl(candidate) > 0) || "";
 
-      // Normalize the legacy singular CleverUtils host if it appears in a
-      // concrete result URL. The homepage itself is never accepted.
+      uniqueCandidates.sort((a,b) => scoreUrl(b) - scoreUrl(a));
+      let outputUrl = uniqueCandidates.find(candidate => scoreUrl(candidate) > 0) || uniqueCandidates[0] || "";
+
       if (outputUrl) {
         try {
           const normalized = new URL(outputUrl);
