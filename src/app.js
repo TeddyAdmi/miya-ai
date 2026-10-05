@@ -2195,6 +2195,33 @@ async function cleverUtilsMcpUpscale(source,scale,model){
  walk(root);
  return found;
 }
+async function makeCleverUtilsImageFile(blob){
+ const rawType=String(blob?.type||"").toLowerCase().split(";")[0].trim();
+ const supported=new Set(["image/jpeg","image/png","image/webp","image/gif","image/bmp","image/tiff"]);
+ if(blob?.size&&supported.has(rawType)){
+   const ext={ "image/jpeg":"jpg","image/png":"png","image/webp":"webp","image/gif":"gif","image/bmp":"bmp","image/tiff":"tiff" }[rawType]||"jpg";
+   return new File([blob],"miya-source."+ext,{type:rawType});
+ }
+ if(!blob?.size)throw new Error("EMPTY_IMAGE");
+ try{
+   const bitmap=await createImageBitmap(blob);
+   if(!bitmap.width||!bitmap.height)throw new Error("IMAGE_DIMENSIONS_INVALID");
+   const canvas=document.createElement("canvas");
+   canvas.width=bitmap.width;canvas.height=bitmap.height;
+   const ctx=canvas.getContext("2d",{alpha:false});
+   if(!ctx)throw new Error("CANVAS_UNAVAILABLE");
+   ctx.fillStyle="#fff";ctx.fillRect(0,0,canvas.width,canvas.height);
+   ctx.drawImage(bitmap,0,0);
+   bitmap.close();
+   const jpg=await new Promise(resolve=>canvas.toBlob(resolve,"image/jpeg",.95));
+   if(!jpg||!jpg.size)throw new Error("IMAGE_NORMALIZE_FAILED");
+   return new File([jpg],"miya-source.jpg",{type:"image/jpeg"});
+ }catch(e){
+   console.warn("CleverUtils image MIME normalization failed",e);
+   throw new Error("IMAGE_DECODE_FAILED");
+ }
+}
+
 async function runImageTool(sourceOverride="",scaleOverride="",modelOverride=""){
  const source=String(sourceOverride||getImageToolSource()).trim();
  if(!source){toast("Сначала создай или загрузи изображение");return}
