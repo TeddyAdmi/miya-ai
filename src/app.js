@@ -2062,9 +2062,18 @@ async function generateVideo(prompt){
 }
 function getImageToolSource(){
  const ref=String(referenceImage||"").trim();
- if(ref)return ref;
- const latest=getLibrary().find(x=>x?.type==="image"&&x?.url);
+ if(ref && !isCleverUtilsHomepage(ref))return ref;
+ const latest=getLibrary().find(x=>x?.type==="image"&&x?.url&&!isCleverUtilsHomepage(x.url));
  return String(latest?.url||"").trim();
+}
+function isCleverUtilsHomepage(url){
+ try{
+  const u=new URL(String(url||""),window.location.origin);
+  return /^(?:www\.)?cleverutils\.com$/i.test(u.hostname)
+    && u.pathname==="/"
+    && !u.search
+    && !u.hash;
+ }catch{return false}
 }
 async function waitForImageToolJob(jobId){
  const started=Date.now();
@@ -2153,6 +2162,10 @@ async function makeCleverUtilsQualityFile(blob){
 async function runImageTool(sourceOverride="",scaleOverride="",modelOverride=""){
  const source=String(sourceOverride||getImageToolSource()).trim();
  if(!source){toast("Сначала создай или загрузи изображение");return}
+ if(isCleverUtilsHomepage(source)){
+   toast("Это старая ссылка CleverUtils. Выбери готовое изображение и попробуй снова.");
+   return;
+ }
  const scale=String(scaleOverride||$("#imageUpscaleScale")?.value||"2");
  const oldStatus=$("#composerStatus")?.textContent||"Готово";
  if($("#composerStatus"))$("#composerStatus").textContent="AI Upscale · обработка…";
