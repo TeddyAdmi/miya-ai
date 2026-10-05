@@ -610,17 +610,21 @@ function toggleUpscalePanel(item,card){
  const panel=document.createElement("div");
  panel.className="media-upscale-panel open";
  panel.innerHTML='<div class="media-upscale-title"><span>Инструменты изображения</span><button type="button" class="media-upscale-close" aria-label="Закрыть">×</button></div>'+
+   '<div class="media-upscale-tools-grid">'+
    '<div class="media-upscale-tool">'+
    '<div class="media-upscale-tool-title">✨ Увеличить</div>'+
    '<div class="media-upscale-options">'+
    '<select class="select-pill media-upscale-select" aria-label="Масштаб"><option value="2" selected>2×</option><option value="4">4×</option></select>'+
    '<span class="select-pill media-upscale-quality-fixed" aria-label="Качество">Быстро</span>'+
    '</div>'+
-   '<button type="button" class="media-upscale-submit">Увеличить</button>'+
    '</div>'+
    '<div class="media-upscale-tool media-upscale-background-tool">'+
    '<div class="media-upscale-tool-title">✂️ Удалить фон</div>'+
-   '<div class="media-upscale-tool-hint">Получить PNG с прозрачным фоном</div>'+
+   '<div class="media-upscale-tool-hint">PNG с прозрачным фоном</div>'+
+   '</div>'+
+   '</div>'+
+   '<div class="media-upscale-buttons">'+
+   '<button type="button" class="media-upscale-submit">Увеличить</button>'+
    '<button type="button" class="media-upscale-background-submit">Удалить фон</button>'+
    '</div>';
  panel.querySelector(".media-upscale-close").onclick=e=>{e.stopPropagation();panel.classList.remove("open");restoreMediaOverlay(panel)};
