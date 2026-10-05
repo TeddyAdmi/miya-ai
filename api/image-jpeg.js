@@ -15,6 +15,12 @@ module.exports = async function handler(req, res) {
     }
 
     const target = new URL(rawUrl);
+    // Some CleverUtils MCP responses have historically returned the provider host
+    // without the final "s". Normalize that legacy typo before the allowlist check
+    // so the browser never receives a dead cleverutil host.
+    if (target.hostname.toLowerCase() === "cleverutil" || target.hostname.toLowerCase() === "cleverutil.com") {
+      target.hostname = "cleverutils.com";
+    }
     const host = target.hostname.toLowerCase();
 
     // Only allow image hosts used by Miya/providers. This prevents turning the
@@ -26,7 +32,9 @@ module.exports = async function handler(req, res) {
       "cos-platform-outputs.agnes-ai.cn",
       "access.vheer.com",
       "cleverutils.com",
-      "www.cleverutils.com"
+      "www.cleverutils.com",
+      "cleverutil",
+      "cleverutil.com"
     ];
     if (!allowed.includes(host)) {
       return res.status(403).json({ ok: false, error: "IMAGE_HOST_NOT_ALLOWED" });
