@@ -24,7 +24,9 @@ module.exports = async function handler(req, res) {
       "www.ahm7xmakki.com",
       "platform-outputs.agnes-ai.space",
       "cos-platform-outputs.agnes-ai.cn",
-      "access.vheer.com"
+      "access.vheer.com",
+      "cleverutils.com",
+      "www.cleverutils.com"
     ];
     if (!allowed.includes(host)) {
       return res.status(403).json({ ok: false, error: "IMAGE_HOST_NOT_ALLOWED" });
