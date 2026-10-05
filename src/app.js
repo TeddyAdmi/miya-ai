@@ -2173,7 +2173,10 @@ async function runImageTool(sourceOverride="",scaleOverride="",modelOverride="")
        blob=await response.blob();
      }
      if(!blob||!blob.size)throw new Error("EMPTY_IMAGE");
-     const uploadFile=await makeCleverUtilsQualityImageFile(blob);
+     // CleverUtils Quality rejects the browser-normalized PNG in some cases.
+     // The Miya image proxy already returns JPEG, so preserve a supported JPEG
+     // payload instead of converting it to PNG.
+     const uploadFile=await makeCleverUtilsImageFile(blob);
      const form=new FormData();
      form.append("file",uploadFile);
      form.append("scale",scale);
