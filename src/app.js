@@ -2071,6 +2071,33 @@ async function waitForImageToolJob(jobId){
  throw new Error("IMAGE_TOOL_TIMEOUT");
 }
 
+async function makeCleverUtilsImageFile(blob){
+ const rawType=String(blob?.type||"").toLowerCase().split(";")[0].trim();
+ const supported=new Set(["image/jpeg","image/png","image/webp","image/gif","image/bmp","image/tiff"]);
+ if(blob?.size&&supported.has(rawType)){
+   const ext={ "image/jpeg":"jpg","image/png":"png","image/webp":"webp","image/gif":"gif","image/bmp":"bmp","image/tiff":"tiff" }[rawType]||"jpg";
+   return new File([blob],"miya-source."+ext,{type:rawType});
+ }
+ if(!blob?.size)throw new Error("EMPTY_IMAGE");
+ try{
+   const bitmap=await createImageBitmap(blob);
+   if(!bitmap.width||!bitmap.height)throw new Error("IMAGE_DIMENSIONS_INVALID");
+   const canvas=document.createElement("canvas");
+   canvas.width=bitmap.width;canvas.height=bitmap.height;
+   const ctx=canvas.getContext("2d",{alpha:false});
+   if(!ctx)throw new Error("CANVAS_UNAVAILABLE");
+   ctx.fillStyle="#fff";ctx.fillRect(0,0,canvas.width,canvas.height);
+   ctx.drawImage(bitmap,0,0);
+   bitmap.close();
+   const jpg=await new Promise(resolve=>canvas.toBlob(resolve,"image/jpeg",.95));
+   if(!jpg||!jpg.size)throw new Error("IMAGE_NORMALIZE_FAILED");
+   return new File([jpg],"miya-source.jpg",{type:"image/jpeg"});
+ }catch(e){
+   console.warn("CleverUtils image MIME normalization failed",e);
+   throw new Error("IMAGE_DECODE_FAILED");
+ }
+}
+
 async function runImageTool(sourceOverride="",scaleOverride="",modelOverride=""){
  const source=String(sourceOverride||getImageToolSource()).trim();
  if(!source){toast("Сначала создай или загрузи изображение");return}
@@ -2090,8 +2117,9 @@ async function runImageTool(sourceOverride="",scaleOverride="",modelOverride="")
      blob=await response.blob();
    }
    if(!blob||!blob.size)throw new Error("EMPTY_IMAGE");
+   const uploadFile=await makeCleverUtilsImageFile(blob);
    const form=new FormData();
-   form.append("file",blob,"miya-source."+((blob.type||"image/jpeg").split("/")[1]||"jpg"));
+   form.append("file",uploadFile);
    form.append("scale",scale);
    form.append("model",model);
    const r=await fetch("https://cleverutils.com/api/v1/tools/upscale-image",{method:"POST",body:form,headers:{Accept:"application/json"}});
@@ -2131,9 +2159,9 @@ async function runImageBackgroundRemoval(item){
      if(!response.ok)throw new Error("SOURCE_IMAGE_PROXY_FAILED");
      blob=await response.blob();
    }
-   blob=await normalizeImageBlobForCleverUtils(blob);
+   const uploadFile=await makeCleverUtilsImageFile(blob);
    const form=new FormData();
-   form.append("file",blob,"miya-source.png");
+   form.append("file",uploadFile);
    const r=await fetch("https://cleverutils.com/api/v1/tools/remove-background",{method:"POST",body:form,headers:{Accept:"application/json"}});
    const data=await r.json().catch(()=>({}));
    if(!r.ok)throw new Error(data?.message||data?.error?.message||data?.error||"BACKGROUND_REMOVE_FAILED");
@@ -2753,5 +2781,21 @@ if(chatNavWrap){chatNavWrap.addEventListener("mouseleave",()=>{chatMenuSuppresse
 // Close transient chat/media menus when clicking outside them.
 document.addEventListener("click",e=>{if(!e.target.closest(".chat-history-row"))resetChatMenus()});
 document.addEventListener("click",e=>{if(!e.target.closest(".media-actions")&&!e.target.closest(".media-action-menu")&&!e.target.closest(".media-upscale-panel"))closeAllMediaMenus()});
-window.addEventListener("resize",()=>{document.querySelectorAll(".media-action-menu.open").forEach(m=>positionFloatingMediaOverlay(m,m.__mediaOverlayAnchor||document.querySelector(".media-action"),"menu"));document.querySelectorAll(".media-upscale-panel.open").forEach(p=>positionFloatingMediaOverlay(p,p.__mediaOverlayAnchor||p.closest(".media-card"),"panel"))});
+let mediaOverlayRepositionFrame=0;
+function scheduleMediaOverlayReposition(){
+ if(mediaOverlayRepositionFrame)return;
+ mediaOverlayRepositionFrame=requestAnimationFrame(()=>{
+   mediaOverlayRepositionFrame=0;
+   document.querySelectorAll(".media-action-menu.open").forEach(m=>{
+     const anchor=m.__mediaOverlayAnchor;
+     if(anchor?.isConnected)positionFloatingMediaOverlay(m,anchor,"menu");
+   });
+   document.querySelectorAll(".media-upscale-panel.open").forEach(p=>{
+     const anchor=p.__mediaOverlayAnchor;
+     if(anchor?.isConnected)positionFloatingMediaOverlay(p,anchor,"panel");
+   });
+ });
+}
+window.addEventListener("resize",scheduleMediaOverlayReposition);
+document.addEventListener("scroll",scheduleMediaOverlayReposition,true);
 
