@@ -2071,7 +2071,7 @@ async function waitForImageToolJob(jobId){
  throw new Error("IMAGE_TOOL_TIMEOUT");
 }
 
-async async function normalizeImageBlobForCleverUtils(blob){
+async function normalizeImageBlobForCleverUtils(blob){
   if(!blob||!blob.size)throw new Error("EMPTY_IMAGE");
   // CleverUtils validates the actual multipart bytes, not only the browser MIME.
   // Always decode and re-encode to a real PNG so mislabeled WebP/AVIF/octet-stream
