@@ -144,10 +144,41 @@ module.exports = async function imageHandler(req, res) {
       if (!["2","3","4"].includes(scale)) return res.status(400).json({ok:false,error:"INVALID_SCALE"});
       if (!["fast","quality"].includes(model)) return res.status(400).json({ok:false,error:"INVALID_MODEL"});
 
+      // CleverUtils documents that URL inputs are fetched server-side, but some public
+      // image hosts (including Vheer result URLs) return 404 to CleverUtils' fetcher.
+      // Fetch the image through Miya first and pass MCP a base64 data URL instead.
+      let sourceResponse;
+      try {
+        sourceResponse = await fetch(imageUrl, {
+          headers:{Accept:"image/*"},
+          cache:"no-store",
+          signal:AbortSignal.timeout(20000)
+        });
+      } catch (error) {
+        return res.status(502).json({ok:false,error:"MCP_SOURCE_FETCH_FAILED",message:String(error?.message||error)});
+      }
+      if (!sourceResponse.ok) {
+        return res.status(502).json({
+          ok:false,
+          error:"MCP_SOURCE_FETCH_FAILED",
+          upstreamStatus:sourceResponse.status
+        });
+      }
+      const sourceType = (sourceResponse.headers.get("content-type") || "image/jpeg").split(";")[0].toLowerCase();
+      if (!/^image\/(jpeg|png|webp)$/i.test(sourceType)) {
+        return res.status(415).json({ok:false,error:"MCP_SOURCE_NOT_SUPPORTED",contentType:sourceType});
+      }
+      const sourceBytes = Buffer.from(await sourceResponse.arrayBuffer());
+      if (!sourceBytes.length) return res.status(400).json({ok:false,error:"MCP_SOURCE_EMPTY"});
+      if (sourceBytes.length > 20 * 1024 * 1024) {
+        return res.status(413).json({ok:false,error:"MCP_SOURCE_TOO_LARGE"});
+      }
+      const mcpFile = "data:" + sourceType + ";base64," + sourceBytes.toString("base64");
+
       const mcpResponse = await fetch("https://cleverutils.com/mcp", {
         method:"POST",
         headers:{"Content-Type":"application/json","Accept":"application/json"},
-        body:JSON.stringify({jsonrpc:"2.0",id:Date.now(),method:"tools/call",params:{name:"upscale_image",arguments:{file:imageUrl,scale:Number(scale),model}}}),
+        body:JSON.stringify({jsonrpc:"2.0",id:Date.now(),method:"tools/call",params:{name:"upscale_image",arguments:{file:mcpFile,scale:Number(scale),model}}}),
         signal:AbortSignal.timeout(90000)
       });
       const rawMcp = await mcpResponse.text();
