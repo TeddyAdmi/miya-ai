@@ -19,6 +19,7 @@ function jpegImageUrl(url){
   return value;
 }
 let mode="chat",referenceImage=null,chatAttachmentFile=null,chatMessages=[];
+let ocrPending=false;
 let videoGenerationBusy=false;
 const CHAT_KEY="miyaChats";
 let chatMenuSuppressed=false;
@@ -990,7 +991,26 @@ function renderLibrary(tab="images"){
  }
  c.querySelectorAll("[data-library-tab]").forEach(btn=>btn.onclick=()=>renderLibrary(btn.dataset.libraryTab));
 }
-function toast(message){
+
+// ==================== MIYA IMAGE → TEXT (OCR) ====================
+function escapeHtml(value){return String(value||"").replace(/[&<>"']/g,ch=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[ch]));}
+function showOcrResult(textValue,fileName="image"){
+ const text=String(textValue||"").trim(),c=$("#canvas");c.classList.remove("chat-canvas");
+ c.innerHTML='<div class="ocr-result-wrap"><div class="ocr-result-card"><div class="ocr-result-head"><div><div class="eyebrow">MIYA OCR · IMAGE TO TEXT</div><h2>Распознанный текст</h2><p>Текст извлечён из изображения с помощью Tesseract OCR.</p></div><button type="button" class="ocr-copy-btn" id="ocrCopyBtn">Копировать текст</button></div><div class="ocr-source-name">'+escapeHtml(fileName)+'</div><textarea class="ocr-result-text" id="ocrResultText" spellcheck="false"></textarea><div class="ocr-result-actions"><button type="button" class="ocr-again-btn" id="ocrAgainBtn">Распознать другое изображение</button><span class="ocr-count" id="ocrCount"></span></div></div></div>';
+ $("#ocrResultText").value=text;$("#ocrCount").textContent=text?text.length+" символов":"Текст не найден";
+ $("#ocrCopyBtn").onclick=async()=>{const v=$("#ocrResultText").value;if(!v.trim())return toast("Нет текста для копирования");try{await navigator.clipboard.writeText(v);toast("Текст скопирован")}catch{toast("Не удалось скопировать текст")}};
+ $("#ocrAgainBtn").onclick=()=>$("#ocrToolButton")?.click();
+ $("#workspaceEyebrow").textContent="MIYA OCR · IMAGE TO TEXT";$("#workspaceTitle").textContent="Изображение → Текст";$("#workspaceSubtitle").textContent="Распознай текст с фотографии, скриншота, документа или страницы.";$("#composerStatus").textContent="Image to Text · готово";
+ requestAnimationFrame(()=>$("#workspace")?.scrollTo({top:0,behavior:"auto"}));
+}
+function readOcrImage(file){return new Promise((resolve,reject)=>{if(!file?.size)return reject(new Error("EMPTY_IMAGE"));const reader=new FileReader();reader.onerror=()=>reject(new Error("IMAGE_READ_FAILED"));reader.onload=()=>{const image=new Image();image.onload=async()=>{try{const max=1800,scale=Math.min(1,max/Math.max(image.naturalWidth,image.naturalHeight)),canvas=document.createElement("canvas");canvas.width=Math.max(1,Math.round(image.naturalWidth*scale));canvas.height=Math.max(1,Math.round(image.naturalHeight*scale));const ctx=canvas.getContext("2d",{alpha:false});if(!ctx)throw new Error("CANVAS_UNAVAILABLE");ctx.fillStyle="#fff";ctx.fillRect(0,0,canvas.width,canvas.height);ctx.drawImage(image,0,0,canvas.width,canvas.height);let blob=await new Promise(r=>canvas.toBlob(r,"image/jpeg",.92));if(blob?.size>4*1024*1024)blob=await new Promise(r=>canvas.toBlob(r,"image/jpeg",.78));if(!blob?.size)throw new Error("IMAGE_ENCODE_FAILED");const fr=new FileReader();fr.onerror=()=>reject(new Error("IMAGE_ENCODE_READ_FAILED"));fr.onload=()=>resolve({base64:String(fr.result||""),mime:"image/jpeg",name:"miya-ocr.jpg"});fr.readAsDataURL(blob)}catch(e){reject(e)}};image.onerror=()=>reject(new Error("IMAGE_DECODE_FAILED"));image.src=String(reader.result||"")};reader.readAsDataURL(file)})}
+async function runImageOcr(file){
+ const send=$("#composerSend");if(send)send.disabled=true;$("#composerStatus").textContent="Image to Text · распознавание…";$("#workspaceEyebrow").textContent="MIYA OCR · IMAGE TO TEXT";$("#workspaceTitle").textContent="Распознавание текста…";$("#workspaceSubtitle").textContent="Miya извлекает текст из изображения.";$("#canvas").innerHTML='<div class="ocr-loading-wrap"><div class="ocr-loading-card"><div class="progress-circle is-active"><span>OCR</span></div><h3>Распознавание изображения</h3><p>Tesseract OCR · подожди немного…</p></div></div>';
+ try{const prepared=await readOcrImage(file),response=await fetch("/api/image-to-text",{method:"POST",headers:{"Content-Type":"application/json","Accept":"application/json"},body:JSON.stringify(prepared),signal:AbortSignal.timeout(90000)}),raw=await response.text();let data={};try{data=raw?JSON.parse(raw):{}}catch{}if(!response.ok)throw new Error(String(data.message||data.error||raw||("OCR_HTTP_"+response.status)).slice(0,500));const textValue=String(data.text??data.data?.text??"").trim();showOcrResult(textValue,file.name||"image");toast(textValue?"Текст распознан":"Текст на изображении не найден")}
+ catch(e){$("#canvas").innerHTML='<div class="ocr-loading-wrap"><div class="ocr-loading-card"><h3>Не удалось распознать текст</h3><p>'+escapeHtml(e?.message||"Ошибка OCR")+'</p><button type="button" class="ocr-again-btn" id="ocrRetryBtn">Повторить</button></div></div>';$("#ocrRetryBtn").onclick=()=>$("#ocrToolButton")?.click();$("#composerStatus").textContent="Image to Text · ошибка";toast("OCR: "+(e?.message||"не удалось распознать изображение"))}
+ finally{if(send)send.disabled=false}
+}
+\nfunction toast(message){
  let t=$("#toast");if(!t){t=document.createElement("div");t.id="toast";t.className="toast";document.body.appendChild(t)}
  t.textContent=message;t.classList.add("show");clearTimeout(window.__toast);
  window.__toast=setTimeout(()=>t.classList.remove("show"),2600)
@@ -2645,7 +2665,7 @@ async function attachReferenceFile(file){
 }
 $("#referenceInput").onchange=e=>{
  const file=e.target.files?.[0];
- if(file)attachReferenceFile(file);
+ if(file){if(ocrPending){ocrPending=false;runImageOcr(file)}else attachReferenceFile(file)}
  e.target.value="";
 };
 
@@ -2969,6 +2989,8 @@ document.querySelectorAll("[data-tool]").forEach(b=>b.onclick=()=>{
    requestAnimationFrame(()=>$("#workspace")?.scrollTo({top:0,behavior:"auto"}));
  }
 });
+const ocrToolButton=$("#ocrToolButton");
+if(ocrToolButton)ocrToolButton.onclick=()=>{ocrPending=true;$("#referenceInput").accept="image/*";$("#referenceInput").click()};
 renderChatHistoryMini();
 shuffleIdeas();
 setMode("chat");
