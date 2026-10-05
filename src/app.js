@@ -2237,13 +2237,13 @@ async function openAiEditor(item){
  let modal=$("#aiEditorModal");
  if(!modal){
   modal=document.createElement("div");modal.id="aiEditorModal";modal.className="ai-editor-modal";
-  modal.innerHTML=\`<div class="ai-editor-backdrop"></div><div class="ai-editor-dialog" role="dialog" aria-modal="true" aria-labelledby="aiEditorTitle">
+  modal.innerHTML=`<div class="ai-editor-backdrop"></div><div class="ai-editor-dialog" role="dialog" aria-modal="true" aria-labelledby="aiEditorTitle">
   <div class="ai-editor-head"><div><div class="ai-editor-eyebrow">MIYA AI EDITOR</div><h2 id="aiEditorTitle">AI Редактор</h2></div><button type="button" class="ai-editor-close" aria-label="Закрыть">×</button></div>
   <div class="ai-editor-workspace"><div class="ai-editor-stage"><div class="ai-editor-canvas-wrap"><img class="ai-editor-image" alt="Изображение для редактирования" draggable="false"><canvas class="ai-editor-mask"></canvas><div class="ai-editor-empty">Загрузка изображения…</div></div></div>
   <aside class="ai-editor-sidebar"><div class="ai-editor-mode-label">Режим</div><div class="ai-editor-modes"><button type="button" class="ai-editor-mode active" data-editor-mode="remove">Удалить</button><button type="button" class="ai-editor-mode disabled" disabled title="Добавление появится после подключения генеративного fill">Добавить</button></div>
   <div class="ai-editor-tool-card"><div class="ai-editor-tool-row"><button type="button" class="ai-editor-tool active" data-editor-tool="brush">Кисть</button><button type="button" class="ai-editor-tool" data-editor-tool="eraser">Ластик</button></div><label class="ai-editor-range-label"><span>Размер кисти</span><b class="ai-editor-size-value">60 px</b></label><input class="ai-editor-size" type="range" min="8" max="320" step="2" value="60"></div>
   <div class="ai-editor-actions-row"><button type="button" class="ai-editor-undo" disabled>↶ Отменить</button><button type="button" class="ai-editor-clear">Очистить</button></div>
-  <div class="ai-editor-hint">Закрась объект полностью. Можно отметить несколько объектов за один проход.</div><div class="ai-editor-footer"><button type="button" class="ai-editor-cancel">Отмена</button><button type="button" class="ai-editor-apply" disabled>Удалить объект</button></div></aside></div></div>\`;
+  <div class="ai-editor-hint">Закрась объект полностью. Можно отметить несколько объектов за один проход.</div><div class="ai-editor-footer"><button type="button" class="ai-editor-cancel">Отмена</button><button type="button" class="ai-editor-apply" disabled>Удалить объект</button></div></aside></div></div>`;
   document.body.appendChild(modal);
   const image=modal.querySelector(".ai-editor-image"),mask=modal.querySelector(".ai-editor-mask"),wrap=modal.querySelector(".ai-editor-canvas-wrap"),empty=modal.querySelector(".ai-editor-empty");
   const sizeInput=modal.querySelector(".ai-editor-size"),sizeValue=modal.querySelector(".ai-editor-size-value"),undoButton=modal.querySelector(".ai-editor-undo"),applyButton=modal.querySelector(".ai-editor-apply");
