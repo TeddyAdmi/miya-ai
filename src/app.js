@@ -746,13 +746,13 @@ function buildMediaCard(item,{video=false}={}){
  more.innerHTML='<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="5" cy="12" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="19" cy="12" r="1.5"/></svg>';
  const menu=document.createElement("div");menu.className="media-action-menu";
  if(!video){
-  const promptBtn=document.createElement("button");promptBtn.innerHTML='<span class="action-icon action-svg"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 5h14v14H5z"/><path d="M8 9h8M8 12h6M8 15h4"/></svg></span><span>Промт</span>';promptBtn.onclick=e=>{e.stopPropagation();closeAllMediaMenus();showPrompt(item)};  const upscaleMenuBtn=document.createElement("button");upscaleMenuBtn.type="button";upscaleMenuBtn.innerHTML='<span class="action-icon action-svg"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m12 3 1.7 5.3L19 10l-5.3 1.7L12 17l-1.7-5.3L5 10l5.3-1.7L12 3Z"/><path d="m19 15 .8 2.2L22 18l-.8-2.2L19 15Z"/></svg></span><span>Upscale</span>';upscaleMenuBtn.onclick=e=>{e.stopPropagation();closeAllMediaMenus();toggleUpscalePanel(item,card)};
+  const promptBtn=document.createElement("button");promptBtn.innerHTML='<span class="action-icon action-svg"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 5h14v14H5z"/><path d="M8 9h8M8 12h6M8 15h4"/></svg></span><span>Промт</span>';promptBtn.onclick=e=>{e.stopPropagation();closeAllMediaMenus();showPrompt(item)};  const ocrBtn=document.createElement("button");ocrBtn.type="button";ocrBtn.innerHTML='<span class="action-icon action-svg"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="4" width="16" height="16" rx="2"/><path d="M7 9h10M7 12h8M7 15h5"/></svg></span><span>Распознать текст</span>';ocrBtn.onclick=async e=>{e.stopPropagation();closeAllMediaMenus();await runImageOcrFromMediaItem(item)};  const upscaleMenuBtn=document.createElement("button");upscaleMenuBtn.type="button";upscaleMenuBtn.innerHTML='<span class="action-icon action-svg"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m12 3 1.7 5.3L19 10l-5.3 1.7L12 17l-1.7-5.3L5 10l5.3-1.7L12 3Z"/><path d="m19 15 .8 2.2L22 18l-.8-2.2L19 15Z"/></svg></span><span>Upscale</span>';upscaleMenuBtn.onclick=e=>{e.stopPropagation();closeAllMediaMenus();toggleUpscalePanel(item,card)};
   const editBtn=document.createElement("button");editBtn.innerHTML='<span class="action-icon action-svg"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m4 16.5-.8 3.3 3.3-.8L18.7 6.8a2.2 2.2 0 0 1 3.1 3.1L6.5 19l-3.3.8.8-3.3Z"/><path d="m14.2 5.8 4 4"/></svg></span><span>Изменить картинку</span>';editBtn.onclick=async e=>{e.stopPropagation();closeAllMediaMenus();openEditor(await mediaItemToReference(item))};
   const videoBtn=document.createElement("button");videoBtn.innerHTML='<span class="action-icon action-svg"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="5" width="17" height="14" rx="2"/><path d="m10 9 5 3-5 3Z"/></svg></span><span>Сделать видео</span>';videoBtn.onclick=async e=>{e.stopPropagation();closeAllMediaMenus();openVideoFromImage(await mediaItemToReference(item))};
   const copyBtn=document.createElement("button");copyBtn.innerHTML='<span class="action-icon action-svg"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M15 9V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v7a2 2 0 0 0 2 2h3"/></svg></span><span>Копировать</span>';copyBtn.onclick=async e=>{e.stopPropagation();closeAllMediaMenus();try{const response=await fetch(item.url,{headers:{Accept:"image/*"}});if(!response.ok)throw new Error();const blob=await response.blob();if(!navigator.clipboard?.write||!window.ClipboardItem)throw new Error();const bitmap=await createImageBitmap(blob);const canvas=document.createElement("canvas");canvas.width=bitmap.width;canvas.height=bitmap.height;const ctx=canvas.getContext("2d");ctx.fillStyle="#fff";ctx.fillRect(0,0,canvas.width,canvas.height);ctx.drawImage(bitmap,0,0);bitmap.close();const jpeg=await new Promise(resolve=>canvas.toBlob(resolve,"image/jpeg",.95));if(!jpeg)throw new Error();await navigator.clipboard.write([new ClipboardItem({"image/jpeg":jpeg})]);toast("JPG скопирован")}catch{toast("Не удалось скопировать картинку")}};
   const downloadBtn=document.createElement("button");downloadBtn.innerHTML='<span class="action-icon action-svg"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4v11M8 11l4 4 4-4M5 19h14"/></svg></span><span>Скачать</span>';downloadBtn.onclick=e=>{e.stopPropagation();closeAllMediaMenus();showDownloadMenu(item,downloadBtn)};
   const deleteBtn=document.createElement("button");deleteBtn.innerHTML='<span class="action-icon action-svg"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M9 7V4h6v3M7 7l1 13h8l1-13M10 11v5M14 11v5"/></svg></span><span>Удалить</span>';deleteBtn.onclick=e=>{e.stopPropagation();closeAllMediaMenus();confirmDeleteMedia(item,card)};
-  menu.append(promptBtn,upscaleMenuBtn,editBtn,videoBtn,copyBtn,downloadBtn,deleteBtn);
+  menu.append(promptBtn,ocrBtn,upscaleMenuBtn,editBtn,videoBtn,copyBtn,downloadBtn,deleteBtn);
  }else{
   const deleteBtn=document.createElement("button");deleteBtn.innerHTML='<span class="action-icon">⌫</span><span>Удалить</span>';deleteBtn.onclick=e=>{e.stopPropagation();closeAllMediaMenus();confirmDeleteMedia(item,card)};menu.append(deleteBtn);
  }
@@ -1004,6 +1004,22 @@ function showOcrResult(textValue,fileName="image"){
  requestAnimationFrame(()=>$("#workspace")?.scrollTo({top:0,behavior:"auto"}));
 }
 function readOcrImage(file){return new Promise((resolve,reject)=>{if(!file?.size)return reject(new Error("EMPTY_IMAGE"));const reader=new FileReader();reader.onerror=()=>reject(new Error("IMAGE_READ_FAILED"));reader.onload=()=>{const image=new Image();image.onload=async()=>{try{const max=1800,scale=Math.min(1,max/Math.max(image.naturalWidth,image.naturalHeight)),canvas=document.createElement("canvas");canvas.width=Math.max(1,Math.round(image.naturalWidth*scale));canvas.height=Math.max(1,Math.round(image.naturalHeight*scale));const ctx=canvas.getContext("2d",{alpha:false});if(!ctx)throw new Error("CANVAS_UNAVAILABLE");ctx.fillStyle="#fff";ctx.fillRect(0,0,canvas.width,canvas.height);ctx.drawImage(image,0,0,canvas.width,canvas.height);let blob=await new Promise(r=>canvas.toBlob(r,"image/jpeg",.92));if(blob?.size>4*1024*1024)blob=await new Promise(r=>canvas.toBlob(r,"image/jpeg",.78));if(!blob?.size)throw new Error("IMAGE_ENCODE_FAILED");const fr=new FileReader();fr.onerror=()=>reject(new Error("IMAGE_ENCODE_READ_FAILED"));fr.onload=()=>resolve({base64:String(fr.result||""),mime:"image/jpeg",name:"miya-ocr.jpg"});fr.readAsDataURL(blob)}catch(e){reject(e)}};image.onerror=()=>reject(new Error("IMAGE_DECODE_FAILED"));image.src=String(reader.result||"")};reader.readAsDataURL(file)})}
+async function runImageOcrFromMediaItem(item){
+ try{
+  const source=await mediaItemToReference(item);
+  if(!source)throw new Error("IMAGE_FILE_UNAVAILABLE");
+  const raw=String(source);
+  const response=await fetch(/^https?:\/\//i.test(raw)?"/api/image?url="+encodeURIComponent(raw):raw,{cache:"no-store"});
+  if(!response.ok)throw new Error("IMAGE_READ_HTTP_"+response.status);
+  const blob=await response.blob();
+  if(!String(blob.type||"").startsWith("image/"))throw new Error("IMAGE_FILE_INVALID");
+  const ext=(blob.type.split("/")[1]||"jpg").split(";")[0];
+  await runImageOcr(new File([blob],"miya-ocr-image."+ext,{type:blob.type}));
+ }catch(e){
+  $("#composerStatus").textContent="Image to Text · ошибка";
+  toast("OCR: "+(e?.message==="IMAGE_FILE_UNAVAILABLE"?"у изображения нет доступного файла":"не удалось прочитать изображение"));
+ }
+}
 async function runImageOcr(file){
  const send=$("#composerSend");if(send)send.disabled=true;$("#composerStatus").textContent="Image to Text · распознавание…";$("#workspaceEyebrow").textContent="MIYA OCR · IMAGE TO TEXT";$("#workspaceTitle").textContent="Распознавание текста…";$("#workspaceSubtitle").textContent="Miya извлекает текст из изображения.";$("#canvas").innerHTML='<div class="ocr-loading-wrap"><div class="ocr-loading-card"><div class="progress-circle is-active"><span>OCR</span></div><h3>Распознавание изображения</h3><p>Tesseract OCR · подожди немного…</p></div></div>';
  try{const prepared=await readOcrImage(file),response=await fetch("/api/image-to-text",{method:"POST",headers:{"Content-Type":"application/json","Accept":"application/json"},body:JSON.stringify(prepared),signal:AbortSignal.timeout(90000)}),raw=await response.text();let data={};try{data=raw?JSON.parse(raw):{}}catch{}if(!response.ok)throw new Error(String(data.message||data.error||raw||("OCR_HTTP_"+response.status)).slice(0,500));const textValue=String(data.text??data.data?.text??"").trim();showOcrResult(textValue,file.name||"image");toast(textValue?"Текст распознан":"Текст на изображении не найден")}
@@ -2989,8 +3005,6 @@ document.querySelectorAll("[data-tool]").forEach(b=>b.onclick=()=>{
    requestAnimationFrame(()=>$("#workspace")?.scrollTo({top:0,behavior:"auto"}));
  }
 });
-const ocrToolButton=$("#ocrToolButton");
-if(ocrToolButton)ocrToolButton.onclick=()=>{ocrPending=true;$("#referenceInput").accept="image/*";$("#referenceInput").click()};
 renderChatHistoryMini();
 shuffleIdeas();
 setMode("chat");
