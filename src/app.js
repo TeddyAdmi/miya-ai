@@ -548,10 +548,14 @@ function positionFloatingMediaOverlay(el,anchor,kind){
  const r=anchor.getBoundingClientRect();
  el.style.position="fixed";
  el.style.zIndex="100000";
+ el.style.pointerEvents="auto";
  if(kind==="menu"){
-   el.style.top=Math.round(r.bottom+5)+"px";
+   const maxTop=Math.max(8,window.innerHeight-el.offsetHeight-8);
+   const top=Math.min(maxTop,Math.max(8,r.bottom+5));
+   el.style.top=Math.round(top)+"px";
    el.style.right=Math.max(8,Math.round(window.innerWidth-r.right))+"px";
    el.style.left="auto";
+   el.style.display="block";
  }else{
    const width=Math.min(250,Math.max(0,window.innerWidth-16));
    const top=Math.min(window.innerHeight-12,Math.max(8,r.top+42));
@@ -562,9 +566,13 @@ function positionFloatingMediaOverlay(el,anchor,kind){
  }
 }
 function floatMediaOverlay(el,anchor,kind){
- if(!el)return;
+ if(!el||!anchor)return;
  el.__mediaOverlayAnchor=anchor;
- if(el.parentElement===document.body){positionFloatingMediaOverlay(el,anchor,kind);return}
+ if(el.parentElement===document.body){
+   el.classList.add("media-overlay-floating");
+   positionFloatingMediaOverlay(el,anchor,kind);
+   return;
+ }
  el.__mediaOverlayParent=el.parentElement;
  el.__mediaOverlayNextSibling=el.nextSibling;
  document.body.appendChild(el);
@@ -577,7 +585,7 @@ function restoreMediaOverlay(el){
  if(el.__mediaOverlayNextSibling&&el.__mediaOverlayNextSibling.parentNode===parent)parent.insertBefore(el,el.__mediaOverlayNextSibling);
  else parent.appendChild(el);
  el.classList.remove("media-overlay-floating");
- el.style.position="";el.style.zIndex="";el.style.top="";el.style.right="";el.style.left="";el.style.width="";
+ el.style.position="";el.style.zIndex="";el.style.pointerEvents="";el.style.display="";el.style.top="";el.style.right="";el.style.left="";el.style.width="";
  el.__mediaOverlayParent=null;el.__mediaOverlayNextSibling=null;el.__mediaOverlayAnchor=null;
 }
 function closeAllMediaMenus(){
@@ -727,10 +735,15 @@ function buildMediaCard(item,{video=false}={}){
  }else{
   const deleteBtn=document.createElement("button");deleteBtn.innerHTML='<span class="action-icon">⌫</span><span>Удалить</span>';deleteBtn.onclick=e=>{e.stopPropagation();closeAllMediaMenus();confirmDeleteMedia(item,card)};menu.append(deleteBtn);
  }
- more.onclick=e=>{e.stopPropagation();
+ more.onclick=e=>{
+   e.preventDefault();
+   e.stopPropagation();
    const wasOpen=menu.classList.contains("open");
    closeAllMediaMenus();
-   if(!wasOpen){menu.classList.add("open");floatMediaOverlay(menu,more,"menu");}
+   if(wasOpen)return;
+   menu.classList.add("open");
+   floatMediaOverlay(menu,more,"menu");
+   requestAnimationFrame(()=>positionFloatingMediaOverlay(menu,more,"menu"));
  };
  actions.append(more,menu);card.appendChild(actions);return card;
 }
