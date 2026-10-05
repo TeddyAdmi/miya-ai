@@ -2102,6 +2102,28 @@ async function makeCleverUtilsImageFile(blob){
  }
 }
 
+async function makeCleverUtilsQualityFile(blob){
+ if(!blob?.size)throw new Error("EMPTY_IMAGE");
+ try{
+   const bitmap=await createImageBitmap(blob);
+   if(!bitmap.width||!bitmap.height)throw new Error("IMAGE_DIMENSIONS_INVALID");
+   const canvas=document.createElement("canvas");
+   canvas.width=bitmap.width;canvas.height=bitmap.height;
+   const ctx=canvas.getContext("2d",{alpha:false});
+   if(!ctx)throw new Error("CANVAS_UNAVAILABLE");
+   ctx.fillStyle="#fff";
+   ctx.fillRect(0,0,canvas.width,canvas.height);
+   ctx.drawImage(bitmap,0,0);
+   bitmap.close();
+   const png=await new Promise(resolve=>canvas.toBlob(resolve,"image/png"));
+   if(!png||!png.size)throw new Error("IMAGE_PNG_NORMALIZE_FAILED");
+   return new File([png],"miya-source.png",{type:"image/png"});
+ }catch(e){
+   console.warn("CleverUtils quality PNG conversion failed",e);
+   throw new Error("IMAGE_DECODE_FAILED");
+ }
+}
+
 async function runImageTool(sourceOverride="",scaleOverride="",modelOverride=""){
  const source=String(sourceOverride||getImageToolSource()).trim();
  if(!source){toast("Сначала создай или загрузи изображение");return}
@@ -2129,7 +2151,9 @@ async function runImageTool(sourceOverride="",scaleOverride="",modelOverride="")
      blob=await response.blob();
    }
    if(!blob||!blob.size)throw new Error("EMPTY_IMAGE");
-   const uploadFile=await makeCleverUtilsImageFile(blob);
+   const uploadFile=model==="quality"
+     ?await makeCleverUtilsQualityFile(blob)
+     :await makeCleverUtilsImageFile(blob);
    const form=new FormData();
    form.append("file",uploadFile);
    form.append("scale",scale);
