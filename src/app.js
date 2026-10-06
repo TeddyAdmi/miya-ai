@@ -823,12 +823,11 @@ function isVideoLibraryItem(item){
 function isStoredVideo(item){
  if(!item||typeof item.url!=="string")return false;
  const type=String(item.type||"").toLowerCase();
+ if(type==="audio"||type==="voice"||type==="speech")return false;
  const url=String(item.url||"");
  const model=String(item.model||"").toLowerCase();
- return type==="video"||
-   type==="videos"||
-   /\\.(mp4|webm|mov)(?:[?#]|$)/i.test(url)||
-   /ltx-2[.-]3||motion synthesis|agnes video/i.test(model);
+ if(/miya voice|voice|tts|text[- ]to[- ]speech/i.test(model))return false;
+ return type==="video"||type==="videos"||/\.(mp4|webm|mov)(?:[?#]|$)/i.test(url)||/ltx-2[.-]3||motion synthesis|agnes video/i.test(model);
 }
 function renderVideoLibrary(){
  const c=$("#canvas"),items=getLibrary().filter(isStoredVideo);
@@ -895,7 +894,7 @@ function renderImageLibrary(){
 }
 let voiceCatalog=[];let voiceAudioParts=[];let voiceAudioItem=null;
 async function loadVoiceCatalog(){try{const r=await fetch("https://ahm7xmakki.com/api/voices",{cache:"force-cache"});const data=await r.json();voiceCatalog=Array.isArray(data?.voices)?data.voices:[];const genderSelect=$("#voiceGender");if(genderSelect&&!genderSelect.dataset.miyaInitialized){genderSelect.value="male";genderSelect.dataset.miyaInitialized="1"}refreshVoiceSelects()}catch{voiceCatalog=[];const sel=$("#voiceSelect");if(sel)sel.innerHTML='<option value="">Не удалось загрузить голоса</option>'}}
-function refreshVoiceSelects(){const lang=$("#voiceLanguage")?.value||"ru";const gender=$("#voiceGender")?.value||"male";const sel=$("#voiceSelect");if(!sel)return;const list=voiceCatalog.filter(v=>{const l=String(v.language||"").toLowerCase(),g=String(v.gender||"").toLowerCase();const langOk=lang==="ru"?(l.includes("russian")||l==="ru"||l.includes("russia")):(l.startsWith(lang)||l.includes(lang));const genderOk=gender==="female"?(/female|woman|girl/i.test(g)):(/(^|[^a-z])male([^a-z]|$)|(^|[^a-z])man([^a-z]|$)|boy/i.test(g)&&!/(female|woman|girl)/i.test(g));return langOk&&genderOk});sel.innerHTML="";list.forEach(v=>{const o=document.createElement("option");o.value=String(v.index);o.textContent=String(v.name||"Voice")+" · "+(gender==="male"?"Мужской":"Женский")+" · "+String(v.country||"");sel.appendChild(o)});if(!list.length){const o=document.createElement("option");o.value="";o.textContent="Нет голосов для выбранного пола";sel.appendChild(o)}else{const preferred=gender==="male"?(list.find(v=>/dmitry|alex|maxim|michael/i.test(String(v.name||"")))||list[0]):(list.find(v=>/svetlana/i.test(String(v.name||"")))||list[0]);sel.value=String(preferred.index)}}
+function refreshVoiceSelects(){const gender=$("#voiceGender")?.value||"male";const sel=$("#voiceSelect");if(!sel)return;const isRussian=v=>{const l=String(v.language||"").toLowerCase(),country=String(v.country||"").toLowerCase();return l.includes("russian")||l==="ru"||l.includes("russia")||country.includes("russia")||country.includes("росси")};const genderOk=v=>{const g=String(v.gender||"").toLowerCase();return gender==="female"?(/female|woman|girl/i.test(g)):((/(^|[^a-z])male([^a-z]|$)|(^|[^a-z])man([^a-z]|$)|boy/i.test(g))&&!/(female|woman|girl)/i.test(g))};const list=voiceCatalog.filter(genderOk).sort((x,y)=>Number(isRussian(y))-Number(isRussian(x))||String(x.name||"").localeCompare(String(y.name||""),"ru"));sel.innerHTML="";list.forEach(v=>{const o=document.createElement("option");o.value=String(v.index);o.textContent=String(v.name||"Voice")+" · "+(gender==="male"?"Мужской":"Женский")+" · "+String(v.country||"");sel.appendChild(o)});if(!list.length){const o=document.createElement("option");o.value="";o.textContent="Нет голосов для выбранного пола";sel.appendChild(o)}else{const preferred=list.find(v=>isRussian(v)&&((gender==="male"&&/dmitry|alex|maxim|michael/i.test(String(v.name||"")))||(gender==="female"&&/svetlana/i.test(String(v.name||"")))))||list.find(isRussian)||list[0];sel.value=String(preferred.index)}}
 function splitVoiceText(text,max=1000){const clean=String(text||"").trim();if(!clean)return[];const out=[];for(let i=0;i<clean.length;i+=max)out.push(clean.slice(i,i+max));return out}
 function ensureVoiceWallStyles(){
  if(document.getElementById("miyaVoiceWallStyles"))return;
@@ -962,7 +961,8 @@ body.light .voice-editor-tool,body.light .voice-editor-close-btn{background:#f4f
 body.light .voice-editor-field input,body.light .voice-editor-field select{background:#fff;color:#273047;border-color:#d3deea}
 body.light .voice-library-card,body.light .voice-result-card{background:#fff;border-color:#dbe4ee;box-shadow:0 8px 25px rgba(30,55,85,.07)}
 body.light .voice-result-meta,body.light .voice-card-text{color:#71859a}
-body.light .voice-player{background:linear-gradient(135deg,#f7f9fc,#eef3f8);border-color:#d3deea} body.light .voice-options .select-pill{background:#f4f7fa!important;color:#52657b!important;border-color:#d3deea!important} body.light .voice-options .select-pill:hover{background:#e9eef5!important;border-color:#c5d2e0!important;color:#273047!important} body.light .voice-options .voice-range{background:#f4f7fa!important;color:#52657b!important;border-color:#d3deea!important} body.light .voice-options .voice-tool{background:#f4f7fa!important;color:#52657b!important;border-color:#d3deea!important}
+body.light .voice-player{background:linear-gradient(135deg,#f7f9fc,#eef3f8);border-color:#d3deea} .voice-options #voiceLanguage{display:none!important}
+body.light .voice-options .select-pill{background:#f4f7fa!important;color:#52657b!important;border-color:#d3deea!important} body.light .voice-options .select-pill:hover{background:#e9eef5!important;border-color:#c5d2e0!important;color:#273047!important} body.light .voice-options .voice-range{background:#f4f7fa!important;color:#52657b!important;border-color:#d3deea!important} body.light .voice-options .voice-tool{background:#f4f7fa!important;color:#52657b!important;border-color:#d3deea!important}
 .voice-player-track{position:relative;min-width:0;width:100%;height:34px;display:flex;align-items:flex-end}.voice-player-eq{position:absolute;inset:0 0 8px;display:flex;align-items:flex-end;justify-content:center;gap:2px;opacity:.34;overflow:hidden;pointer-events:none}.voice-player-eq i{display:block;width:3px;height:3px;min-height:2px;border-radius:3px;background:linear-gradient(180deg,#c47aff,#695dff);transform-origin:center;transition:height .08s ease}.voice-player.is-playing .voice-player-eq{opacity:1}.voice-player-range{position:absolute;left:0;right:0;bottom:0;width:100%;z-index:3;background:transparent}.voice-player-time{display:block;min-width:48px;width:auto;max-width:100%;overflow:hidden;text-overflow:clip;font-size:8px;color:#a9bad0;font-variant-numeric:tabular-nums;text-align:right;white-space:nowrap;line-height:1}.voice-card-menu{position:fixed;z-index:2147483646;min-width:180px;padding:5px;border:1px solid rgba(170,130,255,.28);border-radius:12px;background:rgba(8,20,38,.97);box-shadow:0 16px 50px rgba(0,0,0,.35);backdrop-filter:blur(14px)}.voice-card-menu button{width:100%;height:32px;border:0;border-radius:8px;background:transparent;color:#c7d5e4;display:flex;align-items:center;gap:8px;padding:0 9px;font-size:9px;font-weight:800;text-align:left;cursor:pointer}.voice-card-menu button:hover{background:rgba(157,111,255,.14);color:#fff}.voice-card-menu svg{width:14px;height:14px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
 body.light .voice-player-time{color:#5f7085}
 body.light .voice-player-download,body.light .voice-card-action{background:#f4f7fa;color:#52657b;border-color:#d3deea} body.light .voice-card-action:hover{background:#e9eef5;border-color:#c5d2e0;color:#273047} body.light .voice-player-play{box-shadow:0 5px 14px rgba(117,73,217,.16)} body.light .voice-card-text{color:#52657b}
@@ -1009,6 +1009,17 @@ function ensureVoiceCardFinalStyles(){
 .voice-player-eq i::before{bottom:50%!important;transform:translateY(0)!important}
 .voice-player-eq i::after{top:50%!important;transform:translateY(0)!important}
 .voice-player-range{position:absolute!important;left:0!important;right:0!important;top:50%!important;bottom:auto!important;transform:translateY(-50%)!important;width:100%!important;height:3px!important;z-index:4!important;background:transparent!important;margin:0!important}
+.voice-card-date{margin-top:auto;text-align:right;font-size:8px;line-height:1;color:#8093a8;font-variant-numeric:tabular-nums;padding-top:2px}
+.voice-detail-actions{display:flex;justify-content:center;gap:7px;margin:0 auto 12px}
+.voice-detail-action{width:34px;height:30px;border:1px solid rgba(120,158,195,.26);border-radius:8px;background:rgba(255,255,255,.045);color:#b9c9dc;display:grid;place-items:center;cursor:pointer;padding:0}
+.voice-detail-action:hover{background:rgba(157,111,255,.13);border-color:rgba(190,154,255,.34);color:#fff}
+.voice-detail-action svg{width:14px;height:14px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+body.light .voice-options .select-pill,body.light .voice-options .voice-tool{background:#fff!important;background-color:#fff!important;color:#273047!important;border-color:#cbd8e5!important;box-shadow:0 2px 7px rgba(50,70,95,.06)!important}
+body.light .voice-options .select-pill:hover,body.light .voice-options .voice-tool:hover{background:#fff!important;background-color:#fff!important;color:#273047!important;border-color:#b9c9d9!important}
+body.light .voice-options select option{background:#fff!important;color:#273047!important}
+body.light .voice-card-date{color:#71859a}
+body.light .voice-detail-action{background:#fff;color:#52657b;border-color:#cbd8e5}
+body.light .voice-detail-action:hover{background:#f3f6fa;color:#273047;border-color:#b9c9d9}
 .voice-player-volume-wrap{width:26px!important;height:30px!important}
 .voice-player-volume{width:25px!important;height:3px!important}
 .voice-player-volume::-webkit-slider-thumb{appearance:none;width:14px;height:7px;border-radius:3px;border:1px solid #9b72e8;background:repeating-linear-gradient(90deg,#a75cff 0,#a75cff 3px,#754fd0 3px,#754fd0 4px);box-shadow:inset 0 0 0 1px rgba(255,255,255,.22);cursor:pointer}
@@ -1201,7 +1212,8 @@ function createVoiceCard(item,source,options={}){
  quick("text","Расшифровать",'<path d="M5 6h14M5 12h14M5 18h9"/>',()=>runVoiceCleverTool(item,card,"speech-to-text","Расшифровка",{format:"txt",language:document.querySelector("#voiceLanguage")?.value||"ru"}));
  quick("download","Скачать",'<path d="M12 4v11M8 11l4 4 4-4M5 20h14"/>',()=>downloadVoiceSource(null,source));
  quick("delete","Удалить",'<path d="M5 7h14M9 7V4h6v3M8 7l1 13h6l1-13"/>',()=>confirmDeleteMedia(item,card));
- card.append(title,textEl,player.wrap,actions,more);
+ const date=document.createElement("div");date.className="voice-card-date";date.textContent=item?.createdAt?new Date(item.createdAt).toLocaleDateString("ru-RU",{day:"2-digit",month:"2-digit",year:"numeric"}):"";
+ card.append(title,textEl,player.wrap,actions,date,more);
  if(!options.detail){const open=()=>openVoiceDetail(item,source);card.onclick=e=>{if(e.target.closest("button,input"))return;open()};card.onkeydown=e=>{if((e.key==="Enter"||e.key===" ")&&!e.target.closest("button,input")){e.preventDefault();open()}}}
  return card;
 }
@@ -1210,10 +1222,16 @@ function openVoiceDetail(item,source){
  const backdrop=document.createElement("div");backdrop.className="voice-detail-backdrop";
  const dialog=document.createElement("section");dialog.className="voice-detail-dialog";dialog.setAttribute("role","dialog");dialog.setAttribute("aria-modal","true");
  const head=document.createElement("div");head.className="voice-detail-head";const copy=document.createElement("div");const eyebrow=document.createElement("div");eyebrow.className="voice-detail-eyebrow";eyebrow.textContent="MIYA VOICE";const h=document.createElement("h3");h.textContent=item?.model||"Голос";copy.append(eyebrow,h);const close=document.createElement("button");close.type="button";close.className="voice-detail-close";close.title="Закрыть";close.setAttribute("aria-label","Закрыть");close.innerHTML='<svg viewBox="0 0 24 24"><path d="m6 6 12 12M18 6 6 18"/></svg>';head.append(copy,close);
- const player=buildVoicePlayer(source,null);player.wrap.style.width="min(720px,92vw)";player.wrap.style.margin="0 auto 14px";
+ const player=buildVoicePlayer(source,null);player.wrap.style.width="min(560px,72vw)";player.wrap.style.margin="0 auto 10px";
+ const detailActions=document.createElement("div");detailActions.className="voice-detail-actions";
+ const dplay=document.createElement("button");dplay.type="button";dplay.className="voice-detail-action";dplay.innerHTML=voiceIcon('<path d="M8 5v14l11-7z"/>');dplay.title="Воспроизвести";dplay.onclick=()=>player.wrap.querySelector(".voice-player-play")?.click();
+ const ddownload=document.createElement("button");ddownload.type="button";ddownload.className="voice-detail-action";ddownload.innerHTML=voiceIcon('<path d="M12 4v11M8 11l4 4 4-4M5 20h14"/>');ddownload.title="Скачать";ddownload.onclick=()=>downloadVoiceSource(null,source);
+ const dedit=document.createElement("button");dedit.type="button";dedit.className="voice-detail-action";dedit.innerHTML=voiceIcon('<path d="m15 5 4 4M5 19l3.5-.7L18 9l-3-3-9.5 9.5L5 19Z"/>');dedit.title="Редактировать";dedit.onclick=()=>openVoiceEditor(item,source);
+ const dnoise=document.createElement("button");dnoise.type="button";dnoise.className="voice-detail-action";dnoise.innerHTML=voiceIcon('<path d="M4 12h16M7 7h10M7 17h10"/>');dnoise.title="Очистить шум";dnoise.onclick=()=>runVoiceCleverTool(item,null,"noise-reduction","Очистка голоса");
+ detailActions.append(dplay,ddownload,dedit,dnoise);
  const text=document.createElement("div");text.className="voice-detail-copy";text.textContent=String(item?.prompt||"");
  const date=document.createElement("div");date.className="voice-detail-date";date.textContent=item?.createdAt?new Date(item.createdAt).toLocaleString("ru-RU",{day:"2-digit",month:"long",year:"numeric",hour:"2-digit",minute:"2-digit"}):"";
- dialog.append(head,player.wrap,text,date);backdrop.append(dialog);document.body.appendChild(backdrop);
+ dialog.append(head,player.wrap,detailActions,text,date);backdrop.append(dialog);document.body.appendChild(backdrop);
  const closeIt=()=>{player.cleanup();backdrop.remove();document.body.classList.remove("voice-modal-open");document.removeEventListener("keydown",onKey)};const onKey=e=>{if(e.key==="Escape")closeIt()};close.onclick=closeIt;backdrop.addEventListener("click",e=>{if(e.target===backdrop)closeIt()});document.addEventListener("keydown",onKey);
 }
 async function openVoiceEditor(item,source){
