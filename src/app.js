@@ -1294,7 +1294,8 @@ function buildVoicePlayer(source,card){
  row.append(play,track,timeWrap,vw);wrap.append(row,audio);
  return {wrap,audio,cleanup:()=>{cancelAnimationFrame(frame);try{sourceNode?.disconnect()}catch{}try{analyser?.disconnect()}catch{}try{ctx?.close()}catch{}if(audio.src?.startsWith("blob:"))URL.revokeObjectURL(audio.src)}};
 }
-async function resolveVoiceBlob(source){
+async async function resolveVoiceBlob(source){
+ if(source instanceof Blob)return source;
  const u=typeof source==="function"?await source():source;
  if(!u)throw new Error("AUDIO_URL_EMPTY");
  const r=await fetch(u,{cache:"no-store"});if(!r.ok)throw new Error("AUDIO_FETCH_"+r.status);
@@ -1592,6 +1593,9 @@ body.light .ve2-name{background:#fff;color:#273047;border-color:#d3deea}
  const saveBtn=document.createElement("button");saveBtn.type="button";saveBtn.className="ve2-footer-btn primary";saveBtn.textContent="Сохранить как новый голос";
  footerActions.append(closeBtn,saveBtn);footer.append(footerNote,footerActions);
  dialog.append(head,body,footer);backdrop.append(dialog);document.body.append(backdrop);document.body.classList.add("voice-modal-open");
+ const composer=document.getElementById("composer");
+ const previousComposerDisplay=composer?.style.display||"";
+ if(composer)composer.style.display="none";
 
  let workingUrl=null,workingBlob=null,workingName=(String(item?.prompt||"").trim()||"miya-voice.mp3"),dirty=false;
  let audio=null,waveData=null,duration=0,trimStart=0,trimEnd=0,volume=1,stemResults=null;
@@ -1732,7 +1736,7 @@ body.light .ve2-name{background:#fff;color:#273047;border-color:#d3deea}
   }catch(e){console.error("Miya voice editor open failed",e);toast("Не удалось открыть голос");closeEditor()}
  };
  const closeEditor=()=>{
-  stopAudio();playerWrap.querySelector(".voice-player")?.__cleanup?.();cleanupUrl(workingUrl);[stemResults?.vocals?.url,stemResults?.instrumental?.url].forEach(cleanupUrl);try{input.remove()}catch{};backdrop.remove();document.body.classList.remove("voice-modal-open","miya-editor-page-open");document.documentElement.classList.remove("miya-editor-page-open");document.body.style.overflow=previousBodyOverflow;window.removeEventListener("resize",drawWave);
+  stopAudio();playerWrap.querySelector(".voice-player")?.__cleanup?.();cleanupUrl(workingUrl);[stemResults?.vocals?.url,stemResults?.instrumental?.url].forEach(cleanupUrl);try{input.remove()}catch{};backdrop.remove();document.body.classList.remove("voice-modal-open","miya-editor-page-open");document.documentElement.classList.remove("miya-editor-page-open");document.body.style.overflow=previousBodyOverflow;if(composer)composer.style.display=previousComposerDisplay;window.removeEventListener("resize",drawWave);
  };
  const clearWorking=()=>{
   stopAudio();cleanupUrl(workingUrl);workingBlob=null;workingUrl=null;dirty=true;waveData=null;duration=0;trimStart=trimEnd=0;stemResults=null;renderResults();playerWrap.innerHTML="";nameInput.value="";setStatus("ФАЙЛ НЕ ВЫБРАН");drawWave();sync();toast("Запись убрана из редактора · карточка на стене сохранена");
