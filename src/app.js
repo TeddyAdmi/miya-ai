@@ -1443,135 +1443,312 @@ function openVoiceDetail(item,source,voiceItems=[],voiceIndex=-1){
  const closeIt=()=>{player.cleanup();backdrop.remove();document.body.classList.remove("voice-modal-open");document.removeEventListener("keydown",onKey)};const onKey=e=>{if(e.key==="Escape")closeIt();else if(e.key==="ArrowLeft")go(-1);else if(e.key==="ArrowRight")go(1)};close.onclick=closeIt;backdrop.addEventListener("click",e=>{if(e.target===backdrop)closeIt()});document.addEventListener("keydown",onKey);
 }
 async function openVoiceEditor(item,source){
- ensureVoiceWallStyles();document.querySelector(".voice-editor-backdrop")?.remove();
- const backdrop=document.createElement("div");backdrop.className="voice-detail-backdrop voice-editor-backdrop";document.body.classList.add("voice-modal-open");
- const dialog=document.createElement("section");dialog.className="voice-editor-dialog";dialog.setAttribute("role","dialog");dialog.setAttribute("aria-modal","true");
- const head=document.createElement("div");head.className="voice-detail-head";
- const copy=document.createElement("div");const eyebrow=document.createElement("div");eyebrow.className="voice-detail-eyebrow";eyebrow.textContent="MIYA VOICE EDITOR";
- const h=document.createElement("h3");h.textContent=item?.model||"Голос";copy.append(eyebrow,h);
- const headActions=document.createElement("div");headActions.className="voice-editor-head-actions";
- const deleteBtn=document.createElement("button");deleteBtn.type="button";deleteBtn.className="voice-editor-delete voice-editor-icon-btn";deleteBtn.title="Убрать текущую запись из редактора";deleteBtn.setAttribute("aria-label","Убрать текущую запись из редактора");deleteBtn.innerHTML='<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 7h10M9 4h6l1 3H8l1-3Z"/><path d="M9 11v6M15 11v6M5 7l1 13h12l-1-13"/><path d="m4 20 16-16"/></svg>';
- const close=document.createElement("button");close.type="button";close.className="voice-detail-close";close.title="Закрыть";close.setAttribute("aria-label","Закрыть");close.innerHTML='<svg viewBox="0 0 24 24"><path d="m6 6 12 12M18 6 6 18"/></svg>';headActions.append(deleteBtn,close);head.append(copy,headActions);
- const sourceBox=document.createElement("div");sourceBox.className="voice-editor-source";
- const sourceLabel=document.createElement("div");sourceLabel.className="voice-editor-source-label";sourceLabel.textContent="Исходный голос";
- const playerWrap=document.createElement("div");playerWrap.className="voice-editor-player";
- const uploadBox=document.createElement("div");uploadBox.className="voice-editor-upload";uploadBox.innerHTML='<button type="button" class="voice-editor-plus" aria-label="Загрузить MP3 или аудиофайл" title="Загрузить MP3 или аудиофайл"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg></button><div class="voice-editor-upload-copy"><b>Добавить аудио</b><span>Перетащи файл сюда или нажми + · MP3, WAV, M4A, FLAC</span></div>';
- const toolbar=document.createElement("div");toolbar.className="voice-editor-toolbar";
- const results=document.createElement("div");results.className="voice-editor-stems";results.hidden=true;
- const footer=document.createElement("div");footer.className="voice-editor-footer";
- const closeBtn=document.createElement("button");closeBtn.type="button";closeBtn.className="voice-editor-close-btn voice-editor-footer-btn";closeBtn.title="Закрыть редактор";closeBtn.setAttribute("aria-label","Закрыть редактор");closeBtn.innerHTML='<svg viewBox="0 0 24 24"><path d="m6 6 12 12M18 6 6 18"/></svg>';
- const saveBtn=document.createElement("button");saveBtn.type="button";saveBtn.className="voice-editor-save voice-editor-footer-btn";saveBtn.title="Сохранить как новый голос";saveBtn.setAttribute("aria-label","Сохранить как новый голос");saveBtn.innerHTML='<svg viewBox="0 0 24 24"><path d="M5 4h11l3 3v13H5z"/><path d="M8 4v5h8V4M8 16h8"/></svg>';
- footer.append(closeBtn,saveBtn);sourceBox.append(sourceLabel,playerWrap);dialog.append(head,sourceBox,uploadBox,toolbar,results,footer);backdrop.appendChild(dialog);document.body.appendChild(backdrop);
+ ensureVoiceWallStyles();
+ document.querySelector(".voice-editor-backdrop")?.remove();
 
- let workingUrl=null,workingBlob=null,workingName=item?.prompt?"voice.mp3":"miya-voice.mp3",dirty=false,stemResults=null;
- const cleanupUrl=url=>{if(url?.startsWith("blob:"))try{URL.revokeObjectURL(url)}catch{}};
- const closeEditor=()=>{playerWrap.querySelector(".voice-player")?.__cleanup?.();cleanupUrl(workingUrl);[stemResults?.vocals?.url,stemResults?.instrumental?.url].forEach(cleanupUrl);backdrop.remove();document.body.classList.remove("voice-modal-open")};
- close.onclick=closeEditor;closeBtn.onclick=closeEditor;backdrop.addEventListener("click",e=>{if(e.target===backdrop)closeEditor()});
+ if(!document.getElementById("miyaVoiceEditorV2Styles")){
+  const st=document.createElement("style");
+  st.id="miyaVoiceEditorV2Styles";
+  st.textContent=String.raw\`
+.voice-editor-backdrop{background:rgba(3,8,18,.78)!important;backdrop-filter:blur(18px)!important;-webkit-backdrop-filter:blur(18px)!important}
+.voice-editor-dialog.ve2{width:min(1180px,96vw)!important;height:min(900px,94vh)!important;max-height:94vh!important;margin:auto!important;padding:0!important;overflow:hidden!important;display:grid!important;grid-template-rows:auto minmax(0,1fr) auto!important;gap:0!important;border:1px solid rgba(181,145,255,.20)!important;border-radius:28px!important;background:linear-gradient(145deg,#091a2d 0%,#06111f 55%,#071525 100%)!important;box-shadow:0 35px 100px rgba(0,0,0,.48),inset 0 1px 0 rgba(255,255,255,.06)!important}
+.ve2-head{min-height:76px;padding:15px 18px 14px 22px;display:flex;align-items:center;justify-content:space-between;gap:18px;border-bottom:1px solid rgba(255,255,255,.075);background:linear-gradient(180deg,rgba(255,255,255,.035),transparent)}
+.ve2-brand{display:flex;align-items:center;gap:12px;min-width:0}
+.ve2-brand-mark{width:42px;height:42px;flex:0 0 42px;border-radius:14px;display:grid;place-items:center;color:#fff;background:linear-gradient(135deg,#b65cff,#695dff);box-shadow:0 10px 30px rgba(111,77,226,.30)}
+.ve2-brand-mark svg{width:21px;height:21px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.ve2-eyebrow{font-size:9px;letter-spacing:.18em;font-weight:900;color:#b78dff;opacity:.9}
+.ve2-title{margin:2px 0 0;font-size:clamp(18px,2vw,25px);font-weight:900;letter-spacing:-.04em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ve2-meta{font-size:10px;color:#7f93aa;margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ve2-head-actions{display:flex;align-items:center;gap:8px;flex:0 0 auto}
+.ve2-clear{min-height:42px;padding:0 13px;display:flex;align-items:center;gap:8px;border-radius:13px;border:1px solid rgba(255,91,116,.38);background:linear-gradient(135deg,rgba(255,64,96,.16),rgba(255,255,255,.035));color:#ffb0bc;font-weight:900;font-size:11px;cursor:pointer;transition:.16s}
+.ve2-clear svg{width:17px;height:17px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.ve2-clear:hover{transform:translateY(-1px);background:rgba(255,64,96,.24);border-color:rgba(255,130,148,.68);color:#fff;box-shadow:0 12px 30px rgba(255,55,90,.14)}
+.ve2-clear:disabled{opacity:.34;cursor:default;transform:none;box-shadow:none}
+.ve2-close{width:42px;height:42px;border-radius:13px;border:1px solid rgba(255,255,255,.10);background:rgba(255,255,255,.045);color:#aebed0;display:grid;place-items:center;cursor:pointer}
+.ve2-close:hover{background:rgba(255,255,255,.09);color:#fff;border-color:rgba(190,154,255,.35)}
+.ve2-close svg{width:19px;height:19px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round}
+.ve2-body{min-height:0;display:grid;grid-template-columns:minmax(0,1fr) 300px;overflow:hidden}
+.ve2-main{min-width:0;min-height:0;overflow:auto;padding:18px 18px 16px}
+.ve2-stage{border:1px solid rgba(255,255,255,.08);border-radius:22px;background:radial-gradient(circle at 50% 0%,rgba(155,111,255,.11),transparent 52%),rgba(255,255,255,.025);box-shadow:inset 0 1px 0 rgba(255,255,255,.03);padding:18px}
+.ve2-fileline{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:14px}
+.ve2-fileline b{font-size:12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ve2-fileline span{font-size:9px;color:#70849a;white-space:nowrap}
+.ve2-player{width:100%;margin:0}
+.ve2-wavebox{position:relative;margin-top:16px;height:154px;border:1px solid rgba(164,126,255,.22);border-radius:18px;overflow:hidden;background:linear-gradient(180deg,rgba(11,26,45,.96),rgba(6,17,30,.98));cursor:crosshair}
+.ve2-wave{position:absolute;inset:0;width:100%;height:100%}
+.ve2-wave-selection{position:absolute;top:0;bottom:0;border-left:1px solid rgba(215,190,255,.78);border-right:1px solid rgba(215,190,255,.78);background:linear-gradient(90deg,rgba(163,115,255,.06),rgba(163,115,255,.16),rgba(163,115,255,.06));pointer-events:none}
+.ve2-playhead{position:absolute;top:0;bottom:0;width:2px;background:#fff;box-shadow:0 0 12px rgba(255,255,255,.5);pointer-events:none;transform:translateX(-1px)}
+.ve2-playhead::before{content:"";position:absolute;top:0;left:50%;transform:translate(-50%,-2px);width:8px;height:8px;border-radius:50%;background:#fff;box-shadow:0 0 12px rgba(183,140,255,.8)}
+.ve2-wave-label{position:absolute;left:12px;top:10px;font-size:8px;letter-spacing:.14em;font-weight:900;color:#9f8bc4;pointer-events:none}
+.ve2-transport{display:flex;align-items:center;gap:9px;margin-top:12px}
+.ve2-play{width:44px;height:44px;border:0;border-radius:14px;background:linear-gradient(135deg,#b45cff,#6d5cff);color:#fff;display:grid;place-items:center;cursor:pointer;box-shadow:0 10px 24px rgba(108,72,211,.28)}
+.ve2-play svg{width:19px;height:19px;fill:currentColor;stroke:none}
+.ve2-time{font-size:11px;font-variant-numeric:tabular-nums;color:#b5c5d6;min-width:94px}
+.ve2-transport-spacer{flex:1}
+.ve2-transport-btn{height:34px;padding:0 10px;border:1px solid rgba(255,255,255,.09);border-radius:10px;background:rgba(255,255,255,.045);color:#9fb0c3;font-size:10px;font-weight:900;cursor:pointer}
+.ve2-transport-btn:hover{color:#fff;border-color:rgba(190,154,255,.35);background:rgba(157,111,255,.10)}
+.ve2-upload{margin-top:14px;min-height:70px;display:flex;align-items:center;gap:12px;padding:12px 14px;border:1px dashed rgba(174,132,255,.34);border-radius:17px;background:linear-gradient(135deg,rgba(157,111,255,.065),rgba(255,255,255,.018));cursor:pointer;transition:.16s}
+.ve2-upload:hover,.ve2-upload.drag{border-color:rgba(195,164,255,.75);background:rgba(157,111,255,.12);box-shadow:0 14px 32px rgba(73,43,140,.12)}
+.ve2-plus{width:44px;height:44px;flex:0 0 44px;border-radius:13px;border:1px solid rgba(192,155,255,.40);background:rgba(157,111,255,.10);color:#dccaff;display:grid;place-items:center}
+.ve2-plus svg{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round}
+.ve2-upload b{display:block;font-size:11px;font-weight:900}.ve2-upload span{display:block;margin-top:3px;font-size:9px;color:#71859c}
+.ve2-side{min-height:0;overflow:auto;padding:14px;border-left:1px solid rgba(255,255,255,.075);background:rgba(0,0,0,.12)}
+.ve2-section{padding:12px;border:1px solid rgba(255,255,255,.075);border-radius:17px;background:rgba(255,255,255,.032);margin-bottom:10px}
+.ve2-section-title{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:10px}
+.ve2-section-title b{font-size:11px;font-weight:900}.ve2-section-title span{font-size:8px;color:#71859a;letter-spacing:.08em;text-transform:uppercase}
+.ve2-tools{display:grid;grid-template-columns:1fr 1fr;gap:7px}
+.ve2-tool{min-height:76px;padding:10px 9px;border:1px solid rgba(255,255,255,.08);border-radius:14px;background:linear-gradient(145deg,rgba(255,255,255,.055),rgba(255,255,255,.02));color:#aebed0;display:flex;flex-direction:column;align-items:flex-start;justify-content:center;gap:7px;text-align:left;cursor:pointer;transition:.16s}
+.ve2-tool svg{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
+.ve2-tool strong{font-size:10px;font-weight:900}.ve2-tool small{font-size:8px;color:#687e96;line-height:1.2}
+.ve2-tool:hover{transform:translateY(-1px);border-color:rgba(190,154,255,.40);background:linear-gradient(145deg,rgba(157,111,255,.14),rgba(255,255,255,.03));color:#fff;box-shadow:0 10px 24px rgba(70,42,130,.13)}
+.ve2-tool.active{border-color:rgba(190,154,255,.56);background:linear-gradient(145deg,rgba(169,92,255,.20),rgba(110,99,255,.13));color:#f0e6ff}
+.ve2-panel{padding:12px;border:1px solid rgba(185,145,255,.16);border-radius:15px;background:rgba(150,110,255,.055)}
+.ve2-panel h4{margin:0 0 4px;font-size:11px}.ve2-panel p{margin:0 0 10px;font-size:9px;color:#71859a;line-height:1.4}
+.ve2-range-row{display:grid;grid-template-columns:52px 1fr 42px;align-items:center;gap:8px;margin:8px 0}.ve2-range-row label{font-size:9px;color:#9aacc0}.ve2-range-row output{font-size:9px;text-align:right;color:#c7d4e1;font-variant-numeric:tabular-nums}
+.ve2-range{width:100%;accent-color:#a96cff}
+.ve2-apply{width:100%;height:36px;border:0;border-radius:11px;background:linear-gradient(135deg,#a95cff,#6e63ff);color:#fff;font-size:10px;font-weight:900;cursor:pointer;margin-top:8px}
+.ve2-apply:disabled{opacity:.45;cursor:wait}
+.ve2-note{font-size:8px;color:#667c93;line-height:1.4;margin-top:8px}
+.ve2-results{display:grid;gap:8px;margin-top:10px}
+.ve2-result{padding:10px;border:1px solid rgba(255,255,255,.075);border-radius:13px;background:rgba(255,255,255,.025)}
+.ve2-result-head{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:7px}.ve2-result-head b{font-size:10px}.ve2-result-save{width:30px;height:30px;border-radius:9px;border:1px solid rgba(255,255,255,.10);background:rgba(255,255,255,.045);color:#aebed0;display:grid;place-items:center;cursor:pointer}.ve2-result-save:hover{color:#fff;border-color:rgba(190,154,255,.4)}
+.ve2-result-save svg{width:15px;height:15px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}.ve2-result audio{width:100%;height:34px}
+.ve2-footer{min-height:70px;padding:12px 18px;display:flex;align-items:center;justify-content:space-between;gap:12px;border-top:1px solid rgba(255,255,255,.075);background:rgba(4,12,22,.72)}
+.ve2-footer-note{font-size:9px;color:#71859a;line-height:1.35}.ve2-footer-actions{display:flex;gap:8px}.ve2-footer-btn{height:40px;padding:0 15px;border-radius:12px;border:1px solid rgba(255,255,255,.10);background:rgba(255,255,255,.045);color:#b5c5d6;font-size:10px;font-weight:900;cursor:pointer}.ve2-footer-btn.primary{border:0;background:linear-gradient(135deg,#a95cff,#6e63ff);color:#fff;box-shadow:0 10px 25px rgba(104,66,210,.22)}.ve2-footer-btn:disabled{opacity:.38;cursor:default;box-shadow:none}
+.ve2-name{width:100%;height:34px;padding:0 10px;border:1px solid rgba(255,255,255,.09);border-radius:10px;background:rgba(255,255,255,.04);color:#d6e0ea;outline:none;font-size:10px}.ve2-name:focus{border-color:rgba(190,154,255,.48);box-shadow:0 0 0 3px rgba(157,111,255,.09)}
+body.light .voice-editor-dialog.ve2{background:#f7f9fc!important;border-color:#dbe4ee!important;color:#273047}
+body.light .ve2-head,body.light .ve2-footer{background:#fff;border-color:#dbe4ee}.body.light .ve2-side{background:#f2f5f9}
+body.light .ve2-side{background:#f2f5f9;border-color:#dbe4ee}.body.light .ve2-stage{background:#fff;border-color:#dbe4ee}
+body.light .ve2-stage,body.light .ve2-section,body.light .ve2-result{background:#fff;border-color:#dbe4ee}
+body.light .ve2-title,body.light .ve2-section-title b,body.light .ve2-tool strong,body.light .ve2-panel h4{color:#273047}
+body.light .ve2-meta,body.light .ve2-upload span,body.light .ve2-tool small,body.light .ve2-panel p,body.light .ve2-note,body.light .ve2-footer-note{color:#71839a}
+body.light .ve2-tool,body.light .ve2-transport-btn,body.light .ve2-footer-btn,body.light .ve2-result-save{background:#f4f7fa;color:#52657b;border-color:#d3deea}
+body.light .ve2-name{background:#fff;color:#273047;border-color:#d3deea}
+@media(max-width:900px){.voice-editor-dialog.ve2{width:98vw!important;height:96vh!important}.ve2-body{grid-template-columns:1fr}.ve2-side{border-left:0;border-top:1px solid rgba(255,255,255,.075);max-height:44vh}.ve2-main{overflow:auto}}
+@media(max-width:560px){.voice-editor-dialog.ve2{border-radius:20px!important}.ve2-head{padding:12px}.ve2-clear{width:42px;padding:0;justify-content:center}.ve2-clear span{display:none}.ve2-stage{padding:12px}.ve2-wavebox{height:125px}.ve2-footer-note{display:none}.ve2-footer{justify-content:flex-end}.ve2-tools{grid-template-columns:1fr 1fr}}
+\`;
+  document.head.appendChild(st);
+ }
 
- const renderPlayer=()=>{playerWrap.innerHTML="";const p=buildVoicePlayer(()=>Promise.resolve(workingUrl),null);p.wrap.style.cursor="default";p.wrap.__cleanup=p.cleanup;playerWrap.append(p.wrap)};
- const renderResults=()=>{
-  results.innerHTML="";
-  if(!stemResults){results.hidden=true;return}
-  results.hidden=false;
-  [["vocals","🎤 Вокал","Сохранить вокал"],["instrumental","🎵 Минус","Сохранить минус"]].forEach(([kind,title,label])=>{
-   const card=document.createElement("div");card.className="voice-editor-stem";
-   const b=document.createElement("b");b.textContent=title;
-   const audio=document.createElement("audio");audio.controls=true;audio.src=stemResults[kind].url;
-   const save=document.createElement("button");save.type="button";save.className="voice-editor-stem-save";save.title=label;save.setAttribute("aria-label",label);save.innerHTML='<svg viewBox="0 0 24 24"><path d="M12 4v11M8 11l4 4 4-4M5 20h14"/></svg>';
-   save.onclick=()=>saveStem(kind);
-   card.append(b,audio,save);results.append(card);
-  });
+ const backdrop=document.createElement("div");
+ backdrop.className="voice-detail-backdrop voice-editor-backdrop";
+ const dialog=document.createElement("section");
+ dialog.className="voice-editor-dialog ve2";
+ dialog.setAttribute("role","dialog");
+ dialog.setAttribute("aria-modal","true");
+
+ const head=document.createElement("header");
+ head.className="ve2-head";
+ const brand=document.createElement("div");
+ brand.className="ve2-brand";
+ brand.innerHTML='<div class="ve2-brand-mark"><svg viewBox="0 0 24 24"><path d="M4 9v6M8 6v12M12 3v18M16 6v12M20 9v6"/></svg></div><div style="min-width:0"><div class="ve2-eyebrow">MIYA AUDIO STUDIO</div><div class="ve2-title">'+escapeHtml(String(item?.model||"Голос"))+'</div><div class="ve2-meta">Неразрушающее редактирование · оригинальная карточка остаётся на стене</div></div>';
+ const headActions=document.createElement("div");headActions.className="ve2-head-actions";
+ const clearBtn=document.createElement("button");clearBtn.type="button";clearBtn.className="ve2-clear";clearBtn.title="Убрать текущую запись только из редактора";clearBtn.innerHTML='<svg viewBox="0 0 24 24"><path d="M7 7h10M9 4h6l1 3H8l1-3Z"/><path d="M9 11v6M15 11v6M5 7l1 13h12l-1-13"/><path d="m4 20 16-16"/></svg><span>Убрать запись</span>';
+ const close=document.createElement("button");close.type="button";close.className="ve2-close";close.title="Закрыть";close.setAttribute("aria-label","Закрыть");close.innerHTML='<svg viewBox="0 0 24 24"><path d="m6 6 12 12M18 6 6 18"/></svg>';
+ headActions.append(clearBtn,close);head.append(brand,headActions);
+
+ const body=document.createElement("div");body.className="ve2-body";
+ const main=document.createElement("main");main.className="ve2-main";
+ const stage=document.createElement("section");stage.className="ve2-stage";
+ const fileline=document.createElement("div");fileline.className="ve2-fileline";
+ const nameInput=document.createElement("input");nameInput.className="ve2-name";nameInput.placeholder="Название нового голоса";nameInput.value=String(item?.prompt||item?.model||"Мой голос").slice(0,80);
+ const fileMeta=document.createElement("span");fileMeta.textContent="Исходник";
+ fileline.append(nameInput,fileMeta);
+ const playerWrap=document.createElement("div");playerWrap.className="ve2-player";
+ const waveBox=document.createElement("div");waveBox.className="ve2-wavebox";
+ waveBox.innerHTML='<canvas class="ve2-wave"></canvas><div class="ve2-wave-selection"></div><div class="ve2-playhead"></div><div class="ve2-wave-label">AUDIO WAVEFORM</div>';
+ const transport=document.createElement("div");transport.className="ve2-transport";
+ const playBtn=document.createElement("button");playBtn.type="button";playBtn.className="ve2-play";playBtn.setAttribute("aria-label","Воспроизвести");playBtn.innerHTML='<svg viewBox="0 0 24 24"><path d="M8 5v14l11-7Z"/></svg>';
+ const timeLabel=document.createElement("span");timeLabel.className="ve2-time";timeLabel.textContent="0:00 / 0:00";
+ const spacer=document.createElement("div");spacer.className="ve2-transport-spacer";
+ const backBtn=document.createElement("button");backBtn.type="button";backBtn.className="ve2-transport-btn";backBtn.textContent="− 5 сек";
+ const fwdBtn=document.createElement("button");fwdBtn.type="button";fwdBtn.className="ve2-transport-btn";fwdBtn.textContent="+ 5 сек";
+ transport.append(playBtn,timeLabel,spacer,backBtn,fwdBtn);
+ const upload=document.createElement("div");upload.className="ve2-upload";
+ upload.innerHTML='<button type="button" class="ve2-plus" aria-label="Добавить аудио"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg></button><div><b>Заменить исходник</b><span>Перетащи MP3, WAV, M4A или FLAC сюда · оригинальная карточка не изменится</span></div>';
+ stage.append(fileline,playerWrap,waveBox,transport,upload);
+ main.append(stage);
+
+ const side=document.createElement("aside");side.className="ve2-side";
+ const toolsSection=document.createElement("section");toolsSection.className="ve2-section";
+ const toolsTitle=document.createElement("div");toolsTitle.className="ve2-section-title";toolsTitle.innerHTML='<b>Инструменты</b><span>WORKFLOW</span>';
+ const tools=document.createElement("div");tools.className="ve2-tools";
+ const panel=document.createElement("div");panel.className="ve2-panel";
+ toolsSection.append(toolsTitle,tools,panel);side.append(toolsSection);
+
+ const resultsBox=document.createElement("section");resultsBox.className="ve2-section";resultsBox.hidden=true;
+ const resultsTitle=document.createElement("div");resultsTitle.className="ve2-section-title";resultsTitle.innerHTML='<b>Результаты</b><span>STEMS</span>';
+ const results=document.createElement("div");results.className="ve2-results";resultsBox.append(resultsTitle,results);side.append(resultsBox);
+ body.append(main,side);
+
+ const footer=document.createElement("footer");footer.className="ve2-footer";
+ const footerNote=document.createElement("div");footerNote.className="ve2-footer-note";footerNote.textContent="Все изменения остаются только в редакторе до сохранения как нового голоса.";
+ const footerActions=document.createElement("div");footerActions.className="ve2-footer-actions";
+ const closeBtn=document.createElement("button");closeBtn.type="button";closeBtn.className="ve2-footer-btn";closeBtn.textContent="Закрыть";
+ const saveBtn=document.createElement("button");saveBtn.type="button";saveBtn.className="ve2-footer-btn primary";saveBtn.textContent="Сохранить как новый голос";
+ footerActions.append(closeBtn,saveBtn);footer.append(footerNote,footerActions);
+ dialog.append(head,body,footer);backdrop.append(dialog);document.body.append(backdrop);document.body.classList.add("voice-modal-open");
+
+ let workingUrl=null,workingBlob=null,workingName=(String(item?.prompt||"").trim()||"miya-voice.mp3"),dirty=false;
+ let audio=null,waveData=null,duration=0,trimStart=0,trimEnd=0,volume=1,stemResults=null;
+ const cleanupUrl=u=>{if(u?.startsWith("blob:"))try{URL.revokeObjectURL(u)}catch{}};
+ const formatTime=v=>{const x=Math.max(0,Number(v)||0),m=Math.floor(x/60),s=Math.floor(x%60);return m+":"+String(s).padStart(2,"0")};
+ const svg=path=>'<svg viewBox="0 0 24 24">'+path+"</svg>";
+ const setPlayIcon=playing=>{playBtn.innerHTML=playing?'<svg viewBox="0 0 24 24"><path d="M7 5h4v14H7zM13 5h4v14h-4z"/></svg>':'<svg viewBox="0 0 24 24"><path d="M8 5v14l11-7Z"/></svg>';playBtn.setAttribute("aria-label",playing?"Пауза":"Воспроизвести")};
+ const setStatus=msg=>{fileMeta.textContent=msg||"Исходник"};
+ const sync=()=>{const has=Boolean(workingBlob&&workingUrl);clearBtn.disabled=!has;saveBtn.disabled=!has||!dirty;saveBtn.textContent=dirty?"Сохранить как новый голос":"Изменений нет · сохранение недоступно"};
+ const renderPlayer=()=>{playerWrap.innerHTML="";if(!workingUrl)return;const p=buildVoicePlayer(()=>Promise.resolve(workingUrl),null);p.wrap.classList.add("voice-detail-player");p.wrap.style.width="100%";p.wrap.style.margin="0";p.wrap.__cleanup=p.cleanup;playerWrap.append(p.wrap)};
+ const drawWave=()=>{
+  const canvas=waveBox.querySelector(".ve2-wave");if(!canvas)return;
+  const rect=waveBox.getBoundingClientRect(),dpr=Math.min(2,window.devicePixelRatio||1),w=Math.max(320,Math.floor(rect.width*dpr)),h=Math.max(120,Math.floor(rect.height*dpr));
+  canvas.width=w;canvas.height=h;
+  const ctx=canvas.getContext("2d");ctx.clearRect(0,0,w,h);
+  ctx.strokeStyle="rgba(255,255,255,.035)";ctx.lineWidth=1;
+  for(let i=1;i<8;i++){const y=i*h/8;ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(w,y);ctx.stroke()}
+  if(!waveData?.length){return}
+  const bars=Math.min(220,Math.max(80,Math.floor(w/4))), step=waveData.length/bars;
+  const activeL=trimStart/Math.max(.001,duration)*w,activeR=trimEnd/Math.max(.001,duration)*w;
+  for(let i=0;i<bars;i++){let max=0;const a=Math.floor(i*step),b=Math.min(waveData.length,Math.floor((i+1)*step));for(let j=a;j<b;j++)max=Math.max(max,waveData[j]);const x=i*(w/bars),bh=Math.max(3,max*(h*.72));ctx.fillStyle=(x>=activeL&&x<=activeR)?"rgba(184,141,255,.88)":"rgba(103,125,151,.34)";ctx.beginPath();ctx.roundRect(x+1,(h-bh)/2,Math.max(1,w/bars-2),bh,3);ctx.fill()}
+  const sel=waveBox.querySelector(".ve2-wave-selection"),ph=waveBox.querySelector(".ve2-playhead");if(sel){sel.style.left=(activeL/dpr)+"px";sel.style.width=Math.max(0,(activeR-activeL)/dpr)+"px"}if(ph){const cur=audio?.currentTime||0;ph.style.left=(cur/Math.max(.001,duration))*100+"%"}
  };
- const syncEditorState=()=>{
-   const hasFile=Boolean(workingBlob&&workingUrl);
-   deleteBtn.disabled=!hasFile;
-   deleteBtn.title=hasFile?"Убрать из редактора":"В редакторе нет файла";
-   deleteBtn.setAttribute("aria-label",hasFile?"Убрать текущий голос из редактора":"В редакторе нет файла");
-   saveBtn.disabled=!dirty||!hasFile;
-   saveBtn.title=hasFile&&dirty?"Сохранить как новый голос":"Сначала измени или добавь аудиофайл";
- };
- const loadInitial=async()=>{try{workingBlob=await resolveVoiceBlob(source);workingUrl=URL.createObjectURL(workingBlob);dirty=false;renderPlayer();syncEditorState()}catch{toast("Не удалось открыть голос");closeEditor()}};
-
- const replaceSource=async file=>{
-  if(!file?.type?.startsWith("audio/")){toast("Выбери аудиофайл");return}
-  playerWrap.querySelector(".voice-player")?.__cleanup?.();cleanupUrl(workingUrl);[stemResults?.vocals?.url,stemResults?.instrumental?.url].forEach(cleanupUrl);stemResults=null;renderResults();
-  workingBlob=file;workingName=file.name||"miya-voice.mp3";workingUrl=URL.createObjectURL(file);dirty=true;renderPlayer();syncEditorState();sourceLabel.textContent="НОВЫЙ РАБОЧИЙ ФАЙЛ";toast("Аудио загружено в редактор");
- };
- const input=document.createElement("input");input.type="file";input.accept="audio/*";input.hidden=true;document.body.appendChild(input);input.onchange=()=>{const f=input.files?.[0];input.value="";if(f)replaceSource(f)};
- const plus=uploadBox.querySelector(".voice-editor-plus");plus.onclick=()=>input.click();
- ["dragenter","dragover"].forEach(ev=>uploadBox.addEventListener(ev,e=>{e.preventDefault();uploadBox.classList.add("drag")}));
- ["dragleave","drop"].forEach(ev=>uploadBox.addEventListener(ev,e=>{e.preventDefault();uploadBox.classList.remove("drag")}));
- uploadBox.addEventListener("drop",e=>{const f=e.dataTransfer.files?.[0];if(f)replaceSource(f)});
- window.addEventListener("dragover",e=>e.preventDefault(),{once:true});
-
- const saveStem=kind=>{
-  const stem=stemResults?.[kind];if(!stem?.blob)return;
-  const label=kind==="vocals"?"Вокал":"Минус";
-  const itemSaved=saveMedia("audio",stem.url,(workingName||"Песня")+" · "+label,"CleverUtils · "+label,"mp3");
-  if(!itemSaved){toast("Не удалось сохранить "+label);return}
-  renderVoiceLibrary();toast(label+" сохранён на стену и в «Мои файлы → Музыка»");
- };
-
- const split=async()=>{
+ const decodeWave=async()=>{
   if(!workingBlob)return;
-  const splitBtn=toolbar.querySelector(".voice-editor-tool");if(splitBtn){splitBtn.disabled=true;splitBtn.querySelector("span").textContent="Разделяю…"}
+  try{
+   const ctx=new (window.AudioContext||window.webkitAudioContext)();
+   const buffer=await ctx.decodeAudioData(await workingBlob.arrayBuffer());
+   await ctx.close();
+   duration=buffer.duration;trimStart=0;trimEnd=duration;
+   const data=buffer.getChannelData(0),samples=Math.min(16000,data.length),step=data.length/samples;waveData=new Float32Array(samples);
+   for(let i=0;i<samples;i++){let m=0,a=Math.floor(i*step),b=Math.min(data.length,Math.floor((i+1)*step));for(let j=a;j<b;j++)m=Math.max(m,Math.abs(data[j]));waveData[i]=m}
+   drawWave();timeLabel.textContent=formatTime(0)+" / "+formatTime(duration);setStatus(formatTime(duration)+" · исходник");
+  }catch{waveData=null;duration=0;trimStart=trimEnd=0;drawWave();setStatus("Файл загружен · waveform недоступен")}
+ };
+ const updatePlayhead=()=>{if(audio){timeLabel.textContent=formatTime(audio.currentTime)+" / "+formatTime(duration);drawWave();if(!audio.paused)requestAnimationFrame(updatePlayhead)}};
+ const stopAudio=()=>{if(audio){try{audio.pause()}catch{}audio=null}setPlayIcon(false);drawWave()};
+ const play=async()=>{if(!workingUrl)return;if(!audio||audio.src!==workingUrl){stopAudio();audio=new Audio(workingUrl);audio.volume=volume;audio.ontimeupdate=()=>{if(audio.currentTime>trimEnd+.02){audio.currentTime=trimStart}};audio.onended=()=>setPlayIcon(false);audio.onplay=()=>{setPlayIcon(true);updatePlayhead()};audio.onpause=()=>setPlayIcon(false)}if(audio.paused){if(audio.currentTime<trimStart||audio.currentTime>=trimEnd)audio.currentTime=trimStart;await audio.play()}else audio.pause()};
+ const seekFromWave=e=>{if(!duration)return;const r=waveBox.getBoundingClientRect();const t=Math.max(0,Math.min(duration,(e.clientX-r.left)/r.width*duration));if(audio)audio.currentTime=t;drawWave();timeLabel.textContent=formatTime(t)+" / "+formatTime(duration)};
+ waveBox.addEventListener("click",seekFromWave);
+ playBtn.onclick=play;
+ backBtn.onclick=()=>{if(audio)audio.currentTime=Math.max(trimStart,audio.currentTime-5);drawWave()};
+ fwdBtn.onclick=()=>{if(audio)audio.currentTime=Math.min(trimEnd,audio.currentTime+5);drawWave()};
+ window.addEventListener("resize",drawWave);
+
+ const trimPanel=()=>{
+  panel.innerHTML='<h4>Обрезка</h4><p>Выбери начало и конец. Оригинальная карточка останется нетронутой.</p><div class="ve2-range-row"><label>Начало</label><input class="ve2-range" id="veTrimStart" type="range" min="0" max="1" step=".01" value="0"><output id="veTrimStartOut">0:00</output></div><div class="ve2-range-row"><label>Конец</label><input class="ve2-range" id="veTrimEnd" type="range" min="0" max="1" step=".01" value="1"><output id="veTrimEndOut">0:00</output></div><button class="ve2-apply" id="veTrimApply">Применить обрезку</button><div class="ve2-note">Можно точно подогнать выделение по waveform кликом для предпросмотра.</div>';
+  const a=panel.querySelector("#veTrimStart"),b=panel.querySelector("#veTrimEnd"),ao=panel.querySelector("#veTrimStartOut"),bo=panel.querySelector("#veTrimEndOut");
+  a.max=String(Math.max(.01,duration));b.max=String(Math.max(.01,duration));a.value=String(trimStart);b.value=String(trimEnd);ao.textContent=formatTime(trimStart);bo.textContent=formatTime(trimEnd);
+  a.oninput=()=>{trimStart=Math.min(Number(a.value),Math.max(0,trimEnd-.05));a.value=trimStart;ao.textContent=formatTime(trimStart);drawWave()};
+  b.oninput=()=>{trimEnd=Math.max(Number(b.value),Math.min(duration,trimStart+.05));b.value=trimEnd;bo.textContent=formatTime(trimEnd);drawWave()};
+  panel.querySelector("#veTrimApply").onclick=()=>processClientAudio("trim");
+ };
+ const volumePanel=()=>{
+  panel.innerHTML='<h4>Громкость</h4><p>Измени громкость и запиши результат прямо в рабочий файл.</p><div class="ve2-range-row"><label>Уровень</label><input class="ve2-range" id="veVol" type="range" min="0" max="200" value="'+Math.round(volume*100)+'"><output id="veVolOut">'+Math.round(volume*100)+'%</output></div><button class="ve2-apply" id="veVolApply">Применить громкость</button>';
+  const r=panel.querySelector("#veVol"),o=panel.querySelector("#veVolOut");r.oninput=()=>{volume=Number(r.value)/100;o.textContent=r.value+"%";if(audio)audio.volume=volume};panel.querySelector("#veVolApply").onclick=()=>processClientAudio("volume");
+ };
+ const normalizePanel=()=>{
+  panel.innerHTML='<h4>Нормализация</h4><p>Подтяни тихую запись к ровному уровню без внешнего API.</p><button class="ve2-apply" id="veNormApply">Нормализовать голос</button><div class="ve2-note">Обработка выполняется локально в браузере.</div>';panel.querySelector("#veNormApply").onclick=()=>processClientAudio("normalize");
+ };
+ const noisePanel=()=>{panel.innerHTML='<h4>Очистить шум</h4><p>AI-очистка речи через текущий CleverUtils-инструмент.</p><button class="ve2-apply" id="veNoiseApply">Запустить очистку</button><div class="ve2-note">Результат заменит только рабочий файл редактора.</div>';panel.querySelector("#veNoiseApply").onclick=runNoise};
+ const splitPanel=()=>{panel.innerHTML='<h4>Разделить вокал</h4><p>Получить отдельные дорожки: вокал и инструментал.</p><button class="ve2-apply" id="veSplitApply">Разделить на 2 дорожки</button><div class="ve2-note">Результаты можно сохранить отдельными голосовыми файлами.</div>';panel.querySelector("#veSplitApply").onclick=runSplit};
+ const convertPanel=()=>{panel.innerHTML='<h4>Преобразовать</h4><p>Сделать совместимую WAV-копию текущего рабочего файла.</p><button class="ve2-apply" id="veWavApply">Преобразовать в WAV</button><div class="ve2-note">WAV удобен для дальнейшего редактирования и сохраняется как новый голос.</div>';panel.querySelector("#veWavApply").onclick=()=>processClientAudio("wav")};
+
+ const tool=(id,label,sub,path,fn)=>{const b=document.createElement("button");b.type="button";b.className="ve2-tool";b.dataset.tool=id;b.innerHTML=svg(path)+"<strong>"+label+"</strong><small>"+sub+"</small>";b.onclick=()=>{tools.querySelectorAll(".ve2-tool").forEach(x=>x.classList.remove("active"));b.classList.add("active");fn()};tools.append(b);return b};
+ tool("trim","Обрезать","Точно по времени",'<path d="M6 5v14M18 5v14M3 9h6M15 15h6"/>',trimPanel);
+ tool("noise","Очистить шум","AI · речь",'<path d="M4 12h16M7 7h10M7 17h10"/><path d="M12 4v16"/>',noisePanel);
+ tool("split","Разделить вокал","Вокал + минус",'<path d="M5 5l14 14M19 5 5 19"/><path d="M5 12h5M14 12h5"/>',splitPanel);
+ tool("volume","Громкость","Уровень записи",'<path d="M4 10v4h4l5 4V6l-5 4H4Z"/><path d="M17 9a4 4 0 0 1 0 6M19 6a8 8 0 0 1 0 12"/>',volumePanel);
+ tool("normalize","Нормализовать","Сделать ровнее",'<path d="M4 12h3l2-6 4 12 2-6h5"/>',normalizePanel);
+ tool("convert","WAV","Совместимый формат",'<path d="M4 6h16v12H4z"/><path d="M8 10h8M8 14h5"/>',convertPanel);
+ tools.querySelector(".ve2-tool")?.click();
+
+ const setWorkingBlob=async(blob,name=null)=>{
+  stopAudio();cleanupUrl(workingUrl);workingBlob=blob;workingUrl=URL.createObjectURL(blob);if(name)workingName=name;dirty=true;nameInput.value=workingName.replace(/\.[^.]+$/,"");await decodeWave();renderPlayer();sync();
+ };
+ const processClientAudio=async(kind)=>{
+  if(!workingBlob||!duration)return;
+  const apply=panel.querySelector(".ve2-apply");if(apply){apply.disabled=true;apply.textContent="Обрабатываю…"}
+  try{
+   const AudioContextClass=window.AudioContext||window.webkitAudioContext;if(!AudioContextClass)throw new Error("Браузер не поддерживает аудиообработку");
+   const ctx=new AudioContextClass();const buffer=await ctx.decodeAudioData(await workingBlob.arrayBuffer());await ctx.close();
+   let start=0,end=buffer.duration;if(kind==="trim"){start=Math.max(0,Math.min(buffer.duration,trimStart));end=Math.max(start+.02,Math.min(buffer.duration,trimEnd))}
+   const rate=buffer.sampleRate,channels=buffer.numberOfChannels,frames=Math.max(1,Math.floor((end-start)*rate));
+   const outCtx=new OfflineAudioContext(channels,frames,rate);const sourceNode=outCtx.createBufferSource();const outBuffer=outCtx.createBuffer(channels,frames,rate);
+   if(kind==="normalize"||kind==="volume"||kind==="wav"||kind==="trim"){
+    const gainNode=outCtx.createGain();gainNode.gain.value=kind==="volume"?volume:1;sourceNode.buffer=buffer;sourceNode.connect(gainNode);gainNode.connect(outCtx.destination);sourceNode.start(0,start,frames/rate);const rendered=await outCtx.startRendering();
+    let finalBuffer=rendered;
+    if(kind==="normalize"){let peak=0;for(let ch=0;ch<rendered.numberOfChannels;ch++){const d=rendered.getChannelData(ch);for(let i=0;i<d.length;i++)peak=Math.max(peak,Math.abs(d[i]))}if(peak>.0001){const g=Math.min(4,.96/peak);for(let ch=0;ch<rendered.numberOfChannels;ch++){const d=rendered.getChannelData(ch);for(let i=0;i<d.length;i++)d[i]*=g}}finalBuffer=rendered}
+    const blob=audioBufferToWavBlob(finalBuffer);const base=String(workingName||"miya-voice").replace(/\.[^.]+$/,"");await setWorkingBlob(blob,base+".wav");toast(kind==="trim"?"Обрезка применена":kind==="normalize"?"Голос нормализован":kind==="volume"?"Громкость применена":"Готово · WAV создан");
+   }
+  }catch(e){console.error("Miya local audio processing failed",e);toast(String(e?.message||"Не удалось обработать аудио"))}
+  finally{if(apply){apply.disabled=false;apply.textContent="Применить"}}
+ };
+
+ const runNoise=async()=>{
+  if(!workingBlob)return;const b=panel.querySelector(".ve2-apply");if(b){b.disabled=true;b.textContent="Очищаю…"}
   try{
    const form=new FormData();form.append("file",new File([workingBlob],workingName,{type:workingBlob.type||"audio/mpeg"}));
-   const rr=await fetch("https://cleverutils.com/api/v1/tools/vocal-remover",{method:"POST",body:form,headers:{Accept:"application/json"},cache:"no-store"});
-   const data=await rr.json().catch(()=>({}));if(!rr.ok)throw new Error(data?.message||data?.error?.message||data?.error||"VOCAL_SPLIT_FAILED");
-   let job=data?.data||data;
-   const id=job?.job_id||job?.jobId||"";if(id&&!job?.output&&!job?.outputs)job=await pollCleverJobObject(String(id));
-   const stems=collectCleverStemUrls(job);
-   let vocals=stems.vocals,instrumental=stems.instrumental;
-   const output=job?.output?.url||job?.outputUrl||job?.links?.output||"";
-   if(!vocals||!instrumental){
-    if(!output)throw new Error("VOCAL_SPLIT_OUTPUT_MISSING");
-    const res=await fetch(output,{cache:"no-store"});if(!res.ok)throw new Error("VOCAL_SPLIT_OUTPUT_"+res.status);
-    const blob=await res.blob();const type=String(res.headers.get("content-type")||blob.type||"").toLowerCase();
-    if(type.includes("zip")||/\.zip(?:$|[?#])/i.test(output)){
-     const JSZip=(await import("https://cdn.jsdelivr.net/npm/jszip@3.10.1/+esm")).default;const zip=await JSZip.loadAsync(blob);
-     for(const name of Object.keys(zip.files)){const e=zip.files[name];if(e.dir)continue;const lower=name.toLowerCase();const b=await e.async("blob");if(!vocals&&/(vocal|vocals|acapella)/.test(lower))vocals=URL.createObjectURL(b);if(!instrumental&&/(instrument|karaoke|minus|backing|accompaniment)/.test(lower))instrumental=URL.createObjectURL(b)}
-    }
-   }
-   if(!vocals||!instrumental)throw new Error("VOCAL_SPLIT_TWO_TRACKS_MISSING");
-   const getBlob=async value=>{if(value instanceof Blob)return value;const res=await fetch(value,{cache:"no-store"});if(!res.ok)throw new Error("VOCAL_STEM_FETCH_"+res.status);return res.blob()};
-   const vb=await getBlob(vocals),ib=await getBlob(instrumental);
-   stemResults={vocals:{blob:vb,url:URL.createObjectURL(vb)},instrumental:{blob:ib,url:URL.createObjectURL(ib)}};renderResults();toast("Готово · вокал и минус получены");
-  }catch(e){console.error("Miya voice split failed",e);toast(String(e?.message||"Не удалось разделить песню"))}
-  finally{if(splitBtn){splitBtn.disabled=false;splitBtn.querySelector("span").textContent="Расшифровать"}}
+   const rr=await fetch("https://cleverutils.com/api/v1/tools/noise-reduction",{method:"POST",body:form,headers:{Accept:"application/json"},cache:"no-store"});
+   const data=await rr.json().catch(()=>({}));if(!rr.ok)throw new Error(data?.message||data?.error||"NOISE_FAILED");
+   let job=data?.data||data;const id=job?.job_id||job?.jobId||"";let out=job?.output?.url||job?.outputUrl||"";if(!out&&id)out=await waitForCleverUtilsJob(String(id));if(!out)throw new Error("NOISE_OUTPUT_MISSING");
+   const res=await fetch(out);if(!res.ok)throw new Error("NOISE_OUTPUT_"+res.status);const blob=await res.blob();await setWorkingBlob(blob,String(workingName).replace(/\.[^.]+$/,"")+".wav");toast("Шум очищен · результат только в редакторе");
+  }catch(e){console.error("Miya voice editor noise failed",e);toast(String(e?.message||"Не удалось очистить шум"))}
+  finally{if(b){b.disabled=false;b.textContent="Запустить очистку"}}
  };
- const icon=path=>'<svg viewBox="0 0 24 24">'+path+'</svg>';
- const tool=(label,path,fn)=>{const b=document.createElement("button");b.type="button";b.className="voice-editor-tool";b.innerHTML=icon(path)+'<span>'+label+'</span>';b.onclick=async()=>{b.disabled=true;try{await fn()}catch(e){console.error(e);toast(String(e?.message||"Не удалось обработать голос"))}finally{b.disabled=false}};toolbar.append(b);return b};
- tool("Расшифровать",'<path d="M4 7h16M4 12h16M4 17h10"/><path d="M17 15v5M14.5 17.5h5"/>',split);
- tool("Очистить шум",'<path d="M4 12h16M7 7h10M7 17h10"/>',async()=>{const form=new FormData();form.append("file",new File([workingBlob],workingName,{type:workingBlob.type||"audio/mpeg"}));const rr=await fetch("https://cleverutils.com/api/v1/tools/noise-reduction",{method:"POST",body:form,headers:{Accept:"application/json"},cache:"no-store"});const data=await rr.json().catch(()=>({}));if(!rr.ok)throw new Error(data?.message||data?.error||"NOISE_FAILED");let job=data?.data||data;const id=job?.job_id||job?.jobId||"";let out=job?.output?.url||job?.outputUrl||"";if(!out&&id)out=await waitForCleverUtilsJob(String(id));if(!out)throw new Error("NOISE_OUTPUT_MISSING");const res=await fetch(out);if(!res.ok)throw new Error("NOISE_OUTPUT_"+res.status);const blob=await res.blob();cleanupUrl(workingUrl);workingBlob=blob;workingUrl=URL.createObjectURL(blob);dirty=true;renderPlayer();toast("Шум очищен")});
- tool("Обрезать",'<path d="M6 5v14M18 5v14M3 9h6M15 15h6"/>',async()=>toast("Обрезка исходного голоса оставлена без изменений"));
- saveBtn.onclick=async()=>{try{if(!dirty||!workingBlob){toast("Сначала добавь или измени аудиофайл");return}const url=URL.createObjectURL(workingBlob);if(!saveMedia("audio",url,workingName,item?.model||"Miya Voice","mp3"))throw new Error("SAVE_FAILED");renderVoiceLibrary();toast("Голос сохранён как новый");closeEditor()}catch(e){toast(String(e?.message||"Не удалось сохранить голос"))}};
- deleteBtn.onclick=()=>{
-  // ВАЖНО: это удаляет голос только из текущей сессии редактора.
-  // Карточка на стене/в библиотеке и её IndexedDB-кэш не трогаются.
-  playerWrap.querySelector(".voice-player")?.__cleanup?.();
-  cleanupUrl(workingUrl);
-  [stemResults?.vocals?.url,stemResults?.instrumental?.url].forEach(cleanupUrl);
-  workingBlob=null;
-  workingUrl=null;
-  workingName="miya-voice.mp3";
-  dirty=true;
-  stemResults=null;
-  results.innerHTML="";
-  results.hidden=true;
-  playerWrap.innerHTML="";
-  sourceLabel.textContent="ФАЙЛ НЕ ВЫБРАН";
-  uploadBox.classList.remove("drag");
-  deleteBtn.disabled=true;
-  deleteBtn.title="В редакторе нет файла";
-  deleteBtn.setAttribute("aria-label","В редакторе нет файла");
-  saveBtn.disabled=true;
-  saveBtn.title="Сначала добавь аудиофайл";
-  saveBtn.setAttribute("aria-label","Сначала добавь аудиофайл");
-  toast("Голос убран из редактора · карточка на стене сохранена");
+
+ const renderResults=()=>{
+  results.innerHTML="";resultsBox.hidden=!stemResults;if(!stemResults)return;
+  [["vocals","🎤 Вокал","Сохранить вокал"],["instrumental","🎵 Минус","Сохранить минус"]].forEach(([kind,title,label])=>{
+   const r=document.createElement("div");r.className="ve2-result";const hd=document.createElement("div");hd.className="ve2-result-head";const b=document.createElement("b");b.textContent=title;const save=document.createElement("button");save.type="button";save.className="ve2-result-save";save.title=label;save.innerHTML='<svg viewBox="0 0 24 24"><path d="M12 4v11M8 11l4 4 4-4M5 20h14"/></svg>';save.onclick=()=>{const stem=stemResults[kind];if(!stem?.blob)return;const saved=saveMedia("audio",stem.url,(workingName||"Песня")+" · "+(kind==="vocals"?"Вокал":"Минус"),"CleverUtils · "+(kind==="vocals"?"Вокал":"Минус"),"wav");if(saved){renderVoiceLibrary();toast(label+" сохранён")}};hd.append(b,save);const au=document.createElement("audio");au.controls=true;au.src=stemResults[kind].url;r.append(hd,au);results.append(r);
+  });
+ };
+ const runSplit=async()=>{
+  if(!workingBlob)return;const b=panel.querySelector(".ve2-apply");if(b){b.disabled=true;b.textContent="Разделяю…"}
+  try{
+   const form=new FormData();form.append("file",new File([workingBlob],workingName,{type:workingBlob.type||"audio/mpeg"}));const rr=await fetch("https://cleverutils.com/api/v1/tools/vocal-remover",{method:"POST",body:form,headers:{Accept:"application/json"},cache:"no-store"});const data=await rr.json().catch(()=>({}));if(!rr.ok)throw new Error(data?.message||data?.error?.message||data?.error||"VOCAL_SPLIT_FAILED");
+   let job=data?.data||data;const id=job?.job_id||job?.jobId||"";if(id&&!job?.output&&!job?.outputs)job=await pollCleverJobObject(String(id));
+   const stems=collectCleverStemUrls(job);let vocals=stems.vocals,instrumental=stems.instrumental;const output=job?.output?.url||job?.outputUrl||job?.links?.output||"";
+   if(!vocals||!instrumental){if(!output)throw new Error("VOCAL_SPLIT_OUTPUT_MISSING");const res=await fetch(output);if(!res.ok)throw new Error("VOCAL_SPLIT_OUTPUT_"+res.status);const blob=await res.blob();const type=String(res.headers.get("content-type")||blob.type||"").toLowerCase();if(type.includes("zip")||/\.zip(?:$|[?#])/i.test(output)){const JSZip=(await import("https://cdn.jsdelivr.net/npm/jszip@3.10.1/+esm")).default;const zip=await JSZip.loadAsync(blob);for(const name of Object.keys(zip.files)){const e=zip.files[name];if(e.dir)continue;const lower=name.toLowerCase();const bb=await e.async("blob");if(!vocals&&/(vocal|vocals|acapella)/.test(lower))vocals=bb;if(!instrumental&&/(instrument|karaoke|minus|backing|accompaniment)/.test(lower))instrumental=bb}}}
+   if(!vocals||!instrumental)throw new Error("VOCAL_SPLIT_TWO_TRACKS_MISSING");
+   const getBlob=async v=>v instanceof Blob?v:(await fetch(v)).blob();const vb=await getBlob(vocals),ib=await getBlob(instrumental);stemResults={vocals:{blob:vb,url:URL.createObjectURL(vb)},instrumental:{blob:ib,url:URL.createObjectURL(ib)}};renderResults();toast("Готово · вокал и минус получены");
+  }catch(e){console.error("Miya voice editor split failed",e);toast(String(e?.message||"Не удалось разделить песню"))}
+  finally{if(b){b.disabled=false;b.textContent="Разделить на 2 дорожки"}}
+ };
+
+ const input=document.createElement("input");input.type="file";input.accept="audio/*";input.hidden=true;document.body.appendChild(input);
+ const replaceSource=async file=>{if(!file?.type?.startsWith("audio/")){toast("Выбери аудиофайл");return}input.value="";stemResults=null;renderResults();await setWorkingBlob(file,file.name||"miya-voice.mp3");setStatus("Новый рабочий файл");toast("Аудио загружено · карточка на стене не изменена")};
+ input.onchange=()=>{const f=input.files?.[0];if(f)replaceSource(f)};
+ upload.onclick=()=>input.click();upload.querySelector(".ve2-plus").onclick=e=>{e.stopPropagation();input.click()};
+ ["dragenter","dragover"].forEach(t=>upload.addEventListener(t,e=>{e.preventDefault();upload.classList.add("drag")}));
+ ["dragleave","drop"].forEach(t=>upload.addEventListener(t,e=>{e.preventDefault();upload.classList.remove("drag")}));
+ upload.addEventListener("drop",e=>{const f=e.dataTransfer?.files?.[0];if(f)replaceSource(f)});
+
+ const loadInitial=async()=>{
+  try{
+   workingBlob=await resolveVoiceBlob(source);workingName=String(item?.prompt||"miya-voice.mp3");workingUrl=URL.createObjectURL(workingBlob);dirty=false;nameInput.value=String(item?.prompt||item?.model||"Мой голос").replace(/\.[^.]+$/,"").slice(0,80);renderPlayer();await decodeWave();sync();
+  }catch(e){console.error("Miya voice editor open failed",e);toast("Не удалось открыть голос");closeEditor()}
+ };
+ const closeEditor=()=>{
+  stopAudio();playerWrap.querySelector(".voice-player")?.__cleanup?.();cleanupUrl(workingUrl);[stemResults?.vocals?.url,stemResults?.instrumental?.url].forEach(cleanupUrl);try{input.remove()}catch{};backdrop.remove();document.body.classList.remove("voice-modal-open");window.removeEventListener("resize",drawWave);
+ };
+ const clearWorking=()=>{
+  stopAudio();cleanupUrl(workingUrl);workingBlob=null;workingUrl=null;dirty=true;waveData=null;duration=0;trimStart=trimEnd=0;stemResults=null;renderResults();playerWrap.innerHTML="";nameInput.value="";setStatus("ФАЙЛ НЕ ВЫБРАН");drawWave();sync();toast("Запись убрана из редактора · карточка на стене сохранена");
+ };
+ clearBtn.onclick=clearWorking;close.onclick=closeEditor;closeBtn.onclick=closeEditor;backdrop.addEventListener("click",e=>{if(e.target===backdrop)closeEditor()});
+ nameInput.addEventListener("input",()=>{workingName=(nameInput.value.trim()||"miya-voice").replace(/\.[^.]+$/,"")+".wav";dirty=Boolean(workingBlob);sync()});
+ saveBtn.onclick=async()=>{
+  if(!workingBlob||!dirty){toast("Сначала измени или добавь аудиофайл");return}
+  try{
+   const ext=/wav/i.test(workingBlob.type)?"wav":"mp3";
+   const url=URL.createObjectURL(workingBlob);
+   const saveName=(nameInput.value.trim()||workingName||"miya-voice").replace(/\.[^.]+$/,"")+"."+ext;
+   const saved=saveMedia("audio",url,saveName,item?.model||"Miya Voice",ext);
+   if(!saved)throw new Error("SAVE_FAILED");
+   renderVoiceLibrary();toast("Новый голос сохранён · исходная карточка осталась");closeEditor();
+  }catch(e){console.error("Miya voice editor save failed",e);toast(String(e?.message||"Не удалось сохранить голос"))}
  };
  await loadInitial();
 }
+
 function buildVoiceCard(parts,item){
  const blob=new Blob(parts,{type:"audio/mpeg"});const source=()=>Promise.resolve(URL.createObjectURL(blob));
  return createVoiceCard(item,source);
