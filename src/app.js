@@ -913,8 +913,7 @@ function ensureVoiceWallStyles(){
 .voice-result-title,.voice-library-card>b{font-size:13px;font-weight:900;letter-spacing:-.02em;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;padding-right:42px}
 .voice-result-meta{display:none}
 .voice-card-text{font-size:16px;line-height:1.35;color:#9bb0c8;display:block;min-height:0;max-height:none;overflow:auto;white-space:pre-wrap;overflow-wrap:anywhere;word-break:break-word;padding:0 42px 0 0;scrollbar-width:thin;scrollbar-color:rgba(145,115,190,.55) transparent}
-.voice-card-waveform{width:100%;height:34px;flex:0 0 34px;position:relative;border-radius:8px;overflow:hidden;background:rgba(255,255,255,.025);border:1px solid rgba(120,158,195,.14);cursor:pointer}
-.voice-card-waveform canvas{display:block;width:100%;height:100%} .voice-card-text::-webkit-scrollbar{width:4px;height:4px}.voice-card-text::-webkit-scrollbar-track{background:transparent}.voice-card-text::-webkit-scrollbar-thumb{background:rgba(145,115,190,.55);border-radius:999px}.voice-card-text::-webkit-scrollbar-thumb:hover{background:rgba(170,130,230,.75)}
+ .voice-card-text::-webkit-scrollbar{width:4px;height:4px}.voice-card-text::-webkit-scrollbar-track{background:transparent}.voice-card-text::-webkit-scrollbar-thumb{background:rgba(145,115,190,.55);border-radius:999px}.voice-card-text::-webkit-scrollbar-thumb:hover{background:rgba(170,130,230,.75)}
 .voice-player{border:1px solid rgba(104,144,185,.34);border-radius:10px;padding:6px 7px;background:linear-gradient(135deg,rgba(8,27,47,.96),rgba(15,32,56,.9));box-shadow:inset 0 1px 0 rgba(255,255,255,.035);cursor:default;flex:0 0 auto;min-width:0;overflow:hidden}
 .voice-player-row{display:grid;grid-template-columns:32px minmax(0,1fr) minmax(54px,auto) 26px;align-items:center;gap:6px;min-width:0}
 .voice-player-volume-wrap{width:26px;height:30px;display:grid;place-items:center;position:relative}
@@ -1265,32 +1264,7 @@ function voiceIcon(path){return '<svg viewBox="0 0 24 24">'+path+'</svg>'}
 function buildVoicePlayer(source,card){
  const wrap=document.createElement("div");wrap.className="voice-player";
  const row=document.createElement("div");row.className="voice-player-row";
- const cardWaveCanvas=card?.querySelector?.(".voice-card-waveform canvas")||null;
- const cardWaveCtx=cardWaveCanvas?.getContext?.("2d")||null;
- let cardWaveBars=72;
- const drawCardWave=(data,progress=0)=>{
-   if(!cardWaveCanvas||!cardWaveCtx)return;
-   const w=cardWaveCanvas.width,h=cardWaveCanvas.height;
-   cardWaveCtx.clearRect(0,0,w,h);
-   const gap=2,barW=Math.max(2,(w-gap*(cardWaveBars-1))/cardWaveBars);
-   for(let i=0;i<cardWaveBars;i++){
-     const index=Math.min(data.length-1,Math.floor(i*data.length/cardWaveBars));
-     const value=data.length?(data[index]/255):0;
-     const barH=Math.max(3,Math.min(h-4,4+value*(h-8)));
-     const x=i*(barW+gap),y=(h-barH)/2;
-     const active=(i/cardWaveBars)<=progress;
-     cardWaveCtx.fillStyle=active?"rgba(190,160,255,.96)":"rgba(154,176,202,.28)";
-     cardWaveCtx.beginPath();cardWaveCtx.roundRect(x,y,barW,barH,2);cardWaveCtx.fill();
-   }
-   cardWaveCtx.fillStyle="rgba(255,255,255,.9)";
-   const px=Math.max(0,Math.min(w,progress*w));
-   cardWaveCtx.fillRect(Math.max(0,px-0.75),2,1.5,h-4);
- };
- const drawCardWaveIdle=()=>{
-   if(!cardWaveCanvas||!cardWaveCtx)return;
-   const data=new Uint8Array(cardWaveBars);data.fill(38);drawCardWave(data,0);
- };
- drawCardWaveIdle();
+
  const play=document.createElement("button");play.type="button";play.className="voice-player-play";play.innerHTML='<svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>';
  const track=document.createElement("div");track.className="voice-player-track";
  const eq=document.createElement("div");eq.className="voice-player-eq";eq.innerHTML=Array.from({length:64},()=>"<i></i>").join("");
@@ -1300,27 +1274,9 @@ function buildVoicePlayer(source,card){
  const audio=document.createElement("audio");audio.preload="metadata";audio.style.display="none";
  let loaded=false,ctx=null,analyser=null,sourceNode=null,frame=0,totalText="0:00";
  const formatTime=n=>Math.floor(Math.max(0,Number(n)||0)/60)+":"+String(Math.floor(Math.max(0,Number(n)||0)%60)).padStart(2,"0");
- const setTime=()=>{
-   const progress=audio.duration?Math.max(0,Math.min(1,audio.currentTime/audio.duration)):0;
-   const current=formatTime(audio.currentTime);
-   timeWrap.textContent=current+" / "+totalText;
-   track.style.setProperty("--voice-progress",(progress*100)+"%");
-   if(cardWaveCanvas&&cardWaveCtx){
-     const data=analyser?new Uint8Array(analyser.frequencyBinCount):new Uint8Array(cardWaveBars);
-     if(!analyser)data.fill(38);
-     if(analyser)analyser.getByteFrequencyData(data);
-     drawCardWave(data,progress);
-   }
- };
+ const setTime=()=>{const current=formatTime(audio.currentTime);timeWrap.textContent=current+" / "+totalText;track.style.setProperty("--voice-progress",(audio.duration?Math.max(0,Math.min(100,audio.currentTime/audio.duration*100)):0)+"%")};
  const load=async()=>{if(loaded)return;const blob=await resolveVoiceBlob(source);audio.src=URL.createObjectURL(blob);audio.volume=.9;audio.load();loaded=true};
- const draw=()=>{
-   if(!analyser)return;
-   const data=new Uint8Array(analyser.frequencyBinCount);analyser.getByteFrequencyData(data);
-   const bars=[...eq.children];
-   bars.forEach((bar,i)=>{const start=Math.floor(Math.pow(i/bars.length,1.7)*data.length),end=Math.max(start+1,Math.floor(Math.pow((i+1)/bars.length,1.7)*data.length));let sum=0;for(let j=start;j<end&&j<data.length;j++)sum+=data[j];const value=(sum/Math.max(1,end-start))/255;bar.style.setProperty("--eq-h",Math.max(2,Math.round(2+value*16))+"px")});
-   if(cardWaveCanvas&&cardWaveCtx){const progress=audio.duration?Math.max(0,Math.min(1,audio.currentTime/audio.duration)):0;drawCardWave(data,progress)}
-   if(!audio.paused&&!audio.ended)frame=requestAnimationFrame(draw)
- };
+ const draw=()=>{if(!analyser)return;const data=new Uint8Array(analyser.frequencyBinCount);analyser.getByteFrequencyData(data);const bars=[...eq.children];bars.forEach((bar,i)=>{const start=Math.floor(Math.pow(i/bars.length,1.7)*data.length),end=Math.max(start+1,Math.floor(Math.pow((i+1)/bars.length,1.7)*data.length));let sum=0;for(let j=start;j<end&&j<data.length;j++)sum+=data[j];const value=(sum/Math.max(1,end-start))/255;bar.style.setProperty("--eq-h",Math.max(2,Math.round(2+value*16))+"px")});if(!audio.paused&&!audio.ended)frame=requestAnimationFrame(draw)};
  const startAnalyser=()=>{if(!ctx){const C=window.AudioContext||window.webkitAudioContext;if(!C)return;ctx=new C();analyser=ctx.createAnalyser();analyser.fftSize=256;analyser.smoothingTimeConstant=.72;sourceNode=ctx.createMediaElementSource(audio);sourceNode.connect(analyser);analyser.connect(ctx.destination)}ctx.resume?.();cancelAnimationFrame(frame);draw()};
  play.onclick=async e=>{e.stopPropagation();try{await load();if(audio.paused){if(audio.ended)audio.currentTime=0;startAnalyser();await audio.play()}else audio.pause()}catch{toast("Не удалось воспроизвести голос")}};
  range.oninput=async()=>{try{await load();if(audio.duration)audio.currentTime=Number(range.value)/100*audio.duration;track.style.setProperty("--voice-progress",String(Number(range.value)||0)+"%");setTime()}catch{}};
@@ -1425,9 +1381,7 @@ function createVoiceCard(item,source,options={}){
  const textEl=document.createElement("div");textEl.className="voice-card-text";textEl.textContent=item?.prompt||"Готовая голосовая запись";
  const more=document.createElement("button");more.type="button";more.className="voice-editor-more media-action media-more";more.title="Действия";more.setAttribute("aria-label","Действия голоса");more.innerHTML='<svg viewBox="0 0 24 24"><circle cx="5" cy="12" r="1.7"/><circle cx="12" cy="12" r="1.7"/><circle cx="19" cy="12" r="1.7"/></svg>';
  more.onclick=e=>{e.preventDefault();e.stopPropagation();openVoiceCardMenu(more,item,source,card)};
- const cardWave=document.createElement("div");cardWave.className="voice-card-waveform";cardWave.setAttribute("aria-hidden","true");
- const cardWaveCanvas=document.createElement("canvas");cardWaveCanvas.width=720;cardWaveCanvas.height=34;cardWave.appendChild(cardWaveCanvas);
- card.appendChild(cardWave);
+
  const player=buildVoicePlayer(source,card);player.wrap.__cleanup=player.cleanup;
  const actions=document.createElement("div");actions.className="voice-card-actions";
  const quick=(name,label,path,fn)=>{const b=document.createElement("button");b.type="button";b.className="voice-card-action";b.dataset.voiceAction=name;b.title=label;b.setAttribute("aria-label",label);b.innerHTML=voiceIcon(path);b.onclick=e=>{e.stopPropagation();fn()};actions.appendChild(b);return b};
@@ -1437,8 +1391,7 @@ function createVoiceCard(item,source,options={}){
  quick("download","Скачать",'<path d="M12 4v11M8 11l4 4 4-4M5 20h14"/>',()=>downloadVoiceSource(null,source));
  quick("delete","Удалить",'<path d="M5 7h14M9 7V4h6v3M8 7l1 13h6l1-13"/>',()=>confirmDeleteMedia(item,card));
  const date=document.createElement("div");date.className="voice-card-date";date.textContent=item?.createdAt?new Date(item.createdAt).toLocaleDateString("ru-RU",{day:"2-digit",month:"2-digit",year:"numeric"}):"";
- card.append(title,textEl,cardWave,player.wrap,actions,date,more);
- cardWave.onclick=e=>{e.stopPropagation();player.wrap.querySelector(".voice-player-play")?.click()};
+ card.append(title,textEl,player.wrap,actions,date,more);
  if(!options.detail){const open=()=>openVoiceDetail(item,source);card.onclick=e=>{if(e.target.closest("button,input"))return;open()};card.onkeydown=e=>{if((e.key==="Enter"||e.key===" ")&&!e.target.closest("button,input")){e.preventDefault();open()}}}
  return card;
 }
