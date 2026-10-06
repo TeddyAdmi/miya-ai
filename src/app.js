@@ -1450,8 +1450,8 @@ async function openVoiceEditor(item,source){
   const st=document.createElement("style");
   st.id="miyaVoiceEditorV2Styles";
   st.textContent=String.raw`
-.voice-editor-backdrop{background:rgba(3,8,18,.78)!important;backdrop-filter:blur(18px)!important;-webkit-backdrop-filter:blur(18px)!important}
-.voice-editor-dialog.ve2{width:min(1180px,96vw)!important;height:min(900px,94vh)!important;max-height:94vh!important;margin:auto!important;padding:0!important;overflow:hidden!important;display:grid!important;grid-template-rows:auto minmax(0,1fr) auto!important;gap:0!important;border:1px solid rgba(181,145,255,.20)!important;border-radius:28px!important;background:linear-gradient(145deg,#091a2d 0%,#06111f 55%,#071525 100%)!important;box-shadow:0 35px 100px rgba(0,0,0,.48),inset 0 1px 0 rgba(255,255,255,.06)!important}
+.voice-editor-backdrop{position:fixed!important;inset:0!important;width:100vw!important;height:100vh!important;padding:0!important;margin:0!important;background:rgba(3,8,18,.88)!important;backdrop-filter:blur(18px)!important;-webkit-backdrop-filter:blur(18px)!important;overflow:hidden!important;z-index:2147483000!important}
+.voice-editor-dialog.ve2{position:absolute!important;inset:0!important;width:100vw!important;height:100vh!important;max-width:none!important;max-height:none!important;margin:0!important;padding:0!important;overflow:hidden!important;display:grid!important;grid-template-rows:auto minmax(0,1fr) auto!important;gap:0!important;border:0!important;border-radius:0!important;background:linear-gradient(145deg,#091a2d 0%,#06111f 55%,#071525 100%)!important;box-shadow:0 35px 100px rgba(0,0,0,.48),inset 0 1px 0 rgba(255,255,255,.06)!important}
 .ve2-head{min-height:76px;padding:15px 18px 14px 22px;display:flex;align-items:center;justify-content:space-between;gap:18px;border-bottom:1px solid rgba(255,255,255,.075);background:linear-gradient(180deg,rgba(255,255,255,.035),transparent)}
 .ve2-brand{display:flex;align-items:center;gap:12px;min-width:0}
 .ve2-brand-mark{width:42px;height:42px;flex:0 0 42px;border-radius:14px;display:grid;place-items:center;color:#fff;background:linear-gradient(135deg,#b65cff,#695dff);box-shadow:0 10px 30px rgba(111,77,226,.30)}
@@ -1524,14 +1524,18 @@ body.light .ve2-title,body.light .ve2-section-title b,body.light .ve2-tool stron
 body.light .ve2-meta,body.light .ve2-upload span,body.light .ve2-tool small,body.light .ve2-panel p,body.light .ve2-note,body.light .ve2-footer-note{color:#71839a}
 body.light .ve2-tool,body.light .ve2-transport-btn,body.light .ve2-footer-btn,body.light .ve2-result-save{background:#f4f7fa;color:#52657b;border-color:#d3deea}
 body.light .ve2-name{background:#fff;color:#273047;border-color:#d3deea}
-@media(max-width:900px){.voice-editor-dialog.ve2{width:98vw!important;height:96vh!important}.ve2-body{grid-template-columns:1fr}.ve2-side{border-left:0;border-top:1px solid rgba(255,255,255,.075);max-height:44vh}.ve2-main{overflow:auto}}
-@media(max-width:560px){.voice-editor-dialog.ve2{border-radius:20px!important}.ve2-head{padding:12px}.ve2-clear{width:42px;padding:0;justify-content:center}.ve2-clear span{display:none}.ve2-stage{padding:12px}.ve2-wavebox{height:125px}.ve2-footer-note{display:none}.ve2-footer{justify-content:flex-end}.ve2-tools{grid-template-columns:1fr 1fr}}
+@media(max-width:900px){.voice-editor-dialog.ve2{width:100vw!important;height:100vh!important}.ve2-body{grid-template-columns:1fr}.ve2-side{border-left:0;border-top:1px solid rgba(255,255,255,.075);max-height:44vh}.ve2-main{overflow:auto}}
+@media(max-width:560px){.voice-editor-dialog.ve2{border-radius:0!important}.ve2-head{padding:12px}.ve2-clear{width:42px;padding:0;justify-content:center}.ve2-clear span{display:none}.ve2-stage{padding:12px}.ve2-wavebox{height:125px}.ve2-footer-note{display:none}.ve2-footer{justify-content:flex-end}.ve2-tools{grid-template-columns:1fr 1fr}}
 `;
   document.head.appendChild(st);
  }
 
  const backdrop=document.createElement("div");
  backdrop.className="voice-detail-backdrop voice-editor-backdrop";
+ document.documentElement.classList.add("miya-editor-page-open");
+ document.body.classList.add("miya-editor-page-open");
+ const previousBodyOverflow=document.body.style.overflow;
+ document.body.style.overflow="hidden";
  const dialog=document.createElement("section");
  dialog.className="voice-editor-dialog ve2";
  dialog.setAttribute("role","dialog");
@@ -1728,7 +1732,7 @@ body.light .ve2-name{background:#fff;color:#273047;border-color:#d3deea}
   }catch(e){console.error("Miya voice editor open failed",e);toast("Не удалось открыть голос");closeEditor()}
  };
  const closeEditor=()=>{
-  stopAudio();playerWrap.querySelector(".voice-player")?.__cleanup?.();cleanupUrl(workingUrl);[stemResults?.vocals?.url,stemResults?.instrumental?.url].forEach(cleanupUrl);try{input.remove()}catch{};backdrop.remove();document.body.classList.remove("voice-modal-open");window.removeEventListener("resize",drawWave);
+  stopAudio();playerWrap.querySelector(".voice-player")?.__cleanup?.();cleanupUrl(workingUrl);[stemResults?.vocals?.url,stemResults?.instrumental?.url].forEach(cleanupUrl);try{input.remove()}catch{};backdrop.remove();document.body.classList.remove("voice-modal-open","miya-editor-page-open");document.documentElement.classList.remove("miya-editor-page-open");document.body.style.overflow=previousBodyOverflow;window.removeEventListener("resize",drawWave);
  };
  const clearWorking=()=>{
   stopAudio();cleanupUrl(workingUrl);workingBlob=null;workingUrl=null;dirty=true;waveData=null;duration=0;trimStart=trimEnd=0;stemResults=null;renderResults();playerWrap.innerHTML="";nameInput.value="";setStatus("ФАЙЛ НЕ ВЫБРАН");drawWave();sync();toast("Запись убрана из редактора · карточка на стене сохранена");
