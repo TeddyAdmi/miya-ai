@@ -1162,8 +1162,8 @@ function ensureVoiceCardFinalStyles(){
 .voice-player-eq i::after{top:50%!important;transform:translateY(0)!important}
 .voice-player-range{position:absolute!important;left:0!important;right:0!important;top:50%!important;bottom:auto!important;transform:translateY(-50%)!important;width:100%!important;height:3px!important;z-index:4!important;background:transparent!important;margin:0!important}
 .voice-player-track::after{content:""!important;position:absolute!important;left:0!important;top:50%!important;transform:translateY(-50%)!important;width:var(--voice-progress,0%)!important;height:3px!important;border-radius:3px!important;background:linear-gradient(90deg,#a75cff,#7b63ff)!important;opacity:.95!important;z-index:2!important;pointer-events:none!important}
-.voice-player-range::-webkit-slider-thumb{appearance:none!important;-webkit-appearance:none!important;width:2px!important;height:14px!important;border:0!important;border-radius:0!important;background:transparent!important;box-shadow:none!important;opacity:0!important}
-.voice-player-range::-moz-range-thumb{width:2px!important;height:14px!important;border:0!important;border-radius:0!important;background:transparent!important;box-shadow:none!important;opacity:0!important}
+.voice-player-range::-webkit-slider-thumb{appearance:none!important;-webkit-appearance:none!important;width:3px!important;height:18px!important;margin-top:-7.5px!important;border:0!important;border-radius:1px!important;background:#fff!important;box-shadow:0 0 5px rgba(167,92,255,.55)!important;opacity:1!important}
+.voice-player-range::-moz-range-thumb{width:3px!important;height:18px!important;border:0!important;border-radius:1px!important;background:#fff!important;box-shadow:0 0 5px rgba(167,92,255,.55)!important;opacity:1!important}
 .voice-player-range::-webkit-slider-runnable-track{height:3px!important;background:transparent!important}
 .voice-player-range::-moz-range-track{height:3px!important;background:transparent!important}
 .voice-detail-player .voice-player-track{height:80px!important}
