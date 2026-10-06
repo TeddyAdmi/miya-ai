@@ -1066,7 +1066,7 @@ function buildVoicePlayer(source,card){
  const track=document.createElement("div");track.className="voice-player-track";
  const eq=document.createElement("div");eq.className="voice-player-eq";eq.innerHTML=Array.from({length:22},()=>"<i></i>").join("");
  const range=document.createElement("input");range.type="range";range.min=0;range.max=100;range.value=0;range.className="voice-player-range";range.title="Позиция";
- track.append(eq,range);
+ const time=document.createElement("span");time.className="voice-player-time";time.textContent="0:00";\n track.append(eq,range,time);
  const time=document.createElement("span");time.className="voice-player-time";time.textContent="0:00";
  const audio=document.createElement("audio");audio.preload="metadata";audio.style.display="none";
  let loaded=false,ctx=null,analyser=null,sourceNode=null,frame=0,totalText="0:00";
