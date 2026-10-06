@@ -1294,7 +1294,7 @@ function buildVoicePlayer(source,card){
  row.append(play,track,timeWrap,vw);wrap.append(row,audio);
  return {wrap,audio,cleanup:()=>{cancelAnimationFrame(frame);try{sourceNode?.disconnect()}catch{}try{analyser?.disconnect()}catch{}try{ctx?.close()}catch{}if(audio.src?.startsWith("blob:"))URL.revokeObjectURL(audio.src)}};
 }
-async async function resolveVoiceBlob(source){
+async function resolveVoiceBlob(source){
  if(source instanceof Blob)return source;
  const u=typeof source==="function"?await source():source;
  if(!u)throw new Error("AUDIO_URL_EMPTY");
