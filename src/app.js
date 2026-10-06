@@ -987,7 +987,7 @@ body.light #voiceOptions .select-pill option{background:#fff!important;color:#27
 .composer-options button,
 .voice-options button,
 .video-options button,
-#composerAttach,#composerEmoji,#composerMic{
+#composerAttach,#composerMic{
  appearance:none!important;-webkit-appearance:none!important;
  background:transparent!important;background-color:transparent!important;
  border:0!important;box-shadow:none!important;
@@ -998,14 +998,14 @@ body.light #voiceOptions .select-pill option{background:#fff!important;color:#27
  transition:color .16s ease,opacity .16s ease,transform .16s ease!important;
 }
 .composer-options button svg,.voice-options button svg,.video-options button svg,
-#composerAttach svg,#composerEmoji svg,#composerMic svg{
+#composerAttach svg,#composerMic svg{
  width:18px!important;height:18px!important;
  stroke:currentColor!important;fill:none!important;
 }
 .composer-options button:hover,
 .voice-options button:hover,
 .video-options button:hover,
-#composerAttach:hover,#composerEmoji:hover,#composerMic:hover{
+#composerAttach:hover,#composerMic:hover{
  background:transparent!important;background-color:transparent!important;
  color:#b88cff!important;border-color:transparent!important;
  box-shadow:none!important;transform:translateY(-1px)!important;
@@ -1013,33 +1013,33 @@ body.light #voiceOptions .select-pill option{background:#fff!important;color:#27
 .composer-options button:focus-visible,
 .voice-options button:focus-visible,
 .video-options button:focus-visible,
-#composerAttach:focus-visible,#composerEmoji:focus-visible,#composerMic:focus-visible{
+#composerAttach:focus-visible,#composerMic:focus-visible{
  background:transparent!important;border-color:transparent!important;
  box-shadow:0 0 0 2px rgba(169,140,255,.18)!important;color:#b88cff!important;
 }
 .composer-options button:active,
 .voice-options button:active,
 .video-options button:active,
-#composerAttach:active,#composerEmoji:active,#composerMic:active{
+#composerAttach:active,#composerMic:active{
  background:transparent!important;color:#b88cff!important;box-shadow:none!important;
 }
 body.light .composer-options button,
 body.light .voice-options button,
 body.light .video-options button,
-body.light #composerAttach,body.light #composerEmoji,body.light #composerMic{
+body.light #composerAttach,body.light #composerMic{
  background:transparent!important;background-color:transparent!important;
  color:#71839a!important;border:0!important;box-shadow:none!important;
 }
 body.light .composer-options button:hover,
 body.light .voice-options button:hover,
 body.light .video-options button:hover,
-body.light #composerAttach:hover,body.light #composerEmoji:hover,body.light #composerMic:hover{
+body.light #composerAttach:hover,body.light #composerMic:hover{
  background:transparent!important;color:#7b61c8!important;border:0!important;box-shadow:none!important;
 }
 body.light .composer-options button:active,
 body.light .voice-options button:active,
 body.light .video-options button:active,
-body.light #composerAttach:active,body.light #composerEmoji:active,body.light #composerMic:active{
+body.light #composerAttach:active,body.light #composerMic:active{
  background:transparent!important;color:#7b61c8!important;border:0!important;box-shadow:none!important;
 }
 .miya-rename-backdrop{position:fixed;inset:0;z-index:2147483000;display:grid;place-items:center;padding:20px;background:rgba(4,10,22,.56);backdrop-filter:blur(10px)}
@@ -1501,7 +1501,7 @@ function toast(message){
  t.textContent=message;t.classList.add("show");clearTimeout(window.__toast);
  window.__toast=setTimeout(()=>t.classList.remove("show"),2600)
 }
-function syncInput(){const i=$("#composerInput");if(!i)return;i.style.height="auto";const h=Math.min(120,Math.max(42,i.scrollHeight));i.style.height=h+"px";const row=i.closest(".composer-input-row");if(row)row.style.height=h+"px";const emoji=$("#composerEmoji");if(emoji)emoji.style.display=mode==="chat"?"":"none"}
+function syncInput(){const i=$("#composerInput");if(!i)return;i.style.height="auto";const h=Math.min(120,Math.max(42,i.scrollHeight));i.style.height=h+"px";const row=i.closest(".composer-input-row");if(row)row.style.height=h+"px"}
 function modeHero(){
  if(mode==="chat") return `<div class="studio-room clean-canvas chat-room">
    <div class="chat-welcome section-welcome">
@@ -3394,10 +3394,10 @@ function ensureSpeechVisualizer(){
   canvas.setAttribute("aria-hidden","true");
   Object.assign(canvas.style,{
     position:"absolute",
-    right:"46px",
     left:"auto",
+    right:"0",
     top:"50%",
-    transform:"translate(50%,-50%)",
+    transform:"translateY(-50%)",
     width:"150px",
     height:"24px",
     display:"none",
@@ -3409,6 +3409,15 @@ function ensureSpeechVisualizer(){
   return canvas;
 }
 
+function positionSpeechVisualizer(){
+  const canvas=$("#composerVoiceVisualizer"),mic=$("#composerMic"),row=canvas?.parentElement;
+  if(!canvas||!mic||!row)return;
+  const rr=row.getBoundingClientRect(),mr=mic.getBoundingClientRect(),gap=8;
+  const left=Math.max(0,mr.left-rr.left-canvas.offsetWidth-gap);
+  canvas.style.left=left+"px";
+  canvas.style.right="auto";
+  canvas.style.transform="translateY(-50%)";
+}
 function speechDraw(){
   const canvas=ensureSpeechVisualizer();
   const analyser=speechAnalyser;
@@ -3560,7 +3569,7 @@ async function startSpeechRecording(){
     recorder.onstop=()=>processSpeechRecording();
     speechRecorder=recorder;
     const canvas=ensureSpeechVisualizer();
-    if(canvas)canvas.style.display="block";
+    if(canvas){canvas.style.display="block";positionSpeechVisualizer()}
     speechDraw();
     recorder.start(250);
     const mic=$("#composerMic");
@@ -3587,41 +3596,6 @@ $("#composerMic").onclick=async()=>{
   await startSpeechRecording();
 };
 document.querySelector('.mobile-tabs [data-mode="voice"]')?.remove();
-const emojiButton=$("#composerEmoji");
-const emojiPanel=$("#emojiPanel");
-const starterIdeas=[
-  ["🎲","Придумай неожиданный сюжет для короткого видео"],
-  ["🎬","Создай кинематографичную сцену с сильной атмосферой"],
-  ["💡","Предложи необычную идею для AI-контента"],
-  ["🧠","Задай мне вопрос, который заставит задуматься"],
-  ["🚀","Придумай идею, которая может стать вирусной"],
-  ["🎨","Предложи стиль для эффектного изображения"],
-  ["📖","Придумай короткую историю с неожиданной концовкой"],
-  ["🐾","Придумай забавную сцену с необычным героем"],
-  ["🌌","Создай фантастическую концепцию для изображения"],
-  ["🎮","Придумай простую игру для короткого ролика"],
-  ["✨","Предложи свежую идею, которую редко используют"],
-  ["🔥","Придумай смелую и необычную концепцию"]
-];
-function shuffleIdeas(){
- const row=$("#starterRow");if(!row)return;
- const pool=[...starterIdeas];
- for(let i=pool.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[pool[i],pool[j]]=[pool[j],pool[i]]}
- row.innerHTML="";
- pool.slice(0,4).forEach(([icon,text])=>{
-   const b=document.createElement("button");b.type="button";b.dataset.chatStarter=text;b.title=text;b.textContent=icon+" "+text;row.appendChild(b);
- });
-}
-if(emojiButton&&emojiPanel){
- emojiButton.onclick=e=>{e.preventDefault();e.stopPropagation();if(!emojiPanel.classList.contains("open"))shuffleIdeas();emojiPanel.classList.toggle("open");};
- emojiPanel.addEventListener("click",e=>{
-   const btn=e.target.closest("[data-emoji]");
-   const prompt=e.target.closest("[data-chat-starter]");
-   if(prompt){$("#composerInput").value=prompt.dataset.chatStarter||"";syncInput();$("#composerInput").focus();emojiPanel.classList.remove("open");return}
-   if(btn){const i=$("#composerInput");const pos=i.selectionStart??i.value.length;const v=btn.dataset.emoji||"";i.value=i.value.slice(0,pos)+v+i.value.slice(pos);i.focus();syncInput();}
- });
- document.addEventListener("click",e=>{if(!emojiPanel.contains(e.target)&&e.target!==emojiButton)emojiPanel.classList.remove("open")});
-}
 $("#themeToggle").onclick=()=>{document.body.classList.toggle("light");$("#themeToggle").textContent=document.body.classList.contains("light")?"☾":"☼"};
 $("#profileButton").onclick=()=>toast("Профиль Miya User · 0 PKOIN");
 document.querySelectorAll("[data-tool]").forEach(b=>b.onclick=()=>{

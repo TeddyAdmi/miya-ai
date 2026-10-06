@@ -887,33 +887,11 @@ body.light .chat-history-menu .rename-label{color:#71859a!important}
   pointer-events:none!important;
 }
 .composer-input-row>.composer-left-actions .attach{pointer-events:auto!important}
-.composer-input-row>.composer-attachment,
-.composer-input-row>.composer-emoji,
-.composer-input-row>.mic,
-.composer-input-row>.send{
-  position:relative!important;
-  z-index:1004!important;
-}
-.composer-emoji,.mic{flex:0 0 38px!important;width:38px!important;height:38px!important;display:grid!important;place-items:center!important;border:0!important;background:transparent!important;color:var(--muted)!important;border-radius:9px!important;cursor:pointer!important}
-.composer-emoji{font-size:22px!important}
-.composer-emoji:hover,.mic:hover{background:rgba(120,150,190,.12)!important;color:inherit!important}
 .mic svg{width:20px!important;height:20px!important;fill:none!important;stroke:currentColor!important;stroke-width:1.8!important;stroke-linecap:round!important;stroke-linejoin:round!important}
 .mic.recording{color:#b56cff!important;background:rgba(181,108,255,.14)!important;animation:voice-pulse 1.2s ease-in-out infinite!important}
 .mic.recording svg{filter:drop-shadow(0 0 5px rgba(181,108,255,.55))}
 @keyframes voice-pulse{50%{transform:scale(1.06)}}
-.emoji-panel{position:absolute!important;right:78px!important;bottom:calc(100% + 10px)!important;width:300px!important;padding:10px!important;border:1px solid var(--line)!important;border-radius:14px!important;background:rgba(7,22,40,.98)!important;box-shadow:0 18px 50px rgba(0,0,0,.35)!important;opacity:0!important;visibility:hidden!important;pointer-events:none!important;transform:translateY(5px)!important;transition:.12s ease!important;z-index:5000!important}
-.emoji-panel.open{opacity:1!important;visibility:visible!important;pointer-events:auto!important;transform:none!important}
-.emoji-row{display:flex!important;gap:4px!important;justify-content:space-between!important;margin-bottom:9px!important}
-.emoji-row button{border:0!important;background:transparent!important;font-size:20px!important;padding:4px!important;border-radius:7px!important;cursor:pointer!important}
-.emoji-row button:hover{background:rgba(255,255,255,.08)!important}
-.starter-row{display:grid!important;grid-template-columns:1fr 1fr!important;gap:6px!important}
-.starter-row button{min-height:34px!important;padding:6px 8px!important;border:1px solid var(--line)!important;border-radius:8px!important;background:rgba(255,255,255,.04)!important;color:inherit!important;text-align:left!important;font-size:11px!important;cursor:pointer!important}
-.starter-row button:hover{background:rgba(120,150,190,.12)!important}
-body.light .emoji-panel{background:#fff!important;box-shadow:0 18px 50px rgba(30,55,85,.18)!important}
-body.light .starter-row button{background:#f5f7fa!important}
 @media(max-width:800px){
- .emoji-panel{right:52px!important;width:min(300px,calc(100vw - 28px))!important}
- .composer-emoji,.mic{width:34px!important;height:34px!important;flex-basis:34px!important}
 }
 
 
@@ -1311,34 +1289,9 @@ body.light .composer-trash:hover{background:#edf3f9!important;color:#182436!impo
   font-size:inherit!important;
   line-height:1!important;
 }
-.emoji-row button{
-  font-size:15px!important;
-  padding:2px!important;
-  width:25px!important;
-  height:25px!important;
-  line-height:1!important;
-}
-.starter-row{
-  grid-template-columns:1fr 1fr!important;
-  gap:5px!important;
-}
-.starter-row button{
-  min-width:0!important;
-  width:100%!important;
-  min-height:32px!important;
-  height:32px!important;
-  padding:5px 7px!important;
-  overflow:hidden!important;
-  white-space:nowrap!important;
-  text-overflow:ellipsis!important;
-  font-size:10px!important;
-  line-height:1.2!important;
-}
 @media(max-width:800px){
  .composer-left-actions{flex-basis:34px!important;width:34px!important}
  .composer-left-actions .attach{width:34px!important;height:34px!important}
- .emoji-row button{font-size:14px!important;width:23px!important;height:23px!important}
- .starter-row button{font-size:9px!important;padding:5px 6px!important}
 }
 
 /* Trash aligns with the image model controls row. */
@@ -1399,7 +1352,6 @@ body.light .video-options .video-trash:hover{background:#edf3f9!important;color:
 }
 .composer-copy:hover{background:rgba(120,150,190,.12)!important;color:inherit!important}
 body.light .composer-copy:hover{background:#edf3f9!important;color:#182436!important}
-.composer-emoji:not(.chat-only){display:none!important}
 
 
 /* Modern icon system */
@@ -1529,7 +1481,6 @@ body.light .mini-badge{color:#526a84}
 .send-icon{width:17px;height:17px}.send-icon::before{width:17px;height:17px}
 .side-btn .ico{color:#9eb9d5}.side-btn.active .ico{color:#fff}.tool-btn .nav-icon{color:#9eb9d5}
 .floating-theme svg{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.7;stroke-linecap:round}
-.composer-emoji svg{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.7;stroke-linecap:round}
 .mobile-tabs .nav-icon{width:18px;height:18px;margin:0 auto 2px}.mobile-tabs .nav-icon::before{width:18px;height:18px}
 
 
@@ -1872,11 +1823,6 @@ body.light .delete-confirm-ring::before{background:#fff}
 
 /* FINAL TYPOGRAPHY: unified readable UI text. Keep display headings larger; normalize controls, labels and menus. */
 body{font-size:14px}
-.side-label,.side-btn,.tool-btn,.system-title,.system-row,.side-user b,.side-user small,
-.workspace-head p,.eyebrow,.mini-badge,.room-intro p,.feature-card b,.quick-card b,
-.library-title,.select-pill,.improve,.composer-status,.send,.chat-history-mini-item,
-.chat-history-menu button,.media-action-menu button,.media-menu button,
-.starter-row button,.library-tab,.chat-actions button{font-size:12px!important}
 .composer textarea{font-size:13px!important}
 .chat-bubble{font-size:13px!important}
 .generation-loading b{font-size:14px!important}
@@ -1884,11 +1830,6 @@ body{font-size:14px}
 .media-action::after{font-size:13px!important;font-weight:700!important;padding:6px 9px!important}
 .media-action-menu button,.media-menu button,.chat-history-menu button{font-size:12px!important}
 @media(max-width:800px){
-  .side-label,.side-btn,.tool-btn,.system-title,.system-row,.side-user b,.side-user small,
-  .workspace-head p,.eyebrow,.mini-badge,.room-intro p,.feature-card b,.quick-card b,
-  .library-title,.select-pill,.improve,.composer-status,.send,.chat-history-mini-item,
-  .chat-history-menu button,.media-action-menu button,.media-menu button,.starter-row button,
-  .library-tab,.chat-actions button{font-size:12px!important}
   .composer textarea{font-size:13px!important}
   .chat-bubble{font-size:13px!important}
   .media-action::after{font-size:13px!important}
