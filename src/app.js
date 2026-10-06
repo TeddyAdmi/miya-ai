@@ -3485,7 +3485,7 @@ async function finishSpeechRecording(){
   if(recorder.state!=="inactive")recorder.stop();
 }
 
-async async function processSpeechRecording(){
+async function processSpeechRecording(){
   const stream=speechStream;
   const context=speechAudioContext;
   const source=speechSource;
