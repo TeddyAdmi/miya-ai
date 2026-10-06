@@ -571,17 +571,19 @@ async function mediaItemToReference(item){
 function positionFloatingMediaOverlay(el,anchor,kind){
  if(!el||!anchor)return;
  if(kind==="menu"){
-   const card=anchor.closest(".media-card");
-   if(card){
-     const cr=card.getBoundingClientRect(),ar=anchor.getBoundingClientRect();
-     el.style.setProperty("position","absolute","important");
-     el.style.setProperty("z-index","100000","important");
-     el.style.setProperty("pointer-events","auto","important");
-     el.style.setProperty("top",Math.round(ar.bottom-cr.top+6)+"px","important");
-     el.style.setProperty("right","8px","important");
-     el.style.setProperty("left","auto","important");
-     el.style.setProperty("display","block","important");
-   }
+   const ar=anchor.getBoundingClientRect();
+   const width=Math.min(280,Math.max(190,window.innerWidth-20));
+   const top=Math.min(window.innerHeight-12,Math.max(8,ar.bottom+6));
+   el.style.setProperty("position","fixed","important");
+   el.style.setProperty("z-index","2147482000","important");
+   el.style.setProperty("pointer-events","auto","important");
+   el.style.setProperty("width",width+"px","important");
+   el.style.setProperty("max-height","none","important");
+   el.style.setProperty("overflow","visible","important");
+   el.style.setProperty("top",Math.round(top)+"px","important");
+   el.style.setProperty("right",Math.max(8,Math.round(window.innerWidth-ar.right))+"px","important");
+   el.style.setProperty("left","auto","important");
+   el.style.setProperty("display","block","important");
    return;
  }
  const r=anchor.getBoundingClientRect();
@@ -601,13 +603,10 @@ function floatMediaOverlay(el,anchor,kind){
  if(!el||!anchor)return;
  el.__mediaOverlayAnchor=anchor;
  if(kind==="menu"){
-   const card=anchor.closest(".media-card");
-   if(card&&el.parentElement!==card){
-     el.__mediaOverlayParent=el.parentElement;
-     el.__mediaOverlayNextSibling=el.nextSibling;
-     card.appendChild(el);
-   }
-   el.classList.add("media-overlay-attached");
+   el.__mediaOverlayParent=el.parentElement;
+   el.__mediaOverlayNextSibling=el.nextSibling;
+   document.body.appendChild(el);
+   el.classList.add("media-overlay-floating");
    positionFloatingMediaOverlay(el,anchor,kind);
    return;
  }
@@ -984,6 +983,7 @@ body.light .voice-editor-field input,body.light .voice-editor-field select{backg
 body.light .voice-library-card,body.light .voice-result-card{background:#fff;border-color:#dbe4ee;box-shadow:0 8px 25px rgba(30,55,85,.07)}
 body.light .voice-result-meta,body.light .voice-card-text{color:#71859a}
 body.light .voice-player{background:linear-gradient(135deg,#f7f9fc,#eef3f8);border-color:#d3deea}
+.voice-player-eq{height:18px;display:flex;align-items:center;justify-content:center;gap:2px;opacity:.22;overflow:hidden}.voice-player-eq i{display:block;width:3px;height:4px;border-radius:3px;background:linear-gradient(180deg,#bd72ff,#695dff);transform-origin:center}.voice-player.is-playing .voice-player-eq{opacity:1}.voice-player.is-playing .voice-player-eq i{animation:miyaVoiceEq .72s ease-in-out infinite alternate}.voice-player.is-playing .voice-player-eq i:nth-child(2n){animation-duration:.53s}.voice-player.is-playing .voice-player-eq i:nth-child(3n){animation-duration:.91s}.voice-player.is-playing .voice-player-eq i:nth-child(4n){animation-duration:.62s}@keyframes miyaVoiceEq{from{height:3px;transform:scaleY(.8)}to{height:17px;transform:scaleY(1)}}
 body.light .voice-player-time{color:#5f7085}
 body.light .voice-player-download,.voice-card-action{background:#f4f7fa;color:#52657b;border-color:#d3deea}
 body.light .voice-detail-dialog{background:#fff;border-color:#dbe4ee}
@@ -1000,16 +1000,17 @@ function buildVoicePlayer(source,card){
  const time=document.createElement("span");time.className="voice-player-time";time.textContent="0:00";
  const vw=document.createElement("div");vw.className="voice-player-volume-wrap";const volume=document.createElement("input");volume.type="range";volume.min=0;volume.max=1;volume.step=.01;volume.value=.9;volume.className="voice-player-volume";volume.title="Громкость";vw.append(volume);
  const download=document.createElement("button");download.type="button";download.className="voice-player-download";download.title="Скачать";download.innerHTML=voiceIcon('<path d="M12 4v11M8 11l4 4 4-4M5 20h14"/>');
+ const eq=document.createElement("div");eq.className="voice-player-eq";eq.innerHTML=Array.from({length:12},()=>"<i></i>").join("");
  const audio=document.createElement("audio");audio.preload="metadata";audio.style.display="none";let loaded=false;
  const load=async()=>{if(loaded)return;const blob=await resolveVoiceBlob(source);audio.src=URL.createObjectURL(blob);audio.volume=Number(volume.value);audio.load();loaded=true};
  play.onclick=async e=>{e.stopPropagation();try{await load();if(audio.paused)await audio.play();else audio.pause()}catch{toast("Не удалось воспроизвести голос")}};
  download.onclick=async e=>{e.stopPropagation();try{await downloadVoiceSource(audio,source)}catch{toast("Не удалось скачать голос")}};
  range.oninput=async()=>{try{await load();if(audio.duration)audio.currentTime=Number(range.value)/100*audio.duration}catch{}};
  volume.oninput=async()=>{try{await load();audio.volume=Number(volume.value)}catch{}};
- audio.onplay=()=>play.innerHTML='<svg viewBox="0 0 24 24"><path d="M7 5h4v14H7zM13 5h4v14h-4z"/></svg>';
- audio.onpause=()=>play.innerHTML='<svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>';
+ audio.onplay=()=>{wrap.classList.add("is-playing");play.innerHTML='<svg viewBox="0 0 24 24"><path d="M7 5h4v14H7zM13 5h4v14h-4z"/></svg>'};
+ audio.onpause=()=>{wrap.classList.remove("is-playing");play.innerHTML='<svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>'};
  audio.ontimeupdate=()=>{range.value=audio.duration?audio.currentTime/audio.duration*100:0;time.textContent=Math.floor(audio.currentTime/60)+":"+String(Math.floor(audio.currentTime%60)).padStart(2,"0")};
- audio.onended=()=>{range.value=0;audio.currentTime=0};
+ audio.onended=()=>{wrap.classList.remove("is-playing");range.value=0;audio.currentTime=0};
  row.append(play,range,time,vw,download);wrap.append(row,audio);return {wrap,audio};
 }
 async function resolveVoiceBlob(source){
@@ -2501,9 +2502,9 @@ body.ai-editor-open .composer-input-area{visibility:hidden!important;pointer-eve
 .ai-editor-actions-row{display:grid;grid-template-columns:1fr 1fr;gap:5px;margin-top:6px}.ai-editor-clear{width:100%;margin-top:6px}
 .ai-editor-zoom-row{display:grid;grid-template-columns:34px minmax(0,1fr) 34px 48px;align-items:center;gap:5px}
 .ai-editor-zoom-value{font-size:10px;text-align:right;opacity:.75}.ai-editor-adjust-group{margin-top:5px}
-.ai-editor-prompt-box{position:absolute;z-index:25;width:min(330px,52%);min-width:220px;display:none;padding:10px;border:1px solid rgba(255,255,255,.20);border-radius:15px;background:rgba(20,17,29,.88);box-shadow:0 14px 40px rgba(0,0,0,.30);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px)}
+.ai-editor-prompt-box{position:absolute;z-index:2147483100;width:min(170px,32%);min-width:160px;display:none;padding:10px;border:1px solid rgba(255,255,255,.20);border-radius:15px;background:rgba(20,17,29,.88);box-shadow:0 14px 40px rgba(0,0,0,.30);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px)}
 .ai-editor-prompt-box.open{display:block}.ai-editor-prompt-label{font-size:10px;text-transform:uppercase;letter-spacing:.11em;font-weight:900;opacity:.58;margin-bottom:6px}
-.ai-editor-prompt-input{width:100%;min-height:64px;resize:none;border:1px solid rgba(255,255,255,.12);border-radius:11px;background:rgba(255,255,255,.07);color:#fff;padding:9px;font:inherit;font-size:12px;outline:none}
+.ai-editor-prompt-input{width:100%;min-height:42px;max-height:72px;resize:none;border:1px solid rgba(255,255,255,.12);border-radius:11px;background:rgba(255,255,255,.07);color:#fff;padding:9px;font:inherit;font-size:12px;outline:none}
 .ai-editor-prompt-input:focus{border-color:rgba(177,142,255,.65);box-shadow:0 0 0 3px rgba(145,103,255,.12)}
 .ai-editor-prompt-actions{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:6px}.ai-editor-prompt-actions button{min-height:34px;border-radius:9px;border:1px solid rgba(255,255,255,.11);background:rgba(255,255,255,.07);color:#fff;font-weight:800;cursor:pointer}.ai-editor-prompt-actions .primary{border:0;background:linear-gradient(135deg,#9b72ff,#7251d9)}
 .ai-editor-hint{padding:8px 9px;border-radius:11px;background:rgba(255,255,255,.045);font-size:10px;line-height:1.3;color:rgba(255,255,255,.58)}
@@ -2576,7 +2577,7 @@ modal.innerHTML=`<div class="ai-editor-backdrop"></div><div class="ai-editor-dia
   modal.__load=async item2=>{currentItem=item2;workingSource="";empty.style.display="flex";empty.textContent="Загрузка изображения…";image.removeAttribute("src");clearMask();resetView();const candidates=[];try{const cached=await getCachedMedia(item2?.id);if(cached?.blob)candidates.push(URL.createObjectURL(cached.blob))}catch{}const url=await mediaItemToReference(item2);if(url){candidates.push(url);const proxied=jpegImageUrl(url);if(proxied!==url)candidates.push(proxied);if(!/^data:image\//i.test(url)&&!/^blob:/i.test(url))candidates.push("/api/image?url="+encodeURIComponent(url))}let ok=false,last=null;for(const candidate of candidates){try{await loadImage(candidate);ok=true;break}catch(e){last=e;try{if(candidate.startsWith("/api/")){await loadBlob(candidate);ok=true;break}}catch(fe){last=fe}}}if(!ok)throw(last||new Error("EDITOR_IMAGE_LOAD_FAILED"));naturalWidth=image.naturalWidth;naturalHeight=image.naturalHeight;if(!naturalWidth||!naturalHeight)throw new Error("EDITOR_IMAGE_DIMENSIONS_INVALID");workingSource=image.src;mask.width=naturalWidth;mask.height=naturalHeight;ctx=mask.getContext("2d",{willReadFrequently:true});if(!ctx)throw new Error("AI_EDITOR_CANVAS_UNAVAILABLE");ctx.clearRect(0,0,naturalWidth,naturalHeight);history=[];redoHistory=[];updateButtons();empty.style.display="none"};
   const setEditorProgress=(p,title,model)=>{if(!generation)return;const v=Math.max(0,Math.min(100,Math.round(p)));if(editorProgressTimer){clearInterval(editorProgressTimer);editorProgressTimer=0}generation.hidden=false;generationTitle.textContent=title||"Создание изменения";generationModel.textContent=model||"AI Editor";generationPercent.textContent=v+"%";generationBar.style.width=v+"%";generation.querySelector(".ai-editor-generation-ring").style.setProperty("--progress",v+"%");if(v<100){let live=v;editorProgressTimer=setInterval(()=>{live=Math.min(99,live+.7);generationPercent.textContent=Math.round(live)+"%";generationBar.style.width=live+"%";generation.querySelector(".ai-editor-generation-ring").style.setProperty("--progress",live+"%");if(live>=99){clearInterval(editorProgressTimer);editorProgressTimer=0}},260)}};
   const hideEditorProgress=()=>{if(editorProgressTimer){clearInterval(editorProgressTimer);editorProgressTimer=0}if(generation)generation.hidden=true};
-  const editorFetchImageBlob=async source=>{const value=String(source||"").trim();if(!value)throw new Error("EDITOR_SOURCE_EMPTY");if(/^data:image\\//i.test(value)||/^blob:/i.test(value)){const rr=await fetch(value,{cache:"no-store"});if(!rr.ok)throw new Error("SOURCE_IMAGE_READ_FAILED");return rr.blob()}try{const u=new URL(value,window.location.origin);if(u.origin===window.location.origin){const rr=await fetch(value,{cache:"no-store"});if(!rr.ok)throw new Error("SOURCE_IMAGE_READ_FAILED");return rr.blob()}}catch(e){if(e?.message==="SOURCE_IMAGE_READ_FAILED")throw e}const rr=await fetch("/api/image?url="+encodeURIComponent(value),{cache:"no-store"});if(!rr.ok)throw new Error("SOURCE_IMAGE_READ_FAILED");return rr.blob()};
+  const editorFetchImageBlob=async source=>{const value=String(source||"").trim();if(!value)throw new Error("EDITOR_SOURCE_EMPTY");if(/^data:image\//i.test(value)||/^blob:/i.test(value)){const rr=await fetch(value,{cache:"no-store"});if(!rr.ok)throw new Error("SOURCE_IMAGE_READ_FAILED");return rr.blob()}try{const u=new URL(value,window.location.origin);if(u.origin===window.location.origin){const rr=await fetch(value,{cache:"no-store"});if(!rr.ok)throw new Error("SOURCE_IMAGE_READ_FAILED");return rr.blob()}}catch(e){if(e?.message==="SOURCE_IMAGE_READ_FAILED")throw e}const rr=await fetch("/api/image?url="+encodeURIComponent(value),{cache:"no-store"});if(!rr.ok)throw new Error("SOURCE_IMAGE_READ_FAILED");return rr.blob()};
   const editorSourceBlob=async()=>editorFetchImageBlob(workingSource||image.src);
   const editorOutputData=async url=>{const source=String(url||"");if(!source)throw new Error("IMAGE_TOOL_OUTPUT_MISSING");let blob;try{blob=await editorFetchImageBlob(source)}catch{throw new Error("EDITOR_OUTPUT_FETCH_FAILED")}return await new Promise((resolve,reject)=>{const reader=new FileReader();reader.onload=()=>resolve(String(reader.result||""));reader.onerror=()=>reject(reader.error||new Error("EDITOR_OUTPUT_READ_FAILED"));reader.readAsDataURL(blob)})};
   const loadEditorOutput=async url=>{const data=await editorOutputData(url);workingSource=data;await loadImage(data);naturalWidth=image.naturalWidth;naturalHeight=image.naturalHeight;mask.width=naturalWidth;mask.height=naturalHeight;ctx=mask.getContext("2d",{willReadFrequently:true});ctx.clearRect(0,0,naturalWidth,naturalHeight);maskHasPaint=false;paintBounds=null;history=[];redoHistory=[];updateButtons();applyView();empty.style.display="none"};
@@ -3399,4 +3400,5 @@ function scheduleMediaOverlayReposition(){
 }
 window.addEventListener("resize",scheduleMediaOverlayReposition);
 document.addEventListener("scroll",scheduleMediaOverlayReposition,true);
+$("#workspace")?.addEventListener("scroll",()=>closeAllMediaMenus(),{passive:true});
 
