@@ -362,6 +362,9 @@ function closeImageViewer(){
  const modal=$("#imageViewerModal");
  if(modal){modal.classList.remove("open");document.body.classList.remove("image-viewer-open")}
 }
+function formatMediaCreationDate(item){
+ return item?.createdAt?new Date(item.createdAt).toLocaleDateString("ru-RU",{day:"2-digit",month:"2-digit",year:"numeric"}):"";
+}
 function openImageViewer(item){
  let modal=$("#imageViewerModal");
  if(!modal){
@@ -373,6 +376,7 @@ function openImageViewer(item){
 <button type="button" class="image-viewer-nav image-viewer-prev" aria-label="Предыдущее изображение" title="Предыдущее изображение"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m14.5 5-7 7 7 7"/><path d="M8 12h10"/></svg></button>
 <button type="button" class="image-viewer-nav image-viewer-next" aria-label="Следующее изображение" title="Следующее изображение"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m9.5 5 7 7-7 7"/><path d="M16 12H6"/></svg></button>
 <div class="image-viewer-controls">
+<div class="image-viewer-created-date"></div>
 <button type="button" class="image-viewer-edit" aria-label="Изменить картинку" title="Изменить картинку"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m4 16.5-.8 3.3 3.3-.8L18.7 6.8a2.2 2.2 0 0 1 3.1 3.1L6.5 19l-3.3.8.8-3.3Z"/><path d="m14.2 5.8 4 4"/></svg></button>
 <button type="button" class="image-viewer-video" aria-label="Создать видео" title="Создать видео"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m8 5 11 7-11 7V5Z"/></svg></button>
 <button type="button" class="image-viewer-prompt" aria-label="Показать промт" title="Промт"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 5h14v14H5z"/><path d="M8 9h8M8 12h6M8 15h4"/></svg></button>
@@ -439,6 +443,7 @@ function openImageViewer(item){
   const showViewerItem=(nextItem)=>{
     if(!nextItem)return;
     modal.dataset.viewerItemId=nextItem.id;
+    const viewerDate=modal.querySelector(".image-viewer-created-date");if(viewerDate)viewerDate.textContent=formatMediaCreationDate(nextItem);
     const viewerImg=modal.querySelector(".image-viewer-image");
     viewerImg.src=nextItem.url;
     viewerImg.dataset.zoom="1";viewerImg.dataset.panX="0";viewerImg.dataset.panY="0";
@@ -530,6 +535,7 @@ function openVideoViewer(item){
 <button type="button" class="image-viewer-nav image-viewer-prev" title="Предыдущее видео"><svg viewBox="0 0 24 24"><path d="m14.5 5-7 7 7 7"/><path d="M8 12h10"/></svg></button>
 <button type="button" class="image-viewer-nav image-viewer-next" title="Следующее видео"><svg viewBox="0 0 24 24"><path d="m9.5 5 7 7-7 7"/><path d="M16 12H6"/></svg></button>
 <div class="image-viewer-controls">
+<div class="image-viewer-created-date"></div>
 <button type="button" class="image-viewer-prompt" title="Промт"><svg viewBox="0 0 24 24"><path d="M5 5h14v14H5z"/><path d="M8 9h8M8 12h6M8 15h4"/></svg></button>
 <button type="button" class="image-viewer-download" title="Скачать"><svg viewBox="0 0 24 24"><path d="M12 4v11M8 11l4 4 4-4M5 19h14"/></svg></button>
 <button type="button" class="image-viewer-delete" title="Удалить"><svg viewBox="0 0 24 24"><path d="M4 7h16M9 7V4h6v3M7 7l1 13h8l1-13M10 11v5M14 11v5"/></svg></button>
@@ -547,7 +553,7 @@ function openVideoViewer(item){
   prev.onclick=()=>move(-1);next.onclick=()=>move(1);modal.__videoNav=nav;
   document.addEventListener("keydown",e=>{if(!$("#videoViewerModal")?.classList.contains("open"))return;if(e.key==="Escape")closeVideoViewer();else if(e.key==="ArrowLeft")move(-1);else if(e.key==="ArrowRight")move(1)});
  }
- const player=modal.querySelector(".image-viewer-video-player");modal.dataset.viewerItemId=item.id;player.pause();player.src=proxyAgnesVideoUrl(item.url);player.load();
+ const player=modal.querySelector(".image-viewer-video-player");modal.dataset.viewerItemId=item.id;const viewerDate=modal.querySelector(".image-viewer-created-date");if(viewerDate)viewerDate.textContent=formatMediaCreationDate(item);player.pause();player.src=proxyAgnesVideoUrl(item.url);player.load();
  resolveMediaUrl(item).then(u=>{if(u&&modal.classList.contains("open")&&modal.dataset.viewerItemId===item.id){player.src=u;player.load()}}).catch(()=>{});
  modal.__videoNav?.();modal.classList.add("open");document.body.classList.add("image-viewer-open");
 }
@@ -977,6 +983,91 @@ body.light #voiceOptions .voice-tool:active{
  background:#fff!important;background-color:#fff!important;color:#273047!important;border-color:#a98cff!important;
 }
 body.light #voiceOptions .select-pill option{background:#fff!important;color:#273047!important}
+/* Unified prompt actions: icon-only, no button chrome. */
+.composer-options button,
+.voice-options button,
+.video-options button,
+#composerAttach,#composerEmoji,#composerMic{
+ appearance:none!important;-webkit-appearance:none!important;
+ background:transparent!important;background-color:transparent!important;
+ border:0!important;box-shadow:none!important;
+ color:#9aa9bc!important;outline:none!important;
+ width:30px!important;height:30px!important;min-width:30px!important;
+ padding:5px!important;border-radius:8px!important;
+ display:grid!important;place-items:center!important;
+ transition:color .16s ease,opacity .16s ease,transform .16s ease!important;
+}
+.composer-options button svg,.voice-options button svg,.video-options button svg,
+#composerAttach svg,#composerEmoji svg,#composerMic svg{
+ width:18px!important;height:18px!important;
+ stroke:currentColor!important;fill:none!important;
+}
+.composer-options button:hover,
+.voice-options button:hover,
+.video-options button:hover,
+#composerAttach:hover,#composerEmoji:hover,#composerMic:hover{
+ background:transparent!important;background-color:transparent!important;
+ color:#b88cff!important;border-color:transparent!important;
+ box-shadow:none!important;transform:translateY(-1px)!important;
+}
+.composer-options button:focus-visible,
+.voice-options button:focus-visible,
+.video-options button:focus-visible,
+#composerAttach:focus-visible,#composerEmoji:focus-visible,#composerMic:focus-visible{
+ background:transparent!important;border-color:transparent!important;
+ box-shadow:0 0 0 2px rgba(169,140,255,.18)!important;color:#b88cff!important;
+}
+.composer-options button:active,
+.voice-options button:active,
+.video-options button:active,
+#composerAttach:active,#composerEmoji:active,#composerMic:active{
+ background:transparent!important;color:#b88cff!important;box-shadow:none!important;
+}
+body.light .composer-options button,
+body.light .voice-options button,
+body.light .video-options button,
+body.light #composerAttach,body.light #composerEmoji,body.light #composerMic{
+ background:transparent!important;background-color:transparent!important;
+ color:#71839a!important;border:0!important;box-shadow:none!important;
+}
+body.light .composer-options button:hover,
+body.light .voice-options button:hover,
+body.light .video-options button:hover,
+body.light #composerAttach:hover,body.light #composerEmoji:hover,body.light #composerMic:hover{
+ background:transparent!important;color:#7b61c8!important;border:0!important;box-shadow:none!important;
+}
+body.light .composer-options button:active,
+body.light .voice-options button:active,
+body.light .video-options button:active,
+body.light #composerAttach:active,body.light #composerEmoji:active,body.light #composerMic:active{
+ background:transparent!important;color:#7b61c8!important;border:0!important;box-shadow:none!important;
+}
+.miya-rename-backdrop{position:fixed;inset:0;z-index:2147483000;display:grid;place-items:center;padding:20px;background:rgba(4,10,22,.56);backdrop-filter:blur(10px)}
+.miya-rename-dialog{width:min(390px,calc(100vw - 32px));padding:20px;border:1px solid rgba(169,140,255,.28);border-radius:18px;background:linear-gradient(145deg,#101a30,#0b1427);box-shadow:0 24px 80px rgba(0,0,0,.42)}
+.miya-rename-eyebrow{font-size:9px;letter-spacing:.16em;color:#a987ff;font-weight:700;margin-bottom:7px}
+.miya-rename-dialog h3{margin:0 0 16px;font-size:19px;color:#eef3fa}
+.miya-rename-input{width:100%;height:44px;box-sizing:border-box;border:1px solid rgba(150,170,200,.25);border-radius:11px;background:rgba(255,255,255,.055);color:#f2f5fa;padding:0 13px;font:inherit;outline:none}
+.miya-rename-input:focus{border-color:#a98cff;box-shadow:0 0 0 3px rgba(169,140,255,.14)}
+.miya-rename-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:15px}
+.miya-rename-actions button{height:36px;padding:0 14px;border-radius:9px;border:1px solid rgba(150,170,200,.22);font:inherit;cursor:pointer}
+.miya-rename-cancel{background:rgba(255,255,255,.045);color:#aab8c9}
+.miya-rename-save{background:linear-gradient(135deg,#8d67e8,#6d61d9);border-color:transparent!important;color:#fff}
+.miya-rename-cancel:hover{background:rgba(255,255,255,.08)}
+.miya-rename-save:hover{filter:brightness(1.08)}
+body.light .miya-rename-backdrop{background:rgba(30,45,65,.28)}
+body.light .miya-rename-dialog{background:linear-gradient(145deg,#ffffff,#f3f6fa);border-color:#d7e1ec;box-shadow:0 24px 70px rgba(40,65,90,.2)}
+body.light .miya-rename-eyebrow{color:#7659c6}
+body.light .miya-rename-dialog h3{color:#273047}
+body.light .miya-rename-input{background:#fff;color:#273047;border-color:#cbd8e5}
+body.light .miya-rename-cancel{background:#fff;color:#52657b;border-color:#cbd8e5}
+body.light .miya-rename-cancel:hover{background:#f3f6fa}
+body.light .miya-rename-save{color:#fff}
+.image-viewer-created-date{position:absolute;right:14px;bottom:12px;z-index:12;font-size:10px;line-height:1;color:#fff;background:rgba(7,15,28,.58);border:1px solid rgba(255,255,255,.16);border-radius:7px;padding:6px 8px;backdrop-filter:blur(8px);pointer-events:none}
+body.light .image-viewer-created-date{color:#52657b;background:rgba(255,255,255,.9);border-color:#dbe4ee}
+.voice-detail-player .voice-player-range::-webkit-slider-thumb{width:7px!important;height:7px!important;border-radius:50%!important;background:#fff!important;opacity:1!important}
+.voice-detail-player .voice-player-range::-moz-range-thumb{width:7px!important;height:7px!important;border-radius:50%!important;background:#fff!important;opacity:1!important}
+.voice-player-range::-webkit-slider-thumb{width:7px!important;height:7px!important;border-radius:50%!important;background:#fff!important;opacity:1!important}
+.voice-player-range::-moz-range-thumb{width:7px!important;height:7px!important;border-radius:50%!important;background:#fff!important;opacity:1!important}
 body.light .voice-options .select-pill{background:#f4f7fa!important;color:#52657b!important;border-color:#d3deea!important} body.light .voice-options .select-pill:hover{background:#e9eef5!important;border-color:#c5d2e0!important;color:#273047!important} body.light .voice-options .voice-range{background:#f4f7fa!important;color:#52657b!important;border-color:#d3deea!important} body.light .voice-options .voice-tool{background:#f4f7fa!important;color:#52657b!important;border-color:#d3deea!important}
 .voice-player-track{position:relative;min-width:0;width:100%;height:34px;display:flex;align-items:flex-end}.voice-player-eq{position:absolute;inset:0 0 8px;display:flex;align-items:flex-end;justify-content:center;gap:2px;opacity:.34;overflow:hidden;pointer-events:none}.voice-player-eq i{display:block;width:3px;height:3px;min-height:2px;border-radius:3px;background:linear-gradient(180deg,#c47aff,#695dff);transform-origin:center;transition:height .08s ease}.voice-player.is-playing .voice-player-eq{opacity:1}.voice-player-range{position:absolute;left:0;right:0;bottom:0;width:100%;z-index:3;background:transparent}.voice-player-time{display:block;min-width:48px;width:auto;max-width:100%;overflow:hidden;text-overflow:clip;font-size:8px;color:#a9bad0;font-variant-numeric:tabular-nums;text-align:right;white-space:nowrap;line-height:1}.voice-card-menu{position:fixed;z-index:2147483646;min-width:180px;padding:5px;border:1px solid rgba(170,130,255,.28);border-radius:12px;background:rgba(8,20,38,.97);box-shadow:0 16px 50px rgba(0,0,0,.35);backdrop-filter:blur(14px)}.voice-card-menu button{width:100%;height:32px;border:0;border-radius:8px;background:transparent;color:#c7d5e4;display:flex;align-items:center;gap:8px;padding:0 9px;font-size:9px;font-weight:800;text-align:left;cursor:pointer}.voice-card-menu button:hover{background:rgba(157,111,255,.14);color:#fff}.voice-card-menu svg{width:14px;height:14px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
 body.light .voice-player-time{color:#5f7085}
@@ -1202,19 +1293,20 @@ async function pollCleverJobJson(jobId){
  for(let i=0;i<90;i++){await new Promise(r=>setTimeout(r,1800));const r=await fetch("https://cleverutils.com/api/v1/jobs/"+encodeURIComponent(jobId),{cache:"no-store"});const d=await r.json().catch(()=>({}));const j=d?.data||d;if(j?.status==="done")return j?.text||j?.result?.text||j?.output?.text||"";if(j?.status==="error"||j?.status==="failed")throw new Error("VOICE_JOB_FAILED")}
  throw new Error("VOICE_JOB_TIMEOUT");
 }
-function renameVoiceItem(item){
- const current=String(item?.model||"Голос").trim()||"Голос";
- const name=window.prompt("Название голоса",current);
- if(name===null)return;
- const next=String(name).trim().slice(0,80);
- if(!next){toast("Название не может быть пустым");return}
- const items=getLibrary();const stored=items.find(x=>x?.id===item?.id);
- if(stored)stored.model=next;
- try{localStorage.setItem(LIB_KEY,JSON.stringify(items.slice(0,500)))}catch{}
- item.model=next;
- renderVoiceLibrary();
- toast("Голос переименован");
+function showVoiceRenameDialog(item,onDone){
+ document.querySelector(".miya-rename-backdrop")?.remove();
+ const backdrop=document.createElement("div");backdrop.className="miya-rename-backdrop";
+ const box=document.createElement("section");box.className="miya-rename-dialog";box.setAttribute("role","dialog");box.setAttribute("aria-modal","true");
+ box.innerHTML='<div class="miya-rename-eyebrow">MIYA VOICE</div><h3>Переименовать голос</h3><input class="miya-rename-input" type="text" maxlength="80" autocomplete="off"><div class="miya-rename-actions"><button type="button" class="miya-rename-cancel">Отмена</button><button type="button" class="miya-rename-save">Сохранить</button></div>';
+ const input=box.querySelector(".miya-rename-input");input.value=String(item?.model||"Голос").trim()||"Голос";
+ const close=()=>{backdrop.remove();document.body.classList.remove("miya-rename-open")};
+ const save=()=>{const next=String(input.value||"").trim().slice(0,80);if(!next){input.focus();return}const items=getLibrary();const stored=items.find(x=>x?.id===item?.id);if(stored)stored.model=next;try{localStorage.setItem(LIB_KEY,JSON.stringify(items.slice(0,500)))}catch{}item.model=next;close();onDone?.(next);renderVoiceLibrary();toast("Голос переименован")};
+ box.querySelector(".miya-rename-cancel").onclick=close;box.querySelector(".miya-rename-save").onclick=save;
+ input.onkeydown=e=>{if(e.key==="Enter"){e.preventDefault();save()}else if(e.key==="Escape"){e.preventDefault();close()}};
+ backdrop.onclick=e=>{if(e.target===backdrop)close()};backdrop.append(box);document.body.appendChild(backdrop);document.body.classList.add("miya-rename-open");
+ requestAnimationFrame(()=>{input.focus();input.select()});
 }
+function renameVoiceItem(item,onDone){showVoiceRenameDialog(item,onDone)}
 function openVoiceCardMenu(anchor,item,source,card){
  closeAllVoiceCardMenus();
  const menu=document.createElement("div");menu.className="voice-card-menu voice-card-menu-floating";
@@ -1264,7 +1356,7 @@ function openVoiceDetail(item,source){
  const detailActions=document.createElement("div");detailActions.className="voice-detail-actions";
  const dplay=document.createElement("button");dplay.type="button";dplay.className="voice-detail-action";dplay.innerHTML=voiceIcon('<path d="M8 5v14l11-7z"/>');dplay.title="Воспроизвести";dplay.onclick=()=>player.wrap.querySelector(".voice-player-play")?.click();
  const ddownload=document.createElement("button");ddownload.type="button";ddownload.className="voice-detail-action";ddownload.innerHTML=voiceIcon('<path d="M12 4v11M8 11l4 4 4-4M5 20h14"/>');ddownload.title="Скачать";ddownload.onclick=()=>downloadVoiceSource(null,source);
- const drename=document.createElement("button");drename.type="button";drename.className="voice-detail-action";drename.innerHTML=voiceIcon('<path d="m4 16.5-.8 3.3 3.3-.8L18.7 6.8a2.2 2.2 0 0 0 3.1-3.1L4 16.5Z"/><path d="m14.2 5.8 4 4"/>');drename.title="Переименовать";drename.onclick=()=>{renameVoiceItem(item);h.textContent=item?.model||"Голос"};
+ const drename=document.createElement("button");drename.type="button";drename.className="voice-detail-action";drename.innerHTML=voiceIcon('<path d="m4 16.5-.8 3.3 3.3-.8L18.7 6.8a2.2 2.2 0 0 0 3.1-3.1L4 16.5Z"/><path d="m14.2 5.8 4 4"/>');drename.title="Переименовать";drename.onclick=()=>renameVoiceItem(item,next=>{h.textContent=next});
  const dedit=document.createElement("button");dedit.type="button";dedit.className="voice-detail-action";dedit.innerHTML=voiceIcon('<path d="m15 5 4 4M5 19l3.5-.7L18 9l-3-3-9.5 9.5L5 19Z"/>');dedit.title="Редактировать";dedit.onclick=()=>openVoiceEditor(item,source);
  const dnoise=document.createElement("button");dnoise.type="button";dnoise.className="voice-detail-action";dnoise.innerHTML=voiceIcon('<path d="M4 12h16M7 7h10M7 17h10"/>');dnoise.title="Очистить шум";dnoise.onclick=()=>runVoiceCleverTool(item,null,"noise-reduction","Очистка голоса");
  detailActions.append(dplay,ddownload,drename,dedit,dnoise);
@@ -3302,9 +3394,10 @@ function ensureSpeechVisualizer(){
   canvas.setAttribute("aria-hidden","true");
   Object.assign(canvas.style,{
     position:"absolute",
-    left:"48px",
+    right:"46px",
+    left:"auto",
     top:"50%",
-    transform:"translate(-50%,-50%)",
+    transform:"translate(50%,-50%)",
     width:"150px",
     height:"24px",
     display:"none",
