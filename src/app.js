@@ -1844,7 +1844,7 @@ async function generateVoice(text){
 function renderVoiceLibrary(){ensureVoiceWallStyles();ensureVoiceCardFinalStyles();const c=$("#canvas"),items=getLibrary().filter(x=>x.type==="audio");c.innerHTML='<div class="library-section"><div class="voice-wall"></div></div>';const wall=c.querySelector(".voice-wall");if(!items.length){wall.innerHTML='<div class="library-note">Пока нет созданных голосов.</div>';return}items.forEach((item,index)=>wall.appendChild(createVoiceCard(item,()=>resolveMediaUrl(item),{voiceItems:items,voiceIndex:index})))}
 function renderLibrary(tab="images"){
  const c=$("#canvas"),items=getLibrary(),images=items.filter(x=>x.type==="image"),videos=items.filter(x=>x.type==="video"),audios=items.filter(x=>x.type==="audio");
- c.innerHTML='<div class="library-section"><div class="library-tabs"><button type="button" class="library-tab" data-library-tab="images">Картинки</button><button type="button" class="library-tab" data-library-tab="videos">Видео</button><button type="button" class="library-tab" data-library-tab="audio">Музыка</button></div><div class="result-grid library-media-grid"></div></div>';
+ c.innerHTML='<div class="library-section"><div class="library-tabs"><button type="button" class="library-tab" data-library-tab="images">Картинки</button><button type="button" class="library-tab" data-library-tab="videos">Видео</button><button type="button" class="library-tab" data-library-tab="audio">Музыка</button><button type="button" class="library-tab" data-library-tab="editor">Аудиоредактор</button></div><div class="result-grid library-media-grid"></div></div>';
  c.querySelectorAll("[data-library-tab]").forEach(btn=>btn.classList.toggle("active",btn.dataset.libraryTab===tab));
  const grid=c.querySelector(".library-media-grid");
  if(tab==="audio"){
@@ -1857,7 +1857,7 @@ function renderLibrary(tab="images"){
    if(!list.length)grid.innerHTML='<div class="library-note">'+(tab==="videos"?"Пока нет созданных видео.":"Пока нет созданных картинок.")+'</div>';
    else{list.forEach(item=>grid.appendChild(buildMediaCard(item,{video:tab==="videos"})));applyFirstSixMediaPriority(grid)}
  }
- c.querySelectorAll("[data-library-tab]").forEach(btn=>btn.onclick=()=>renderLibrary(btn.dataset.libraryTab));
+ c.querySelectorAll("[data-library-tab]").forEach(btn=>btn.onclick=()=>{if(btn.dataset.libraryTab==="editor"){openToolsEditor();toolsEditorState.kind="editor";toolsEditorRender();return}renderLibrary(btn.dataset.libraryTab)});
 }
 
 function toast(message){
