@@ -3398,7 +3398,7 @@ function ensureSpeechVisualizer(){
     right:"0",
     top:"50%",
     transform:"translateY(-50%)",
-    width:"150px",
+    width:"calc(100% - 56px)",
     height:"24px",
     display:"none",
     pointerEvents:"none",
@@ -3413,8 +3413,10 @@ function positionSpeechVisualizer(){
   const canvas=$("#composerVoiceVisualizer"),mic=$("#composerMic"),row=canvas?.parentElement;
   if(!canvas||!mic||!row)return;
   const rr=row.getBoundingClientRect(),mr=mic.getBoundingClientRect(),gap=8;
-  const left=Math.max(0,mr.left-rr.left-canvas.offsetWidth-gap);
+  const left=8;
+  const width=Math.max(40,mr.left-rr.left-left-gap);
   canvas.style.left=left+"px";
+  canvas.style.width=width+"px";
   canvas.style.right="auto";
   canvas.style.transform="translateY(-50%)";
 }
@@ -3428,13 +3430,13 @@ function speechDraw(){
     if(!speechAnalyser)return;
     analyser.getByteFrequencyData(data);
     ctx.clearRect(0,0,canvas.width,canvas.height);
-    const bars=32;
-    const gap=3;
+    const bars=64;
+    const gap=2;
     const width=(canvas.width-gap*(bars-1))/bars;
     for(let i=0;i<bars;i++){
       const index=Math.min(data.length-1,Math.floor(i*data.length/bars));
       const value=data[index]/255;
-      const height=Math.max(3,value*23);
+      const height=Math.max(2,value*23);
       const x=i*(width+gap);
       const y=(canvas.height-height)/2;
       ctx.beginPath();

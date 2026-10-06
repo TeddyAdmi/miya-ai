@@ -2146,3 +2146,48 @@ body.light .chat-selection-actions button{background:#f4f6fa}
 .voice-player-volume-wrap{
   flex:none!important;
 }
+
+/* Prompt icon reference: all image/video/voice actions follow the same visual language as "Стереть промт". */
+.composer-options .composer-copy,
+.composer-options .composer-trash,
+.composer-options .improve,
+.voice-options .voice-tool,
+.video-options .video-tool{
+  flex:0 0 38px!important;width:38px!important;height:38px!important;min-width:38px!important;
+  padding:0!important;display:grid!important;place-items:center!important;
+  border:0!important;border-radius:9px!important;background:transparent!important;
+  color:var(--muted)!important;cursor:pointer!important;box-shadow:none!important;
+}
+.composer-options .composer-copy svg,
+.composer-options .composer-trash svg,
+.composer-options .improve svg,
+.voice-options .voice-tool svg,
+.video-options .video-tool svg{
+  width:16px!important;height:16px!important;fill:none!important;
+  stroke:currentColor!important;stroke-width:1.8!important;stroke-linecap:round!important;stroke-linejoin:round!important;
+}
+.composer-options .composer-copy:hover,
+.composer-options .composer-trash:hover,
+.composer-options .improve:hover,
+.voice-options .voice-tool:hover,
+.video-options .video-tool:hover{
+  background:rgba(120,150,190,.12)!important;color:inherit!important;transform:none!important;
+}
+body.light .composer-options .composer-copy:hover,
+body.light .composer-options .composer-trash:hover,
+body.light .composer-options .improve:hover,
+body.light .voice-options .voice-tool:hover,
+body.light .video-options .video-tool:hover{
+  background:#edf3f9!important;color:#182436!important;
+}
+/* Creation date belongs to the viewer chrome, bottom-right, never over the media. */
+.image-viewer-created-date{
+  position:fixed!important;right:22px!important;bottom:18px!important;top:auto!important;left:auto!important;
+  z-index:20!important;pointer-events:none!important;padding:5px 9px!important;border-radius:8px!important;
+  background:rgba(20,27,38,.72)!important;color:rgba(255,255,255,.82)!important;
+  border:1px solid rgba(255,255,255,.12)!important;backdrop-filter:blur(8px)!important;
+  -webkit-backdrop-filter:blur(8px)!important;font-size:11px!important;line-height:1.2!important;
+  white-space:nowrap!important;
+}
+body.light .image-viewer-created-date{background:rgba(255,255,255,.86)!important;color:#52627a!important;border-color:rgba(40,30,60,.12)!important}
+@media(max-width:800px){.image-viewer-created-date{right:12px!important;bottom:12px!important}}
