@@ -3565,7 +3565,6 @@ function toolsEditorRender(){
     launch.ondrop=e=>{e.preventDefault();launch.classList.remove("dragover");openFile(e.dataTransfer?.files?.[0])};
   }
   return;
- }  return;
  }
  if(!st.file){
   body.innerHTML='<div class="tools-dropzone" id="toolsDropzone"><div class="tools-empty"><div class="tools-upload-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M12 16V4m0 0L7 9m5-5 5 5"/><path d="M4 15v4a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-4"/></svg></div><h3>Добавь файл в редактор</h3><p>Перетащи файл сюда из проводника или выбери его вручную. До «Сохранить» он не попадёт на стену и в «Мои файлы».</p><button class="tools-pick" id="toolsPick">Выбрать файл</button><div class="tools-hint">Можно также перетащить файл прямо из папки</div></div></div>';
