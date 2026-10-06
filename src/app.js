@@ -1043,6 +1043,21 @@ body.light .voice-options #voiceSelect{
 .voice-editor-more{
  top:8px!important;right:8px!important;
 }
+.voice-card-menu-floating{
+ opacity:0;visibility:hidden;transform:translateY(-3px);
+ transition:opacity .08s ease,transform .08s ease,visibility .08s linear;
+ pointer-events:none!important;
+}
+.voice-card-menu-floating.ready{
+ opacity:1;visibility:visible;transform:translateY(0);
+ pointer-events:auto!important;
+}
+body.light .voice-card-menu-floating{
+ background:#fff!important;color:#273047!important;border:1px solid #dbe4ee!important;
+ box-shadow:0 14px 34px rgba(30,55,85,.16)!important;
+}
+body.light .voice-card-menu-floating button{color:#52657b!important;background:transparent!important}
+body.light .voice-card-menu-floating button:hover{background:#f0f4f8!important;color:#273047!important}
 /* Do not create a second visual style for the dots: image-card .media-more is the source of truth. */
 .voice-editor-more.media-more{position:absolute!important}
 .voice-editor-more svg{width:15px!important;height:15px!important;fill:none!important;stroke:currentColor!important;stroke-width:1.8!important;stroke-linecap:round!important}
@@ -1137,17 +1152,21 @@ async function pollCleverJobJson(jobId){
 }
 function openVoiceCardMenu(anchor,item,source,card){
  closeAllVoiceCardMenus();
- const menu=document.createElement("div");menu.className="voice-card-menu";
- const add=(label,path,fn)=>{const b=document.createElement("button");b.type="button";b.innerHTML=voiceIcon(path)+"<span>"+label+"</span>";b.onclick=e=>{e.stopPropagation();menu.remove();fn()};menu.appendChild(b)};
- add("Открыть редактор",'<path d="m4 16.5-.8 3.3 3.3-.8L18.7 6.8a2.2 2.2 0 0 0-3.1-3.1L4 16.5Z"/><path d="m14.2 5.8 4 4"/>',()=>openVoiceEditor(item,source));
+ const menu=document.createElement("div");menu.className="voice-card-menu voice-card-menu-floating";
+ const add=(label,path,fn)=>{const b=document.createElement("button");b.type="button";b.innerHTML=voiceIcon(path)+"<span>"+label+"</span>";b.onclick=e=>{e.preventDefault();e.stopPropagation();closeAllVoiceCardMenus();fn()};menu.appendChild(b)};
+ add("Открыть редактор",'<path d="m4 16.5-.8 3.3 3.3-.8L18.7 6.8a2.2 2.2 0 0 0 3.1-3.1L4 16.5Z"/><path d="m14.2 5.8 4 4"/>',()=>openVoiceEditor(item,source));
  add("Очистить шум",'<path d="M4 12h16M7 7h10M7 17h10"/>',()=>runVoiceCleverTool(item,card,"noise-reduction","Очистка голоса"));
  add("Разделить голос",'<path d="M4 12h5M15 12h5M7 7v10M17 7v10"/>',()=>runVoiceCleverTool(item,card,"vocal-remover","Разделение"));
  add("Расшифровать",'<path d="M5 6h14M5 12h14M5 18h9"/>',()=>runVoiceCleverTool(item,card,"speech-to-text","Расшифровка",{format:"txt",language:document.querySelector("#voiceLanguage")?.value||"ru"}));
  add("Скачать",'<path d="M12 4v11M8 11l4 4 4-4M5 20h14"/>',()=>downloadVoiceSource(null,source));
  add("Удалить",'<path d="M5 7h14M9 7V4h6v3M8 7l1 13h6l1-13"/>',()=>confirmDeleteMedia(item,card));
  document.body.appendChild(menu);
- const r=anchor.getBoundingClientRect();const left=Math.min(window.innerWidth-menu.offsetWidth-10,Math.max(10,r.right-menu.offsetWidth));const top=Math.min(window.innerHeight-menu.offsetHeight-10,Math.max(10,r.bottom+7));menu.style.left=Math.round(left)+"px";menu.style.top=Math.round(top)+"px";
- setTimeout(()=>document.addEventListener("click",()=>menu.remove(),{once:true}),0);
+ const r=anchor.getBoundingClientRect();
+ const width=Math.min(250,Math.max(190,window.innerWidth-20));
+ const left=Math.min(window.innerWidth-width-10,Math.max(10,r.right-width));
+ const top=Math.min(window.innerHeight-10,Math.max(10,r.bottom+7));
+ Object.assign(menu.style,{position:"fixed",left:Math.round(left)+"px",top:Math.round(top)+"px",width:width+"px",zIndex:"2147482000"});
+ requestAnimationFrame(()=>menu.classList.add("ready"));
 }
 function closeAllVoiceCardMenus(){document.querySelectorAll(".voice-card-menu").forEach(x=>x.remove())}
 function createVoiceCard(item,source,options={}){
@@ -3470,7 +3489,16 @@ const chatNavWrap=$("#chatNavWrap")||$(".chat-nav-wrap");
 if(chatNavWrap){chatNavWrap.addEventListener("mouseleave",()=>{chatMenuSuppressed=false;$("#chatSubmenu")?.classList.remove("suppressed");$("#chatMenuToggle")?.setAttribute("aria-expanded","false")})}
 
 // Close transient chat/media menus when clicking outside them.
-document.addEventListener("click",e=>{if(!e.target.closest(".chat-history-row"))resetChatMenus()});
+document.addEventListener("click",e=>{if(!e.target.closest(".chat-history-row"))resetChatMenus()});\ndocument.addEventListener("click",e=>{
+ if(e.target.closest(".voice-card-menu")||e.target.closest(".voice-editor-more"))return;
+ closeAllVoiceCardMenus();
+});
+document.addEventListener("scroll",()=>closeAllVoiceCardMenus(),true);
+document.addEventListener("pointerdown",e=>{
+ if(e.target.closest(".voice-card-menu")||e.target.closest(".voice-editor-more"))return;
+ closeAllVoiceCardMenus();
+},{capture:true});
+
 document.addEventListener("click",e=>{if(!e.target.closest(".media-actions")&&!e.target.closest(".media-action-menu")&&!e.target.closest(".media-upscale-panel"))closeAllMediaMenus()});
 let mediaOverlayRepositionFrame=0;
 function scheduleMediaOverlayReposition(){
