@@ -1440,7 +1440,7 @@ async function openVoiceEditor(item,source){
  const copy=document.createElement("div");const eyebrow=document.createElement("div");eyebrow.className="voice-detail-eyebrow";eyebrow.textContent="MIYA VOICE EDITOR";
  const h=document.createElement("h3");h.textContent=item?.model||"Голос";copy.append(eyebrow,h);
  const headActions=document.createElement("div");headActions.className="voice-editor-head-actions";
- const deleteBtn=document.createElement("button");deleteBtn.type="button";deleteBtn.className="voice-editor-delete voice-editor-icon-btn";deleteBtn.title="Удалить исходный голос";deleteBtn.setAttribute("aria-label","Удалить исходный голос");deleteBtn.innerHTML='<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 7h14M9 7V4h6v3M8 7l1 13h6l-1-13"/><path d="M10 11v5M14 11v5"/></svg>';
+ const deleteBtn=document.createElement("button");deleteBtn.type="button";deleteBtn.className="voice-editor-delete voice-editor-icon-btn";deleteBtn.title="Убрать из редактора";deleteBtn.setAttribute("aria-label","Убрать текущий голос из редактора");deleteBtn.innerHTML='<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 7h10M9 4h6l1 3H8l1-3Z"/><path d="M9 11v6M15 11v6M5 7l1 13h12l1-13"/><path d="m4 20 16-16"/></svg>';
  const close=document.createElement("button");close.type="button";close.className="voice-detail-close";close.title="Закрыть";close.setAttribute("aria-label","Закрыть");close.innerHTML='<svg viewBox="0 0 24 24"><path d="m6 6 12 12M18 6 6 18"/></svg>';headActions.append(deleteBtn,close);head.append(copy,headActions);
  const sourceBox=document.createElement("div");sourceBox.className="voice-editor-source";
  const sourceLabel=document.createElement("div");sourceLabel.className="voice-editor-source-label";sourceLabel.textContent="Исходный голос";
@@ -1472,11 +1472,20 @@ async function openVoiceEditor(item,source){
    card.append(b,audio,save);results.append(card);
   });
  };
- const loadInitial=async()=>{try{workingBlob=await resolveVoiceBlob(source);workingUrl=URL.createObjectURL(workingBlob);renderPlayer()}catch{toast("Не удалось открыть голос");closeEditor()}};
+ const syncEditorState=()=>{
+   const hasFile=Boolean(workingBlob&&workingUrl);
+   deleteBtn.disabled=!hasFile;
+   deleteBtn.title=hasFile?"Убрать из редактора":"В редакторе нет файла";
+   deleteBtn.setAttribute("aria-label",hasFile?"Убрать текущий голос из редактора":"В редакторе нет файла");
+   saveBtn.disabled=!dirty||!hasFile;
+   saveBtn.title=hasFile&&dirty?"Сохранить как новый голос":"Сначала измени или добавь аудиофайл";
+ };
+ const loadInitial=async()=>{try{workingBlob=await resolveVoiceBlob(source);workingUrl=URL.createObjectURL(workingBlob);dirty=false;renderPlayer();syncEditorState()}catch{toast("Не удалось открыть голос");closeEditor()}};
+
  const replaceSource=async file=>{
   if(!file?.type?.startsWith("audio/")){toast("Выбери аудиофайл");return}
   playerWrap.querySelector(".voice-player")?.__cleanup?.();cleanupUrl(workingUrl);[stemResults?.vocals?.url,stemResults?.instrumental?.url].forEach(cleanupUrl);stemResults=null;renderResults();
-  workingBlob=file;workingName=file.name||"miya-voice.mp3";workingUrl=URL.createObjectURL(file);dirty=true;renderPlayer();toast("Аудио загружено");
+  workingBlob=file;workingName=file.name||"miya-voice.mp3";workingUrl=URL.createObjectURL(file);dirty=true;renderPlayer();syncEditorState();sourceLabel.textContent="НОВЫЙ РАБОЧИЙ ФАЙЛ";toast("Аудио загружено в редактор");
  };
  const input=document.createElement("input");input.type="file";input.accept="audio/*";input.hidden=true;document.body.appendChild(input);input.onchange=()=>{const f=input.files?.[0];input.value="";if(f)replaceSource(f)};
  const plus=uploadBox.querySelector(".voice-editor-plus");plus.onclick=()=>input.click();
@@ -1526,12 +1535,30 @@ async function openVoiceEditor(item,source){
  tool("Расшифровать",'<path d="M4 7h16M4 12h16M4 17h10"/><path d="M17 15v5M14.5 17.5h5"/>',split);
  tool("Очистить шум",'<path d="M4 12h16M7 7h10M7 17h10"/>',async()=>{const form=new FormData();form.append("file",new File([workingBlob],workingName,{type:workingBlob.type||"audio/mpeg"}));const rr=await fetch("https://cleverutils.com/api/v1/tools/noise-reduction",{method:"POST",body:form,headers:{Accept:"application/json"},cache:"no-store"});const data=await rr.json().catch(()=>({}));if(!rr.ok)throw new Error(data?.message||data?.error||"NOISE_FAILED");let job=data?.data||data;const id=job?.job_id||job?.jobId||"";let out=job?.output?.url||job?.outputUrl||"";if(!out&&id)out=await waitForCleverUtilsJob(String(id));if(!out)throw new Error("NOISE_OUTPUT_MISSING");const res=await fetch(out);if(!res.ok)throw new Error("NOISE_OUTPUT_"+res.status);const blob=await res.blob();cleanupUrl(workingUrl);workingBlob=blob;workingUrl=URL.createObjectURL(blob);dirty=true;renderPlayer();toast("Шум очищен")});
  tool("Обрезать",'<path d="M6 5v14M18 5v14M3 9h6M15 15h6"/>',async()=>toast("Обрезка исходного голоса оставлена без изменений"));
- saveBtn.onclick=async()=>{try{if(!dirty){toast("Изменений нет");return}const url=URL.createObjectURL(workingBlob);if(!saveMedia("audio",url,workingName,item?.model||"Miya Voice","mp3"))throw new Error("SAVE_FAILED");renderVoiceLibrary();toast("Голос сохранён как новый");closeEditor()}catch(e){toast(String(e?.message||"Не удалось сохранить голос"))}};
+ saveBtn.onclick=async()=>{try{if(!dirty||!workingBlob){toast("Сначала добавь или измени аудиофайл");return}const url=URL.createObjectURL(workingBlob);if(!saveMedia("audio",url,workingName,item?.model||"Miya Voice","mp3"))throw new Error("SAVE_FAILED");renderVoiceLibrary();toast("Голос сохранён как новый");closeEditor()}catch(e){toast(String(e?.message||"Не удалось сохранить голос"))}};
  deleteBtn.onclick=()=>{
-  const items=getLibrary().filter(x=>x.id!==item?.id);
-  try{localStorage.setItem(LIB_KEY,JSON.stringify(items))}catch{}
-  openMediaDB().then(async db=>{try{if(db){const tx=db.transaction("media","readwrite");tx.objectStore("media").delete(item.id)}}catch{}}).catch(()=>{});
-  h.textContent="Новый голос";sourceLabel.textContent="ИСХОДНЫЙ ФАЙЛ УДАЛЁН";playerWrap.innerHTML="";playerWrap.parentElement?.setAttribute("hidden","true");deleteBtn.disabled=true;deleteBtn.title="Исходный голос удалён";deleteBtn.setAttribute("aria-label","Исходный голос удалён");renderVoiceLibrary();toast("Голос удалён · добавь новый файл через +");
+  // ВАЖНО: это удаляет голос только из текущей сессии редактора.
+  // Карточка на стене/в библиотеке и её IndexedDB-кэш не трогаются.
+  playerWrap.querySelector(".voice-player")?.__cleanup?.();
+  cleanupUrl(workingUrl);
+  [stemResults?.vocals?.url,stemResults?.instrumental?.url].forEach(cleanupUrl);
+  workingBlob=null;
+  workingUrl=null;
+  workingName="miya-voice.mp3";
+  dirty=true;
+  stemResults=null;
+  results.innerHTML="";
+  results.hidden=true;
+  playerWrap.innerHTML="";
+  sourceLabel.textContent="ФАЙЛ НЕ ВЫБРАН";
+  uploadBox.classList.remove("drag");
+  deleteBtn.disabled=true;
+  deleteBtn.title="В редакторе нет файла";
+  deleteBtn.setAttribute("aria-label","В редакторе нет файла");
+  saveBtn.disabled=true;
+  saveBtn.title="Сначала добавь аудиофайл";
+  saveBtn.setAttribute("aria-label","Сначала добавь аудиофайл");
+  toast("Голос убран из редактора · карточка на стене сохранена");
  };
  await loadInitial();
 }
