@@ -921,31 +921,31 @@ function ensureVoiceWallStyles(){
  if(document.getElementById("miyaVoiceWallStyles"))return;
  const s=document.createElement("style");s.id="miyaVoiceWallStyles";
  s.textContent=`
-.voice-wall{width:100%;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px;align-items:stretch}
-.voice-library-card,.voice-result-card{position:relative;min-width:0;min-height:260px;height:100%;border:1px solid var(--line);border-radius:18px;background:linear-gradient(145deg,#0b233e,#08192e);padding:15px;box-shadow:0 12px 32px rgba(0,0,0,.14);transition:transform .18s,border-color .18s,box-shadow .18s;display:flex;flex-direction:column;gap:10px;cursor:pointer}
+.voice-wall{width:100%;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:11px;align-items:stretch}
+.voice-library-card,.voice-result-card{position:relative;min-width:0;aspect-ratio:1/1;min-height:0;height:auto;border:1px solid var(--line);border-radius:10px;background:linear-gradient(145deg,#0b233e,#08192e);padding:10px;box-shadow:0 10px 26px rgba(0,0,0,.14);transition:transform .18s,border-color .18s,box-shadow .18s;display:flex;flex-direction:column;gap:7px;cursor:pointer;overflow:hidden}
 .voice-library-card:hover,.voice-result-card:hover{transform:translateY(-3px);border-color:rgba(166,119,255,.55);box-shadow:0 18px 38px rgba(0,0,0,.22)}
 .voice-library-card:focus-visible{outline:2px solid #a86cff;outline-offset:3px}
 .voice-result-title,.voice-library-card>b{font-size:13px;font-weight:900;letter-spacing:-.02em;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.voice-result-meta{font-size:9px;color:#7890aa}
-.voice-card-text{font-size:10px;line-height:1.5;color:#9bb0c8;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden;min-height:45px}
-.voice-player{border:1px solid rgba(104,144,185,.34);border-radius:12px;padding:7px 8px;background:linear-gradient(135deg,rgba(8,27,47,.96),rgba(15,32,56,.9));box-shadow:inset 0 1px 0 rgba(255,255,255,.035);cursor:default}
-.voice-player-row{display:grid;grid-template-columns:32px minmax(55px,1fr) 34px 30px;align-items:center;gap:7px}
-.voice-player-volume-wrap{width:30px;height:34px;display:grid;place-items:center;position:relative}
-.voice-player-volume{width:30px;height:3px;transform:rotate(-90deg);transform-origin:center;accent-color:#a75cff}
+.voice-result-meta{display:none}
+.voice-card-text{font-size:9px;line-height:1.35;color:#9bb0c8;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden;min-height:0;max-height:38px}
+.voice-player{border:1px solid rgba(104,144,185,.34);border-radius:10px;padding:6px 7px;background:linear-gradient(135deg,rgba(8,27,47,.96),rgba(15,32,56,.9));box-shadow:inset 0 1px 0 rgba(255,255,255,.035);cursor:default;flex:0 0 auto}
+.voice-player-row{display:grid;grid-template-columns:30px minmax(0,1fr) 42px 26px;align-items:center;gap:6px}
+.voice-player-volume-wrap{width:26px;height:30px;display:grid;place-items:center;position:relative}
+.voice-player-volume{width:27px;height:3px;transform:rotate(-90deg);transform-origin:center;accent-color:#a75cff}
 .voice-editor-more{position:absolute;top:12px;right:12px;z-index:4;width:30px;height:30px;border:1px solid rgba(255,255,255,.16);border-radius:9px;background:rgba(7,20,36,.82);color:#b9c9dc;display:grid;place-items:center;cursor:pointer;backdrop-filter:blur(8px)}
 .voice-editor-more:hover{background:rgba(145,91,255,.22);border-color:rgba(190,154,255,.42);color:#fff}
 .voice-editor-more svg{width:16px;height:16px;fill:currentColor}
-.voice-editor-dialog{width:min(820px,94vw);max-height:92vh;overflow:auto;border:1px solid rgba(170,130,255,.28);border-radius:24px;background:linear-gradient(145deg,#0a1c32,#071322);box-shadow:0 28px 100px rgba(0,0,0,.48);padding:20px}
+.voice-editor-dialog{width:100vw;height:100vh;max-width:none;max-height:none;overflow:hidden;border:0;border-radius:0;background:linear-gradient(145deg,#0a1c32,#071322);box-shadow:none;padding:clamp(18px,3vw,42px);display:flex;flex-direction:column;justify-content:center}
 .voice-editor-toolbar{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:9px;margin:14px 0}
 .voice-editor-tool{min-height:46px;border:1px solid rgba(120,158,195,.22);border-radius:11px;background:rgba(255,255,255,.045);color:#c1cedd;font-size:10px;font-weight:800;display:flex;align-items:center;justify-content:center;gap:7px;cursor:pointer}
 .voice-editor-tool:hover{background:rgba(157,111,255,.13);border-color:rgba(190,154,255,.34);color:#fff}
 .voice-editor-tool:disabled{opacity:.55;cursor:wait}
 .voice-editor-tool svg{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
-.voice-editor-player{margin:8px 0 16px}
+.voice-editor-player{width:min(820px,92vw);margin:8px auto 14px}
 .voice-editor-fields{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:10px 0}
 .voice-editor-field{display:flex;flex-direction:column;gap:5px;font-size:9px;color:#8195aa}
 .voice-editor-field input,.voice-editor-field select{height:36px;border:1px solid rgba(120,158,195,.22);border-radius:9px;background:rgba(255,255,255,.045);color:#d7e2ed;padding:0 10px}
-.voice-editor-transcript{margin-top:12px;padding:12px;border-radius:11px;background:rgba(255,255,255,.035);border:1px solid rgba(120,158,195,.18);font-size:10px;line-height:1.55;color:#b9c9d9;white-space:pre-wrap;max-height:220px;overflow:auto}
+.voice-editor-transcript{margin:8px auto 0;padding:10px;border-radius:11px;background:rgba(255,255,255,.035);border:1px solid rgba(120,158,195,.18);font-size:10px;line-height:1.45;color:#b9c9d9;white-space:pre-wrap;max-height:72px;overflow:hidden;width:min(820px,92vw)}
 .voice-editor-footer{display:flex;justify-content:flex-end;gap:9px;margin-top:16px}
 .voice-editor-save,.voice-editor-close-btn{min-height:38px;padding:0 15px;border-radius:10px;border:1px solid rgba(120,158,195,.22);font-size:10px;font-weight:800;cursor:pointer}
 .voice-editor-save{background:linear-gradient(135deg,#a95cff,#6e63ff);color:#fff;border:0}
@@ -959,21 +959,21 @@ function ensureVoiceWallStyles(){
 .voice-player-download{width:30px;height:30px;border:1px solid #1a4b78;border-radius:8px;background:#0b233d;color:#a9bdd0;display:grid;place-items:center;padding:0}
 .voice-player-download:hover{background:#102943;color:#fff;border-color:#2879bb}
 .voice-player-download svg{width:15px;height:15px}
-.voice-card-actions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px;margin-top:auto}
-.voice-card-action{min-height:34px;border:1px solid rgba(120,158,195,.26);border-radius:9px;background:rgba(255,255,255,.045);color:#b9c9dc;font-size:9px;font-weight:800;display:flex;align-items:center;justify-content:center;gap:6px;cursor:pointer}
+.voice-card-actions{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px;margin-top:auto}
+.voice-card-action{width:100%;min-height:28px;height:28px;border:1px solid rgba(120,158,195,.26);border-radius:8px;background:rgba(255,255,255,.045);color:#b9c9dc;font-size:0;font-weight:800;display:flex;align-items:center;justify-content:center;gap:0;cursor:pointer;padding:0}
 .voice-card-action:hover{background:rgba(157,111,255,.13);border-color:rgba(190,154,255,.34);color:#fff}
 .voice-card-action.danger:hover{background:rgba(255,82,120,.12);border-color:rgba(255,130,155,.32)}
-.voice-card-action svg{width:14px;height:14px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.voice-card-action svg{width:13px;height:13px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
 .voice-transcript{display:none;padding:9px;border-radius:9px;background:rgba(255,255,255,.035);border:1px solid rgba(120,158,195,.18);font-size:9px;line-height:1.5;color:#a9bdd0;white-space:pre-wrap;max-height:130px;overflow:auto}
 .voice-transcript.open{display:block}
-.voice-detail-backdrop{position:fixed;inset:0;z-index:2147483600;background:rgba(3,9,18,.66);backdrop-filter:blur(10px);display:grid;place-items:center;padding:24px}
-.voice-detail-dialog{width:min(760px,94vw);max-height:min(820px,92vh);overflow:auto;border:1px solid rgba(170,130,255,.28);border-radius:24px;background:linear-gradient(145deg,#0a1c32,#071322);box-shadow:0 28px 100px rgba(0,0,0,.48);padding:20px;position:relative}
+.voice-detail-backdrop{position:fixed;inset:0;z-index:2147483600;background:rgba(3,9,18,.72);backdrop-filter:blur(10px);display:grid;place-items:stretch;padding:0;overflow:hidden}
+.voice-detail-dialog{width:100vw;height:100vh;max-width:none;max-height:none;overflow:hidden;border:0;border-radius:0;background:linear-gradient(145deg,#0a1c32,#071322);box-shadow:none;padding:clamp(18px,3vw,42px);position:relative;display:flex;flex-direction:column;justify-content:center}
 .voice-detail-head{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;margin-bottom:14px}
 .voice-detail-head h3{margin:2px 0 4px;font-size:22px;letter-spacing:-.03em}
 .voice-detail-eyebrow{font-size:9px;letter-spacing:.16em;font-weight:900;color:#a97bff}
 .voice-detail-close{width:36px;height:36px;border:1px solid rgba(255,255,255,.12);border-radius:10px;background:rgba(255,255,255,.06);color:#fff;font-size:20px;cursor:pointer}
-.voice-detail-card{min-height:0;height:auto;cursor:default;transform:none!important;box-shadow:none!important;border-color:rgba(170,130,255,.22)!important}
-.voice-detail-info{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin:0 0 14px}
+.voice-detail-card{min-height:0!important;height:auto!important;max-height:min(62vh,620px);width:min(720px,92vw);align-self:center;cursor:default;transform:none!important;box-shadow:none!important;border-color:rgba(170,130,255,.22)!important;aspect-ratio:1/1}
+.voice-detail-info{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;margin:0 auto 12px;width:min(720px,92vw)}
 .voice-detail-info>div{padding:10px 12px;border:1px solid rgba(120,158,195,.18);border-radius:10px;background:rgba(255,255,255,.035)}
 .voice-detail-info small{display:block;color:#738aa3;font-size:8px;margin-bottom:4px}
 .voice-detail-info b{font-size:10px;color:#d5e0ec}
@@ -983,35 +983,66 @@ body.light .voice-editor-field input,body.light .voice-editor-field select{backg
 body.light .voice-library-card,body.light .voice-result-card{background:#fff;border-color:#dbe4ee;box-shadow:0 8px 25px rgba(30,55,85,.07)}
 body.light .voice-result-meta,body.light .voice-card-text{color:#71859a}
 body.light .voice-player{background:linear-gradient(135deg,#f7f9fc,#eef3f8);border-color:#d3deea}
-.voice-player-eq{height:18px;display:flex;align-items:center;justify-content:center;gap:2px;opacity:.22;overflow:hidden}.voice-player-eq i{display:block;width:3px;height:4px;border-radius:3px;background:linear-gradient(180deg,#bd72ff,#695dff);transform-origin:center}.voice-player.is-playing .voice-player-eq{opacity:1}.voice-player.is-playing .voice-player-eq i{animation:miyaVoiceEq .72s ease-in-out infinite alternate}.voice-player.is-playing .voice-player-eq i:nth-child(2n){animation-duration:.53s}.voice-player.is-playing .voice-player-eq i:nth-child(3n){animation-duration:.91s}.voice-player.is-playing .voice-player-eq i:nth-child(4n){animation-duration:.62s}@keyframes miyaVoiceEq{from{height:3px;transform:scaleY(.8)}to{height:17px;transform:scaleY(1)}}
+.voice-player-track{position:relative;min-width:0;height:28px;display:flex;align-items:flex-end}.voice-player-eq{position:absolute;inset:1px 0 7px;display:flex;align-items:center;justify-content:center;gap:2px;opacity:.38;overflow:hidden;pointer-events:none}.voice-player-eq i{display:block;width:3px;height:3px;min-height:2px;border-radius:3px;background:linear-gradient(180deg,#c47aff,#695dff);transform-origin:center;transition:height .08s ease}.voice-player.is-playing .voice-player-eq{opacity:1}.voice-player-range{position:absolute;left:0;right:0;bottom:0;width:100%;z-index:2;background:transparent}.voice-player-time{font-size:8px;color:#a9bad0;font-variant-numeric:tabular-nums;min-width:0;text-align:right;white-space:nowrap}.voice-card-menu{position:fixed;z-index:2147483646;min-width:180px;padding:5px;border:1px solid rgba(170,130,255,.28);border-radius:12px;background:rgba(8,20,38,.97);box-shadow:0 16px 50px rgba(0,0,0,.35);backdrop-filter:blur(14px)}.voice-card-menu button{width:100%;height:32px;border:0;border-radius:8px;background:transparent;color:#c7d5e4;display:flex;align-items:center;gap:8px;padding:0 9px;font-size:9px;font-weight:800;text-align:left;cursor:pointer}.voice-card-menu button:hover{background:rgba(157,111,255,.14);color:#fff}.voice-card-menu svg{width:14px;height:14px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
 body.light .voice-player-time{color:#5f7085}
 body.light .voice-player-download,.voice-card-action{background:#f4f7fa;color:#52657b;border-color:#d3deea}
 body.light .voice-detail-dialog{background:#fff;border-color:#dbe4ee}
 body.light .voice-detail-close{background:#f4f7fa;color:#273047;border-color:#d3deea}
+body.voice-modal-open{overflow:hidden!important}
 @media(max-width:980px){.voice-wall{grid-template-columns:repeat(2,minmax(0,1fr))}}
-@media(max-width:620px){.voice-wall{grid-template-columns:1fr}.voice-library-card,.voice-result-card{padding:12px;min-height:230px}.voice-player-row{grid-template-columns:32px minmax(50px,1fr) 50px 30px 30px}.voice-detail-info{grid-template-columns:1fr}}`;
+@media(max-width:620px){.voice-wall{grid-template-columns:1fr}.voice-library-card,.voice-result-card{padding:10px}.voice-player-row{grid-template-columns:30px minmax(0,1fr) 42px 26px}.voice-detail-info{grid-template-columns:repeat(2,minmax(0,1fr))}.voice-detail-dialog,.voice-editor-dialog{padding:16px}.voice-detail-card{width:min(92vw,62vh);max-height:62vh}}`;
  document.head.appendChild(s);
 }
 function voiceIcon(path){return '<svg viewBox="0 0 24 24">'+path+'</svg>'}
 function buildVoicePlayer(source,card){
- const wrap=document.createElement("div");wrap.className="voice-player";const row=document.createElement("div");row.className="voice-player-row";
+ const wrap=document.createElement("div");wrap.className="voice-player";
+ const row=document.createElement("div");row.className="voice-player-row";
  const play=document.createElement("button");play.type="button";play.className="voice-player-play";play.innerHTML='<svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>';
+ const track=document.createElement("div");track.className="voice-player-track";
+ const eq=document.createElement("div");eq.className="voice-player-eq";eq.innerHTML=Array.from({length:18},()=>"<i></i>").join("");
  const range=document.createElement("input");range.type="range";range.min=0;range.max=100;range.value=0;range.className="voice-player-range";range.title="Позиция";
+ track.append(eq,range);
  const time=document.createElement("span");time.className="voice-player-time";time.textContent="0:00";
- const vw=document.createElement("div");vw.className="voice-player-volume-wrap";const volume=document.createElement("input");volume.type="range";volume.min=0;volume.max=1;volume.step=.01;volume.value=.9;volume.className="voice-player-volume";volume.title="Громкость";vw.append(volume);
- const download=document.createElement("button");download.type="button";download.className="voice-player-download";download.title="Скачать";download.innerHTML=voiceIcon('<path d="M12 4v11M8 11l4 4 4-4M5 20h14"/>');
- const eq=document.createElement("div");eq.className="voice-player-eq";eq.innerHTML=Array.from({length:12},()=>"<i></i>").join("");
- const audio=document.createElement("audio");audio.preload="metadata";audio.style.display="none";let loaded=false;
- const load=async()=>{if(loaded)return;const blob=await resolveVoiceBlob(source);audio.src=URL.createObjectURL(blob);audio.volume=Number(volume.value);audio.load();loaded=true};
- play.onclick=async e=>{e.stopPropagation();try{await load();if(audio.paused)await audio.play();else audio.pause()}catch{toast("Не удалось воспроизвести голос")}};
- download.onclick=async e=>{e.stopPropagation();try{await downloadVoiceSource(audio,source)}catch{toast("Не удалось скачать голос")}};
+ const vw=document.createElement("div");vw.className="voice-player-volume-wrap";
+ const volume=document.createElement("input");volume.type="range";volume.min=0;volume.max=1;volume.step=.01;volume.value=.9;volume.className="voice-player-volume";volume.title="Громкость";vw.append(volume);
+ const audio=document.createElement("audio");audio.preload="metadata";audio.style.display="none";
+ let loaded=false,ctx=null,analyser=null,sourceNode=null,frame=0;
+ const load=async()=>{
+   if(loaded)return;
+   const blob=await resolveVoiceBlob(source);
+   audio.src=URL.createObjectURL(blob);audio.volume=Number(volume.value);audio.load();loaded=true;
+ };
+ const draw=()=>{
+   if(!analyser)return;
+   const data=new Uint8Array(analyser.frequencyBinCount);analyser.getByteFrequencyData(data);
+   const bars=[...eq.children];
+   bars.forEach((bar,i)=>{
+     const start=Math.floor(Math.pow(i/bars.length,1.7)*data.length);
+     const end=Math.max(start+1,Math.floor(Math.pow((i+1)/bars.length,1.7)*data.length));
+     let sum=0;for(let j=start;j<end&&j<data.length;j++)sum+=data[j];
+     const value=(sum/Math.max(1,end-start))/255;
+     bar.style.height=Math.max(2,Math.round(3+value*20))+"px";
+   });
+   if(!audio.paused&&!audio.ended)frame=requestAnimationFrame(draw);
+ };
+ const startAnalyser=()=>{
+   if(!ctx){
+     const C=window.AudioContext||window.webkitAudioContext;
+     if(!C)return;
+     ctx=new C();analyser=ctx.createAnalyser();analyser.fftSize=256;analyser.smoothingTimeConstant=.72;
+     sourceNode=ctx.createMediaElementSource(audio);sourceNode.connect(analyser);analyser.connect(ctx.destination);
+   }
+   ctx.resume?.();cancelAnimationFrame(frame);draw();
+ };
+ play.onclick=async e=>{e.stopPropagation();try{await load();if(audio.paused){startAnalyser();await audio.play()}else audio.pause()}catch{toast("Не удалось воспроизвести голос")}};
  range.oninput=async()=>{try{await load();if(audio.duration)audio.currentTime=Number(range.value)/100*audio.duration}catch{}};
  volume.oninput=async()=>{try{await load();audio.volume=Number(volume.value)}catch{}};
- audio.onplay=()=>{wrap.classList.add("is-playing");play.innerHTML='<svg viewBox="0 0 24 24"><path d="M7 5h4v14H7zM13 5h4v14h-4z"/></svg>'};
- audio.onpause=()=>{wrap.classList.remove("is-playing");play.innerHTML='<svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>'};
+ audio.onplay=()=>{wrap.classList.add("is-playing");startAnalyser();play.innerHTML='<svg viewBox="0 0 24 24"><path d="M7 5h4v14H7zM13 5h4v14h-4z"/></svg>'};
+ audio.onpause=()=>{wrap.classList.remove("is-playing");cancelAnimationFrame(frame);play.innerHTML='<svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>'};
  audio.ontimeupdate=()=>{range.value=audio.duration?audio.currentTime/audio.duration*100:0;time.textContent=Math.floor(audio.currentTime/60)+":"+String(Math.floor(audio.currentTime%60)).padStart(2,"0")};
- audio.onended=()=>{wrap.classList.remove("is-playing");range.value=0;audio.currentTime=0};
- row.append(play,range,time,vw,download);wrap.append(row,audio);return {wrap,audio};
+ audio.onended=()=>{wrap.classList.remove("is-playing");cancelAnimationFrame(frame);range.value=0;audio.currentTime=0;time.textContent="0:00"};
+ wrap.append(row,audio);row.append(play,track,time,vw);
+ return {wrap,audio,cleanup:()=>{cancelAnimationFrame(frame);try{sourceNode?.disconnect()}catch{}try{analyser?.disconnect()}catch{}try{ctx?.close()}catch{}if(audio.src?.startsWith("blob:"))URL.revokeObjectURL(audio.src)}};
 }
 async function resolveVoiceBlob(source){
  const u=typeof source==="function"?await source():source;
@@ -1063,23 +1094,36 @@ async function pollCleverJobJson(jobId){
  for(let i=0;i<90;i++){await new Promise(r=>setTimeout(r,1800));const r=await fetch("https://cleverutils.com/api/v1/jobs/"+encodeURIComponent(jobId),{cache:"no-store"});const d=await r.json().catch(()=>({}));const j=d?.data||d;if(j?.status==="done")return j?.text||j?.result?.text||j?.output?.text||"";if(j?.status==="error"||j?.status==="failed")throw new Error("VOICE_JOB_FAILED")}
  throw new Error("VOICE_JOB_TIMEOUT");
 }
+function openVoiceCardMenu(anchor,item,source,card){
+ closeAllVoiceCardMenus();
+ const menu=document.createElement("div");menu.className="voice-card-menu";
+ const add=(label,path,fn)=>{const b=document.createElement("button");b.type="button";b.innerHTML=voiceIcon(path)+"<span>"+label+"</span>";b.onclick=e=>{e.stopPropagation();menu.remove();fn()};menu.appendChild(b)};
+ add("Открыть редактор",'<path d="m4 16.5-.8 3.3 3.3-.8L18.7 6.8a2.2 2.2 0 0 0-3.1-3.1L4 16.5Z"/><path d="m14.2 5.8 4 4"/>',()=>openVoiceEditor(item,source));
+ add("Очистить шум",'<path d="M4 12h16M7 7h10M7 17h10"/>',()=>runVoiceCleverTool(item,card,"noise-reduction","Очистка голоса"));
+ add("Разделить голос",'<path d="M4 12h5M15 12h5M7 7v10M17 7v10"/>',()=>runVoiceCleverTool(item,card,"vocal-remover","Разделение"));
+ add("Расшифровать",'<path d="M5 6h14M5 12h14M5 18h9"/>',()=>runVoiceCleverTool(item,card,"speech-to-text","Расшифровка",{format:"txt",language:document.querySelector("#voiceLanguage")?.value||"ru"}));
+ add("Скачать",'<path d="M12 4v11M8 11l4 4 4-4M5 20h14"/>',()=>downloadVoiceSource(null,source));
+ add("Удалить",'<path d="M5 7h14M9 7V4h6v3M8 7l1 13h6l1-13"/>',()=>confirmDeleteMedia(item,card));
+ document.body.appendChild(menu);
+ const r=anchor.getBoundingClientRect();const left=Math.min(window.innerWidth-menu.offsetWidth-10,Math.max(10,r.right-menu.offsetWidth));const top=Math.min(window.innerHeight-menu.offsetHeight-10,Math.max(10,r.bottom+7));menu.style.left=Math.round(left)+"px";menu.style.top=Math.round(top)+"px";
+ setTimeout(()=>document.addEventListener("click",()=>menu.remove(),{once:true}),0);
+}
+function closeAllVoiceCardMenus(){document.querySelectorAll(".voice-card-menu").forEach(x=>x.remove())}
 function createVoiceCard(item,source,options={}){
  ensureVoiceWallStyles();
  const card=document.createElement("article");card.className="voice-library-card";card.tabIndex=0;
  const title=document.createElement("b");title.className="voice-result-title";title.textContent=item?.model||"Голос";
- const meta=document.createElement("div");meta.className="voice-result-meta";meta.textContent="MP3 · Miya Voice";
  const textEl=document.createElement("div");textEl.className="voice-card-text";textEl.textContent=item?.prompt||"Готовая голосовая запись";
- const more=document.createElement("button");more.type="button";more.className="voice-editor-more";more.title="Редактор голоса";more.setAttribute("aria-label","Редактор голоса");more.innerHTML='<svg viewBox="0 0 24 24"><circle cx="5" cy="12" r="2.1"/><circle cx="12" cy="12" r="2.1"/><circle cx="19" cy="12" r="2.1"/></svg>';
- more.onclick=e=>{e.preventDefault();e.stopPropagation();openVoiceEditor(item,source)};
- card.append(title,meta,textEl,more);
- const player=buildVoicePlayer(source,card);card.append(player.wrap);
+ const more=document.createElement("button");more.type="button";more.className="voice-editor-more";more.title="Действия";more.setAttribute("aria-label","Действия голоса");more.innerHTML='<svg viewBox="0 0 24 24"><circle cx="5" cy="12" r="2.1"/><circle cx="12" cy="12" r="2.1"/><circle cx="19" cy="12" r="2.1"/></svg>';
+ more.onclick=e=>{e.preventDefault();e.stopPropagation();openVoiceCardMenu(more,item,source,card)};
+ card.append(title,textEl,more);
+ const player=buildVoicePlayer(source,card);player.wrap.__cleanup=player.cleanup;card.append(player.wrap);
  const actions=document.createElement("div");actions.className="voice-card-actions";
- const action=(name,label,path,fn)=>{const b=document.createElement("button");b.type="button";b.className="voice-card-action"+(name==="delete"?" danger":"");b.dataset.voiceAction=name;b.title=label;b.innerHTML=voiceIcon(path)+'<span>'+label+'</span>';b.onclick=e=>{e.stopPropagation();fn()};actions.appendChild(b);return b};
- action("download","Скачать",'<path d="M12 4v11M8 11l4 4 4-4M5 20h14"/>',()=>downloadVoiceSource(player.audio,source));
- action("clean","Очистить",'<path d="M4 12h16M7 7h10M7 17h10"/>',()=>runVoiceCleverTool(item,card,"noise-reduction","Очистка голоса"));
- action("vocal","Разделить",'<path d="M4 12h5M15 12h5M7 7v10M17 7v10"/><path d="M9 9h6v6H9z"/>',()=>runVoiceCleverTool(item,card,"vocal-remover","Разделение"));
- action("text","Текст",'<path d="M5 6h14M5 12h14M5 18h9"/>',()=>runVoiceCleverTool(item,card,"speech-to-text","Расшифровка",{format:"txt",language:document.querySelector("#voiceLanguage")?.value||"ru"}));
- action("delete","Удалить",'<path d="M5 7h14M9 7V4h6v3M8 7l1 13h6l1-13"/>',()=>confirmDeleteMedia(item,card));
+ const quick=(name,label,path,fn)=>{const b=document.createElement("button");b.type="button";b.className="voice-card-action";b.dataset.voiceAction=name;b.title=label;b.setAttribute("aria-label",label);b.innerHTML=voiceIcon(path);b.onclick=e=>{e.stopPropagation();fn()};actions.appendChild(b);return b};
+ quick("clean","Очистить",'<path d="M4 12h16M7 7h10M7 17h10"/>',()=>runVoiceCleverTool(item,card,"noise-reduction","Очистка голоса"));
+ quick("vocal","Разделить",'<path d="M4 12h5M15 12h5M7 7v10M17 7v10"/><path d="M9 9h6v6H9z"/>',()=>runVoiceCleverTool(item,card,"vocal-remover","Разделение"));
+ quick("text","Текст",'<path d="M5 6h14M5 12h14M5 18h9"/>',()=>runVoiceCleverTool(item,card,"speech-to-text","Расшифровка",{format:"txt",language:document.querySelector("#voiceLanguage")?.value||"ru"}));
+ quick("delete","Удалить",'<path d="M5 7h14M9 7V4h6v3M8 7l1 13h6l1-13"/>',()=>confirmDeleteMedia(item,card));
  card.append(actions);
  if(!options.detail){
    const open=()=>openVoiceDetail(item,source);
@@ -1090,27 +1134,29 @@ function createVoiceCard(item,source,options={}){
 }
 function openVoiceDetail(item,source){
  ensureVoiceWallStyles();document.querySelector(".voice-detail-backdrop")?.remove();
- const backdrop=document.createElement("div");backdrop.className="voice-detail-backdrop";
+ const backdrop=document.createElement("div");backdrop.className="voice-detail-backdrop";document.body.classList.add("voice-modal-open");
  const dialog=document.createElement("section");dialog.className="voice-detail-dialog";dialog.setAttribute("role","dialog");dialog.setAttribute("aria-modal","true");
  const head=document.createElement("div");head.className="voice-detail-head";const copy=document.createElement("div");const eyebrow=document.createElement("div");eyebrow.className="voice-detail-eyebrow";eyebrow.textContent="MIYA VOICE";const h=document.createElement("h3");h.textContent=item?.model||"Голос";copy.append(eyebrow,h);const close=document.createElement("button");close.type="button";close.className="voice-detail-close";close.textContent="×";head.append(copy,close);
- const info=document.createElement("div");info.className="voice-detail-info";const addInfo=(label,value)=>{const box=document.createElement("div");const small=document.createElement("small");small.textContent=label;const val=document.createElement("b");val.textContent=value;box.append(small,val);info.appendChild(box)};addInfo("Модель",String(item?.model||"Голос"));addInfo("Формат",String(item?.format||"MP3").toUpperCase());addInfo("Создан",item?.createdAt?new Date(item.createdAt).toLocaleString("ru-RU"):"—");addInfo("Текст",String(item?.prompt||"Готовая голосовая запись"));
- const detailCard=createVoiceCard(item,source,{detail:true});detailCard.classList.add("voice-detail-card");dialog.append(head,info,detailCard);backdrop.appendChild(dialog);document.body.appendChild(backdrop);
- const closeIt=()=>{backdrop.remove();document.removeEventListener("keydown",onKey)};const onKey=e=>{if(e.key==="Escape")closeIt()};close.onclick=closeIt;backdrop.addEventListener("click",e=>{if(e.target===backdrop)closeIt()});document.addEventListener("keydown",onKey);
+ const info=document.createElement("div");info.className="voice-detail-info";
+ const addInfo=(label,value)=>{const box=document.createElement("div");const small=document.createElement("small");small.textContent=label;const val=document.createElement("b");val.textContent=value;box.append(small,val);info.appendChild(box)};
+ addInfo("Модель",String(item?.model||"Голос"));addInfo("Формат",String(item?.format||"MP3").toUpperCase());addInfo("Длина","Аудиозапись");addInfo("Текст",String(item?.prompt||"Готовая голосовая запись"));
+ const card=createVoiceCard(item,source,{detail:true});card.classList.add("voice-detail-card");dialog.append(head,info,card);backdrop.append(dialog);document.body.appendChild(backdrop);
+ const closeIt=()=>{card.querySelector(".voice-player")?.__cleanup?.();backdrop.remove();document.body.classList.remove("voice-modal-open");document.removeEventListener("keydown",onKey)};const onKey=e=>{if(e.key==="Escape")closeIt()};close.onclick=closeIt;backdrop.addEventListener("click",e=>{if(e.target===backdrop)closeIt()});document.addEventListener("keydown",onKey);
 }
 async function openVoiceEditor(item,source){
  ensureVoiceWallStyles();document.querySelector(".voice-editor-backdrop")?.remove();
- const backdrop=document.createElement("div");backdrop.className="voice-detail-backdrop voice-editor-backdrop";const dialog=document.createElement("section");dialog.className="voice-editor-dialog";dialog.setAttribute("role","dialog");dialog.setAttribute("aria-modal","true");
+ const backdrop=document.createElement("div");backdrop.className="voice-detail-backdrop voice-editor-backdrop";document.body.classList.add("voice-modal-open");const dialog=document.createElement("section");dialog.className="voice-editor-dialog";dialog.setAttribute("role","dialog");dialog.setAttribute("aria-modal","true");
  const head=document.createElement("div");head.className="voice-detail-head";const copy=document.createElement("div");const eyebrow=document.createElement("div");eyebrow.className="voice-detail-eyebrow";eyebrow.textContent="MIYA VOICE EDITOR";const h=document.createElement("h3");h.textContent=item?.model||"Голос";copy.append(eyebrow,h);const close=document.createElement("button");close.type="button";close.className="voice-detail-close";close.textContent="×";head.append(copy,close);
  const playerWrap=document.createElement("div");playerWrap.className="voice-editor-player";const toolbar=document.createElement("div");toolbar.className="voice-editor-toolbar";const fields=document.createElement("div");fields.className="voice-editor-fields";const transcript=document.createElement("div");transcript.className="voice-editor-transcript";transcript.hidden=true;const footer=document.createElement("div");footer.className="voice-editor-footer";const closeBtn=document.createElement("button");closeBtn.type="button";closeBtn.className="voice-editor-close-btn";closeBtn.textContent="Закрыть";const saveBtn=document.createElement("button");saveBtn.type="button";saveBtn.className="voice-editor-save";saveBtn.textContent="Сохранить как новый голос";footer.append(closeBtn,saveBtn);dialog.append(head,playerWrap,toolbar,fields,transcript,footer);backdrop.appendChild(dialog);document.body.appendChild(backdrop);
  let workingUrl=null,workingBlob=null,dirty=false;
- const closeEditor=()=>{if(workingUrl?.startsWith("blob:"))URL.revokeObjectURL(workingUrl);backdrop.remove()};close.onclick=closeEditor;closeBtn.onclick=closeEditor;backdrop.addEventListener("click",e=>{if(e.target===backdrop)closeEditor()});
+ const closeEditor=()=>{playerWrap.querySelector(".voice-player")?.__cleanup?.();if(workingUrl?.startsWith("blob:"))URL.revokeObjectURL(workingUrl);backdrop.remove();document.body.classList.remove("voice-modal-open")};close.onclick=closeEditor;closeBtn.onclick=closeEditor;backdrop.addEventListener("click",e=>{if(e.target===backdrop)closeEditor()});
  try{workingBlob=await resolveVoiceBlob(source);workingUrl=URL.createObjectURL(workingBlob)}catch{toast("Не удалось открыть голос");closeEditor();return}
  const fmt=n=>{n=Math.max(0,Number(n)||0);return Math.floor(n/60)+":"+String(Math.floor(n%60)).padStart(2,"0")};
- const renderPlayer=()=>{playerWrap.innerHTML="";const audio=document.createElement("audio");audio.src=workingUrl;audio.preload="metadata";audio.style.display="none";const p=document.createElement("div");p.className="voice-player";p.style.cursor="default";const row=document.createElement("div");row.className="voice-player-row";const play=document.createElement("button");play.type="button";play.className="voice-player-play";play.innerHTML='<svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>';const range=document.createElement("input");range.type="range";range.min=0;range.max=100;range.value=0;range.className="voice-player-range";const time=document.createElement("span");time.className="voice-player-time";time.textContent="0:00 / 0:00";const vw=document.createElement("div");vw.className="voice-player-volume-wrap";const vol=document.createElement("input");vol.type="range";vol.min=0;vol.max=1;vol.step=.01;vol.value=.9;vol.className="voice-player-volume";vw.append(vol);const dl=document.createElement("button");dl.type="button";dl.className="voice-player-download";dl.innerHTML=voiceIcon('<path d="M12 4v11M8 11l4 4 4-4M5 20h14"/>');row.append(play,range,time,vw,dl);p.append(row,audio);playerWrap.append(p);play.onclick=()=>audio.paused?audio.play():audio.pause();dl.onclick=()=>downloadVoiceSource(audio,()=>Promise.resolve(workingUrl));audio.onplay=()=>play.innerHTML='<svg viewBox="0 0 24 24"><path d="M7 5h4v14H7zM13 5h4v14h-4z"/></svg>';audio.onpause=()=>play.innerHTML='<svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>';audio.ontimeupdate=()=>{range.value=audio.duration?audio.currentTime/audio.duration*100:0;time.textContent=fmt(audio.currentTime)+" / "+fmt(audio.duration)};audio.onloadedmetadata=()=>time.textContent="0:00 / "+fmt(audio.duration);range.oninput=()=>{if(audio.duration)audio.currentTime=Number(range.value)/100*audio.duration};vol.oninput=()=>audio.volume=Number(vol.value);audio.volume=.9};
+ const renderPlayer=()=>{playerWrap.innerHTML="";const p=buildVoicePlayer(()=>Promise.resolve(workingUrl),null);p.wrap.style.cursor="default";p.wrap.__cleanup=p.cleanup;playerWrap.append(p.wrap);}
  renderPlayer();
  const icon=(path)=>'<svg viewBox="0 0 24 24">'+path+'</svg>';
  const tool=(label,path,fn)=>{const b=document.createElement("button");b.type="button";b.className="voice-editor-tool";b.innerHTML=icon(path)+'<span>'+label+'</span>';b.onclick=async()=>{b.disabled=true;try{await fn()}catch(e){console.error(e);toast(String(e?.message||"Не удалось обработать голос"))}finally{b.disabled=false}};toolbar.append(b)};
- const applyResult=async(url,label)=>{const blob=await resolveVoiceBlob(url);if(workingUrl?.startsWith("blob:"))URL.revokeObjectURL(workingUrl);workingBlob=blob;workingUrl=URL.createObjectURL(blob);dirty=true;renderPlayer();toast(label+" · готово")};
+ const applyResult=async(url,label)=>{const blob=await resolveVoiceBlob(url);playerWrap.querySelector(".voice-player")?.__cleanup?.();if(workingUrl?.startsWith("blob:"))URL.revokeObjectURL(workingUrl);workingBlob=blob;workingUrl=URL.createObjectURL(blob);dirty=true;renderPlayer();toast(label+" · готово")};
  const run=async(slug,label,extra={})=>{const form=new FormData();form.append("file",new File([workingBlob],"miya-voice.mp3",{type:workingBlob.type||"audio/mpeg"}));Object.entries(extra).forEach(([k,v])=>form.append(k,String(v)));const rr=await fetch("https://cleverutils.com/api/v1/tools/"+slug,{method:"POST",body:form,headers:{Accept:"application/json"},cache:"no-store"});const data=await rr.json().catch(()=>({}));if(!rr.ok)throw new Error(data?.message||data?.error?.message||data?.error||"CLEVERUTILS_FAILED");const job=data?.data||data;let out=job?.output?.url||job?.outputUrl||"";const id=job?.job_id||job?.jobId||"";if(!out&&id)out=await waitForCleverUtilsJob(String(id));if(!out)throw new Error("VOICE_OUTPUT_MISSING");await applyResult(out,label)};
  tool("Очистить шум",'<path d="M4 12h16M7 7h10M7 17h10"/>',()=>run("noise-reduction","Очистка шума"));
  tool("Разделить",'<path d="M4 12h5M15 12h5M7 7v10M17 7v10"/><path d="M9 9h6v6H9z"/>',()=>run("vocal-remover","Разделение"));
