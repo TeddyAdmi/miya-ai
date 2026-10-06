@@ -1047,7 +1047,7 @@ body.light .voice-player-time{background:linear-gradient(90deg,transparent,rgba(
 }
 /* Do not create a second visual style for the dots: image-card .media-more is the source of truth. */
 .voice-editor-more.media-more{position:absolute!important}
-.voice-editor-more.media-more svg{width:20px!important;height:20px!important;fill:currentColor!important;stroke:none!important}
+.voice-editor-more svg{width:15px!important;height:15px!important;fill:none!important;stroke:currentColor!important;stroke-width:1.8!important;stroke-linecap:round!important}
 body.light .voice-editor-more.media-more svg{fill:currentColor!important}
 @media(max-width:980px){.voice-wall{grid-template-columns:repeat(2,minmax(0,1fr))!important}}
 @media(max-width:620px){
@@ -1156,7 +1156,7 @@ function createVoiceCard(item,source,options={}){
  const card=document.createElement("article");card.className="voice-library-card";card.tabIndex=0;
  const title=document.createElement("b");title.className="voice-result-title";title.textContent=item?.model||"Голос";
  const textEl=document.createElement("div");textEl.className="voice-card-text";textEl.textContent=item?.prompt||"Готовая голосовая запись";
- const more=document.createElement("button");more.type="button";more.className="voice-editor-more media-action media-more";more.title="Действия";more.setAttribute("aria-label","Действия голоса");more.innerHTML='<svg viewBox="0 0 24 24"><circle cx="5" cy="12" r="1.7"/><circle cx="12" cy="12" r="1.7"/><circle cx="19" cy="12" r="1.7"/></svg>';
+ const more=document.createElement("button");more.type="button";more.className="voice-editor-more";more.style.cssText="position:absolute!important;top:8px!important;right:8px!important;left:auto!important;bottom:auto!important;width:31px!important;height:31px!important;z-index:20!important;margin:0!important;transform:none!important;border:1px solid rgba(122,164,205,.7)!important;border-radius:7px!important;background:rgba(5,18,34,.9)!important;color:#dcecff!important;display:grid!important;place-items:center!important;padding:0!important;box-sizing:border-box!important;";more.title="Действия";more.setAttribute("aria-label","Действия голоса");more.innerHTML='<svg viewBox="0 0 24 24"><circle cx="5" cy="12" r="1.7"/><circle cx="12" cy="12" r="1.7"/><circle cx="19" cy="12" r="1.7"/></svg>';
  more.onclick=e=>{e.preventDefault();e.stopPropagation();openVoiceCardMenu(more,item,source,card)};
  card.append(title,textEl,more);
  const player=buildVoicePlayer(source,card);player.wrap.__cleanup=player.cleanup;card.append(player.wrap);
