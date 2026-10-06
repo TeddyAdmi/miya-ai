@@ -997,6 +997,67 @@ body.voice-modal-open .composer-wrap,body.voice-modal-open #voiceOptions,body.vo
 @media(max-width:620px){.voice-wall{grid-template-columns:1fr}.voice-library-card,.voice-result-card{padding:10px}.voice-player-row{grid-template-columns:30px minmax(0,1fr) 42px 26px}.voice-detail-info{grid-template-columns:repeat(2,minmax(0,1fr))}.voice-detail-dialog,.voice-editor-dialog{padding:16px}.voice-detail-card{width:min(92vw,62vh);max-height:62vh}}`;
  document.head.appendChild(s);
 }
+function ensureVoiceCardFinalStyles(){
+ if(document.getElementById("miyaVoiceCardFinalStyles"))return;
+ const s=document.createElement("style");s.id="miyaVoiceCardFinalStyles";
+ s.textContent=`
+/* Voice wall: deliberately uses the same geometry as image cards. */
+.voice-wall{width:100%!important;display:grid!important;grid-template-columns:repeat(3,minmax(0,1fr))!important;gap:11px!important;margin:0!important;padding:0 0 40px!important}
+.voice-library-card,.voice-result-card{
+ position:relative!important;min-width:0!important;width:100%!important;height:auto!important;aspect-ratio:1/1!important;min-height:0!important;
+ box-sizing:border-box!important;padding:10px!important;gap:7px!important;overflow:hidden!important;
+ border-radius:10px!important;transition:none!important;transform:none!important;
+}
+.voice-library-card:hover,.voice-result-card:hover{
+ transform:none!important;
+}
+.voice-library-card:focus-visible{outline:2px solid #a86cff!important;outline-offset:2px}
+.voice-result-title,.voice-library-card>b{padding-right:42px!important;min-height:16px!important}
+.voice-card-text{padding-right:42px!important;max-height:34px!important;-webkit-line-clamp:2!important;font-size:8px!important;line-height:1.3!important}
+.voice-player{
+ width:100%!important;margin:0!important;padding:5px 6px!important;border-radius:9px!important;box-sizing:border-box!important;
+}
+.voice-player-row{grid-template-columns:30px minmax(0,1fr) 26px!important;gap:7px!important;align-items:center!important}
+.voice-player-play{width:30px!important;height:30px!important;flex:0 0 30px!important}
+.voice-player-track{height:30px!important;position:relative!important;display:block!important;min-width:0!important;align-self:center!important}
+.voice-player-eq{inset:1px 0 8px!important;gap:2px!important;align-items:center!important;opacity:.30!important}
+.voice-player.is-playing .voice-player-eq{opacity:1!important}
+.voice-player-eq i{width:2.5px!important;max-height:19px!important;background:linear-gradient(180deg,#c47aff,#695dff)!important}
+.voice-player-range{position:absolute!important;left:0!important;right:0!important;bottom:1px!important;width:100%!important;height:3px!important;z-index:4!important;background:transparent!important;margin:0!important}
+.voice-player-time{
+ position:absolute!important;right:0!important;top:0!important;z-index:5!important;
+ min-width:0!important;font-size:7px!important;line-height:10px!important;
+ text-align:right!important;font-variant-numeric:tabular-nums!important;white-space:nowrap!important;
+ padding-left:4px!important;background:linear-gradient(90deg,transparent,rgba(8,20,38,.72) 25%)!important;
+}
+body.light .voice-player-time{background:linear-gradient(90deg,transparent,rgba(247,249,252,.82) 25%)!important;color:#52657b!important}
+.voice-player-volume-wrap{width:26px!important;height:30px!important}
+.voice-player-volume{width:25px!important;height:3px!important}
+.voice-card-actions{
+ display:grid!important;grid-template-columns:repeat(5,minmax(0,1fr))!important;gap:5px!important;
+ margin-top:0!important;flex:0 0 26px!important;height:26px!important;
+}
+.voice-card-action{
+ width:100%!important;min-width:0!important;min-height:26px!important;height:26px!important;
+ padding:0!important;border-radius:7px!important;font-size:0!important;display:grid!important;place-items:center!important;
+}
+.voice-card-action svg{width:12px!important;height:12px!important}
+.voice-editor-more{
+ top:8px!important;right:8px!important;
+}
+/* Do not create a second visual style for the dots: image-card .media-more is the source of truth. */
+.voice-editor-more.media-more{position:absolute!important}
+.voice-editor-more.media-more svg{width:20px!important;height:20px!important;fill:currentColor!important;stroke:none!important}
+body.light .voice-editor-more.media-more svg{fill:currentColor!important}
+@media(max-width:980px){.voice-wall{grid-template-columns:repeat(2,minmax(0,1fr))!important}}
+@media(max-width:620px){
+ .voice-wall{grid-template-columns:1fr!important}
+ .voice-library-card,.voice-result-card{padding:10px!important}
+ .voice-player-row{grid-template-columns:30px minmax(0,1fr) 26px!important}
+}
+`;
+ document.head.appendChild(s);
+}
 function voiceIcon(path){return '<svg viewBox="0 0 24 24">'+path+'</svg>'}
 function buildVoicePlayer(source,card){
  const wrap=document.createElement("div");wrap.className="voice-player";
@@ -1095,7 +1156,7 @@ function createVoiceCard(item,source,options={}){
  const card=document.createElement("article");card.className="voice-library-card";card.tabIndex=0;
  const title=document.createElement("b");title.className="voice-result-title";title.textContent=item?.model||"Голос";
  const textEl=document.createElement("div");textEl.className="voice-card-text";textEl.textContent=item?.prompt||"Готовая голосовая запись";
- const more=document.createElement("button");more.type="button";more.className="voice-editor-more";more.title="Действия";more.setAttribute("aria-label","Действия голоса");more.innerHTML='<svg viewBox="0 0 24 24"><circle cx="5" cy="12" r="1.7"/><circle cx="12" cy="12" r="1.7"/><circle cx="19" cy="12" r="1.7"/></svg>';
+ const more=document.createElement("button");more.type="button";more.className="voice-editor-more media-action media-more";more.title="Действия";more.setAttribute("aria-label","Действия голоса");more.innerHTML='<svg viewBox="0 0 24 24"><circle cx="5" cy="12" r="1.7"/><circle cx="12" cy="12" r="1.7"/><circle cx="19" cy="12" r="1.7"/></svg>';
  more.onclick=e=>{e.preventDefault();e.stopPropagation();openVoiceCardMenu(more,item,source,card)};
  card.append(title,textEl,more);
  const player=buildVoicePlayer(source,card);player.wrap.__cleanup=player.cleanup;card.append(player.wrap);
