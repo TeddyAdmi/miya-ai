@@ -2146,3 +2146,62 @@ body.light .chat-selection-actions button{background:#f4f6fa}
 /* Voice cards: readable text scale consistent with the media wall. */
 .voice-library-card .voice-result-title,.voice-result-card .voice-result-title{font-size:13px!important}
 .voice-library-card .voice-card-text,.voice-result-card .voice-card-text{font-size:10px!important;line-height:1.35!important}
+
+/* Voice cards: fixed title/top, flexible transcript, player and actions pinned to the bottom. */
+.voice-library-card,.voice-result-card{
+  display:grid!important;
+  grid-template-rows:auto minmax(0,1fr) auto auto!important;
+  gap:7px!important;
+}
+.voice-library-card .voice-result-title,.voice-result-card .voice-result-title{
+  grid-row:1;
+  flex:none!important;
+}
+.voice-library-card .voice-card-text,.voice-result-card .voice-card-text{
+  grid-row:2;
+  display:block!important;
+  min-height:0!important;
+  max-height:none!important;
+  height:auto!important;
+  overflow:auto!important;
+  white-space:pre-wrap!important;
+  overflow-wrap:anywhere!important;
+  word-break:break-word!important;
+  padding-right:42px!important;
+  margin:0!important;
+}
+.voice-library-card .voice-player,.voice-result-card .voice-player{
+  grid-row:3;
+  width:100%!important;
+  min-width:0!important;
+  box-sizing:border-box!important;
+}
+.voice-library-card .voice-card-actions,.voice-result-card .voice-card-actions{
+  grid-row:4;
+  width:100%!important;
+  margin-top:0!important;
+}
+.voice-player-row{
+  grid-template-columns:32px minmax(0,1fr) minmax(48px,auto) 26px!important;
+  gap:6px!important;
+  min-width:0!important;
+}
+.voice-player-track{
+  min-width:0!important;
+  overflow:hidden!important;
+}
+.voice-player-time{
+  min-width:0!important;
+  width:auto!important;
+  max-width:100%!important;
+  overflow:hidden!important;
+  text-overflow:clip!important;
+  white-space:nowrap!important;
+  text-align:right!important;
+  font-size:8px!important;
+  line-height:1!important;
+  font-variant-numeric:tabular-nums!important;
+}
+.voice-player-volume-wrap{
+  flex:none!important;
+}

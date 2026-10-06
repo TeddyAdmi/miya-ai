@@ -1048,7 +1048,6 @@ function buildVoicePlayer(source,card){
  const track=document.createElement("div");track.className="voice-player-track";
  const eq=document.createElement("div");eq.className="voice-player-eq";eq.innerHTML=Array.from({length:22},()=>"<i></i>").join("");
  const range=document.createElement("input");range.type="range";range.min=0;range.max=100;range.value=0;range.className="voice-player-range";range.title="Позиция";
- const time=document.createElement("span");time.className="voice-player-time";time.textContent="0:00 / 0:00";
  track.append(eq,range);
  const timeWrap=document.createElement("span");timeWrap.className="voice-player-time";timeWrap.textContent="0:00 / 0:00";
  const audio=document.createElement("audio");audio.preload="metadata";audio.style.display="none";
@@ -1142,8 +1141,7 @@ function createVoiceCard(item,source,options={}){
  const textEl=document.createElement("div");textEl.className="voice-card-text";textEl.textContent=item?.prompt||"Готовая голосовая запись";
  const more=document.createElement("button");more.type="button";more.className="voice-editor-more media-action media-more";more.title="Действия";more.setAttribute("aria-label","Действия голоса");more.innerHTML='<svg viewBox="0 0 24 24"><circle cx="5" cy="12" r="1.7"/><circle cx="12" cy="12" r="1.7"/><circle cx="19" cy="12" r="1.7"/></svg>';
  more.onclick=e=>{e.preventDefault();e.stopPropagation();openVoiceCardMenu(more,item,source,card)};
- card.append(title,textEl,more);
- const player=buildVoicePlayer(source,card);player.wrap.__cleanup=player.cleanup;card.append(player.wrap);
+ const player=buildVoicePlayer(source,card);player.wrap.__cleanup=player.cleanup;
  const actions=document.createElement("div");actions.className="voice-card-actions";
  const quick=(name,label,path,fn)=>{const b=document.createElement("button");b.type="button";b.className="voice-card-action";b.dataset.voiceAction=name;b.title=label;b.setAttribute("aria-label",label);b.innerHTML=voiceIcon(path);b.onclick=e=>{e.stopPropagation();fn()};actions.appendChild(b);return b};
  quick("play","Прослушать",'<path d="M8 5v14l11-7z"/>',()=>{const p=player.audio;if(p.paused)player.wrap.querySelector(".voice-player-play")?.click();else p.pause()});
@@ -1151,7 +1149,7 @@ function createVoiceCard(item,source,options={}){
  quick("text","Расшифровать",'<path d="M5 6h14M5 12h14M5 18h9"/>',()=>runVoiceCleverTool(item,card,"speech-to-text","Расшифровка",{format:"txt",language:document.querySelector("#voiceLanguage")?.value||"ru"}));
  quick("download","Скачать",'<path d="M12 4v11M8 11l4 4 4-4M5 20h14"/>',()=>downloadVoiceSource(null,source));
  quick("delete","Удалить",'<path d="M5 7h14M9 7V4h6v3M8 7l1 13h6l1-13"/>',()=>confirmDeleteMedia(item,card));
- card.append(actions);
+ card.append(title,textEl,player.wrap,actions,more);
  if(!options.detail){const open=()=>openVoiceDetail(item,source);card.onclick=e=>{if(e.target.closest("button,input"))return;open()};card.onkeydown=e=>{if((e.key==="Enter"||e.key===" ")&&!e.target.closest("button,input")){e.preventDefault();open()}}}
  return card;
 }
