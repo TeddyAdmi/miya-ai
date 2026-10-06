@@ -2020,3 +2020,17 @@ body.light .chat-selection-actions button{background:#f4f6fa}
 .composer.mode-voice #composerInput{font-size:10px!important;line-height:1.45!important;min-height:40px!important;max-height:120px!important;padding:9px 2px!important;pointer-events:auto!important;position:relative!important;z-index:2!important;}
 .composer-wrap,.composer{isolation:isolate!important;}
 .composer-wrap *{pointer-events:auto;}
+
+
+/* Voice composer — compact controls matching the site's small pill/button language. */
+.composer.mode-voice .voice-options{gap:5px!important;align-items:center!important;padding-top:5px!important;overflow:visible!important}
+.composer.mode-voice .voice-options .select-pill{height:28px!important;min-height:28px!important;padding:4px 20px 4px 7px!important;border-radius:7px!important;font-size:6px!important;line-height:1!important;font-weight:700!important;min-width:0!important}
+.composer.mode-voice #voiceLanguage{width:102px!important}
+.composer.mode-voice #voiceGender{width:90px!important}
+.composer.mode-voice #voiceSelect{width:150px!important}
+.composer.mode-voice .voice-range{flex:0 0 132px!important;width:132px!important;min-width:132px!important;height:28px!important;box-sizing:border-box!important;gap:5px!important;padding:0 7px!important;border-radius:7px!important;font-size:6px!important}
+.composer.mode-voice .voice-range input{width:52px!important;min-width:0!important;height:14px!important}
+.composer.mode-voice .voice-range b{min-width:16px!important;font-size:6px!important}
+.composer.mode-voice .voice-tool,.composer.mode-voice .composer-copy,.composer.mode-voice .composer-trash{width:28px!important;height:28px!important;min-width:28px!important;min-height:28px!important;border-radius:7px!important}
+.composer.mode-voice .voice-tool svg,.composer.mode-voice .composer-copy svg,.composer.mode-voice .composer-trash svg{width:14px!important;height:14px!important}
+@media(max-width:900px){.composer.mode-voice .voice-options{overflow-x:auto!important;scrollbar-width:thin!important}}
