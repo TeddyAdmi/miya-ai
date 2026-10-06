@@ -804,27 +804,7 @@ function openVideoFromImage(url){
  const m=modes.video;
  const workspaceEyebrow=$("#workspaceEyebrow"); if(workspaceEyebrow) workspaceEyebrow.textContent=m.eyebrow;$("#workspaceTitle").textContent=m.title;$("#workspaceSubtitle").textContent=m.subtitle;
  const composerInput=$("#composerInput");
- if(composerInput){
-   composerInput.placeholder=m.placeholder;
-   composerInput.addEventListener("contextmenu",e=>e.stopPropagation(),true);
-   composerInput.addEventListener("mousedown",e=>{if(e.button!==2)e.stopPropagation()},true);
-   document.addEventListener("contextmenu",async e=>{
-     if(mode!=="video")return;
-     const rect=composerInput.getBoundingClientRect();
-     if(e.clientX<rect.left||e.clientX>rect.right||e.clientY<rect.top||e.clientY>rect.bottom)return;
-     e.preventDefault();e.stopPropagation();composerInput.focus({preventScroll:true});
-     try{
-       const text=await navigator.clipboard.readText();
-       if(text){
-         const startPos=composerInput.selectionStart??composerInput.value.length;
-         const endPos=composerInput.selectionEnd??startPos;
-         composerInput.setRangeText(text,startPos,endPos,"end");
-         composerInput.dispatchEvent(new Event("input",{bubbles:true}));
-         syncInput();toast("Текст вставлен");
-       }
-     }catch{toast("Разреши Miya Studio доступ к буферу обмена и нажми правой кнопкой ещё раз")}
-   },true);
- }
+ if(composerInput)composerInput.placeholder=m.placeholder;
  $("#composerSendText").textContent=m.send;$("#composerStatus").textContent="Agnes Video 2.5 Flash · изображение готово";
  $(".image-settings").style.display="none";$("#videoOptions").classList.add("show");
  $("#videoModel").value="OmegaTech T2V";
@@ -1160,7 +1140,7 @@ function createVoiceCard(item,source,options={}){
  const card=document.createElement("article");card.className="voice-library-card";card.tabIndex=0;
  const title=document.createElement("b");title.className="voice-result-title";title.textContent=item?.model||"Голос";
  const textEl=document.createElement("div");textEl.className="voice-card-text";textEl.textContent=item?.prompt||"Готовая голосовая запись";
- const more=document.createElement("button");more.type="button";more.className="voice-editor-more media-action media-more";more.style.cssText="position:absolute!important;top:8px!important;right:8px!important;left:auto!important;bottom:auto!important;z-index:20!important;margin:0!important;transform:none!important;display:grid!important;place-items:center!important;padding:0!important;box-sizing:border-box!important;";more.title="Действия";more.setAttribute("aria-label","Действия голоса");more.innerHTML='<svg viewBox="0 0 24 24"><circle cx="5" cy="12" r="1.7"/><circle cx="12" cy="12" r="1.7"/><circle cx="19" cy="12" r="1.7"/></svg>';
+ const more=document.createElement("button");more.type="button";more.className="voice-editor-more media-action media-more";more.title="Действия";more.setAttribute("aria-label","Действия голоса");more.innerHTML='<svg viewBox="0 0 24 24"><circle cx="5" cy="12" r="1.7"/><circle cx="12" cy="12" r="1.7"/><circle cx="19" cy="12" r="1.7"/></svg>';
  more.onclick=e=>{e.preventDefault();e.stopPropagation();openVoiceCardMenu(more,item,source,card)};
  card.append(title,textEl,more);
  const player=buildVoicePlayer(source,card);player.wrap.__cleanup=player.cleanup;card.append(player.wrap);
@@ -2992,6 +2972,7 @@ if(chatMenuToggle){
 // Capture navigation clicks so the Video button cannot be swallowed
 // by the chat flyout or another bubbling handler.
 document.addEventListener("click",e=>{
+ if(e.target?.closest?.("#composer"))return;
  const button=e.target?.closest?.("[data-mode]");
  if(!button)return;
  const target=button.dataset.mode;
@@ -3011,13 +2992,6 @@ if(videoModelSelect)videoModelSelect.addEventListener("change",()=>{
 });
 $("#composerInput").addEventListener("input",syncInput);
 const composerInput=$("#composerInput");
-if(composerInput){
- // Video elements are kept out of the hit-test entirely; the media card
- // still opens the video viewer on click. This prevents Firefox from treating
- // the video preview as the prompt target when the fixed composer overlaps it.
- composerInput.addEventListener("contextmenu",e=>{e.stopPropagation();},true);
- composerInput.addEventListener("mousedown",e=>{if(e.button===2)e.stopPropagation();},true);
-}
 $("#composerInput").addEventListener("keydown",e=>{if(e.key==="Enter"&&!e.shiftKey){e.preventDefault();$("#composerSend").click()}});
 $("#composerSend").addEventListener("click",async()=>{
  const value=$("#composerInput").value.trim();

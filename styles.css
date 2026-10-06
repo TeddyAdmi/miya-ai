@@ -2137,3 +2137,12 @@ body.light .chat-selection-actions button{background:#f4f6fa}
 .composer.mode-voice #voiceLanguage{flex:0 0 82px!important;width:82px!important;min-width:82px!important}
 .composer.mode-voice #voiceGender{flex:0 0 82px!important;width:82px!important;min-width:82px!important}
 .composer.mode-voice #voiceSelect{flex:0 1 145px!important;width:145px!important;min-width:110px!important}
+
+/* Voice composer: controls start at the left edge after attachment/plus removal. */
+.composer.mode-voice .voice-options{padding-left:0!important;padding-right:0!important}
+.composer.mode-voice .voice-options .select-pill{font-size:12px!important}
+.composer.mode-voice .voice-range{font-size:12px!important}
+
+/* Voice cards: readable text scale consistent with the media wall. */
+.voice-library-card .voice-result-title,.voice-result-card .voice-result-title{font-size:13px!important}
+.voice-library-card .voice-card-text,.voice-result-card .voice-card-text{font-size:10px!important;line-height:1.35!important}
