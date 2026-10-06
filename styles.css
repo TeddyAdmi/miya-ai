@@ -2126,10 +2126,13 @@ body.light .chat-selection-actions button{background:#f4f6fa}
 .composer.mode-voice .composer-left-actions{display:none!important}
 .composer.mode-voice #composerInput{
   min-height:40px!important;
-  max-height:76px!important;
+  max-height:120px!important;
   height:auto!important;
   overflow-y:auto!important;
   scrollbar-width:thin!important;
+  font-size:13px!important;
+  line-height:1.45!important;
+  padding:9px 2px!important;
 }
 .composer.mode-voice #voiceLanguage{flex:0 0 82px!important;width:82px!important;min-width:82px!important}
 .composer.mode-voice #voiceGender{flex:0 0 82px!important;width:82px!important;min-width:82px!important}
