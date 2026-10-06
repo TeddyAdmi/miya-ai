@@ -4176,7 +4176,6 @@ document.querySelectorAll("[data-tool]").forEach(b=>b.onclick=()=>{
  }
 });
 renderChatHistoryMini();
-shuffleIdeas();
 setMode("chat");
 
 
