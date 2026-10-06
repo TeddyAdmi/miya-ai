@@ -922,14 +922,14 @@ function ensureVoiceWallStyles(){
  const s=document.createElement("style");s.id="miyaVoiceWallStyles";
  s.textContent=`
 .voice-wall{width:100%;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:11px;align-items:stretch}
-.voice-library-card,.voice-result-card{position:relative;min-width:0;aspect-ratio:1/1;min-height:0;height:auto;border:1px solid var(--line);border-radius:10px;background:linear-gradient(145deg,#0b233e,#08192e);padding:10px;box-shadow:0 10px 26px rgba(0,0,0,.14);transition:transform .18s,border-color .18s,box-shadow .18s;display:flex;flex-direction:column;gap:7px;cursor:pointer;overflow:hidden}
+.voice-library-card,.voice-result-card{position:relative;min-width:0;aspect-ratio:16/9;min-height:0;height:auto;border:1px solid var(--line);border-radius:10px;background:linear-gradient(145deg,#0b233e,#08192e);padding:10px;box-shadow:0 10px 26px rgba(0,0,0,.14);transition:transform .18s,border-color .18s,box-shadow .18s;display:flex;flex-direction:column;gap:7px;cursor:pointer;overflow:hidden}
 .voice-library-card:hover,.voice-result-card:hover{transform:translateY(-3px);border-color:rgba(166,119,255,.55);box-shadow:0 18px 38px rgba(0,0,0,.22)}
 .voice-library-card:focus-visible{outline:2px solid #a86cff;outline-offset:3px}
 .voice-result-title,.voice-library-card>b{font-size:13px;font-weight:900;letter-spacing:-.02em;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;padding-right:42px}
 .voice-result-meta{display:none}
-.voice-card-text{font-size:9px;line-height:1.35;color:#9bb0c8;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden;min-height:0;max-height:40px;padding-right:42px}
+.voice-card-text{font-size:8px;line-height:1.32;color:#9bb0c8;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden;min-height:0;max-height:40px;padding-right:42px}
 .voice-player{border:1px solid rgba(104,144,185,.34);border-radius:10px;padding:6px 7px;background:linear-gradient(135deg,rgba(8,27,47,.96),rgba(15,32,56,.9));box-shadow:inset 0 1px 0 rgba(255,255,255,.035);cursor:default;flex:0 0 auto}
-.voice-player-row{display:grid;grid-template-columns:30px minmax(0,1fr) 26px;align-items:center;gap:7px}
+.voice-player-row{display:grid;grid-template-columns:30px minmax(0,1fr) 38px 26px;align-items:center;gap:7px}
 .voice-player-volume-wrap{width:26px;height:30px;display:grid;place-items:center;position:relative}
 .voice-player-volume{width:27px;height:3px;transform:rotate(-90deg);transform-origin:center;accent-color:#a75cff}
 .voice-editor-more{position:absolute;top:10px;right:10px;z-index:4;width:30px;height:30px;border:1px solid rgba(255,255,255,.16);border-radius:9px;background:rgba(7,20,36,.82);color:#b9c9dc;display:grid;place-items:center;cursor:pointer;backdrop-filter:blur(8px)}
@@ -1015,11 +1015,11 @@ function ensureVoiceCardFinalStyles(){
 }
 .voice-library-card:focus-visible{outline:2px solid #a86cff!important;outline-offset:2px}
 .voice-result-title,.voice-library-card>b{padding-right:42px!important;min-height:16px!important}
-.voice-card-text{padding-right:42px!important;max-height:34px!important;-webkit-line-clamp:2!important;font-size:8px!important;line-height:1.3!important}
+.voice-card-text{padding-right:42px!important;max-height:40px!important;-webkit-line-clamp:3!important;font-size:8px!important;line-height:1.32!important}
 .voice-player{
  width:100%!important;margin:0!important;padding:5px 6px!important;border-radius:9px!important;box-sizing:border-box!important;
 }
-.voice-player-row{grid-template-columns:30px minmax(0,1fr) 26px!important;gap:7px!important;align-items:center!important}
+.voice-player-row{grid-template-columns:30px minmax(0,1fr) 38px 26px!important;gap:7px!important;align-items:center!important}
 .voice-player-play{width:30px!important;height:30px!important;flex:0 0 30px!important}
 .voice-player-track{height:40px!important;position:relative!important;display:block!important;min-width:0!important;align-self:center!important}
 .voice-player-eq{inset:0!important;gap:2px!important;align-items:center!important;opacity:.30!important;display:flex!important;position:absolute!important;pointer-events:none!important}
@@ -1068,24 +1068,26 @@ function buildVoicePlayer(source,card){
  const track=document.createElement("div");track.className="voice-player-track";
  const eq=document.createElement("div");eq.className="voice-player-eq";eq.innerHTML=Array.from({length:22},()=>"<i></i>").join("");
  const range=document.createElement("input");range.type="range";range.min=0;range.max=100;range.value=0;range.className="voice-player-range";range.title="Позиция";
- const time=document.createElement("span");time.className="voice-player-time";time.textContent="0:00";
- track.append(eq,range,time);
+ const time=document.createElement("span");time.className="voice-player-time";time.textContent="0:00 / 0:00";
+ track.append(eq,range);
+ const timeWrap=document.createElement("span");timeWrap.className="voice-player-time";timeWrap.textContent="0:00 / 0:00";
  const audio=document.createElement("audio");audio.preload="metadata";audio.style.display="none";
  let loaded=false,ctx=null,analyser=null,sourceNode=null,frame=0,totalText="0:00";
  const formatTime=n=>Math.floor(Math.max(0,Number(n)||0)/60)+":"+String(Math.floor(Math.max(0,Number(n)||0)%60)).padStart(2,"0");
+ const setTime=()=>{const current=formatTime(audio.currentTime);timeWrap.textContent=current+" / "+totalText};
  const load=async()=>{if(loaded)return;const blob=await resolveVoiceBlob(source);audio.src=URL.createObjectURL(blob);audio.volume=.9;audio.load();loaded=true};
  const draw=()=>{if(!analyser)return;const data=new Uint8Array(analyser.frequencyBinCount);analyser.getByteFrequencyData(data);const bars=[...eq.children];bars.forEach((bar,i)=>{const start=Math.floor(Math.pow(i/bars.length,1.7)*data.length),end=Math.max(start+1,Math.floor(Math.pow((i+1)/bars.length,1.7)*data.length));let sum=0;for(let j=start;j<end&&j<data.length;j++)sum+=data[j];const value=(sum/Math.max(1,end-start))/255;bar.style.height=Math.max(2,Math.round(3+value*27))+"px"});if(!audio.paused&&!audio.ended)frame=requestAnimationFrame(draw)};
  const startAnalyser=()=>{if(!ctx){const C=window.AudioContext||window.webkitAudioContext;if(!C)return;ctx=new C();analyser=ctx.createAnalyser();analyser.fftSize=256;analyser.smoothingTimeConstant=.72;sourceNode=ctx.createMediaElementSource(audio);sourceNode.connect(analyser);analyser.connect(ctx.destination)}ctx.resume?.();cancelAnimationFrame(frame);draw()};
- play.onclick=async e=>{e.stopPropagation();try{await load();if(audio.paused){startAnalyser();await audio.play()}else audio.pause()}catch{toast("Не удалось воспроизвести голос")}};
- range.oninput=async()=>{try{await load();if(audio.duration)audio.currentTime=Number(range.value)/100*audio.duration}catch{}};
- audio.onloadedmetadata=()=>{totalText=formatTime(audio.duration);time.textContent=totalText};
- audio.onplay=()=>{wrap.classList.add("is-playing");startAnalyser();play.innerHTML='<svg viewBox="0 0 24 24"><path d="M7 5h4v14H7zM13 5h4v14h-4z"/></svg>'};
- audio.onpause=()=>{wrap.classList.remove("is-playing");cancelAnimationFrame(frame);play.innerHTML='<svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>';time.textContent=totalText};
- audio.ontimeupdate=()=>{range.value=audio.duration?audio.currentTime/audio.duration*100:0;time.textContent=totalText};
- audio.onended=()=>{wrap.classList.remove("is-playing");cancelAnimationFrame(frame);range.value=100;audio.currentTime=0;time.textContent=totalText};
+ play.onclick=async e=>{e.stopPropagation();try{await load();if(audio.paused){if(audio.ended)audio.currentTime=0;startAnalyser();await audio.play()}else audio.pause()}catch{toast("Не удалось воспроизвести голос")}};
+ range.oninput=async()=>{try{await load();if(audio.duration)audio.currentTime=Number(range.value)/100*audio.duration;setTime()}catch{}};
+ audio.onloadedmetadata=()=>{totalText=formatTime(audio.duration);setTime()};
+ audio.onplay=()=>{wrap.classList.add("is-playing");startAnalyser();play.innerHTML='<svg viewBox="0 0 24 24"><path d="M7 5h4v14H7zM13 5h4v14h-4z"/></svg>';setTime()};
+ audio.onpause=()=>{wrap.classList.remove("is-playing");cancelAnimationFrame(frame);play.innerHTML='<svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>';setTime()};
+ audio.ontimeupdate=()=>{range.value=audio.duration?audio.currentTime/audio.duration*100:0;setTime()};
+ audio.onended=()=>{wrap.classList.remove("is-playing");cancelAnimationFrame(frame);range.value=100;setTime()};
  const vw=document.createElement("div");vw.className="voice-player-volume-wrap";
  const volume=document.createElement("input");volume.type="range";volume.min=0;volume.max=1;volume.step=.01;volume.value=.9;volume.className="voice-player-volume";volume.title="Громкость";volume.oninput=async()=>{try{await load();audio.volume=Number(volume.value)}catch{}};vw.append(volume);
- row.append(play,track,vw);wrap.append(row,audio);
+ row.append(play,track,timeWrap,vw);wrap.append(row,audio);
  return {wrap,audio,cleanup:()=>{cancelAnimationFrame(frame);try{sourceNode?.disconnect()}catch{}try{analyser?.disconnect()}catch{}try{ctx?.close()}catch{}if(audio.src?.startsWith("blob:"))URL.revokeObjectURL(audio.src)}};
 }
 async function resolveVoiceBlob(source){
@@ -1296,7 +1298,7 @@ async function generateVoice(text){
    toast("Не удалось создать голос");
  }
 }
-function renderVoiceLibrary(){ensureVoiceWallStyles();const c=$("#canvas"),items=getLibrary().filter(x=>x.type==="audio");c.innerHTML='<div class="library-section"><div class="results-head"><div><h3>Голоса Miya</h3></div></div><div class="voice-wall"></div></div>';const wall=c.querySelector(".voice-wall");if(!items.length){wall.innerHTML='<div class="library-note">Пока нет созданных голосов.</div>';return}items.forEach(item=>wall.appendChild(createVoiceCard(item,()=>resolveMediaUrl(item))))}
+function renderVoiceLibrary(){ensureVoiceWallStyles();ensureVoiceCardFinalStyles();const c=$("#canvas"),items=getLibrary().filter(x=>x.type==="audio");c.innerHTML='<div class="library-section"><div class="voice-wall"></div></div>';const wall=c.querySelector(".voice-wall");if(!items.length){wall.innerHTML='<div class="library-note">Пока нет созданных голосов.</div>';return}items.forEach(item=>wall.appendChild(createVoiceCard(item,()=>resolveMediaUrl(item))))}
 function renderLibrary(tab="images"){
  const c=$("#canvas"),items=getLibrary(),images=items.filter(x=>x.type==="image"),videos=items.filter(x=>x.type==="video"),audios=items.filter(x=>x.type==="audio");
  c.innerHTML='<div class="library-section"><div class="library-tabs"><button type="button" class="library-tab" data-library-tab="images">Картинки</button><button type="button" class="library-tab" data-library-tab="videos">Видео</button><button type="button" class="library-tab" data-library-tab="audio">Аудио</button></div><div class="result-grid library-media-grid"></div></div>';
