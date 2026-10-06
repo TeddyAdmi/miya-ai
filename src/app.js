@@ -1591,7 +1591,7 @@ body.light .ve2-name{background:#fff;color:#273047;border-color:#d3deea}
  const closeBtn=document.createElement("button");closeBtn.type="button";closeBtn.className="ve2-footer-btn";closeBtn.textContent="Закрыть";
  const saveBtn=document.createElement("button");saveBtn.type="button";saveBtn.className="ve2-footer-btn primary";saveBtn.textContent="Сохранить как новый голос";
  footerActions.append(closeBtn,saveBtn);footer.append(footerNote,footerActions);
- dialog.append(head,body,footer);backdrop.append(dialog);document.body.append(backdrop);document.body.classList.add("voice-modal-open");
+ dialog.append(head,body,footer);backdrop.append(dialog);document.documentElement.appendChild(backdrop);document.body.classList.add("voice-modal-open");
  const composer=document.getElementById("composer");
  const previousComposerDisplay=composer?.style.display||"";
  if(composer)composer.style.display="none";
