@@ -1069,7 +1069,7 @@ body.light .image-viewer-created-date{color:#52657b;background:rgba(255,255,255,
 .voice-player-range::-webkit-slider-thumb{width:7px!important;height:7px!important;border-radius:50%!important;background:#fff!important;opacity:1!important}
 .voice-player-range::-moz-range-thumb{width:7px!important;height:7px!important;border-radius:50%!important;background:#fff!important;opacity:1!important}
 body.light .voice-options .select-pill{background:#f4f7fa!important;color:#52657b!important;border-color:#d3deea!important} body.light .voice-options .select-pill:hover{background:#e9eef5!important;border-color:#c5d2e0!important;color:#273047!important} body.light .voice-options .voice-range{background:#f4f7fa!important;color:#52657b!important;border-color:#d3deea!important} body.light .voice-options .voice-tool{background:#f4f7fa!important;color:#52657b!important;border-color:#d3deea!important}
-.voice-player-track{position:relative;min-width:0;width:100%;height:34px;display:flex;align-items:flex-end}.voice-player-eq{position:absolute;inset:0 0 8px;display:flex;align-items:flex-end;justify-content:center;gap:2px;opacity:.34;overflow:hidden;pointer-events:none}.voice-player-eq i{display:block;width:3px;height:3px;min-height:2px;border-radius:3px;background:linear-gradient(180deg,#c47aff,#695dff);transform-origin:center;transition:height .08s ease}.voice-player.is-playing .voice-player-eq{opacity:1}.voice-player-range{position:absolute;left:0;right:0;bottom:0;width:100%;z-index:3;background:transparent}.voice-player-time{display:block;min-width:48px;width:auto;max-width:100%;overflow:hidden;text-overflow:clip;font-size:8px;color:#a9bad0;font-variant-numeric:tabular-nums;text-align:right;white-space:nowrap;line-height:1}.voice-card-menu{position:fixed;z-index:2147483646;min-width:180px;padding:5px;border:1px solid rgba(170,130,255,.28);border-radius:12px;background:rgba(8,20,38,.97);box-shadow:0 16px 50px rgba(0,0,0,.35);backdrop-filter:blur(14px)}.voice-card-menu button{width:100%;height:32px;border:0;border-radius:8px;background:transparent;color:#c7d5e4;display:flex;align-items:center;gap:8px;padding:0 9px;font-size:9px;font-weight:800;text-align:left;cursor:pointer}.voice-card-menu button:hover{background:rgba(157,111,255,.14);color:#fff}.voice-card-menu svg{width:14px;height:14px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.voice-player-track{position:relative;min-width:0;width:100%;height:34px;display:flex;align-items:flex-end}.voice-player-eq{position:absolute;inset:0 0 8px;display:flex;align-items:flex-end;justify-content:center;gap:2px;opacity:.34;overflow:hidden;pointer-events:none}.voice-player-eq i{display:block;width:3px;height:3px;min-height:2px;border-radius:3px;background:linear-gradient(180deg,#c47aff,#695dff);transform-origin:center;transition:height .08s ease}.voice-player.is-playing .voice-player-eq{opacity:1}.voice-player-range{position:absolute;left:0;right:0;bottom:0;width:100%;z-index:3;background:transparent;appearance:none;-webkit-appearance:none;height:7px!important;margin:0!important}.voice-player-range::-webkit-slider-runnable-track{height:3px;background:rgba(190,205,224,.22);border-radius:999px}.voice-player-range::-moz-range-track{height:3px;background:rgba(190,205,224,.22);border-radius:999px}.voice-player-range::-webkit-slider-thumb{appearance:none;-webkit-appearance:none;width:7px;height:7px;margin-top:-2px;border:0;border-radius:50%;background:#fff;box-shadow:0 0 0 1px rgba(255,255,255,.18),0 1px 5px rgba(0,0,0,.35);opacity:1}.voice-player-range::-moz-range-thumb{width:7px;height:7px;border:0;border-radius:50%;background:#fff;box-shadow:0 0 0 1px rgba(255,255,255,.18),0 1px 5px rgba(0,0,0,.35);opacity:1}.voice-player-time{display:block;min-width:48px;width:auto;max-width:100%;overflow:hidden;text-overflow:clip;font-size:8px;color:#a9bad0;font-variant-numeric:tabular-nums;text-align:right;white-space:nowrap;line-height:1}#composerInput.speech-recording::placeholder{color:transparent!important}#composerInput.speech-recording{user-select:none!important;-webkit-user-select:none!important;}.voice-card-menu{position:fixed;z-index:2147483646;min-width:180px;padding:5px;border:1px solid rgba(170,130,255,.28);border-radius:12px;background:rgba(8,20,38,.97);box-shadow:0 16px 50px rgba(0,0,0,.35);backdrop-filter:blur(14px)}.voice-card-menu button{width:100%;height:32px;border:0;border-radius:8px;background:transparent;color:#c7d5e4;display:flex;align-items:center;gap:8px;padding:0 9px;font-size:9px;font-weight:800;text-align:left;cursor:pointer}.voice-card-menu button:hover{background:rgba(157,111,255,.14);color:#fff}.voice-card-menu svg{width:14px;height:14px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
 body.light .voice-player-time{color:#5f7085}
 body.light .voice-player-download,body.light .voice-card-action{background:#f4f7fa;color:#52657b;border-color:#d3deea} body.light .voice-card-action:hover{background:#e9eef5;border-color:#c5d2e0;color:#273047} body.light .voice-player-play{box-shadow:0 5px 14px rgba(117,73,217,.16)} body.light .voice-card-text{color:#52657b}
 body.light .voice-detail-dialog{background:#fff;border-color:#dbe4ee}
@@ -3189,7 +3189,13 @@ if(videoModelSelect)videoModelSelect.addEventListener("change",()=>{
    $("#composerStatus").textContent=videoModelSelect.value+" · готов";
  }
 });
-$("#composerInput").addEventListener("input",syncInput);
+$("#composerInput").addEventListener("input",()=>{
+  if(!speechRecorder){
+    speechRecordingCount=0;
+    speechCommittedText=$("#composerInput").value.trim();
+  }
+  syncInput();
+});
 const composerInput=$("#composerInput");
 $("#composerInput").addEventListener("keydown",e=>{if(e.key==="Enter"&&!e.shiftKey){e.preventDefault();$("#composerSend").click()}});
 $("#composerSend").addEventListener("click",async()=>{
@@ -3353,6 +3359,9 @@ let speechAnalyser=null;
 let speechVisualizerFrame=0;
 let speechChunks=[];
 let speechBaseText="";
+let speechCommittedText="";
+let speechRecordingCount=0;
+let speechPlaceholder="";
 let speechMimeType="";
 
 function setSpeechMicIdle(){
@@ -3380,6 +3389,14 @@ function speechSetIdle(){
   if(canvas)canvas.style.display="none";
   if(speechVisualizerFrame)cancelAnimationFrame(speechVisualizerFrame);
   speechVisualizerFrame=0;
+  const input=$("#composerInput");
+  if(input){
+    input.classList.remove("speech-recording");
+    input.style.color="";
+    input.style.caretColor="";
+    if(speechPlaceholder)input.placeholder=speechPlaceholder;
+  }
+  speechPlaceholder="";
 }
 
 function ensureSpeechVisualizer(){
@@ -3389,35 +3406,37 @@ function ensureSpeechVisualizer(){
   if(!row)return null;
   canvas=document.createElement("canvas");
   canvas.id="composerVoiceVisualizer";
-  canvas.width=192;
-  canvas.height=28;
+  canvas.width=384;
+  canvas.height=32;
   canvas.setAttribute("aria-hidden","true");
   Object.assign(canvas.style,{
     position:"absolute",
-    left:"auto",
-    right:"0",
+    left:"0",
+    right:"auto",
     top:"50%",
     transform:"translateY(-50%)",
-    width:"calc(100% - 56px)",
-    height:"24px",
+    width:"0",
+    height:"26px",
     display:"none",
     pointerEvents:"none",
     zIndex:"1004",
-    opacity:".95"
+    opacity:".98"
   });
   row.appendChild(canvas);
   return canvas;
 }
 
 function positionSpeechVisualizer(){
-  const canvas=$("#composerVoiceVisualizer"),mic=$("#composerMic"),row=canvas?.parentElement;
-  if(!canvas||!mic||!row)return;
-  const rr=row.getBoundingClientRect(),mr=mic.getBoundingClientRect(),gap=8;
-  const left=8;
-  const width=Math.max(40,mr.left-rr.left-left-gap);
+  const canvas=$("#composerVoiceVisualizer"),mic=$("#composerMic"),input=$("#composerInput"),row=canvas?.parentElement;
+  if(!canvas||!mic||!input||!row)return;
+  const rr=row.getBoundingClientRect(),ir=input.getBoundingClientRect(),mr=mic.getBoundingClientRect(),gap=8;
+  const left=Math.max(0,ir.left-rr.left);
+  const width=Math.max(40,mr.left-ir.left-gap);
+  const top=ir.top-rr.top+(ir.height/2);
   canvas.style.left=left+"px";
   canvas.style.width=width+"px";
   canvas.style.right="auto";
+  canvas.style.top=top+"px";
   canvas.style.transform="translateY(-50%)";
 }
 function speechDraw(){
@@ -3466,7 +3485,7 @@ async function finishSpeechRecording(){
   if(recorder.state!=="inactive")recorder.stop();
 }
 
-async function processSpeechRecording(){
+async async function processSpeechRecording(){
   const stream=speechStream;
   const context=speechAudioContext;
   const source=speechSource;
@@ -3513,8 +3532,14 @@ async function processSpeechRecording(){
     if(!text)throw new Error("TRANSCRIPT_EMPTY");
     const input=$("#composerInput");
     if(input){
-      const prefix=speechBaseText.trim();
-      input.value=prefix+(prefix?" ":"")+text;
+      const previous=speechCommittedText.trim();
+      speechCommittedText=previous
+        ? (speechRecordingCount>0
+          ? previous.replace(/[.!?\s]+$/,"")+". "+text
+          : previous+" "+text)
+        : text;
+      speechRecordingCount++;
+      input.value=speechCommittedText;
       input.focus();
       input.selectionStart=input.selectionEnd=input.value.length;
       syncInput();
@@ -3563,7 +3588,18 @@ async function startSpeechRecording(){
     speechAnalyser=analyser;
     speechChunks=[];
     speechMimeType=recorder.mimeType||mime||"audio/webm";
-    speechBaseText=$("#composerInput")?.value.trim()||"";
+    const input=$("#composerInput");
+    if(speechRecordingCount===0) speechCommittedText=input?.value.trim()||"";
+    speechBaseText=speechCommittedText;
+    speechPlaceholder=input?.placeholder||modes[mode]?.placeholder||"";
+    if(input){
+      input.value="";
+      input.classList.add("speech-recording");
+      input.style.color="transparent";
+      input.style.caretColor="transparent";
+      input.placeholder="";
+      syncInput();
+    }
     recorder.ondataavailable=e=>{
       if(e.data?.size)speechChunks.push(e.data);
     };
