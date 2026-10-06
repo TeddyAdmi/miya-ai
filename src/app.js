@@ -1011,7 +1011,7 @@ function ensureVoiceCardFinalStyles(){
 .voice-player-range{position:absolute!important;left:0!important;right:0!important;top:50%!important;bottom:auto!important;transform:translateY(-50%)!important;width:100%!important;height:3px!important;z-index:4!important;background:transparent!important;margin:0!important}
 .voice-player-volume-wrap{width:26px!important;height:30px!important}
 .voice-player-volume{width:25px!important;height:3px!important}
-.voice-player-volume::-webkit-slider-thumb{appearance:none;width:18px;height:8px;border-radius:3px;border:1px solid #9b72e8;background:#a75cff;box-shadow:inset 0 0 0 1px rgba(255,255,255,.22);cursor:pointer}
+.voice-player-volume::-webkit-slider-thumb{appearance:none;width:18px;height:8px;border-radius:3px;border:1px solid #9b72e8;background:repeating-linear-gradient(90deg,#a75cff 0,#a75cff 3px,#754fd0 3px,#754fd0 4px);box-shadow:inset 0 0 0 1px rgba(255,255,255,.22);cursor:pointer}
 .voice-player-volume::-moz-range-thumb{width:18px;height:8px;border-radius:3px;border:1px solid #9b72e8;background:#a75cff;box-shadow:inset 0 0 0 1px rgba(255,255,255,.22);cursor:pointer}
 .voice-player-volume::-webkit-slider-runnable-track{height:3px;background:#cfd8e4;border-radius:3px}
 .voice-player-volume::-moz-range-track{height:3px;background:#cfd8e4;border-radius:3px}
