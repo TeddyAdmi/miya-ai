@@ -894,8 +894,8 @@ function renderImageLibrary(){
  applyFirstSixMediaPriority(grid);
 }
 let voiceCatalog=[];let voiceAudioParts=[];let voiceAudioItem=null;
-async function loadVoiceCatalog(){try{const r=await fetch("https://ahm7xmakki.com/api/voices",{cache:"force-cache"});const data=await r.json();voiceCatalog=Array.isArray(data?.voices)?data.voices:[];refreshVoiceSelects()}catch{voiceCatalog=[];const sel=$("#voiceSelect");if(sel)sel.innerHTML='<option value="">Не удалось загрузить голоса</option>'}}
-function refreshVoiceSelects(){const lang=$("#voiceLanguage")?.value||"ru";const gender=$("#voiceGender")?.value||"female";const sel=$("#voiceSelect");if(!sel)return;const list=voiceCatalog.filter(v=>{const l=String(v.language||"").toLowerCase(),g=String(v.gender||"").toLowerCase();const langOk=lang==="ru"?(l.includes("russian")||l==="ru"||l.includes("russia")):(l.startsWith(lang)||l.includes(lang));const genderOk=gender==="female"?(g.includes("female")||g.includes("woman")):(g.includes("male")||g.includes("man"));return langOk&&genderOk});sel.innerHTML="";list.forEach(v=>{const o=document.createElement("option");o.value=String(v.index);o.textContent=String(v.name||"Voice")+" · "+String(v.gender||"")+" · "+String(v.country||"");sel.appendChild(o)});if(!list.length){const o=document.createElement("option");o.value="";o.textContent="Нет голосов";sel.appendChild(o)}else{const preferred=list.find(v=>/svetlana/i.test(v.name))||list.find(v=>/dmitry/i.test(v.name))||list[0];sel.value=String(preferred.index)}}
+async function loadVoiceCatalog(){try{const r=await fetch("https://ahm7xmakki.com/api/voices",{cache:"force-cache"});const data=await r.json();voiceCatalog=Array.isArray(data?.voices)?data.voices:[];const genderSelect=$("#voiceGender");if(genderSelect&&!genderSelect.dataset.miyaInitialized){genderSelect.value="male";genderSelect.dataset.miyaInitialized="1"}refreshVoiceSelects()}catch{voiceCatalog=[];const sel=$("#voiceSelect");if(sel)sel.innerHTML='<option value="">Не удалось загрузить голоса</option>'}}
+function refreshVoiceSelects(){const lang=$("#voiceLanguage")?.value||"ru";const gender=$("#voiceGender")?.value||"male";const sel=$("#voiceSelect");if(!sel)return;const list=voiceCatalog.filter(v=>{const l=String(v.language||"").toLowerCase(),g=String(v.gender||"").toLowerCase();const langOk=lang==="ru"?(l.includes("russian")||l==="ru"||l.includes("russia")):(l.startsWith(lang)||l.includes(lang));const genderOk=gender==="female"?(g.includes("female")||g.includes("woman")):(g.includes("male")||g.includes("man"));return langOk&&genderOk});sel.innerHTML="";list.forEach(v=>{const o=document.createElement("option");o.value=String(v.index);o.textContent=String(v.name||"Voice")+" · "+(gender==="male"?"Мужской":"Женский")+" · "+String(v.country||"");sel.appendChild(o)});if(!list.length){const o=document.createElement("option");o.value="";o.textContent="Нет голосов для выбранного пола";sel.appendChild(o)}else{const preferred=gender==="male"?(list.find(v=>/dmitry|alex|maxim|michael/i.test(String(v.name||"")))||list[0]):(list.find(v=>/svetlana/i.test(String(v.name||"")))||list[0]);sel.value=String(preferred.index)}}
 function splitVoiceText(text,max=1000){const clean=String(text||"").trim();if(!clean)return[];const out=[];for(let i=0;i<clean.length;i+=max)out.push(clean.slice(i,i+max));return out}
 function ensureVoiceWallStyles(){
  if(document.getElementById("miyaVoiceWallStyles"))return;
@@ -999,20 +999,36 @@ function ensureVoiceCardFinalStyles(){
 .voice-player{
  width:100%!important;margin:0!important;padding:5px 6px!important;border-radius:9px!important;box-sizing:border-box!important;
 }
-.voice-player-row{grid-template-columns:30px minmax(0,1fr) 38px 26px!important;gap:7px!important;align-items:center!important}
+.voice-player-row{grid-template-columns:30px minmax(0,1fr) minmax(62px,auto) 26px!important;gap:7px!important;align-items:center!important}
 .voice-player-play{width:30px!important;height:30px!important;flex:0 0 30px!important}
-.voice-player-track{height:40px!important;position:relative!important;display:block!important;min-width:0!important;align-self:center!important}
-.voice-player-eq{inset:0!important;gap:2px!important;align-items:center!important;opacity:.30!important;display:flex!important;position:absolute!important;pointer-events:none!important}
+.voice-player-track{height:40px!important;position:relative!important;display:block!important;min-width:0!important;width:100%!important;align-self:center!important}
+.voice-player-eq{inset:0!important;width:100%!important;gap:1px!important;align-items:center!important;justify-content:space-between!important;opacity:.30!important;display:flex!important;position:absolute!important;pointer-events:none!important;overflow:hidden!important}
 .voice-player.is-playing .voice-player-eq{opacity:1!important}
-.voice-player-eq i{width:2.5px!important;max-height:34px!important;min-height:2px!important;background:linear-gradient(180deg,#c47aff,#695dff)!important;align-self:center!important;transform-origin:center center!important}
+.voice-player-eq i{flex:1 1 0!important;width:auto!important;max-width:4px!important;height:3px!important;max-height:34px!important;min-height:2px!important;background:linear-gradient(180deg,#c47aff,#695dff)!important;align-self:center!important;transform-origin:center center!important}
 .voice-player-range{position:absolute!important;left:0!important;right:0!important;top:50%!important;bottom:auto!important;transform:translateY(-50%)!important;width:100%!important;height:3px!important;z-index:4!important;background:transparent!important;margin:0!important}
 .voice-player-time{
- position:absolute!important;right:0!important;top:50%!important;transform:translateY(-50%)!important;z-index:5!important;
- min-width:0!important;font-size:7px!important;line-height:10px!important;
+ position:static!important;display:block!important;min-width:62px!important;width:auto!important;max-width:none!important;
+ transform:none!important;z-index:auto!important;font-size:8px!important;line-height:1!important;
  text-align:right!important;font-variant-numeric:tabular-nums!important;white-space:nowrap!important;
- padding-left:4px!important;background:linear-gradient(90deg,transparent,rgba(8,20,38,.72) 25%)!important;
+ padding:0!important;background:none!important;overflow:visible!important;
 }
-body.light .voice-player-time{background:linear-gradient(90deg,transparent,rgba(247,249,252,.82) 25%)!important;color:#52657b!important}
+body.light .voice-player-time{background:none!important;color:#52657b!important}
+body.light .voice-options .select-pill{
+ appearance:none!important;-webkit-appearance:none!important;color-scheme:light!important;
+ background-color:#f4f7fa!important;color:#52657b!important;border:1px solid #d3deea!important;
+ box-shadow:inset 0 1px 0 rgba(255,255,255,.8)!important;
+}
+body.light .voice-options .select-pill:focus{
+ outline:none!important;background-color:#fff!important;border-color:#a98cff!important;
+ box-shadow:0 0 0 2px rgba(169,140,255,.16)!important;
+}
+body.light .voice-options #voiceLanguage,
+body.light .voice-options #voiceGender,
+body.light .voice-options #voiceSelect{
+ background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24'%3E%3Cpath d='m7 9 5 5 5-5' fill='none' stroke='%2352657b' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E")!important;
+ background-repeat:no-repeat!important;background-position:right 8px center!important;background-size:12px 12px!important;
+ padding-right:27px!important;
+}
 .voice-player-volume-wrap{width:26px!important;height:30px!important}
 .voice-player-volume{width:25px!important;height:3px!important}
 .voice-card-actions{
@@ -1046,7 +1062,7 @@ function buildVoicePlayer(source,card){
  const row=document.createElement("div");row.className="voice-player-row";
  const play=document.createElement("button");play.type="button";play.className="voice-player-play";play.innerHTML='<svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>';
  const track=document.createElement("div");track.className="voice-player-track";
- const eq=document.createElement("div");eq.className="voice-player-eq";eq.innerHTML=Array.from({length:22},()=>"<i></i>").join("");
+ const eq=document.createElement("div");eq.className="voice-player-eq";eq.innerHTML=Array.from({length:64},()=>"<i></i>").join("");
  const range=document.createElement("input");range.type="range";range.min=0;range.max=100;range.value=0;range.className="voice-player-range";range.title="Позиция";
  track.append(eq,range);
  const timeWrap=document.createElement("span");timeWrap.className="voice-player-time";timeWrap.textContent="0:00 / 0:00";
