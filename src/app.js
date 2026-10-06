@@ -3540,9 +3540,26 @@ function toolsEditorRender(){
  c.querySelectorAll("[data-tools-kind]").forEach(b=>b.onclick=()=>{toolsEditorReset();toolsEditorState.kind=b.dataset.toolsKind;toolsEditorRender()});
  const body=$("#toolsEditorBody");
  if(st.kind==="editor"){
-  body.innerHTML='<div class="tools-editor-launch"><div class="tools-empty"><div class="tools-upload-icon">✦</div><h3>Аудиоредактор Miya</h3><p>Полноэкранный редактор голоса: waveform, обрезка, шумоподавление, громкость, нормализация и разделение вокала.</p><button type="button" class="tools-action primary" id="openAudioEditorFromTools">Открыть редактор</button></div></div>';
-  const launch=$("#openAudioEditorFromTools");
-  if(launch)launch.onclick=()=>{const input=document.createElement("input");input.type="file";input.accept="audio/*";input.onchange=()=>{const f=input.files?.[0];if(!f)return;const u=URL.createObjectURL(f);openVoiceEditor({model:f.name,prompt:f.name,type:f.type},()=>u)};input.click()};
+  body.innerHTML='<div class="tools-editor-launch"><div class="tools-empty tools-audio-editor-launch" id="audioEditorLaunch"><div class="tools-upload-icon">✦</div><h3>Аудиоредактор Miya</h3><p>MP3, WAV, M4A или FLAC — выбери файл, и он сразу откроется в полноэкранном Miya Audio Studio.</p><button type="button" class="tools-action primary" id="pickAudioEditorFile">Выбрать аудиофайл</button><div class="tools-hint">Можно также перетащить аудиофайл сюда</div></div></div>';
+  const launch=$("#audioEditorLaunch"),pick=$("#pickAudioEditorFile");
+  const input=document.createElement("input");
+  input.type="file";
+  input.accept=".mp3,.wav,.m4a,.flac,audio/mpeg,audio/wav,audio/x-wav,audio/mp4,audio/flac,audio/*";
+  const openFile=file=>{
+    if(!file)return;
+    const allowed=/\\.(mp3|wav|m4a|flac)$/i.test(file.name)||/^audio\\//i.test(file.type);
+    if(!allowed){toast("Выбери MP3, WAV, M4A или FLAC");return}
+    const u=URL.createObjectURL(file);
+    openVoiceEditor({model:file.name,prompt:file.name,type:file.type},()=>u);
+  };
+  input.onchange=()=>openFile(input.files?.[0]);
+  if(pick)pick.onclick=e=>{e.stopPropagation();input.click()};
+  if(launch){
+    launch.onclick=e=>{if(e.target.closest("#pickAudioEditorFile"))return;input.click()};
+    launch.ondragover=e=>{e.preventDefault();launch.classList.add("dragover")};
+    launch.ondragleave=()=>launch.classList.remove("dragover");
+    launch.ondrop=e=>{e.preventDefault();launch.classList.remove("dragover");openFile(e.dataTransfer?.files?.[0])};
+  }
   return;
  }
  if(!st.file){
