@@ -3489,7 +3489,8 @@ const chatNavWrap=$("#chatNavWrap")||$(".chat-nav-wrap");
 if(chatNavWrap){chatNavWrap.addEventListener("mouseleave",()=>{chatMenuSuppressed=false;$("#chatSubmenu")?.classList.remove("suppressed");$("#chatMenuToggle")?.setAttribute("aria-expanded","false")})}
 
 // Close transient chat/media menus when clicking outside them.
-document.addEventListener("click",e=>{if(!e.target.closest(".chat-history-row"))resetChatMenus()});\ndocument.addEventListener("click",e=>{
+document.addEventListener("click",e=>{if(!e.target.closest(".chat-history-row"))resetChatMenus()});
+document.addEventListener("click",e=>{
  if(e.target.closest(".voice-card-menu")||e.target.closest(".voice-editor-more"))return;
  closeAllVoiceCardMenus();
 });
