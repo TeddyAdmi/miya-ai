@@ -1998,9 +1998,16 @@ body.light .chat-selection-actions button{background:#f4f6fa}
 /* Prompt field: the textarea is the full editable surface. Right-click anywhere inside it
    keeps Firefox's native Copy/Paste menu available, including the far-right edge. */
 .composer-input-row{position:relative!important}
-/* Stable media/voice cards: no motion, no layout jumps. */
-.media-card,.voice-library-card,.voice-result-card{transition:none!important;transform:none!important;}
-.media-card:hover,.media-card:focus-within,.voice-library-card:hover,.voice-result-card:hover{transform:none!important;transition:none!important;}
-.media-card{aspect-ratio:16/9!important;height:auto!important;}
-.voice-library-card,.voice-result-card{aspect-ratio:16/9!important;height:auto!important;}
-.voice-library-card .voice-player,.voice-result-card .voice-player{min-height:0!important;}
+/* Stable composer per mode: each section keeps its own prompt field and microphone stays visible. */
+#composerInput.prompt-chat{min-height:38px!important;}
+#composerInput.prompt-images{min-height:38px!important;}
+#composerInput.prompt-video{min-height:38px!important;}
+#composerInput.prompt-voice{min-height:38px!important;}
+.composer.mode-chat #composerInput,.composer.mode-images #composerInput,.composer.mode-video #composerInput,.composer.mode-voice #composerInput{display:block!important;visibility:visible!important;pointer-events:auto!important;}
+#composerMic{display:grid!important;visibility:visible!important;opacity:1!important;}
+/* Voice player geometry: the progress axis is the center; bars grow equally above and below it. */
+.voice-player-track{height:30px!important;position:relative!important;display:block!important;overflow:hidden!important;}
+.voice-player-eq{position:absolute!important;inset:0!important;height:100%!important;display:flex!important;align-items:center!important;justify-content:center!important;}
+.voice-player-eq i{position:relative!important;display:block!important;flex:0 0 2.5px!important;transform-origin:center center!important;}
+.voice-player-range{position:absolute!important;left:0!important;right:0!important;top:50%!important;bottom:auto!important;transform:translateY(-50%)!important;height:3px!important;margin:0!important;z-index:6!important;}
+.voice-player-time{top:50%!important;transform:translateY(-50%)!important;}
