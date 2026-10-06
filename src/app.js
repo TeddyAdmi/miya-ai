@@ -1079,6 +1079,51 @@ body.voice-modal-open .composer-wrap,body.voice-modal-open #voiceOptions,body.vo
 .voice-detail-date{width:min(720px,92vw);margin:4px auto 10px;text-align:center;color:#778da6;font-size:9px}
 .voice-detail-copy{width:min(720px,92vw);margin:0 auto 14px;padding:12px 14px;border:1px solid rgba(120,158,195,.18);border-radius:12px;background:rgba(255,255,255,.035);color:#b9c9d9;font-size:11px;line-height:1.5;max-height:120px;overflow:hidden}
 .voice-detail-copy:empty{display:none}
+.voice-player-range{
+  appearance:none!important;
+  -webkit-appearance:none!important;
+  height:8px!important;
+  background:transparent!important;
+  accent-color:transparent!important;
+  cursor:pointer!important;
+  z-index:10!important;
+}
+.voice-player-range::-webkit-slider-runnable-track{
+  height:3px!important;
+  border:0!important;
+  border-radius:999px!important;
+  background:rgba(190,205,224,.24)!important;
+}
+.voice-player-range::-moz-range-track{
+  height:3px!important;
+  border:0!important;
+  border-radius:999px!important;
+  background:rgba(190,205,224,.24)!important;
+}
+.voice-player-range::-webkit-slider-thumb{
+  appearance:none!important;
+  -webkit-appearance:none!important;
+  width:8px!important;
+  height:8px!important;
+  margin-top:-2.5px!important;
+  border:0!important;
+  border-radius:50%!important;
+  background:#fff!important;
+  box-shadow:0 0 0 1px rgba(255,255,255,.28),0 1px 6px rgba(0,0,0,.5)!important;
+  opacity:1!important;
+}
+.voice-player-range::-moz-range-thumb{
+  width:8px!important;
+  height:8px!important;
+  border:0!important;
+  border-radius:50%!important;
+  background:#fff!important;
+  box-shadow:0 0 0 1px rgba(255,255,255,.28),0 1px 6px rgba(0,0,0,.5)!important;
+  opacity:1!important;
+}
+.voice-player-range:focus-visible{
+  outline:none!important;
+}
 @media(max-width:980px){.voice-wall{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:620px){.voice-wall{grid-template-columns:1fr}.voice-library-card,.voice-result-card{padding:10px}.voice-player-row{grid-template-columns:30px minmax(0,1fr) minmax(48px,auto) 26px}.voice-detail-info{grid-template-columns:repeat(2,minmax(0,1fr))}.voice-detail-dialog,.voice-editor-dialog{padding:16px}.voice-detail-card{width:min(92vw,62vh);max-height:62vh}}`;
  document.head.appendChild(s);
