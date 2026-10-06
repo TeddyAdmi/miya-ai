@@ -2120,3 +2120,17 @@ body.light .chat-selection-actions button{background:#f4f6fa}
   .composer.mode-voice .voice-options{overflow-x:auto!important;scrollbar-width:thin!important}
   .composer.mode-voice .voice-range{flex:0 0 170px!important}
 }
+
+
+/* Voice prompt: compact first three selectors, four visible text lines, no attachment button. */
+.composer.mode-voice .composer-left-actions{display:none!important}
+.composer.mode-voice #composerInput{
+  min-height:40px!important;
+  max-height:76px!important;
+  height:auto!important;
+  overflow-y:auto!important;
+  scrollbar-width:thin!important;
+}
+.composer.mode-voice #voiceLanguage{flex:0 0 82px!important;width:82px!important;min-width:82px!important}
+.composer.mode-voice #voiceGender{flex:0 0 82px!important;width:82px!important;min-width:82px!important}
+.composer.mode-voice #voiceSelect{flex:0 1 145px!important;width:145px!important;min-width:110px!important}
