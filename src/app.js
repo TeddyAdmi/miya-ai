@@ -3536,9 +3536,15 @@ function toolsEditorLoadFile(file){const t=String(file?.type||"");const kind=t.s
 function toolsEditorRender(){
  ensureToolsEditorStyles();
  const c=$("#canvas"),st=toolsEditorState;if(!c)return;
- c.innerHTML='<div class="tools-editor"><div class="tools-editor-tabs"><button class="tools-editor-tab '+(st.kind==="image"?"active":"")+'" data-tools-kind="image">Картинки</button><button class="tools-editor-tab '+(st.kind==="video"?"active":"")+'" data-tools-kind="video">Видео</button><button class="tools-editor-tab '+(st.kind==="audio"?"active":"")+'" data-tools-kind="audio">Голос</button></div><div id="toolsEditorBody"></div></div>';
+ c.innerHTML='<div class="tools-editor"><div class="tools-editor-tabs"><button class="tools-editor-tab '+(st.kind==="image"?"active":"")+'" data-tools-kind="image">Картинки</button><button class="tools-editor-tab '+(st.kind==="video"?"active":"")+'" data-tools-kind="video">Видео</button><button class="tools-editor-tab '+(st.kind==="audio"?"active":"")+'" data-tools-kind="audio">Голос</button><button class="tools-editor-tab '+(st.kind==="editor"?"active":"")+'" data-tools-kind="editor">Аудиоредактор</button></div><div id="toolsEditorBody"></div></div>';
  c.querySelectorAll("[data-tools-kind]").forEach(b=>b.onclick=()=>{toolsEditorReset();toolsEditorState.kind=b.dataset.toolsKind;toolsEditorRender()});
  const body=$("#toolsEditorBody");
+ if(st.kind==="editor"){
+  body.innerHTML='<div class="tools-editor-launch"><div class="tools-empty"><div class="tools-upload-icon">✦</div><h3>Аудиоредактор Miya</h3><p>Полноэкранный редактор голоса: waveform, обрезка, шумоподавление, громкость, нормализация и разделение вокала.</p><button type="button" class="tools-action primary" id="openAudioEditorFromTools">Открыть редактор</button></div></div>';
+  const launch=$("#openAudioEditorFromTools");
+  if(launch)launch.onclick=()=>{const input=document.createElement("input");input.type="file";input.accept="audio/*";input.onchange=()=>{const f=input.files?.[0];if(!f)return;const u=URL.createObjectURL(f);openVoiceEditor({model:f.name,prompt:f.name,type:f.type},()=>u)};input.click()};
+  return;
+ }
  if(!st.file){
   body.innerHTML='<div class="tools-dropzone" id="toolsDropzone"><div class="tools-empty"><div class="tools-upload-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M12 16V4m0 0L7 9m5-5 5 5"/><path d="M4 15v4a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-4"/></svg></div><h3>Добавь файл в редактор</h3><p>Перетащи файл сюда из проводника или выбери его вручную. До «Сохранить» он не попадёт на стену и в «Мои файлы».</p><button class="tools-pick" id="toolsPick">Выбрать файл</button><div class="tools-hint">Можно также перетащить файл прямо из папки</div></div></div>';
   const dz=$("#toolsDropzone"),input=document.createElement("input");input.type="file";input.accept=st.kind==="image"?"image/*":st.kind==="video"?"video/*":"audio/*";input.hidden=true;document.body.appendChild(input);
