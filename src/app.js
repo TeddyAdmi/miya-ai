@@ -833,7 +833,7 @@ function isStoredVideo(item){
 function renderVideoLibrary(){
  const c=$("#canvas"),items=getLibrary().filter(isStoredVideo);
  if(!items.length){showEmpty();return}
- c.innerHTML='<div class="results-head"><div><h3>Все созданные видео</h3></div></div><div class="result-grid video-result-grid"></div>';
+ c.innerHTML='<div class="result-grid video-result-grid"></div>';
  const grid=c.querySelector(".result-grid");
  items.forEach(item=>grid.appendChild(buildMediaCard(item,{video:true})));
  applyFirstSixMediaPriority(grid);
@@ -888,14 +888,14 @@ function renderImageLibrary(){
    });
    return;
  }
- c.innerHTML='<div class="results-head"><div><h3>Все созданные картинки</h3></div></div><div class="result-grid"></div>';
+ c.innerHTML='<div class="result-grid"></div>';
  const grid=c.querySelector(".result-grid");
  items.forEach(item=>grid.appendChild(buildMediaCard(item)));
  applyFirstSixMediaPriority(grid);
 }
 let voiceCatalog=[];let voiceAudioParts=[];let voiceAudioItem=null;
 async function loadVoiceCatalog(){try{const r=await fetch("https://ahm7xmakki.com/api/voices",{cache:"force-cache"});const data=await r.json();voiceCatalog=Array.isArray(data?.voices)?data.voices:[];const genderSelect=$("#voiceGender");if(genderSelect&&!genderSelect.dataset.miyaInitialized){genderSelect.value="male";genderSelect.dataset.miyaInitialized="1"}refreshVoiceSelects()}catch{voiceCatalog=[];const sel=$("#voiceSelect");if(sel)sel.innerHTML='<option value="">Не удалось загрузить голоса</option>'}}
-function refreshVoiceSelects(){const lang=$("#voiceLanguage")?.value||"ru";const gender=$("#voiceGender")?.value||"male";const sel=$("#voiceSelect");if(!sel)return;const list=voiceCatalog.filter(v=>{const l=String(v.language||"").toLowerCase(),g=String(v.gender||"").toLowerCase();const langOk=lang==="ru"?(l.includes("russian")||l==="ru"||l.includes("russia")):(l.startsWith(lang)||l.includes(lang));const genderOk=gender==="female"?(g.includes("female")||g.includes("woman")):(g.includes("male")||g.includes("man"));return langOk&&genderOk});sel.innerHTML="";list.forEach(v=>{const o=document.createElement("option");o.value=String(v.index);o.textContent=String(v.name||"Voice")+" · "+(gender==="male"?"Мужской":"Женский")+" · "+String(v.country||"");sel.appendChild(o)});if(!list.length){const o=document.createElement("option");o.value="";o.textContent="Нет голосов для выбранного пола";sel.appendChild(o)}else{const preferred=gender==="male"?(list.find(v=>/dmitry|alex|maxim|michael/i.test(String(v.name||"")))||list[0]):(list.find(v=>/svetlana/i.test(String(v.name||"")))||list[0]);sel.value=String(preferred.index)}}
+function refreshVoiceSelects(){const lang=$("#voiceLanguage")?.value||"ru";const gender=$("#voiceGender")?.value||"male";const sel=$("#voiceSelect");if(!sel)return;const list=voiceCatalog.filter(v=>{const l=String(v.language||"").toLowerCase(),g=String(v.gender||"").toLowerCase();const langOk=lang==="ru"?(l.includes("russian")||l==="ru"||l.includes("russia")):(l.startsWith(lang)||l.includes(lang));const genderOk=gender==="female"?(/female|woman|girl/i.test(g)):(/(^|[^a-z])male([^a-z]|$)|(^|[^a-z])man([^a-z]|$)|boy/i.test(g)&&!/(female|woman|girl)/i.test(g));return langOk&&genderOk});sel.innerHTML="";list.forEach(v=>{const o=document.createElement("option");o.value=String(v.index);o.textContent=String(v.name||"Voice")+" · "+(gender==="male"?"Мужской":"Женский")+" · "+String(v.country||"");sel.appendChild(o)});if(!list.length){const o=document.createElement("option");o.value="";o.textContent="Нет голосов для выбранного пола";sel.appendChild(o)}else{const preferred=gender==="male"?(list.find(v=>/dmitry|alex|maxim|michael/i.test(String(v.name||"")))||list[0]):(list.find(v=>/svetlana/i.test(String(v.name||"")))||list[0]);sel.value=String(preferred.index)}}
 function splitVoiceText(text,max=1000){const clean=String(text||"").trim();if(!clean)return[];const out=[];for(let i=0;i<clean.length;i+=max)out.push(clean.slice(i,i+max));return out}
 function ensureVoiceWallStyles(){
  if(document.getElementById("miyaVoiceWallStyles"))return;
@@ -1000,7 +1000,7 @@ function ensureVoiceCardFinalStyles(){
  width:100%!important;margin:0!important;padding:5px 6px!important;border-radius:9px!important;box-sizing:border-box!important;
 }
 .voice-player-row{grid-template-columns:30px minmax(0,1fr) minmax(62px,auto) 26px!important;gap:7px!important;align-items:center!important}
-.voice-player-play{width:30px!important;height:30px!important;flex:0 0 30px!important;border-radius:8px!important}
+.voice-player-play{width:30px!important;height:30px!important;flex:0 0 30px!important;border-radius:7px!important}
 .voice-player-track{height:40px!important;position:relative!important;display:block!important;min-width:0!important;width:100%!important;align-self:center!important;overflow:hidden!important}
 .voice-player-eq{inset:0!important;width:100%!important;gap:1px!important;align-items:stretch!important;justify-content:space-between!important;opacity:.30!important;display:flex!important;position:absolute!important;pointer-events:none!important;overflow:hidden!important}
 .voice-player.is-playing .voice-player-eq{opacity:1!important}
@@ -1011,12 +1011,12 @@ function ensureVoiceCardFinalStyles(){
 .voice-player-range{position:absolute!important;left:0!important;right:0!important;top:50%!important;bottom:auto!important;transform:translateY(-50%)!important;width:100%!important;height:3px!important;z-index:4!important;background:transparent!important;margin:0!important}
 .voice-player-volume-wrap{width:26px!important;height:30px!important}
 .voice-player-volume{width:25px!important;height:3px!important}
-.voice-player-volume::-webkit-slider-thumb{appearance:none;width:18px;height:8px;border-radius:3px;border:1px solid #9b72e8;background:repeating-linear-gradient(90deg,#a75cff 0,#a75cff 3px,#754fd0 3px,#754fd0 4px);box-shadow:inset 0 0 0 1px rgba(255,255,255,.22);cursor:pointer}
-.voice-player-volume::-moz-range-thumb{width:18px;height:8px;border-radius:3px;border:1px solid #9b72e8;background:#a75cff;box-shadow:inset 0 0 0 1px rgba(255,255,255,.22);cursor:pointer}
+.voice-player-volume::-webkit-slider-thumb{appearance:none;width:14px;height:7px;border-radius:3px;border:1px solid #9b72e8;background:repeating-linear-gradient(90deg,#a75cff 0,#a75cff 3px,#754fd0 3px,#754fd0 4px);box-shadow:inset 0 0 0 1px rgba(255,255,255,.22);cursor:pointer}
+.voice-player-volume::-moz-range-thumb{width:14px;height:7px;border-radius:3px;border:1px solid #9b72e8;background:repeating-linear-gradient(90deg,#a75cff 0,#a75cff 2px,#754fd0 2px,#754fd0 3px);box-shadow:inset 0 0 0 1px rgba(255,255,255,.22);cursor:pointer}
 .voice-player-volume::-webkit-slider-runnable-track{height:3px;background:#cfd8e4;border-radius:3px}
 .voice-player-volume::-moz-range-track{height:3px;background:#cfd8e4;border-radius:3px}
-body.light .voice-player-volume::-webkit-slider-thumb{background:#8e68d8;border-color:#7555bc;box-shadow:inset 0 0 0 1px rgba(255,255,255,.55)}
-body.light .voice-player-volume::-moz-range-thumb{background:#8e68d8;border-color:#7555bc;box-shadow:inset 0 0 0 1px rgba(255,255,255,.55)}
+body.light .voice-player-volume::-webkit-slider-thumb{background:repeating-linear-gradient(90deg,#8e68d8 0,#8e68d8 2px,#7555bc 2px,#7555bc 3px);border-color:#7555bc;box-shadow:inset 0 0 0 1px rgba(255,255,255,.55)}
+body.light .voice-player-volume::-moz-range-thumb{background:repeating-linear-gradient(90deg,#8e68d8 0,#8e68d8 2px,#7555bc 2px,#7555bc 3px);border-color:#7555bc;box-shadow:inset 0 0 0 1px rgba(255,255,255,.55)}
 body.light .voice-card-action,body.light .voice-player-download,body.light .voice-editor-tool,body.light .voice-editor-close-btn{background:#ffffff!important;color:#52657b!important;border-color:#cbd8e5!important;box-shadow:0 2px 7px rgba(50,70,95,.06)!important}
 body.light .voice-card-action:hover,body.light .voice-player-download:hover,body.light .voice-editor-tool:hover,body.light .voice-editor-close-btn:hover{background:#f3f6fa!important;color:#273047!important;border-color:#b9c9d9!important}
 .voice-player-time{
@@ -1028,13 +1028,17 @@ body.light .voice-card-action:hover,body.light .voice-player-download:hover,body
 body.light .voice-player-time{background:none!important;color:#52657b!important}
 body.light .voice-options .select-pill{
  appearance:none!important;-webkit-appearance:none!important;color-scheme:light!important;
- background-color:#f4f7fa!important;color:#52657b!important;border:1px solid #d3deea!important;
+ background:#fff!important;background-color:#fff!important;color:#273047!important;border:1px solid #cbd8e5!important;
  box-shadow:inset 0 1px 0 rgba(255,255,255,.8)!important;
 }
 body.light .voice-options .select-pill:focus{
- outline:none!important;background-color:#fff!important;border-color:#a98cff!important;
+ outline:none!important;background:#fff!important;background-color:#fff!important;color:#273047!important;border-color:#a98cff!important;
  box-shadow:0 0 0 2px rgba(169,140,255,.16)!important;
 }
+body.light .voice-options select.select-pill option,
+body.light .voice-options #voiceLanguage option,
+body.light .voice-options #voiceGender option,
+body.light .voice-options #voiceSelect option{background:#fff!important;color:#273047!important;color-scheme:light!important}
 body.light .voice-options #voiceLanguage,
 body.light .voice-options #voiceGender,
 body.light .voice-options #voiceSelect{
@@ -1455,7 +1459,7 @@ function showLoading(){
  }
  const selectedVideoModel=$("#videoModel")?.value||"LTX-2.3 Distilled";
  const items=getLibrary().filter(isStoredVideo);
- c.innerHTML='<div class="results-head"><div><h3>Все созданные видео</h3></div></div><div class="result-grid video-result-grid"></div>';
+ c.innerHTML='<div class="result-grid video-result-grid"></div>';
  const grid=c.querySelector(".result-grid");
  items.forEach(item=>grid.appendChild(buildMediaCard(item,{video:true})));
  const card=document.createElement("div");card.className="generation-loading video-generation-loading";
