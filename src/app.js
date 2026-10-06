@@ -1171,7 +1171,7 @@ function ensureVoiceCardFinalStyles(){
 .voice-detail-player .voice-player-track::after{height:5px!important}
 
 .voice-card-date{margin-top:auto;text-align:right;font-size:8px;line-height:1;color:#8093a8;font-variant-numeric:tabular-nums;padding-top:2px}
-.voice-detail-actions{display:flex;justify-content:center;gap:7px;margin:0 auto 12px}
+.voice-detail-nav{display:flex;align-items:center;gap:6px;margin-left:auto}.voice-detail-nav-btn{width:34px;height:34px;border:1px solid rgba(120,158,195,.26);border-radius:9px;background:rgba(255,255,255,.045);color:#b9c9dc;display:grid;place-items:center;cursor:pointer;padding:0}.voice-detail-nav-btn:hover{background:rgba(157,111,255,.13);border-color:rgba(190,154,255,.34);color:#fff}.voice-detail-nav-btn:disabled{opacity:.28;cursor:default}.voice-detail-nav-btn svg{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}.voice-detail-head{display:flex;align-items:center;gap:10px}.voice-detail-head>.voice-detail-nav{margin-left:auto}.voice-detail-actions{display:flex;justify-content:center;gap:7px;margin:0 auto 12px}
 .voice-detail-action{width:34px;height:30px;border:1px solid rgba(120,158,195,.26);border-radius:8px;background:rgba(255,255,255,.045);color:#b9c9dc;display:grid;place-items:center;cursor:pointer;padding:0}
 .voice-detail-action:hover{background:rgba(157,111,255,.13);border-color:rgba(190,154,255,.34);color:#fff}
 .voice-detail-action svg{width:14px;height:14px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
@@ -1392,26 +1392,51 @@ function createVoiceCard(item,source,options={}){
  quick("delete","Удалить",'<path d="M5 7h14M9 7V4h6v3M8 7l1 13h6l1-13"/>',()=>confirmDeleteMedia(item,card));
  const date=document.createElement("div");date.className="voice-card-date";date.textContent=item?.createdAt?new Date(item.createdAt).toLocaleDateString("ru-RU",{day:"2-digit",month:"2-digit",year:"numeric"}):"";
  card.append(title,textEl,player.wrap,actions,date,more);
- if(!options.detail){const open=()=>openVoiceDetail(item,source);card.onclick=e=>{if(e.target.closest("button,input"))return;open()};card.onkeydown=e=>{if((e.key==="Enter"||e.key===" ")&&!e.target.closest("button,input")){e.preventDefault();open()}}}
+ if(!options.detail){const open=()=>openVoiceDetail(item,source,options.voiceItems||[],Number.isInteger(options.voiceIndex)?options.voiceIndex:-1);card.onclick=e=>{if(e.target.closest("button,input"))return;open()};card.onkeydown=e=>{if((e.key==="Enter"||e.key===" ")&&!e.target.closest("button,input")){e.preventDefault();open()}}}
  return card;
 }
-function openVoiceDetail(item,source){
+function openVoiceDetail(item,source,voiceItems=[],voiceIndex=-1){
  ensureVoiceWallStyles();document.querySelector(".voice-detail-backdrop")?.remove();document.body.classList.add("voice-modal-open");
  const backdrop=document.createElement("div");backdrop.className="voice-detail-backdrop";
  const dialog=document.createElement("section");dialog.className="voice-detail-dialog";dialog.setAttribute("role","dialog");dialog.setAttribute("aria-modal","true");
- const head=document.createElement("div");head.className="voice-detail-head";const copy=document.createElement("div");const eyebrow=document.createElement("div");eyebrow.className="voice-detail-eyebrow";eyebrow.textContent="MIYA VOICE";const h=document.createElement("h3");h.textContent=item?.model||"Голос";copy.append(eyebrow,h);const close=document.createElement("button");close.type="button";close.className="voice-detail-close";close.title="Закрыть";close.setAttribute("aria-label","Закрыть");close.innerHTML='<svg viewBox="0 0 24 24"><path d="m6 6 12 12M18 6 6 18"/></svg>';head.append(copy,close);
+ const head=document.createElement("div");head.className="voice-detail-head";
+ const copy=document.createElement("div");const eyebrow=document.createElement("div");eyebrow.className="voice-detail-eyebrow";eyebrow.textContent="MIYA VOICE";const h=document.createElement("h3");h.textContent=item?.model||"Голос";copy.append(eyebrow,h);
+ const close=document.createElement("button");close.type="button";close.className="voice-detail-close";close.title="Закрыть";close.setAttribute("aria-label","Закрыть");close.innerHTML='<svg viewBox="0 0 24 24"><path d="m6 6 12 12M18 6 6 18"/></svg>';
+ head.append(copy,close);
+ const nav=document.createElement("div");nav.className="voice-detail-nav";
+ const prev=document.createElement("button");prev.type="button";prev.className="voice-detail-nav-btn";prev.title="Предыдущий голос";prev.setAttribute("aria-label","Предыдущий голос");prev.innerHTML='<svg viewBox="0 0 24 24"><path d="m14 5-7 7 7 7"/></svg>';
+ const next=document.createElement("button");next.type="button";next.className="voice-detail-nav-btn";next.title="Следующий голос";next.setAttribute("aria-label","Следующий голос");next.innerHTML='<svg viewBox="0 0 24 24"><path d="m10 5 7 7-7 7"/></svg>';
+ nav.append(prev,next);head.append(nav);
  const player=buildVoicePlayer(source,null);player.wrap.classList.add("voice-detail-player");player.wrap.style.width="min(520px,68vw)";player.wrap.style.margin="0 auto 10px";
  const detailActions=document.createElement("div");detailActions.className="voice-detail-actions";
  const dplay=document.createElement("button");dplay.type="button";dplay.className="voice-detail-action";dplay.innerHTML=voiceIcon('<path d="M8 5v14l11-7z"/>');dplay.title="Воспроизвести";dplay.onclick=()=>player.wrap.querySelector(".voice-player-play")?.click();
  const ddownload=document.createElement("button");ddownload.type="button";ddownload.className="voice-detail-action";ddownload.innerHTML=voiceIcon('<path d="M12 4v11M8 11l4 4 4-4M5 20h14"/>');ddownload.title="Скачать";ddownload.onclick=()=>downloadVoiceSource(null,source);
- const drename=document.createElement("button");drename.type="button";drename.className="voice-detail-action";drename.innerHTML=voiceIcon('<path d="m4 16.5-.8 3.3 3.3-.8L18.7 6.8a2.2 2.2 0 0 0 3.1-3.1L4 16.5Z"/><path d="m14.2 5.8 4 4"/>');drename.title="Переименовать";drename.onclick=()=>renameVoiceItem(item,next=>{h.textContent=next});
+ const drename=document.createElement("button");drename.type="button";drename.className="voice-detail-action";drename.innerHTML=voiceIcon('<path d="m4 16.5-.8 3.3 3.3-.8L18.7 6.8a2.2 2.2 0 0 0 3.1-3.1L4 16.5Z"/><path d="m14.2 5.8 4 4"/>');drename.title="Переименовать";drename.onclick=()=>renameVoiceItem(item,nextName=>{h.textContent=nextName});
  const dedit=document.createElement("button");dedit.type="button";dedit.className="voice-detail-action";dedit.innerHTML=voiceIcon('<path d="m15 5 4 4M5 19l3.5-.7L18 9l-3-3-9.5 9.5L5 19Z"/>');dedit.title="Редактировать";dedit.onclick=()=>openVoiceEditor(item,source);
  const dnoise=document.createElement("button");dnoise.type="button";dnoise.className="voice-detail-action";dnoise.innerHTML=voiceIcon('<path d="M4 12h16M7 7h10M7 17h10"/>');dnoise.title="Очистить шум";dnoise.onclick=()=>runVoiceCleverTool(item,null,"noise-reduction","Очистка голоса");
  detailActions.append(dplay,ddownload,drename,dedit,dnoise);
  const text=document.createElement("div");text.className="voice-detail-copy";text.textContent=String(item?.prompt||"");
  const date=document.createElement("div");date.className="voice-detail-date";date.textContent=item?.createdAt?new Date(item.createdAt).toLocaleString("ru-RU",{day:"2-digit",month:"long",year:"numeric",hour:"2-digit",minute:"2-digit"}):"";
  dialog.append(head,player.wrap,detailActions,text,date);backdrop.append(dialog);document.body.appendChild(backdrop);
- const closeIt=()=>{player.cleanup();backdrop.remove();document.body.classList.remove("voice-modal-open");document.removeEventListener("keydown",onKey)};const onKey=e=>{if(e.key==="Escape")closeIt()};close.onclick=closeIt;backdrop.addEventListener("click",e=>{if(e.target===backdrop)closeIt()});document.addEventListener("keydown",onKey);
+ const refreshNav=()=>{
+   const valid=Array.isArray(voiceItems)&&voiceItems.length&&voiceIndex>=0;
+   prev.disabled=!valid||voiceIndex<=0;
+   next.disabled=!valid||voiceIndex>=voiceItems.length-1;
+   prev.hidden=!valid;
+   next.hidden=!valid;
+ };
+ const go=delta=>{
+   if(!Array.isArray(voiceItems)||!voiceItems.length)return;
+   const nextIndex=voiceIndex+delta;
+   if(nextIndex<0||nextIndex>=voiceItems.length)return;
+   const nextItem=voiceItems[nextIndex];
+   player.cleanup();backdrop.remove();document.body.classList.remove("voice-modal-open");
+   openVoiceDetail(nextItem,()=>resolveMediaUrl(nextItem),voiceItems,nextIndex);
+ };
+ refreshNav();
+ prev.onclick=e=>{e.stopPropagation();go(-1)};
+ next.onclick=e=>{e.stopPropagation();go(1)};
+ const closeIt=()=>{player.cleanup();backdrop.remove();document.body.classList.remove("voice-modal-open");document.removeEventListener("keydown",onKey)};const onKey=e=>{if(e.key==="Escape")closeIt();else if(e.key==="ArrowLeft")go(-1);else if(e.key==="ArrowRight")go(1)};close.onclick=closeIt;backdrop.addEventListener("click",e=>{if(e.target===backdrop)closeIt()});document.addEventListener("keydown",onKey);
 }
 async function openVoiceEditor(item,source){
  ensureVoiceWallStyles();document.querySelector(".voice-editor-backdrop")?.remove();
@@ -1525,7 +1550,7 @@ async function generateVoice(text){
    toast("Не удалось создать голос");
  }
 }
-function renderVoiceLibrary(){ensureVoiceWallStyles();ensureVoiceCardFinalStyles();const c=$("#canvas"),items=getLibrary().filter(x=>x.type==="audio");c.innerHTML='<div class="library-section"><div class="voice-wall"></div></div>';const wall=c.querySelector(".voice-wall");if(!items.length){wall.innerHTML='<div class="library-note">Пока нет созданных голосов.</div>';return}items.forEach(item=>wall.appendChild(createVoiceCard(item,()=>resolveMediaUrl(item))))}
+function renderVoiceLibrary(){ensureVoiceWallStyles();ensureVoiceCardFinalStyles();const c=$("#canvas"),items=getLibrary().filter(x=>x.type==="audio");c.innerHTML='<div class="library-section"><div class="voice-wall"></div></div>';const wall=c.querySelector(".voice-wall");if(!items.length){wall.innerHTML='<div class="library-note">Пока нет созданных голосов.</div>';return}items.forEach((item,index)=>wall.appendChild(createVoiceCard(item,()=>resolveMediaUrl(item),{voiceItems:items,voiceIndex:index})))}
 function renderLibrary(tab="images"){
  const c=$("#canvas"),items=getLibrary(),images=items.filter(x=>x.type==="image"),videos=items.filter(x=>x.type==="video"),audios=items.filter(x=>x.type==="audio");
  c.innerHTML='<div class="library-section"><div class="library-tabs"><button type="button" class="library-tab" data-library-tab="images">Картинки</button><button type="button" class="library-tab" data-library-tab="videos">Видео</button><button type="button" class="library-tab" data-library-tab="audio">Аудио</button></div><div class="result-grid library-media-grid"></div></div>';
@@ -1535,7 +1560,7 @@ function renderLibrary(tab="images"){
    grid.remove();
    const wall=document.createElement("div");wall.className="voice-wall library-audio-wall";c.querySelector(".library-section").appendChild(wall);
    if(!audios.length)wall.innerHTML='<div class="library-note">Пока нет созданных аудио.</div>';
-   else audios.forEach(item=>wall.appendChild(createVoiceCard(item,()=>resolveMediaUrl(item))));
+   else audios.forEach((item,index)=>wall.appendChild(createVoiceCard(item,()=>resolveMediaUrl(item),{voiceItems:audios,voiceIndex:index})));
  }else{
    const list=tab==="videos"?videos:images;
    if(!list.length)grid.innerHTML='<div class="library-note">'+(tab==="videos"?"Пока нет созданных видео.":"Пока нет созданных картинок.")+'</div>';
