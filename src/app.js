@@ -1541,7 +1541,7 @@ body.light .ve2-name{background:#fff;color:#273047;border-color:#d3deea}
  head.className="ve2-head";
  const brand=document.createElement("div");
  brand.className="ve2-brand";
- brand.innerHTML='<div class="ve2-brand-mark"><svg viewBox="0 0 24 24"><path d="M4 9v6M8 6v12M12 3v18M16 6v12M20 9v6"/></svg></div><div style="min-width:0"><div class="ve2-eyebrow">MIYA AUDIO STUDIO</div><div class="ve2-title">'+escapeHtml(String(item?.model||"Голос"))+'</div><div class="ve2-meta">Неразрушающее редактирование · оригинальная карточка остаётся на стене</div></div>';
+ brand.innerHTML='<div class="ve2-brand-mark"><svg viewBox="0 0 24 24"><path d="M4 9v6M8 6v12M12 3v18M16 6v12M20 9v6"/></svg></div><div style="min-width:0"><div class="ve2-eyebrow">MIYA AUDIO STUDIO</div><div class="ve2-title">'+String(item?.model||"Голос").replace(/[&<>"\']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","\'":"&#39;"}[m]))+'</div><div class="ve2-meta">Неразрушающее редактирование · оригинальная карточка остаётся на стене</div></div>';
  const headActions=document.createElement("div");headActions.className="ve2-head-actions";
  const clearBtn=document.createElement("button");clearBtn.type="button";clearBtn.className="ve2-clear";clearBtn.title="Убрать текущую запись только из редактора";clearBtn.innerHTML='<svg viewBox="0 0 24 24"><path d="M7 7h10M9 4h6l1 3H8l1-3Z"/><path d="M9 11v6M15 11v6M5 7l1 13h12l-1-13"/><path d="m4 20 16-16"/></svg><span>Убрать запись</span>';
  const close=document.createElement("button");close.type="button";close.className="ve2-close";close.title="Закрыть";close.setAttribute("aria-label","Закрыть");close.innerHTML='<svg viewBox="0 0 24 24"><path d="m6 6 12 12M18 6 6 18"/></svg>';
