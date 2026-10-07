@@ -201,26 +201,7 @@ async function cacheMedia(id,url,type="image"){
   return true;
  }catch{return false}
 }
-function warmMediaCache(items){
-  /* Do not background-download whole videos: their native preload handles the
-     first frame/metadata. IndexedDB warming is only for image previews. */
-  const list=Array.isArray(items)
-    ? items.filter(x=>x?.id&&x?.url&&x.type==="image"&&!isInvalidImageToolSource(x.url)).slice(0,12)
-    : [];
-  if(!list.length)return;
-  const run=async()=>{
-    let cursor=0;
-    const worker=async()=>{
-      while(cursor<list.length){
-        const item=list[cursor++];
-        await cacheMedia(item.id,item.url,"image");
-      }
-    };
-    await Promise.all([worker(),worker(),worker()]);
-  };
-  if("requestIdleCallback" in window)window.requestIdleCallback(()=>run(),{timeout:1200});
-  else setTimeout(run,80);
-}
+
 async function getCachedMedia(id){
  try{
   const db=await openMediaDB();if(!db)return null;
@@ -241,11 +222,7 @@ function saveMedia(type,url,prompt="",model="",format=""){
  cacheMedia(id,normalizedUrl,type);
  return item;
 }
-function removeBrokenMediaItem(item,card){
- // Never delete library records just because a provider URL is temporarily
- // unavailable. The IndexedDB cache may still contain the original image.
- 
-}
+
 async function resolveMediaUrl(item){
  if(!item?.url)return "";
  try{
@@ -1380,25 +1357,7 @@ function showVoiceRenameDialog(item,onDone){
  requestAnimationFrame(()=>{input.focus();input.select()});
 }
 function renameVoiceItem(item,onDone){showVoiceRenameDialog(item,onDone)}
-function openVoiceCardMenu(anchor,item,source,card){
- closeAllVoiceCardMenus();
- const menu=document.createElement("div");menu.className="voice-card-menu voice-card-menu-floating";
- const add=(label,path,fn)=>{const btn=document.createElement("button");btn.type="button";btn.innerHTML=voiceIcon(path)+"<span>"+label+"</span>";btn.onclick=e=>{e.preventDefault();e.stopPropagation();closeAllVoiceCardMenus();fn()};menu.appendChild(btn)};
- add("Открыть редактор",'<path d="m4 16.5-.8 3.3 3.3-.8L18.7 6.8a2.2 2.2 0 0 0 3.1-3.1L4 16.5Z"/><path d="m14.2 5.8 4 4"/>',()=>openVoiceEditor(item,source));
- add("Переименовать",'<path d="m4 16.5-.8 3.3 3.3-.8L18.7 6.8a2.2 2.2 0 0 0 3.1-3.1L4 16.5Z"/><path d="m14.2 5.8 4 4"/>',()=>renameVoiceItem(item));
- add("Очистить шум",'<path d="M4 12h16M7 7h10M7 17h10"/>',()=>runVoiceCleverTool(item,card,"noise-reduction","Очистка голоса"));
- add("Разделить голос",'<path d="M4 12h5M15 12h5M7 7v10M17 7v10"/>',()=>runVoiceCleverTool(item,card,"vocal-remover","Разделение"));
- add("Расшифровать",'<path d="M5 6h14M5 12h14M5 18h9"/>',()=>runVoiceCleverTool(item,card,"speech-to-text","Расшифровка",{format:"txt",language:"ru"}));
- add("Скачать",'<path d="M12 4v11M8 11l4 4 4-4M5 20h14"/>',()=>downloadVoiceSource(null,source));
- add("Удалить",'<path d="M5 7h14M9 7V4h6v3M8 7l1 13h6l-1-13"/>',()=>confirmDeleteMedia(item,card));
- document.body.appendChild(menu);
- const rect=anchor.getBoundingClientRect();
- const width=Math.min(250,Math.max(190,window.innerWidth-20));
- const left=Math.min(window.innerWidth-width-10,Math.max(10,rect.right-width));
- const top=Math.min(window.innerHeight-10,Math.max(10,rect.bottom+7));
- Object.assign(menu.style,{position:"fixed",left:Math.round(left)+"px",top:Math.round(top)+"px",width:width+"px",zIndex:"2147482000"});
- requestAnimationFrame(()=>menu.classList.add("ready"));
-}
+
 function closeAllVoiceCardMenus(){document.querySelectorAll(".voice-card-menu").forEach(x=>x.remove())}
 function createVoiceCard(item,source,options={}){
  ensureVoiceWallStyles();
@@ -2546,63 +2505,9 @@ function audioBufferToWavBlob(buffer){
 }
 
 // Compact transport copy for serverless vocal-remover uploads.
-function audioBufferToCompactWavBlob(buffer,maxBytes=3200000){
-  const duration=Number(buffer.duration||0);
-  const sourceChannels=Math.max(1,Number(buffer.numberOfChannels)||1);
-  const rates=[22050,16000,12000,8000];
-  const rate=rates.find(r=>Math.ceil(duration*r)*2+44<=maxBytes)||8000;
-  const frames=Math.max(1,Math.ceil(duration*rate)),dataSize=frames*2;
-  const arrayBuffer=new ArrayBuffer(44+dataSize),view=new DataView(arrayBuffer);  const writeString=(offset,str)=>{for(let i=0;i<str.length;i++)view.setUint8(offset+i,str.charCodeAt(i))};
-  writeString(0,"RIFF");view.setUint32(4,36+dataSize,true);writeString(8,"WAVE");
-  writeString(12,"fmt ");view.setUint32(16,16,true);view.setUint16(20,1,true);
-  view.setUint16(22,1,true);view.setUint32(24,rate,true);view.setUint32(28,rate*2,true);
-  view.setUint16(32,2,true);view.setUint16(34,16,true);writeString(36,"data");view.setUint32(40,dataSize,true);
-  const channels=Array.from({length:sourceChannels},(_,ch)=>buffer.getChannelData(ch));
-  let offset=44;
-  for(let i=0;i<frames;i++){
-    const pos=(i/(frames-1||1))*(buffer.length-1),a=Math.floor(pos),b=Math.min(buffer.length-1,a+1),frac=pos-a;
-    let sample=0;for(let ch=0;ch<channels.length;ch++)sample+=(channels[ch][a]+(channels[ch][b]-channels[ch][a])*frac);
-    sample/=channels.length;sample=Math.max(-1,Math.min(1,sample));
-    view.setInt16(offset,sample<0?sample*0x8000:sample*0x7fff,true);offset+=2;
-  }
-  return new Blob([arrayBuffer],{type:"audio/wav"});
-}
 
-async function makePixelMotionAudio(duration,prompt){
-  const seconds=Math.max(1,Math.min(20,Number(duration)||5));
-  const sampleRate=24000;
-  const ctx=new OfflineAudioContext(1,Math.ceil(seconds*sampleRate),sampleRate);
-  const master=ctx.createGain();master.gain.value=.55;master.connect(ctx.destination);
-  const text=String(prompt||"").toLowerCase();
-  const isRoar=/\b(лев|льв|lion|рычит|рык|рычит|roar|growl|гроул)\b/i.test(text);
-  const isRun=/\b(убег|беж|бег|runs?|running|run away)\b/i.test(text);
 
-  // A synthetic animal roar: layered low oscillation + filtered noise with
-  // a short attack and decay. It is deliberately an effect track, not speech.
-  if(isRoar){
-    const t=Math.min(.75,seconds*.22);
-    const osc=ctx.createOscillator(),gain=ctx.createGain(),filter=ctx.createBiquadFilter();
-    osc.type="sawtooth";osc.frequency.setValueAtTime(92,t);osc.frequency.exponentialRampToValueAtTime(48,t+.72);
-    filter.type="lowpass";filter.frequency.value=1250;filter.Q.value=1.1;
-    gain.gain.setValueAtTime(0,t);gain.gain.linearRampToValueAtTime(.9,t+.08);gain.gain.exponentialRampToValueAtTime(.001,Math.min(seconds,t+1.15));
-    osc.connect(filter);filter.connect(gain);gain.connect(master);osc.start(t);osc.stop(Math.min(seconds,t+1.3));
-    const noiseBuffer=ctx.createBuffer(1,Math.ceil(sampleRate*1.2),sampleRate),nd=noiseBuffer.getChannelData(0);
-    for(let i=0;i<nd.length;i++)nd[i]=(Math.random()*2-1)*Math.pow(1-i/nd.length,.35);
-    const noise=ctx.createBufferSource(),ng=ctx.createGain(),nf=ctx.createBiquadFilter();
-    nf.type="bandpass";nf.frequency.value=520;nf.Q.value=.7;
-    ng.gain.setValueAtTime(0,t);ng.gain.linearRampToValueAtTime(.42,t+.06);ng.gain.exponentialRampToValueAtTime(.001,Math.min(seconds,t+1.05));
-    noise.buffer=noiseBuffer;noise.connect(nf);nf.connect(ng);ng.connect(master);noise.start(t);noise.stop(Math.min(seconds,t+1.2));
-  }
-  if(isRun){
-    for(let t=.9;t<seconds;t+=.42){
-      const o=ctx.createOscillator(),g=ctx.createGain();
-      o.type="sine";o.frequency.value=72;g.gain.setValueAtTime(.16,t);g.gain.exponentialRampToValueAtTime(.001,t+.12);
-      o.connect(g);g.connect(master);o.start(t);o.stop(t+.13);
-    }
-  }
-  const rendered=await ctx.startRendering();
-  return audioBufferToWavBlob(rendered);
-}
+
 
 function getLtxQuotaCooldown(){
  try{
@@ -3139,20 +3044,7 @@ async function cleverUtilsMcpRequest(payload){
  }
  throw new Error("CLEVERUTILS_MCP_INVALID_RESPONSE");
 }
-async function cleverUtilsMcpUpscale(source,scale,model){
- let file=String(source||"").trim();
- if(!file)return "";
- if(!/^data:image\//i.test(file)){
-   const response=await fetch(file,{cache:"no-store"});
-   if(!response.ok)throw new Error("SOURCE_IMAGE_FETCH_FAILED");
-   const blob=await response.blob();
-   file=await new Promise((resolve,reject)=>{
-     const reader=new FileReader();
-     reader.onload=()=>resolve(String(reader.result||""));
-     reader.onerror=()=>reject(reader.error||new Error("SOURCE_IMAGE_READ_FAILED"));
-     reader.readAsDataURL(blob);
-   });
- }
+
  const init=await cleverUtilsMcpRequest({
    jsonrpc:"2.0",id:1,method:"initialize",
    params:{protocolVersion:"2025-06-18",capabilities:{},clientInfo:{name:"Miya Studio",version:"1.0"}}
@@ -3302,7 +3194,7 @@ modal.innerHTML=`<div class="ai-editor-backdrop"></div><div class="ai-editor-dia
   const scanBounds=()=>{if(!ctx)return null;try{const d=ctx.getImageData(0,0,naturalWidth,naturalHeight).data;let minX=naturalWidth,minY=naturalHeight,maxX=-1,maxY=-1;for(let y=0;y<naturalHeight;y++){for(let x=0;x<naturalWidth;x++){if(d[(y*naturalWidth+x)*4+3]>10){if(x<minX)minX=x;if(x>maxX)maxX=x;if(y<minY)minY=y;if(y>maxY)maxY=y}}}return maxX<0?null:{x:minX,y:minY,w:maxX-minX+1,h:maxY-minY+1}}catch{return null}};
   const getBounds=()=>paintBounds||scanBounds();
   const updatePromptPosition=()=>{if(!promptBox||!ctx)return;const b=getBounds();if(!b){promptBox.classList.remove("open");return}promptBox.style.removeProperty("left");promptBox.style.removeProperty("top");promptBox.classList.add("open")};
-  const updateButtons=()=>{undoButton.disabled=!history.length;redoButton.disabled=!redoHistory.length;applyButton.disabled=!maskHasPaint};
+  const updateButtons=()=>{undoButton.disabled=!history.length;redoButton.disabled=!redoHistory.length;applyButton.disabled=false};
   const snapshot=()=>{if(!ctx)return;try{history.push(ctx.getImageData(0,0,naturalWidth,naturalHeight));if(history.length>20)history.shift();redoHistory=[];updateButtons()}catch{}};
   const clearMask=()=>{if(!ctx)return;ctx.clearRect(0,0,naturalWidth,naturalHeight);history=[];redoHistory=[];maskHasPaint=false;paintBounds=null;promptBox.classList.remove("open");updateButtons()};
   const point=ev=>{const r=mask.getBoundingClientRect();return{x:Math.max(0,Math.min(naturalWidth,(ev.clientX-r.left)*naturalWidth/r.width)),y:Math.max(0,Math.min(naturalHeight,(ev.clientY-r.top)*naturalHeight/r.height))}};
@@ -3332,12 +3224,12 @@ modal.innerHTML=`<div class="ai-editor-backdrop"></div><div class="ai-editor-dia
   const editorOutputData=async url=>{const source=String(url||"");if(!source)throw new Error("IMAGE_TOOL_OUTPUT_MISSING");let blob;try{blob=await editorFetchImageBlob(source)}catch{throw new Error("EDITOR_OUTPUT_FETCH_FAILED")}return await new Promise((resolve,reject)=>{const reader=new FileReader();reader.onload=()=>resolve(String(reader.result||""));reader.onerror=()=>reject(reader.error||new Error("EDITOR_OUTPUT_READ_FAILED"));reader.readAsDataURL(blob)})};
   const loadEditorOutput=async url=>{const data=await editorOutputData(url);workingSource=data;await loadImage(data);naturalWidth=image.naturalWidth;naturalHeight=image.naturalHeight;mask.width=naturalWidth;mask.height=naturalHeight;ctx=mask.getContext("2d",{willReadFrequently:true});ctx.clearRect(0,0,naturalWidth,naturalHeight);maskHasPaint=false;paintBounds=null;history=[];redoHistory=[];updateButtons();applyView();empty.style.display="none"};
   const buildSourceCanvas=async()=>{const source=workingSource||image.src;if(!source)throw new Error("EDITOR_SOURCE_EMPTY");const blob=await editorFetchImageBlob(source);const url=URL.createObjectURL(blob);const img=new Image();await new Promise((res,rej)=>{img.onload=res;img.onerror=()=>rej(new Error("EDITOR_SOURCE_DECODE_FAILED"));img.src=url});URL.revokeObjectURL(url);const canvas=document.createElement("canvas");canvas.width=naturalWidth;canvas.height=naturalHeight;const o=canvas.getContext("2d");o.filter=editorFilter();o.drawImage(img,0,0,naturalWidth,naturalHeight);return canvas};
-  const createFromSelection=async()=>{const command=String(promptInput.value||"").trim();const b=getBounds();if(!command||!b)return;if(/(?:удал|убер|стер|remove|erase|delete)/i.test(command)){promptInput.value="";promptBox.classList.remove("open");applyButton.click();return;}promptCreate.disabled=true;promptCreate.textContent="Создание…";setEditorProgress(0,"Создание изменения","FLUX Kontext Dev");try{const base=await buildSourceCanvas();const crop=document.createElement("canvas");crop.width=b.w;crop.height=b.h;crop.getContext("2d").drawImage(base,b.x,b.y,b.w,b.h,0,0,b.w,b.h);setEditorProgress(15,"Создание изменения","FLUX Kontext Dev");const rr=await fetch("/api/image",{method:"POST",headers:{"Content-Type":"application/json","Accept":"application/json"},body:JSON.stringify({mode:"image",provider:"ahm7",prompt:command,model:"FLUX Kontext Dev",ratio:"auto",outputFormat:"jpeg",copies:1,options:{imageBase64:crop.toDataURL("image/jpeg",.9)}})});const data=await rr.json().catch(()=>({}));if(!rr.ok||!data?.imageUrl)throw new Error(String(data?.message||data?.error||"Не удалось создать изменение"));setEditorProgress(82,"Применение изменения","FLUX Kontext Dev");const generatedData=await editorOutputData(data.imageUrl);const generated=new Image();await new Promise((res,rej)=>{generated.onload=res;generated.onerror=()=>rej(new Error("GENERATED_IMAGE_DECODE_FAILED"));generated.src=generatedData});const overlay=document.createElement("canvas");overlay.width=naturalWidth;overlay.height=naturalHeight;const oc=overlay.getContext("2d");oc.drawImage(generated,b.x,b.y,b.w,b.h);oc.globalCompositeOperation="destination-in";oc.drawImage(mask,0,0);base.getContext("2d").drawImage(overlay,0,0);await loadEditorOutput(base.toDataURL("image/jpeg",.93));clearMask();promptInput.value="";promptBox.classList.remove("open");setEditorProgress(100,"Изменение применено","FLUX Kontext Dev");await new Promise(r=>setTimeout(r,450));hideEditorProgress();toast("Изменение применено · пока в редакторе")}catch(err){hideEditorProgress();console.error("Miya AI editor create failed",err);toast(String(err?.message||"Не удалось создать изменение"))}finally{promptCreate.disabled=false;promptCreate.textContent="Создать / применить"}};
+  const createFromSelection=async()=>{const command=String(promptInput.value||"").trim();const b=getBounds();if(!command||!b)return;promptCreate.disabled=true;promptCreate.textContent="Создание…";setEditorProgress(0,"Создание изменения","FLUX Kontext Dev");try{const base=await buildSourceCanvas();const crop=document.createElement("canvas");crop.width=b.w;crop.height=b.h;crop.getContext("2d").drawImage(base,b.x,b.y,b.w,b.h,0,0,b.w,b.h);setEditorProgress(15,"Создание изменения","FLUX Kontext Dev");const rr=await fetch("/api/image",{method:"POST",headers:{"Content-Type":"application/json","Accept":"application/json"},body:JSON.stringify({mode:"image",provider:"ahm7",prompt:command,model:"FLUX Kontext Dev",ratio:"auto",outputFormat:"jpeg",copies:1,options:{imageBase64:crop.toDataURL("image/jpeg",.9)}})});const data=await rr.json().catch(()=>({}));if(!rr.ok||!data?.imageUrl)throw new Error(String(data?.message||data?.error||"Не удалось создать изменение"));setEditorProgress(82,"Применение изменения","FLUX Kontext Dev");const generatedData=await editorOutputData(data.imageUrl);const generated=new Image();await new Promise((res,rej)=>{generated.onload=res;generated.onerror=()=>rej(new Error("GENERATED_IMAGE_DECODE_FAILED"));generated.src=generatedData});const overlay=document.createElement("canvas");overlay.width=naturalWidth;overlay.height=naturalHeight;const oc=overlay.getContext("2d");oc.drawImage(generated,b.x,b.y,b.w,b.h);oc.globalCompositeOperation="destination-in";oc.drawImage(mask,0,0);base.getContext("2d").drawImage(overlay,0,0);await loadEditorOutput(base.toDataURL("image/jpeg",.93));clearMask();promptInput.value="";promptBox.classList.remove("open");setEditorProgress(100,"Изменение применено","FLUX Kontext Dev");await new Promise(r=>setTimeout(r,450));hideEditorProgress();toast("Изменение применено · пока в редакторе")}catch(err){hideEditorProgress();console.error("Miya AI editor create failed",err);toast(String(err?.message||"Не удалось создать изменение"))}finally{promptCreate.disabled=false;promptCreate.textContent="Создать / применить"}};
   promptBox.querySelector(".ai-editor-prompt-cancel").onclick=()=>{promptInput.value="";promptBox.classList.remove("open")};
   promptCreate.onclick=createFromSelection;
-  applyButton.onclick=async()=>{if(!ctx||!currentItem||!hasPaint())return;applyButton.disabled=true;applyButton.textContent="Создание…";setEditorProgress(0,"Удаление выделенного объекта","CleverUtils · Remove Object");try{const sourceBlob=await editorSourceBlob();const uploadFile=await makeCleverUtilsImageFile(sourceBlob);const exportMask=document.createElement("canvas");exportMask.width=naturalWidth;exportMask.height=naturalHeight;const ec=exportMask.getContext("2d");ec.fillStyle="#000";ec.fillRect(0,0,naturalWidth,naturalHeight);ec.drawImage(mask,0,0);const maskBlob=await new Promise((r,j)=>exportMask.toBlob(b=>b?r(b):j(new Error("MASK_EXPORT_FAILED")),"image/png"));const form=new FormData();form.append("file",uploadFile);form.append("mask",new File([maskBlob],"miya-mask.png",{type:"image/png"}));setEditorProgress(22,"Удаление выделенного объекта","CleverUtils · Remove Object");const rr=await fetch("https://cleverutils.com/api/v1/tools/remove-object",{method:"POST",body:form,headers:{Accept:"application/json"},cache:"no-store"});const data=await rr.json().catch(()=>({}));if(!rr.ok)throw new Error(data?.message||data?.error?.message||data?.error||"REMOVE_OBJECT_FAILED");const job=data?.data||data;let outputUrl=typeof job?.output?.url==="string"?job.output.url:"";const jobId=typeof job?.job_id==="string"?job.job_id:String(job?.jobId||"");if(jobId)outputUrl="/api/image?jobId="+encodeURIComponent(jobId)+"&output=1";if(!outputUrl)throw new Error("IMAGE_TOOL_OUTPUT_MISSING");setEditorProgress(92,"Удаление выделенного объекта","CleverUtils · Remove Object");await loadEditorOutput(outputUrl);clearMask();setEditorProgress(100,"Объект удалён","CleverUtils · Remove Object");await new Promise(r=>setTimeout(r,450));hideEditorProgress();toast("Объект удалён · пока в редакторе")}catch(err){hideEditorProgress();console.error("Miya AI editor remove-object failed",err);toast(String(err?.message||"Не удалось удалить объект"))}finally{applyButton.disabled=!hasPaint();applyButton.innerHTML='<svg viewBox="0 0 24 24"><path d="m5 12 4 4L19 6"/></svg><span>Сохранить в Miya</span>'}};modal.querySelector(".ai-editor-download").onclick=async()=>{try{const source=await buildSourceCanvas();const url=source.toDataURL("image/jpeg",.95);const blob=await fetch(url).then(r=>r.blob());const objectUrl=URL.createObjectURL(blob);const a=document.createElement("a");a.href=objectUrl;a.download="miya-editor-copy.jpg";document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(objectUrl),1000)}catch{toast("Не удалось скачать копию")}};
+  applyButton.onclick=async()=>{await saveFinal()};;modal.querySelector(".ai-editor-download").onclick=async()=>{try{const source=await buildSourceCanvas();const url=source.toDataURL("image/jpeg",.95);const blob=await fetch(url).then(r=>r.blob());const objectUrl=URL.createObjectURL(blob);const a=document.createElement("a");a.href=objectUrl;a.download="miya-editor-copy.jpg";document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(objectUrl),1000)}catch{toast("Не удалось скачать копию")}};
   const saveFinal=async()=>{if(!workingSource)return;try{setEditorProgress(100,"Сохранение","Miya Studio");const source=await buildSourceCanvas();const finalUrl=source.toDataURL("image/jpeg",.95);const saved=saveMedia("image",finalUrl,currentItem?.prompt||"Редактирование изображения","Miya AI Editor","jpg");if(!saved)throw new Error("SAVE_FAILED");await new Promise(r=>setTimeout(r,350));hideEditorProgress();closeAiEditor();renderImageLibrary();requestAnimationFrame(()=>scrollImagesToTop?.());toast("Фото сохранено в Miya")}catch(err){hideEditorProgress();toast(String(err?.message||"Не удалось сохранить фото"))}};
-  applyButton.addEventListener("click",()=>{if(!maskHasPaint)saveFinal()});
+
 
  }
  modal.classList.add("open");
@@ -3505,29 +3397,7 @@ async function runImageBackgroundRemoval(item){
    toast(String(e?.message||"Не удалось удалить фон"));
  }
 }
-async function runEditorCleverEffect(tool,item){
- const source=await mediaItemToReference(item);
- if(!source)throw new Error("EDITOR_SOURCE_EMPTY");
- let blob;
- if(String(source).startsWith("data:image/")){const rr=await fetch(source);if(!rr.ok)throw new Error("SOURCE_IMAGE_READ_FAILED");blob=await rr.blob()}
- else{const rr=await fetch("/api/image?url="+encodeURIComponent(source),{cache:"no-store"});if(!rr.ok)throw new Error("SOURCE_IMAGE_PROXY_FAILED");blob=await rr.blob()}
- const uploadFile=await makeCleverUtilsImageFile(blob);
- const form=new FormData();form.append("file",uploadFile);
- const r=await fetch("https://cleverutils.com/api/v1/tools/"+encodeURIComponent(tool),{method:"POST",body:form,headers:{Accept:"application/json"},cache:"no-store"});
- const data=await r.json().catch(()=>({}));
- if(!r.ok)throw new Error(data?.message||data?.error?.message||data?.error||"IMAGE_TOOL_FAILED");
- const job=data?.data||data;let outputUrl=typeof job?.output?.url==="string"?job.output.url:String(job?.outputUrl||"");
- const jobId=typeof job?.job_id==="string"?job.job_id:String(job?.jobId||"");
- if(!outputUrl&&jobId)outputUrl=await waitForImageToolJob(jobId);
- if(!outputUrl)throw new Error("IMAGE_TOOL_OUTPUT_MISSING");
- const labels={"enhance-photo":"CleverUtils · Улучшение фото","colorize-photo":"CleverUtils · Раскрашивание","restore-old-photo":"CleverUtils · Восстановление фото"};
- const title=labels[tool]||"CleverUtils · "+tool;
- const saved=saveMedia("image",outputUrl,title,title,"");
- renderImageLibrary();requestAnimationFrame(()=>scrollImagesToTop?.());
- if($("#composerStatus"))$("#composerStatus").textContent=title+" · готово";
- toast(title+" готово");
- return saved;
-}
+
 function restoreReferenceImage(){
  try{
   referenceImage=referenceImage||sessionStorage.getItem("miyaReferenceImage")||"";
