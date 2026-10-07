@@ -1689,7 +1689,9 @@ body.light .ve2-name{background:#fff;color:#273047;border-color:#d3deea}
   finally{if(apply){apply.disabled=false;apply.textContent="Применить"}}
  };
 
- const makeAudioUploadFile=()=>{if(!workingBlob)throw new Error("AUDIO_FILE_MISSING");let name=String(workingName||"miya-audio");if(!/\.[a-z0-9]{2,5}$/i.test(name)){const t=String(workingBlob.type||"audio/mpeg").toLowerCase();name+="."+ (t.includes("wav")?"wav":t.includes("flac")?"flac":t.includes("mp4")||t.includes("m4a")?"m4a":"mp3")}const type=workingBlob.type&&workingBlob.type.startsWith("audio/")?workingBlob.type:"audio/mpeg";return new File([workingBlob],name,{type})};\n\n const runNoise=async()=>{
+ const makeAudioUploadFile=()=>{if(!workingBlob)throw new Error("AUDIO_FILE_MISSING");let name=String(workingName||"miya-audio");if(!/\.[a-z0-9]{2,5}$/i.test(name)){const t=String(workingBlob.type||"audio/mpeg").toLowerCase();name+="."+ (t.includes("wav")?"wav":t.includes("flac")?"flac":t.includes("mp4")||t.includes("m4a")?"m4a":"mp3")}const type=workingBlob.type&&workingBlob.type.startsWith("audio/")?workingBlob.type:"audio/mpeg";return new File([workingBlob],name,{type})};
+
+ const runNoise=async()=>{
   if(!workingBlob)return;const b=panel.querySelector(".ve2-apply");if(b){b.disabled=true;b.textContent="Очищаю…"}
   try{
    const form=new FormData();form.append("file",makeAudioUploadFile());
