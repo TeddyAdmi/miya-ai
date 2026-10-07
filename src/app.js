@@ -1406,7 +1406,7 @@ function openVoiceDetail(item,source,voiceItems=[],voiceIndex=-1){
  const dialog=document.createElement("section");dialog.className="voice-detail-dialog";dialog.setAttribute("role","dialog");dialog.setAttribute("aria-modal","true");
  const head=document.createElement("div");head.className="voice-detail-head";
  const copy=document.createElement("div");const eyebrow=document.createElement("div");eyebrow.className="voice-detail-eyebrow";eyebrow.textContent="MIYA VOICE";const h=document.createElement("h3");h.textContent=item?.model||"Голос";copy.append(eyebrow,h);
- const close=document.createElement("button");close.type="button";close.className="voice-detail-close";close.title="Закрыть";close.setAttribute("aria-label","Закрыть");close.innerHTML='<svg viewBox="0 0 24 24"><path d="m6 6 12 12M18 6 6 18"/></svg>';
+ const close=document.createElement("button");close.type="button";close.className="voice-detail-close";close.title="Закрыть";close.setAttribute("aria-label","Закрыть редактор");close.title="Закрыть полноэкранный редактор";close.innerHTML='<svg viewBox="0 0 24 24"><path d="m6 6 12 12M18 6 6 18"/></svg>';
  head.append(copy,close);
  const nav=document.createElement("div");nav.className="voice-detail-nav";
  const prev=document.createElement("button");prev.type="button";prev.className="voice-detail-nav-btn";prev.title="Предыдущий голос";prev.setAttribute("aria-label","Предыдущий голос");prev.innerHTML='<svg viewBox="0 0 24 24"><path d="m14 5-7 7 7 7"/></svg>';
@@ -1451,8 +1451,8 @@ async function openVoiceEditor(item,source){
   const st=document.createElement("style");
   st.id="miyaVoiceEditorV2Styles";
   st.textContent=String.raw`
-.voice-editor-backdrop{position:fixed!important;inset:0!important;width:100dvw!important;height:100dvh!important;padding:0!important;margin:0!important;background:rgba(3,8,18,.96)!important;backdrop-filter:blur(18px)!important;-webkit-backdrop-filter:blur(18px)!important;overflow:hidden!important;z-index:2147483647!important;display:block!important}
-.voice-editor-backdrop .voice-editor-dialog.ve2{position:absolute!important;top:0!important;right:0!important;bottom:0!important;left:0!important;inset:0!important;width:100%!important;height:100%!important;max-width:none!important;max-height:none!important;margin:0!important;padding:0!important;overflow:hidden!important;display:grid!important;grid-template-rows:auto minmax(0,1fr) auto!important;gap:0!important;border:0!important;border-radius:0!important;background:linear-gradient(145deg,#091a2d 0%,#06111f 55%,#071525 100%)!important;box-shadow:0 35px 100px rgba(0,0,0,.48),inset 0 1px 0 rgba(255,255,255,.06)!important}
+.voice-editor-backdrop{position:fixed!important;inset:0!important;width:100dvw!important;max-width:100dvw!important;height:100dvh!important;max-height:100dvh!important;box-sizing:border-box!important;padding:0!important;margin:0!important;background:rgba(3,8,18,.96)!important;backdrop-filter:blur(18px)!important;-webkit-backdrop-filter:blur(18px)!important;overflow:hidden!important;z-index:2147483647!important;display:block!important}
+.voice-editor-backdrop .voice-editor-dialog.ve2{position:absolute!important;top:0!important;right:0!important;bottom:0!important;left:0!important;inset:0!important;width:100%!important;max-width:100%!important;height:100%!important;max-height:100%!important;box-sizing:border-box!important;max-width:none!important;max-height:none!important;margin:0!important;padding:0!important;overflow:hidden!important;display:grid!important;grid-template-rows:auto minmax(0,1fr) auto!important;gap:0!important;border:0!important;border-radius:0!important;background:linear-gradient(145deg,#091a2d 0%,#06111f 55%,#071525 100%)!important;box-shadow:0 35px 100px rgba(0,0,0,.48),inset 0 1px 0 rgba(255,255,255,.06)!important}
 .ve2-head{min-height:76px;padding:15px 18px 14px 22px;display:flex;align-items:center;justify-content:space-between;gap:18px;border-bottom:1px solid rgba(255,255,255,.075);background:linear-gradient(180deg,rgba(255,255,255,.035),transparent)}
 .ve2-brand{display:flex;align-items:center;gap:12px;min-width:0}
 .ve2-brand-mark{width:42px;height:42px;flex:0 0 42px;border-radius:14px;display:grid;place-items:center;color:#fff;background:linear-gradient(135deg,#b65cff,#695dff);box-shadow:0 10px 30px rgba(111,77,226,.30)}
@@ -1548,7 +1548,7 @@ body.light .ve2-name{background:#fff;color:#273047;border-color:#d3deea}
  brand.className="ve2-brand";
  brand.innerHTML='<div class="ve2-brand-mark"><svg viewBox="0 0 24 24"><path d="M4 9v6M8 6v12M12 3v18M16 6v12M20 9v6"/></svg></div><div style="min-width:0"><div class="ve2-eyebrow">MIYA AUDIO STUDIO</div><div class="ve2-title">'+String(item?.model||"Голос").replace(/[&<>"\']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","\'":"&#39;"}[m]))+'</div><div class="ve2-meta">Неразрушающее редактирование · оригинальная карточка остаётся на стене</div></div>';
  const headActions=document.createElement("div");headActions.className="ve2-head-actions";
- const clearBtn=document.createElement("button");clearBtn.type="button";clearBtn.className="ve2-clear";clearBtn.title="Убрать текущую запись только из редактора";clearBtn.innerHTML='<svg viewBox="0 0 24 24"><path d="M7 7h10M9 4h6l1 3H8l1-3Z"/><path d="M9 11v6M15 11v6M5 7l1 13h12l-1-13"/><path d="m4 20 16-16"/></svg><span>Убрать запись</span>';
+ const clearBtn=document.createElement("button");clearBtn.type="button";clearBtn.className="ve2-clear";clearBtn.title="Убрать текущую запись только из редактора. Оригинальная карточка останется без изменений.";clearBtn.innerHTML='<svg viewBox="0 0 24 24"><path d="M7 7h10M9 4h6l1 3H8l1-3Z"/><path d="M9 11v6M15 11v6M5 7l1 13h12l-1-13"/><path d="m4 20 16-16"/></svg><span>Убрать запись</span>';
  const close=document.createElement("button");close.type="button";close.className="ve2-close";close.title="Закрыть";close.setAttribute("aria-label","Закрыть");close.innerHTML='<svg viewBox="0 0 24 24"><path d="m6 6 12 12M18 6 6 18"/></svg>';
  headActions.append(clearBtn,close);head.append(brand,headActions);
 
@@ -1562,14 +1562,14 @@ body.light .ve2-name{background:#fff;color:#273047;border-color:#d3deea}
  const waveBox=document.createElement("div");waveBox.className="ve2-wavebox";
  waveBox.innerHTML='<canvas class="ve2-wave"></canvas><div class="ve2-wave-selection"></div><div class="ve2-playhead"></div><div class="ve2-wave-label">AUDIO WAVEFORM</div>';
  const transport=document.createElement("div");transport.className="ve2-transport";
- const playBtn=document.createElement("button");playBtn.type="button";playBtn.className="ve2-play";playBtn.setAttribute("aria-label","Воспроизвести");playBtn.innerHTML='<svg viewBox="0 0 24 24"><path d="M8 5v14l11-7Z"/></svg>';
+ const playBtn=document.createElement("button");playBtn.type="button";playBtn.className="ve2-play";playBtn.setAttribute("aria-label","Воспроизвести");playBtn.title="Воспроизвести или поставить запись на паузу";playBtn.innerHTML='<svg viewBox="0 0 24 24"><path d="M8 5v14l11-7Z"/></svg>';
  const timeLabel=document.createElement("span");timeLabel.className="ve2-time";timeLabel.textContent="0:00 / 0:00";
  const spacer=document.createElement("div");spacer.className="ve2-transport-spacer";
- const backBtn=document.createElement("button");backBtn.type="button";backBtn.className="ve2-transport-btn";backBtn.textContent="− 5 сек";
- const fwdBtn=document.createElement("button");fwdBtn.type="button";fwdBtn.className="ve2-transport-btn";fwdBtn.textContent="+ 5 сек";
+ const backBtn=document.createElement("button");backBtn.type="button";backBtn.className="ve2-transport-btn";backBtn.textContent="− 5 сек";backBtn.title="Перемотать воспроизведение назад на 5 секунд";
+ const fwdBtn=document.createElement("button");fwdBtn.type="button";fwdBtn.className="ve2-transport-btn";fwdBtn.textContent="+ 5 сек";fwdBtn.title="Перемотать воспроизведение вперёд на 5 секунд";
  transport.append(playBtn,timeLabel,spacer,backBtn,fwdBtn);
  const upload=document.createElement("div");upload.className="ve2-upload";
- upload.innerHTML='<button type="button" class="ve2-plus" aria-label="Добавить аудио"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg></button><div><b>Заменить исходник</b><span>Перетащи MP3, WAV, M4A или FLAC сюда · оригинальная карточка не изменится</span></div>';
+ upload.title="Заменить рабочий аудиофайл. Исходная карточка на стене не изменится";upload.innerHTML='<button type="button" class="ve2-plus" aria-label="Добавить аудио"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg></button><div><b>Заменить исходник</b><span>Перетащи MP3, WAV, M4A или FLAC сюда · оригинальная карточка не изменится</span></div>';
  stage.append(fileline,waveBox,transport,upload);
  main.append(stage);
 
@@ -1588,8 +1588,8 @@ body.light .ve2-name{background:#fff;color:#273047;border-color:#d3deea}
  const footer=document.createElement("footer");footer.className="ve2-footer";
  const footerNote=document.createElement("div");footerNote.className="ve2-footer-note";footerNote.textContent="Все изменения остаются только в редакторе до сохранения как нового голоса.";
  const footerActions=document.createElement("div");footerActions.className="ve2-footer-actions";
- const closeBtn=document.createElement("button");closeBtn.type="button";closeBtn.className="ve2-footer-btn";closeBtn.textContent="Закрыть";
- const saveBtn=document.createElement("button");saveBtn.type="button";saveBtn.className="ve2-footer-btn primary";saveBtn.textContent="Сохранить как новый голос";
+ const closeBtn=document.createElement("button");closeBtn.type="button";closeBtn.className="ve2-footer-btn";closeBtn.textContent="Закрыть";closeBtn.title="Закрыть редактор без изменения исходной карточки";
+ const saveBtn=document.createElement("button");saveBtn.type="button";saveBtn.className="ve2-footer-btn primary";saveBtn.textContent="Сохранить как новый голос";saveBtn.title="Сохранить текущую обработанную запись отдельным новым голосом";
  footerActions.append(closeBtn,saveBtn);footer.append(footerNote,footerActions);
  dialog.append(head,body,footer);backdrop.append(dialog);document.documentElement.appendChild(backdrop);document.body.classList.add("voice-modal-open");
  const composer=document.getElementById("composer");
@@ -1689,10 +1689,10 @@ body.light .ve2-name{background:#fff;color:#273047;border-color:#d3deea}
   finally{if(apply){apply.disabled=false;apply.textContent="Применить"}}
  };
 
- const runNoise=async()=>{
+ const makeAudioUploadFile=()=>{if(!workingBlob)throw new Error("AUDIO_FILE_MISSING");let name=String(workingName||"miya-audio");if(!/\\.[a-z0-9]{2,5}$/i.test(name)){const t=String(workingBlob.type||"audio/mpeg").toLowerCase();name+="."+ (t.includes("wav")?"wav":t.includes("flac")?"flac":t.includes("mp4")||t.includes("m4a")?"m4a":"mp3")}const type=workingBlob.type&&workingBlob.type.startsWith("audio/")?workingBlob.type:"audio/mpeg";return new File([workingBlob],name,{type})};\n\n const runNoise=async()=>{
   if(!workingBlob)return;const b=panel.querySelector(".ve2-apply");if(b){b.disabled=true;b.textContent="Очищаю…"}
   try{
-   const form=new FormData();form.append("file",new File([workingBlob],workingName,{type:workingBlob.type||"audio/mpeg"}));
+   const form=new FormData();form.append("file",makeAudioUploadFile());
    const rr=await fetch("https://cleverutils.com/api/v1/tools/noise-reduction",{method:"POST",body:form,headers:{Accept:"application/json"},cache:"no-store"});
    const data=await rr.json().catch(()=>({}));if(!rr.ok)throw new Error(data?.message||data?.error||"NOISE_FAILED");
    let job=data?.data||data;const id=job?.job_id||job?.jobId||"";let out=job?.output?.url||job?.outputUrl||"";if(!out&&id)out=await waitForCleverUtilsJob(String(id));if(!out)throw new Error("NOISE_OUTPUT_MISSING");
@@ -1730,7 +1730,7 @@ body.light .ve2-name{background:#fff;color:#273047;border-color:#d3deea}
 
  const loadInitial=async()=>{
   try{
-   workingBlob=await resolveVoiceBlob(source);workingName=String(item?.prompt||"miya-voice.mp3");workingUrl=URL.createObjectURL(workingBlob);dirty=false;nameInput.value=String(item?.prompt||item?.model||"Мой голос").replace(/\.[^.]+$/,"").slice(0,80);await decodeWave();sync();
+   workingBlob=await resolveVoiceBlob(source);workingName=String(item?.prompt||"miya-voice.mp3").trim();if(!/\.[a-z0-9]{2,5}$/i.test(workingName))workingName+=".mp3";workingUrl=URL.createObjectURL(workingBlob);dirty=false;nameInput.value=String(item?.prompt||item?.model||"Мой голос").replace(/\.[^.]+$/,"").slice(0,80);await decodeWave();sync();
   }catch(e){console.error("Miya voice editor open failed",e);toast("Не удалось открыть голос");closeEditor()}
  };
  const closeEditor=()=>{
