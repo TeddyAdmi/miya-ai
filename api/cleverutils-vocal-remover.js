@@ -17,7 +17,16 @@ function parseMultipartFile(body, contentType) {
   if (start < 0) throw new Error("MULTIPART_FILE_MISSING");
 
   const headerStart = start + marker.length + 2;
-  const headerEnd = body.indexOf(Buffer.from("\r\n\r\n"), headerStart);
+  const headerEnd = body.indexOf(Buffer.from("    const links = chooseOutputLinks(uniqueLinks(extractResourceLinks(payload?.result)));
+    if (links.length < 2) {
+      return res.status(502).json({ error:"CLEVERUTILS_MCP_OUTPUT_MISSING", message:"CleverUtils MCP did not return both vocal and instrumental download URLs.", filename, mime, received:links });
+    }
+    const score = link => {
+      const s=(link.url+" "+link.name+" "+link.description).toLowerCase();
+      return { vocals:/(vocal|vocals|acapella|voice)/.test(s)&&!/(instrumental|instrument|karaoke|backing|accompaniment|minus)/.test(s), instrumental:/(instrumental|instrument|karaoke|backing|accompaniment|minus)/.test(s) };
+    };
+    const vocalLink=links.find(x=>score(x).vocals)||links[0];
+    const instrumentalLink=links.find(x=>x.url!==vocalLink.url&&score(x).instrumental)||links.find(x=>x.url!==vocalLink.url)||links[1];r\n\r\n"), headerStart);
   if (headerEnd < 0) throw new Error("MULTIPART_HEADERS_MISSING");
 
   const headers = body.subarray(headerStart, headerEnd).toString("utf8");
@@ -38,31 +47,30 @@ function parseMultipartFile(body, contentType) {
 
 function extractResourceLinks(value, out = []) {
   if (!value) return out;
-  if (Array.isArray(value)) {
-    for (const item of value) extractResourceLinks(item, out);
+  const add = (url, name = "", mime = "", description = "") => {
+    if (typeof url !== "string" || !/^https?:\/\//i.test(url)) return;
+    if (/^https?:\/\/(?:www\.)?cleverutils\.com\/?$/i.test(url.trim())) return;
+    out.push({ url:url.trim(), name:String(name||""), mime:String(mime||""), description:String(description||"") });
+  };
+  if (Array.isArray(value)) { value.forEach(item => extractResourceLinks(item,out)); return out; }
+  if (typeof value === "object") {
+    const name=String(value.name||""), mime=String(value.mimeType||value.mime||""), description=String(value.description||value.text||"");
+    if (value.type==="resource_link") add(value.uri||value.url,name,mime,description);
+    if (typeof value.url==="string") add(value.url,name,mime,description);
+    if (typeof value.uri==="string") add(value.uri,name,mime,description);
+    Object.values(value).forEach(child=>extractResourceLinks(child,out));
     return out;
   }
-  if (typeof value === "object") {
-    if (value.type === "resource_link" && typeof value.uri === "string") {
-      out.push({
-        url: value.uri,
-        name: String(value.name || ""),
-        mime: String(value.mimeType || ""),
-        description: String(value.description || "")
-      });
-    }
-    for (const child of Object.values(value)) extractResourceLinks(child, out);
-  }
+  if (typeof value==="string") (value.match(/https?:\/\/[^\s"'<>\\]+/g)||[]).forEach(url=>add(url.replace(/[),.;]+$/g,"")));
   return out;
 }
-
 function uniqueLinks(links) {
-  const seen = new Set();
-  return links.filter(link => {
-    if (!link?.url || seen.has(link.url)) return false;
-    seen.add(link.url);
-    return true;
-  });
+  const seen=new Set();
+  return links.filter(link=>link?.url&&!seen.has(link.url)&&seen.add(link.url));
+}
+function chooseOutputLinks(links) {
+  const rank=link=>{const s=(link.url+" "+link.name+" "+link.description).toLowerCase();let n=0;if(/download|output|result|job|resource|file|media/.test(s))n+=10;if(/\.mp3(?:$|\?)/.test(s))n+=5;if(/audio/.test(s))n+=3;if(/\.wav(?:$|\?)/.test(s))n+=2;return n};
+  return [...links].sort((x,y)=>rank(y)-rank(x));
 }
 
 export default async function handler(req, res) {
