@@ -503,15 +503,22 @@ module.exports = async function imageHandler(req, res) {
           "&width=" + nativeSize.width +
           "&height=" + nativeSize.height +
           "&resolution=1K";
-        const upstream = await fetch(target, {
-          method:"GET",
-          headers:{Accept:"application/json, text/plain, */*"},
-          cache:"no-store",
-          signal:AbortSignal.timeout(180000)
-        });
-        const raw = await upstream.text();
+        let upstream;
+        let raw = "";
         let data = {};
-        try { data = raw ? JSON.parse(raw) : {}; } catch {}
+        for (let attempt = 0; attempt < 2; attempt++) {
+          upstream = await fetch(target, {
+            method:"GET",
+            headers:{Accept:"application/json, text/plain, */*"},
+            cache:"no-store",
+            signal:AbortSignal.timeout(180000)
+          });
+          raw = await upstream.text();
+          data = {};
+          try { data = raw ? JSON.parse(raw) : {}; } catch {}
+          if (upstream.ok || upstream.status < 500 || attempt === 1) break;
+          await new Promise(resolve => setTimeout(resolve, 1200));
+        }
 
         if (!upstream.ok) {
           return res.status(502).json({
@@ -555,16 +562,28 @@ module.exports = async function imageHandler(req, res) {
           });
         }
 
+        const proxiedImageUrl =
+          "/api/image-jpeg?url=" + encodeURIComponent(imageUrl) +
+          "&ratio=" + encodeURIComponent(cvronRatio);
+
         return res.status(200).json({
           ok:true,
           mode:"image",
           status:"completed",
           provider:"CVRON",
           model:requestedModel,
-          imageUrl,
-          imageUrls:[imageUrl],
+          imageUrl:proxiedImageUrl,
+          imageUrls:[proxiedImageUrl],
           count:1,
-          meta:{free:true,endpoint,requestedRatio:cvronRatio}
+          meta:{
+            free:true,
+            endpoint,
+            requestedRatio:cvronRatio,
+            normalized:true,
+            noCrop:true,
+            enhanced:true,
+            sourceImageUrl:imageUrl
+          }
         });
       } catch (error) {
         return res.status(502).json({

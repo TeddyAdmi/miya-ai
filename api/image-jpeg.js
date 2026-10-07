@@ -67,15 +67,48 @@ module.exports = async function handler(req, res) {
     }
 
     let imagePipeline = sharp(input).rotate();
+
     if (targetRatio) {
       const width = targetRatio >= 1 ? 1536 : 864;
       const height = Math.max(1, Math.round(width / targetRatio));
-      imagePipeline = imagePipeline.resize(width, height, {
-        fit: "cover",
-        position: "centre",
-        withoutEnlargement: false
-      });
+
+      // Never crop the generated image to force the requested ratio.
+      // If CVRON/Nano Banana returns a different canvas, create a soft,
+      // blurred continuation behind the complete original image.
+      const background = await sharp(input)
+        .rotate()
+        .resize(width, height, {
+          fit: "cover",
+          position: "centre",
+          withoutEnlargement: false
+        })
+        .modulate({ brightness: 0.92, saturation: 0.95 })
+        .blur(22)
+        .jpeg({ quality: 88, mozjpeg: true })
+        .toBuffer();
+
+      const foreground = await sharp(input)
+        .rotate()
+        .resize(width, height, {
+          fit: "contain",
+          position: "centre",
+          withoutEnlargement: false,
+          background: { r: 0, g: 0, b: 0, alpha: 0 }
+        })
+        // Subtle professional enhancement: brighter, richer and crisper,
+        // without turning skin tones or highlights into an artificial HDR look.
+        .modulate({ brightness: 1.045, saturation: 1.10 })
+        .sharpen({ sigma: 1.0, m1: 0.65, m2: 2.0 })
+        .png()
+        .toBuffer();
+
+      imagePipeline = sharp(background).composite([{ input: foreground, gravity: "centre" }]);
+    } else {
+      imagePipeline = imagePipeline
+        .modulate({ brightness: 1.045, saturation: 1.10 })
+        .sharpen({ sigma: 1.0, m1: 0.65, m2: 2.0 });
     }
+
     const jpeg = await imagePipeline
       .flatten({ background: "#ffffff" })
       .jpeg({ quality: 92, mozjpeg: true })
