@@ -2191,3 +2191,7 @@ body.light .video-options .video-tool:hover{
 }
 body.light .image-viewer-created-date{background:rgba(255,255,255,.86)!important;color:#52627a!important;border-color:rgba(40,30,60,.12)!important}
 @media(max-width:800px){.image-viewer-created-date{right:12px!important;bottom:12px!important}}
+
+/* Audio editor uses its own inline sliders SVG; suppress the generic nav-icon pseudo icon. */
+.nav-icon.icon-sliders::before{display:none!important}
+.nav-icon.icon-sliders{display:inline-grid!important;place-items:center!important}
