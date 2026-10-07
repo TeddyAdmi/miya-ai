@@ -1784,14 +1784,20 @@ body.light .ve2-footer-btn.primary{color:#fff}
   });
  };
  const runSplit=async()=>{
-  if(!workingBlob)return;showSplitProgress(8,"Подготавливаем аудио","создание WAV-копии…");
+  if(!workingBlob)return;showSplitProgress(8,"Подготавливаем аудио","проверяем исходный файл…");
   let timer=null;
   try{
-   const C=window.AudioContext||window.webkitAudioContext;if(!C)throw new Error("Браузер не поддерживает аудиообработку");
-   const ctx=new C(),buffer=await ctx.decodeAudioData(await workingBlob.arrayBuffer());await ctx.close();
-   const wavBlob=audioBufferToCompactWavBlob(buffer,3200000);if(!wavBlob?.size)throw new Error("VOCAL_SPLIT_AUDIO_EMPTY");
-   updateSplitProgress(18,"Аудио подготовлено","загрузка файла…");
-   const uploadFile=new File([wavBlob],"miya-split-source.wav",{type:"audio/wav",lastModified:Date.now()}),form=new FormData();form.append("file",uploadFile,uploadFile.name);
+   // Send the original uploaded audio to CleverUtils. The service explicitly
+   // accepts MP3/WAV/FLAC/OGG/M4A/AAC/WMA and video containers. Re-encoding
+   // through AudioContext was unnecessary and could make the provider reject
+   // the generated blob as not being a recognized audio upload.
+   const sourceType=String(workingBlob.type||"").toLowerCase();
+   const sourceName=String(workingName||"miya-audio").trim()||"miya-audio";
+   const ext=(sourceName.match(/\.([a-z0-9]{2,5})$/i)?.[1]||"mp3").toLowerCase();
+   const mime=sourceType.startsWith("audio/")?sourceType:(ext==="wav"?"audio/wav":ext==="flac"?"audio/flac":ext==="ogg"?"audio/ogg":ext==="m4a"?"audio/mp4":ext==="aac"?"audio/aac":"audio/mpeg");
+   const safeName=/\.[a-z0-9]{2,5}$/i.test(sourceName)?sourceName:sourceName+"."+ (mime.includes("wav")?"wav":mime.includes("flac")?"flac":mime.includes("ogg")?"ogg":mime.includes("mp4")?"m4a":mime.includes("aac")?"aac":"mp3");
+   const uploadFile=new File([workingBlob],safeName,{type:mime,lastModified:Date.now()}),form=new FormData();form.append("file",uploadFile,uploadFile.name);
+   updateSplitProgress(18,"Аудио подготовлено","загрузка исходного файла…");
    updateSplitProgress(28,"Загружаем аудио","CleverUtils · Demucs");
    timer=setInterval(()=>{const p=panel.querySelector(".progress-percent"),cur=p?parseInt(p.textContent,10)||28:28,next=Math.min(88,cur+(cur<55?2:cur<78?1:0));if(next>cur)updateSplitProgress(next,next<55?"Разделяем дорожки":"AI обрабатывает аудио",next<55?"Demucs · анализ вокала":"Demucs · извлечение вокала и инструментала")},1800);
    const rr=await fetch("https://cleverutils.com/api/v1/tools/vocal-remover",{method:"POST",body:form,headers:{Accept:"application/json"},cache:"no-store"});
