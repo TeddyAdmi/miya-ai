@@ -1800,14 +1800,14 @@ body.light .ve2-footer-btn.primary{color:#fff}
    updateSplitProgress(18,"Аудио подготовлено","загрузка исходного файла…");
    updateSplitProgress(28,"Загружаем аудио","CleverUtils · Demucs");
    timer=setInterval(()=>{const p=panel.querySelector(".progress-percent"),cur=p?parseInt(p.textContent,10)||28:28,next=Math.min(88,cur+(cur<55?2:cur<78?1:0));if(next>cur)updateSplitProgress(next,next<55?"Разделяем дорожки":"AI обрабатывает аудио",next<55?"Demucs · анализ вокала":"Demucs · извлечение вокала и инструментала")},1800);
-   const rr=await fetch("/api/cleverutils-vocal-remover",{method:"POST",body:form,headers:{Accept:"application/json"},cache:"no-store"});
+   const rr=await fetch("https://cleverutils.com/api/v1/tools/vocal-remover",{method:"POST",body:form,headers:{Accept:"application/json"},cache:"no-store"});
    clearInterval(timer);timer=null;const data=await rr.json().catch(()=>({}));if(!rr.ok)throw new Error(data?.message||data?.error?.message||data?.error||"VOCAL_SPLIT_FAILED");
    updateSplitProgress(92,"Получаем дорожки","почти готово…");
    let job=data?.data||data,id=job?.job_id||job?.jobId||"";
    if(id&&!job?.output&&!job?.outputs){
     for(let i=0;i<100;i++){
      await new Promise(r=>setTimeout(r,1800));
-     const jr=await fetch("/api/cleverutils-vocal-remover?job="+encodeURIComponent(String(id)),{cache:"no-store"});
+     const jr=await fetch("https://cleverutils.com/api/v1/jobs/"+encodeURIComponent(String(id)),{headers:{Accept:"application/json"},cache:"no-store"});
      const jd=await jr.json().catch(()=>({}));
      if(!jr.ok)throw new Error(jd?.message||jd?.error?.message||jd?.error||"VOCAL_JOB_STATUS_FAILED");
      job=jd?.data||jd;
