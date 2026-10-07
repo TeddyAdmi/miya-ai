@@ -3540,10 +3540,16 @@ function toolsEditorRender(){
  ensureToolsEditorStyles();
  const c=$("#canvas"),st=toolsEditorState;if(!c)return;
  c.innerHTML='<div class="tools-editor"><div class="tools-editor-tabs"><button class="tools-editor-tab '+(st.kind==="image"?"active":"")+'" data-tools-kind="image">Картинки</button><button class="tools-editor-tab '+(st.kind==="video"?"active":"")+'" data-tools-kind="video">Видео</button><button class="tools-editor-tab '+(st.kind==="audio"?"active":"")+'" data-tools-kind="audio">Голос</button><button class="tools-editor-tab '+(st.kind==="editor"?"active":"")+'" data-tools-kind="editor">Аудиоредактор</button></div><div id="toolsEditorBody"></div></div>';
- c.querySelectorAll("[data-tools-kind]").forEach(b=>b.onclick=()=>{toolsEditorReset();toolsEditorState.kind=b.dataset.toolsKind;toolsEditorRender()});
+ c.querySelectorAll("[data-tools-kind]").forEach(b=>b.onclick=()=>{
+   if(b.dataset.toolsKind===st.kind)return;
+   toolsEditorReset();
+   toolsEditorState.kind=b.dataset.toolsKind;
+   toolsEditorRender();
+ });
  const body=$("#toolsEditorBody");
+ if(!body)return;
  if(st.kind==="editor"){
-  c.innerHTML='<div class="audio-editor-launch-screen" id="audioEditorLaunch"><div class="audio-editor-launch-card"><div class="audio-editor-launch-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9v6M8 6v12M12 3v18M16 6v12M20 9v6"/></svg></div><div class="audio-editor-launch-eyebrow">MIYA AUDIO STUDIO</div><h2>Открыть аудиоредактор</h2><p>MP3, WAV, M4A или FLAC. Выбери файл — он сразу откроется в полноэкранном редакторе.</p><button type="button" class="audio-editor-launch-button" id="pickAudioEditorFile"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg><span>Выбрать аудиофайл</span></button><div class="audio-editor-launch-hint">Можно также перетащить файл в это окно</div></div></div>';
+  body.innerHTML='<div class="audio-editor-launch-screen" id="audioEditorLaunch"><div class="audio-editor-launch-card"><div class="audio-editor-launch-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9v6M8 6v12M12 3v18M16 6v12M20 9v6"/></svg></div><div class="audio-editor-launch-eyebrow">MIYA AUDIO STUDIO</div><h2>Открыть аудиоредактор</h2><p>MP3, WAV, M4A или FLAC. Выбери файл — он сразу откроется в полноэкранном редакторе.</p><button type="button" class="audio-editor-launch-button" id="pickAudioEditorFile"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg><span>Выбрать аудиофайл</span></button><div class="audio-editor-launch-hint">Можно также перетащить файл в это окно</div></div></div>';
   const launch=$("#audioEditorLaunch"),pick=$("#pickAudioEditorFile");
   const input=document.createElement("input");
   input.type="file";
