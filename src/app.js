@@ -921,6 +921,28 @@ function ensureVoiceWallStyles(){
 .voice-editor-more:hover{background:rgba(145,91,255,.22);border-color:rgba(190,154,255,.42);color:#fff}
 .voice-editor-more svg{width:15px;height:15px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round}
 .voice-editor-dialog{width:100vw;height:100vh;max-width:none;max-height:none;overflow:auto;border:0;border-radius:0;background:radial-gradient(circle at 50% 0%,rgba(139,92,246,.14),transparent 34%),linear-gradient(145deg,#081a2e,#050f1d);padding:clamp(20px,4vw,56px);display:flex;flex-direction:column;justify-content:center;gap:14px}
+body.light .voice-editor-dialog{
+ background:radial-gradient(circle at 50% 0%,rgba(139,92,246,.10),transparent 34%),linear-gradient(145deg,#f8f7fc,#f0eef7)!important;
+ color:#29243a!important;
+}
+body.light .voice-editor-head h3{color:#29243a}
+body.light .voice-editor-source-label{color:#5e5870}
+body.light .voice-editor-source-name{color:#6d687b}
+body.light .voice-editor-upload{border-color:rgba(117,76,180,.25);background:linear-gradient(135deg,rgba(139,92,246,.055),rgba(255,255,255,.78));}
+body.light .voice-editor-upload:hover,body.light .voice-editor-upload.drag{border-color:rgba(117,76,180,.48);background:linear-gradient(135deg,rgba(139,92,246,.10),rgba(255,255,255,.92));}
+body.light .voice-editor-upload-copy b{color:#302a40}
+body.light .voice-editor-upload-copy span{color:#777186}
+body.light .voice-editor-plus{background:rgba(139,92,246,.08);color:#7652b5;border-color:rgba(117,76,180,.25)}
+body.light .voice-editor-stem{border-color:rgba(58,45,85,.10);background:rgba(255,255,255,.70);color:#302a40}
+body.light .voice-editor-tool{border-color:rgba(58,45,85,.12);background:linear-gradient(145deg,rgba(255,255,255,.92),rgba(245,243,250,.90));color:#4e485e;box-shadow:0 8px 24px rgba(55,43,82,.06)}
+body.light .voice-editor-tool:hover{background:linear-gradient(145deg,rgba(139,92,246,.10),rgba(255,255,255,.96));border-color:rgba(117,76,180,.32);color:#302541}
+body.light .voice-editor-tool.voice-editor-split{background:linear-gradient(135deg,rgba(169,92,255,.16),rgba(110,99,255,.12));border-color:rgba(117,76,180,.30);color:#65469b}
+body.light .voice-editor-icon-btn,body.light .voice-editor-footer-btn{border-color:rgba(58,45,85,.12);background:rgba(255,255,255,.72);color:#514a60}
+body.light .voice-editor-icon-btn:hover,body.light .voice-editor-footer-btn:hover{background:rgba(139,92,246,.10);color:#4b3671}
+body.light .voice-editor-delete{background:linear-gradient(145deg,rgba(255,70,98,.10),rgba(255,255,255,.72))!important;color:#d34e68!important}
+body.light .voice-editor-close-btn{background:rgba(255,255,255,.72);color:#514a60}
+body.light .voice-editor-save{color:#fff}
+
 .voice-editor-head{width:min(920px,94vw);margin:0 auto 2px}.voice-editor-head-actions{display:flex;align-items:center;gap:8px}.voice-editor-head h3{margin:2px 0 0;font-size:clamp(22px,3vw,34px);letter-spacing:-.045em}
 .voice-editor-icon-btn,.voice-editor-footer-btn,.voice-editor-stem-save{display:grid;place-items:center;width:40px;height:40px;padding:0;border-radius:12px;border:1px solid rgba(255,255,255,.11);background:rgba(255,255,255,.055);color:#cbd8e8;cursor:pointer;transition:.16s}.voice-editor-icon-btn:hover,.voice-editor-footer-btn:hover,.voice-editor-stem-save:hover{transform:translateY(-1px);border-color:rgba(185,145,255,.42);background:rgba(155,105,255,.14);color:#fff;box-shadow:0 10px 24px rgba(79,44,150,.18)}.voice-editor-icon-btn svg,.voice-editor-footer-btn svg,.voice-editor-stem-save svg{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
 .voice-editor-delete{border-color:rgba(255,105,125,.23);color:#ff9aaa;background:rgba(255,76,100,.055)}.voice-editor-delete:hover{border-color:rgba(255,120,140,.42);background:rgba(255,76,100,.12);color:#fff}.voice-editor-delete:disabled{opacity:.45;cursor:default;transform:none;box-shadow:none}
