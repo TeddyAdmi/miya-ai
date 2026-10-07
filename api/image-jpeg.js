@@ -16,7 +16,7 @@ module.exports = async function handler(req, res) {
 
     const target = new URL(rawUrl);
     const requestedRatio = String(req.query?.ratio || "").trim();
-    const ratioMatch = requestedRatio.match(/^(\\d+):(\\d+)$/);
+    const ratioMatch = requestedRatio.match(/^(\d+):(\d+)$/);
     let targetRatio = 0;
     if (ratioMatch) {
       const rw = Number(ratioMatch[1]), rh = Number(ratioMatch[2]);
