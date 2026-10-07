@@ -113,6 +113,8 @@ function isAllowedOutputHost(url) {
   }
 }
 
+function parseMcpResponse(raw) { try { return JSON.parse(raw); } catch {} const messages=[]; for (const line of String(raw||"").split(/\r?\n/)) { const m=line.match(/^data:\s*(.+)$/i); if (!m) continue; try { messages.push(JSON.parse(m[1])); } catch {} } for (let i=messages.length-1;i>=0;i--) { const item=messages[i]; if (item?.result||item?.error||item?.data) return item; } if (messages.length) return messages[messages.length-1]; throw new Error("CLEVERUTILS_MCP_INVALID_JSON"); }
+
 async function proxyOutput(req, res, externalUrl) {
   if (!isAllowedOutputHost(externalUrl)) {
     return res.status(400).json({ error: "OUTPUT_URL_NOT_ALLOWED" });
@@ -179,7 +181,7 @@ export default async function handler(req, res) {
       method: "POST",
       headers: {
         "content-type": "application/json",
-        accept: "application/json"
+        accept: "application/json, text/event-stream"
       },
       body: JSON.stringify({
         jsonrpc: "2.0",
@@ -196,7 +198,7 @@ export default async function handler(req, res) {
     const raw = await mcp.text();
     let payload;
     try {
-      payload = JSON.parse(raw);
+      payload = parseMcpResponse(raw);
     } catch {
       return res.status(502).json({
         error: "CLEVERUTILS_MCP_INVALID_JSON",
@@ -212,7 +214,7 @@ export default async function handler(req, res) {
       });
     }
 
-    let links = chooseOutputLinks(collectUrls(payload?.result));
+    let links = chooseOutputLinks(collectUrls(payload));
 
     if (links.length < 2) {
       const textParts = [];
@@ -226,7 +228,7 @@ export default async function handler(req, res) {
           });
         }
       };
-      collectText(payload?.result);
+      collectText(payload);
 
       const textUrls = [];
       for (const match of textParts.join("\n").match(/https?:\/\/[^\s"'<>]+/g) || []) {
