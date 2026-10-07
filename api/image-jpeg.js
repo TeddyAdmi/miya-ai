@@ -15,6 +15,13 @@ module.exports = async function handler(req, res) {
     }
 
     const target = new URL(rawUrl);
+    const requestedRatio = String(req.query?.ratio || "").trim();
+    const ratioMatch = requestedRatio.match(/^(\\d+):(\\d+)$/);
+    let targetRatio = 0;
+    if (ratioMatch) {
+      const rw = Number(ratioMatch[1]), rh = Number(ratioMatch[2]);
+      if (rw > 0 && rh > 0 && rw <= 100 && rh <= 100) targetRatio = rw / rh;
+    }
     // Some CleverUtils MCP responses have historically returned the provider host
     // without the final "s". Normalize that legacy typo before the allowlist check
     // so the browser never receives a dead cleverutil host.
@@ -59,8 +66,17 @@ module.exports = async function handler(req, res) {
       return res.status(413).json({ ok: false, error: "IMAGE_TOO_LARGE" });
     }
 
-    const jpeg = await sharp(input)
-      .rotate()
+    let imagePipeline = sharp(input).rotate();
+    if (targetRatio) {
+      const width = targetRatio >= 1 ? 1536 : 864;
+      const height = Math.max(1, Math.round(width / targetRatio));
+      imagePipeline = imagePipeline.resize(width, height, {
+        fit: "cover",
+        position: "centre",
+        withoutEnlargement: false
+      });
+    }
+    const jpeg = await imagePipeline
       .flatten({ background: "#ffffff" })
       .jpeg({ quality: 92, mozjpeg: true })
       .toBuffer();

@@ -2038,8 +2038,11 @@ function showLoading(){
  card.querySelector(".progress-model").textContent=selectedVideoModel;
  grid.appendChild(card);scrollImagesToTop();
 }
-function showImage(url,prompt="",model="FLUX Dev"){
- const item=saveMedia("image",url,prompt,model);
+function showImage(url,prompt="",model="FLUX Dev",ratio=""){
+ const displayUrl=ratio&&/^\\d+:\\d+$/.test(String(ratio))
+   ? "/api/image-jpeg?url="+encodeURIComponent(String(url))+"&ratio="+encodeURIComponent(String(ratio))
+   : url;
+ const item=saveMedia("image",displayUrl,prompt,model);
  const c=$("#canvas");let grid=c.querySelector(".result-grid");
  if(!grid){c.innerHTML='<div class="result-grid"></div>';grid=c.querySelector(".result-grid")}
  const card=buildMediaCard(item);grid.prepend(card);
@@ -2147,10 +2150,15 @@ async function generateImage(prompt){
    else payload.imageUrl=referenceImage;
   }
   const requestedCount=Number($("#composerCount")?.value||1);
+  const selectedRatio=["1:1","3:4","4:3","16:9","9:16","2:3","3:2","21:9"].includes(String($("#composerRatio")?.value))
+    ? String($("#composerRatio").value) : "16:9";
+  const cvronPrompt=useCvronImage
+    ? prompt+"\n\nOUTPUT FORMAT: generate the image in exactly "+selectedRatio+" aspect ratio. Compose the scene for this orientation; do not use a square or portrait canvas when a landscape ratio is requested."
+    : prompt;
   const body=useAgnesImage
    ? JSON.stringify({prompt,ratio:$("#composerRatio").value,n:requestedCount,imageBase64:referenceImage||""})
    : useCvronImage
-     ? JSON.stringify({mode:"image",provider:"cvron",prompt,model:modelName})
+     ? JSON.stringify({mode:"image",provider:"cvron",prompt:cvronPrompt,model:modelName,ratio:selectedRatio})
      : JSON.stringify({
         mode:"image",provider:"ahm7",prompt,model:modelName,
         ratio:$("#composerRatio").value,outputFormat:"jpeg",copies:requestedCount,
@@ -2215,7 +2223,7 @@ async function generateImage(prompt){
    ? data.imageUrls
    : data.imageUrl?[data.imageUrl]:[];
   if(!generatedUrls.length)throw new Error("Сервер не вернул готовое изображение");
-  generatedUrls.forEach((url)=>showImage(url,prompt,actualModel));
+  generatedUrls.forEach((url)=>showImage(url,prompt,actualModel,useCvronImage?selectedRatio:""));
   scrollImagesToTop();
   $("#composerInput").value="";syncInput();
   $("#composerModel").value=referenceImage?"FLUX Kontext Dev":modelName;
