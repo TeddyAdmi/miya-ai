@@ -2152,9 +2152,7 @@ async function generateImage(prompt){
   const requestedCount=Number($("#composerCount")?.value||1);
   const selectedRatio=["1:1","3:4","4:3","16:9","9:16","2:3","3:2","21:9"].includes(String($("#composerRatio")?.value))
     ? String($("#composerRatio").value) : "16:9";
-  const cvronPrompt=useCvronImage
-    ? prompt+"\n\nOUTPUT FORMAT: generate the image in exactly "+selectedRatio+" aspect ratio. Compose the scene for this orientation; do not use a square or portrait canvas when a landscape ratio is requested."
-    : prompt;
+  const cvronPrompt=prompt;
   const body=useAgnesImage
    ? JSON.stringify({prompt,ratio:$("#composerRatio").value,n:requestedCount,imageBase64:referenceImage||""})
    : useCvronImage
