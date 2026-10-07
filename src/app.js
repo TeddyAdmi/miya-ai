@@ -1789,12 +1789,12 @@ body.light .ve2-footer-btn.primary{color:#fff}
   try{
    // Keep the original compressed audio. WAV conversion can multiply the file size and hit Vercel's request-body limit.
    const sourceFile=makeAudioUploadFile(),uploadFile=sourceFile;
-   if(uploadFile.size>4*1024*1024)throw new Error("AUDIO_TOO_LARGE_FOR_PROXY");
+   if(uploadFile.size>50*1024*1024)throw new Error("AUDIO_TOO_LARGE_FOR_SPLIT");
    updateSplitProgress(18,"Аудио подготовлено",uploadFile.type||"исходный аудиофайл");
    updateSplitProgress(28,"Отправляем аудио","CleverUtils · vocal-remover");
    timer=setInterval(()=>{const p=panel.querySelector(".progress-percent"),cur=p?parseInt(p.textContent,10)||28:28,next=Math.min(88,cur+(cur<55?2:cur<78?1:0));if(next>cur)updateSplitProgress(next,next<55?"Разделяем дорожки":"AI обрабатывает аудио",next<55?"Demucs · анализ вокала":"Demucs · извлечение вокала и инструментала")},1800);
    const form=new FormData();form.append("file",uploadFile,uploadFile.name||"miya-audio.mp3");
-   const response=await fetch("/api/cleverutils-vocal-remover",{method:"POST",body:form,headers:{Accept:"application/json"},cache:"no-store"});
+   const response=await fetch("https://cleverutils.com/api/v1/tools/vocal-remover",{method:"POST",body:form,headers:{Accept:"application/json"},cache:"no-store"});
    let payload=await response.json().catch(()=>null);if(!response.ok)throw new Error(String(payload?.message||payload?.error||"CLEVERUTILS_"+response.status));
    const getData=()=>payload?.data||payload;let jobId=String(getData()?.job_id||getData()?.jobId||"").trim(),status=String(getData()?.status||"").toLowerCase();
    if(jobId&&status!=="done"){let attempts=0;while(attempts++<90){await new Promise(r=>setTimeout(r,2500));const poll=await fetch("/api/cleverutils-vocal-remover?job="+encodeURIComponent(jobId),{cache:"no-store",headers:{Accept:"application/json"}}),next=await poll.json().catch(()=>null);if(!poll.ok)throw new Error(String(next?.message||next?.error||"CLEVERUTILS_JOB_"+poll.status));payload=next;const data=getData();status=String(data?.status||"").toLowerCase();const progress=Number(data?.progress);if(Number.isFinite(progress))updateSplitProgress(Math.min(90,30+Math.round(progress*.6)),"AI обрабатывает аудио","Demucs · "+Math.round(progress)+"%");else updateSplitProgress(Math.min(88,34+Math.floor(attempts/3)),"AI обрабатывает аудио","Demucs · разделение дорожек");if(status==="done"||data?.output||data?.outputs)break;if(status==="error"||status==="failed")throw new Error(String(data?.message||"CLEVERUTILS_JOB_FAILED"))}if(status!=="done"&&!getData()?.output&&!getData()?.outputs)throw new Error("CLEVERUTILS_JOB_TIMEOUT")}
@@ -1807,7 +1807,7 @@ body.light .ve2-footer-btn.primary{color:#fff}
    console.error("Miya vocal split failed",e);
    const message=String(e?.message||"Не удалось разделить вокал");
    updateSplitProgress(100,"Ошибка",message);
-   toast(message==="AUDIO_TOO_LARGE_FOR_PROXY"?"Файл слишком большой для разделения":"Не удалось разделить вокал");
+   toast(message==="AUDIO_TOO_LARGE_FOR_SPLIT"?"Файл слишком большой для разделения":"Не удалось разделить вокал");
   }
  }
 
