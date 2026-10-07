@@ -2101,6 +2101,7 @@ async function generateAgnesImage(prompt){
 async function generateImage(prompt){
  const selectedModel=String($("#composerModel")?.value||"").trim();
  const useAgnesImage=/^Agnes Image/i.test(selectedModel);
+ const useCvronImage=/^(?:Nano Banana 2|GPT Image 2\.5)$/i.test(selectedModel);
  if(useAgnesImage){
   return generateAgnesImage(prompt);
  }
@@ -2148,11 +2149,13 @@ async function generateImage(prompt){
   const requestedCount=Number($("#composerCount")?.value||1);
   const body=useAgnesImage
    ? JSON.stringify({prompt,ratio:$("#composerRatio").value,n:requestedCount,imageBase64:referenceImage||""})
-   : JSON.stringify({
-      mode:"image",provider:"ahm7",prompt,model:modelName,
-      ratio:$("#composerRatio").value,outputFormat:"jpeg",copies:requestedCount,
-      options:referenceImage?payload:{}
-     });
+   : useCvronImage
+     ? JSON.stringify({mode:"image",provider:"cvron",prompt,model:modelName})
+     : JSON.stringify({
+        mode:"image",provider:"ahm7",prompt,model:modelName,
+        ratio:$("#composerRatio").value,outputFormat:"jpeg",copies:requestedCount,
+        options:referenceImage?payload:{}
+       });
   let data;
   const requestThroughMiyaApi=async()=>new Promise((resolve,reject)=>{
    const xhr=new XMLHttpRequest();
@@ -3045,36 +3048,7 @@ async function cleverUtilsMcpRequest(payload){
  throw new Error("CLEVERUTILS_MCP_INVALID_RESPONSE");
 }
 
- const init=await cleverUtilsMcpRequest({
-   jsonrpc:"2.0",id:1,method:"initialize",
-   params:{protocolVersion:"2025-06-18",capabilities:{},clientInfo:{name:"Miya Studio",version:"1.0"}}
- });
- if(init?.error)throw new Error(String(init.error.message||"CLEVERUTILS_MCP_INITIALIZE_FAILED"));
- const call=await cleverUtilsMcpRequest({
-   jsonrpc:"2.0",id:2,method:"tools/call",
-   params:{name:"upscale_image",arguments:{file,scale:Number(scale),model}}
- });
- if(call?.error)throw new Error(String(call.error.message||"CLEVERUTILS_MCP_UPSCALE_FAILED"));
- const root=call?.result||call;
- const directLink=Array.isArray(root?.content)
-   ? root.content.find(x=>x?.type==="resource_link"&&typeof x.uri==="string")?.uri||""
-   : "";
- if(directLink)return directLink;
- let found="";
- const walk=(value,seen=new Set())=>{
-   if(!value||found)return;
-   if(typeof value==="string"){
-     if(/^https?:\/\//i.test(value))found=value;
-     return;
-   }
-   if(typeof value!=="object"||seen.has(value))return;
-   seen.add(value);
-   if(Array.isArray(value)){value.forEach(v=>walk(v,seen));return}
-   Object.values(value).forEach(v=>walk(v,seen));
- };
- walk(root);
- return found;
-}
+
 async function makeCleverUtilsImageFile(blob){
  const rawType=String(blob?.type||"").toLowerCase().split(";")[0].trim();
  const supported=new Set(["image/jpeg","image/png","image/webp","image/gif","image/bmp","image/tiff"]);

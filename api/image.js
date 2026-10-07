@@ -455,6 +455,101 @@ module.exports = async function imageHandler(req, res) {
       });
     }
 
+    const provider = typeof body.provider === "string" ? body.provider.trim().toLowerCase() : "";
+    const requestedModel = typeof body.model === "string" ? body.model.trim() : "";
+
+    if (provider === "cvron") {
+      const cvronModels = {
+        "Nano Banana 2": "https://cvron.alwaysdata.net/cvronai/nanobanana2.php",
+        "GPT Image 2.5": "https://cvron.alwaysdata.net/cvronai/gpt-image-2-5-flare.php"
+      };
+      const endpoint = cvronModels[requestedModel];
+      const cvronPrompt = typeof body.prompt === "string" ? body.prompt.trim() : "";
+      if (!endpoint) {
+        return res.status(400).json({
+          ok:false,
+          error:"CVRON_MODEL_UNSUPPORTED",
+          message:"Неизвестная CVRON-модель."
+        });
+      }
+      if (!cvronPrompt) {
+        return res.status(400).json({ok:false,error:"PROMPT_REQUIRED"});
+      }
+
+      try {
+        const target = endpoint + "?prompt=" + encodeURIComponent(cvronPrompt);
+        const upstream = await fetch(target, {
+          method:"GET",
+          headers:{Accept:"application/json, text/plain, */*"},
+          cache:"no-store",
+          signal:AbortSignal.timeout(180000)
+        });
+        const raw = await upstream.text();
+        let data = {};
+        try { data = raw ? JSON.parse(raw) : {}; } catch {}
+
+        if (!upstream.ok) {
+          return res.status(502).json({
+            ok:false,
+            error:"CVRON_UPSTREAM_HTTP",
+            message:"CVRON вернул HTTP " + upstream.status + ".",
+            upstreamStatus:upstream.status,
+            upstreamBody:raw.slice(0,1000)
+          });
+        }
+
+        const findImageUrl = (value, seen=new Set()) => {
+          if (value == null) return "";
+          if (typeof value === "string") {
+            const v=value.trim();
+            if (/^https?:\\/\\//i.test(v) && /\\.(?:png|jpe?g|webp|gif)(?:[?#]|$)/i.test(v)) return v;
+            if (/^https?:\\/\\//i.test(v) && /(image|img|photo|picture|output|result|generated)/i.test(v)) return v;
+            return "";
+          }
+          if (typeof value !== "object" || seen.has(value)) return "";
+          seen.add(value);
+          const preferred=["imageUrl","image_url","url","image","output","outputUrl","output_url","result","data"];
+          for (const key of preferred) {
+            const found=findImageUrl(value[key],seen);
+            if(found)return found;
+          }
+          for (const key of Object.keys(value)) {
+            const found=findImageUrl(value[key],seen);
+            if(found)return found;
+          }
+          return "";
+        };
+
+        const imageUrl=findImageUrl(data) || findImageUrl(raw);
+        if (!imageUrl) {
+          return res.status(502).json({
+            ok:false,
+            error:"CVRON_IMAGE_URL_MISSING",
+            message:"CVRON не вернул ссылку на изображение.",
+            upstreamBody:raw.slice(0,1500)
+          });
+        }
+
+        return res.status(200).json({
+          ok:true,
+          mode:"image",
+          status:"completed",
+          provider:"CVRON",
+          model:requestedModel,
+          imageUrl,
+          imageUrls:[imageUrl],
+          count:1,
+          meta:{free:true,endpoint}
+        });
+      } catch (error) {
+        return res.status(502).json({
+          ok:false,
+          error:"CVRON_HANDLER_ERROR",
+          message:String(error?.message||error||"Ошибка обращения к CVRON.")
+        });
+      }
+    }
+
     const prompt = typeof body.prompt === "string" ? body.prompt.trim() : "";
     if (!prompt) return res.status(400).json({ ok: false, error: "PROMPT_REQUIRED" });
 
