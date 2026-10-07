@@ -48,10 +48,26 @@ export default async function handler(req, res) {
       return res.status(400).json({ error: "FILE_REQUIRED", message: "Please upload an audio file" });
     }
 
+    const bytes = await file.arrayBuffer();
+    if (!bytes.byteLength) {
+      return res.status(400).json({ error: "FILE_EMPTY", message: "Uploaded audio file is empty" });
+    }
+
+    // Re-create a real File part (not a generic Blob). CleverUtils validates
+    // the uploaded part as an audio file using its filename/MIME metadata.
+    const filename = String(file.name || "miya-split-source.wav");
+    const lower = filename.toLowerCase();
+    const type = String(file.type || "").toLowerCase() || (
+      lower.endsWith(".wav") ? "audio/wav" :
+      lower.endsWith(".mp3") ? "audio/mpeg" :
+      lower.endsWith(".m4a") ? "audio/mp4" :
+      lower.endsWith(".flac") ? "audio/flac" :
+      lower.endsWith(".ogg") ? "audio/ogg" :
+      "application/octet-stream"
+    );
+    const upstreamFile = new File([bytes], filename, { type });
     const form = new FormData();
-    form.append("file", new Blob([await file.arrayBuffer()], {
-      type: file.type || "audio/wav"
-    }), file.name || "miya-split-source.wav");
+    form.append("file", upstreamFile);
 
     const upstream = await fetch("https://cleverutils.com/api/v1/tools/vocal-remover", {
       method: "POST",
