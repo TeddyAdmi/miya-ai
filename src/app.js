@@ -1787,60 +1787,22 @@ body.light .ve2-footer-btn.primary{color:#fff}
   if(!workingBlob)return;showSplitProgress(8,"Подготавливаем аудио","проверяем исходный файл…");
   let timer=null;
   try{
-   // CleverUtils validates the actual media container, not only the browser MIME.
-   // Miya voice cards can contain concatenated MP3 chunks inside a Blob: Firefox
-   // can play that Blob, but the server may reject it as "not an audio file".
-   // Decode it locally and send a real WAV container so the provider receives
-   // a standards-compliant audio file. If the browser cannot decode the source
-   // (for example an unsupported format), keep the original upload as fallback.
-   const sourceFile=makeAudioUploadFile();
-   let uploadFile=sourceFile;
-   try{
-    const AudioContextClass=window.AudioContext||window.webkitAudioContext;
-    if(AudioContextClass){
-     const ctx=new AudioContextClass();
-     try{
-      const buffer=await ctx.decodeAudioData(await sourceFile.arrayBuffer());
-      const wavBlob=audioBufferToWavBlob(buffer);
-      if(wavBlob?.size && wavBlob.size<=50*1024*1024){
-       const base=String(sourceFile.name||"miya-audio").replace(/\.[^.]+$/,"")||"miya-audio";
-       uploadFile=new File([wavBlob],base+".wav",{type:"audio/wav",lastModified:Date.now()});
-      }
-     }finally{try{await ctx.close()}catch{}}
-    }
-   }catch(convertError){
-    console.warn("Miya vocal split WAV conversion fallback",convertError);
-   }
-   updateSplitProgress(18,"Аудио подготовлено",uploadFile.type==="audio/wav"?"валидный WAV · готов к отправке":"исходный аудиофайл · готов к отправке");
-   updateSplitProgress(28,"Отправляем аудио","CleverUtils MCP · Demucs");
+   // Keep the original compressed audio. WAV conversion can multiply the file size and hit Vercel's request-body limit.
+   const sourceFile=makeAudioUploadFile(),uploadFile=sourceFile;
+   if(uploadFile.size>4*1024*1024)throw new Error("AUDIO_TOO_LARGE_FOR_PROXY");
+   updateSplitProgress(18,"Аудио подготовлено",uploadFile.type||"исходный аудиофайл");
+   updateSplitProgress(28,"Отправляем аудио","CleverUtils · vocal-remover");
    timer=setInterval(()=>{const p=panel.querySelector(".progress-percent"),cur=p?parseInt(p.textContent,10)||28:28,next=Math.min(88,cur+(cur<55?2:cur<78?1:0));if(next>cur)updateSplitProgress(next,next<55?"Разделяем дорожки":"AI обрабатывает аудио",next<55?"Demucs · анализ вокала":"Demucs · извлечение вокала и инструментала")},1800);
-   const mcpRequest=async(id,method,params)=>{
-    const response=await fetch("https://cleverutils.com/mcp",{method:"POST",headers:{"Content-Type":"application/json","Accept":"application/json, text/event-stream"},body:JSON.stringify({jsonrpc:"2.0",id,method,params})});
-    const raw=await response.text();
-    if(!response.ok)throw new Error("CLEVERUTILS_MCP_"+response.status);
-    const lines=raw.split(/\r?\n/).map(x=>x.trim()).filter(Boolean);
-    const candidates=[];
-    for(const line of lines){const value=line.startsWith("data:")?line.slice(5).trim():line;if(!value||value==="[DONE]")continue;try{candidates.push(JSON.parse(value))}catch{}}
-    const result=candidates.find(x=>String(x?.id)===String(id))||candidates[candidates.length-1];
-    if(!result)throw new Error("CLEVERUTILS_MCP_EMPTY");
-    if(result.error)throw new Error(result.error.message||"CLEVERUTILS_MCP_FAILED");
-    return result;
-   };
-   const bytes=new Uint8Array(await uploadFile.arrayBuffer());
-   let binary="";const chunk=0x8000;for(let i=0;i<bytes.length;i+=chunk)binary+=String.fromCharCode(...bytes.subarray(i,Math.min(i+chunk,bytes.length)));
-   const fileBase64=btoa(binary);
-   await mcpRequest(1,"initialize",{protocolVersion:"2025-06-18",capabilities:{},clientInfo:{name:"miya-studio",version:"1.0"}});
-   const call=await mcpRequest(2,"tools/call",{name:"vocal_remover",arguments:{file:fileBase64}});
-   clearInterval(timer);timer=null;updateSplitProgress(92,"Получаем дорожки","CleverUtils MCP · почти готово…");
-   const job=call?.result?.structuredContent||call?.result?.content||call?.result||call;
-   const stems=collectCleverStemUrls(job);let vocals=stems.vocals,instrumental=stems.instrumental,output=job?.output?.url||job?.outputUrl||job?.links?.output||"";
+   const form=new FormData();form.append("file",uploadFile,uploadFile.name||"miya-audio.mp3");
+   const response=await fetch("/api/cleverutils-vocal-remover",{method:"POST",body:form,headers:{Accept:"application/json"},cache:"no-store"});
+   let payload=await response.json().catch(()=>null);if(!response.ok)throw new Error(String(payload?.message||payload?.error||"CLEVERUTILS_"+response.status));
+   const getData=()=>payload?.data||payload;let jobId=String(getData()?.job_id||getData()?.jobId||"").trim(),status=String(getData()?.status||"").toLowerCase();
+   if(jobId&&status!=="done"){let attempts=0;while(attempts++<90){await new Promise(r=>setTimeout(r,2500));const poll=await fetch("/api/cleverutils-vocal-remover?job="+encodeURIComponent(jobId),{cache:"no-store",headers:{Accept:"application/json"}}),next=await poll.json().catch(()=>null);if(!poll.ok)throw new Error(String(next?.message||next?.error||"CLEVERUTILS_JOB_"+poll.status));payload=next;const data=getData();status=String(data?.status||"").toLowerCase();const progress=Number(data?.progress);if(Number.isFinite(progress))updateSplitProgress(Math.min(90,30+Math.round(progress*.6)),"AI обрабатывает аудио","Demucs · "+Math.round(progress)+"%");else updateSplitProgress(Math.min(88,34+Math.floor(attempts/3)),"AI обрабатывает аудио","Demucs · разделение дорожек");if(status==="done"||data?.output||data?.outputs)break;if(status==="error"||status==="failed")throw new Error(String(data?.message||"CLEVERUTILS_JOB_FAILED"))}if(status!=="done"&&!getData()?.output&&!getData()?.outputs)throw new Error("CLEVERUTILS_JOB_TIMEOUT")}
+   clearInterval(timer);timer=null;updateSplitProgress(92,"Получаем дорожки","CleverUtils · почти готово…");
+   const job=getData(),stems=collectCleverStemUrls(job);let vocals=stems.vocals,instrumental=stems.instrumental,output=job?.output?.url||job?.outputUrl||job?.links?.output||"";
    if(!vocals||!instrumental){if(!output)throw new Error("VOCAL_SPLIT_OUTPUT_MISSING");const res=await fetch(output);if(!res.ok)throw new Error("VOCAL_SPLIT_OUTPUT_"+res.status);const blob=await res.blob(),type=String(res.headers.get("content-type")||blob.type||"").toLowerCase();if(type.includes("zip")||/\.zip(?:$|[?#])/i.test(output)){const JSZip=(await import("https://cdn.jsdelivr.net/npm/jszip@3.10.1/+esm")).default,zip=await JSZip.loadAsync(blob);for(const name of Object.keys(zip.files)){const e=zip.files[name];if(e.dir)continue;const lower=name.toLowerCase(),bb=await e.async("blob");if(!vocals&&/(vocal|vocals|acapella)/.test(lower))vocals=bb;if(!instrumental&&/(instrument|karaoke|minus|backing|accompaniment)/.test(lower))instrumental=bb}}}
-   if(!vocals||!instrumental)throw new Error("VOCAL_SPLIT_TWO_TRACKS_MISSING");
-   const getBlob=async v=>v instanceof Blob?v:(await fetch(v)).blob(),vb=await getBlob(vocals),ib=await getBlob(instrumental);stemResults={vocals:{blob:vb,url:URL.createObjectURL(vb)},instrumental:{blob:ib,url:URL.createObjectURL(ib)}};
-   updateSplitProgress(100,"Готово","вокал и минус получены");await new Promise(r=>setTimeout(r,500));renderResults();toast("Готово · вокал и минус получены");
-  }catch(e){if(timer)clearInterval(timer);console.error("Miya voice editor split failed",e);splitPanel();toast(String(e?.message||"Не удалось разделить песню"))}
-  finally{if(timer)clearInterval(timer)}
- };
+   if(!vocals||!instrumental)throw new Error("VOCAL_SPLIT_TWO_TRACKS_MISSING");const getBlob=async v=>v instanceof Blob?v:(await fetch(v)).blob(),vb=await getBlob(vocals),ib=await getBlob(instrumental);stemResults={vocals:{blob:vb,url:URL.createObjectURL(vb)},instrumental:{blob:ib,url:URL.createObjectURL(ib)}};updateSplitProgress(100,"Готово","вокал и минус получены");await new Promise(r=>setTimeout(r,500));renderResults();toast("Готово · вокал и минус получены");
+
  const input=document.createElement("input");input.type="file";input.accept="audio/*";input.hidden=true;document.body.appendChild(input);
  const replaceSource=async file=>{if(!file?.type?.startsWith("audio/")){toast("Выбери аудиофайл");return}input.value="";stemResults=null;renderResults();await setWorkingBlob(file,file.name||"miya-voice.mp3");setStatus("Новый рабочий файл");toast("Аудио загружено · карточка на стене не изменена")};
  input.onchange=()=>{const f=input.files?.[0];if(f)replaceSource(f)};
