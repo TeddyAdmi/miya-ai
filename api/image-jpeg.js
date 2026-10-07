@@ -34,7 +34,8 @@ module.exports = async function handler(req, res) {
       "cleverutils.com",
       "www.cleverutils.com",
       "cleverutil",
-      "cleverutil.com"
+      "cleverutil.com",
+      "overchat.s3.eu-north-1.amazonaws.com"
     ];
     if (!allowed.includes(host)) {
       return res.status(403).json({ ok: false, error: "IMAGE_HOST_NOT_ALLOWED" });
