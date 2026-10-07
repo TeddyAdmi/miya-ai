@@ -1811,14 +1811,28 @@ body.light .ve2-footer-btn.primary{color:#fff}
    }catch(convertError){
     console.warn("Miya vocal split WAV conversion fallback",convertError);
    }
-   const form=new FormData();form.append("file",uploadFile,uploadFile.name);
-   updateSplitProgress(18,"Аудио подготовлено",uploadFile.type==="audio/wav"?"валидный WAV · готов к загрузке":"исходный аудиофайл · готов к загрузке");
-   updateSplitProgress(28,"Загружаем аудио","CleverUtils · Demucs");
+   updateSplitProgress(18,"Аудио подготовлено",uploadFile.type==="audio/wav"?"валидный WAV · готов к отправке":"исходный аудиофайл · готов к отправке");
+   updateSplitProgress(28,"Отправляем аудио","CleverUtils MCP · Demucs");
    timer=setInterval(()=>{const p=panel.querySelector(".progress-percent"),cur=p?parseInt(p.textContent,10)||28:28,next=Math.min(88,cur+(cur<55?2:cur<78?1:0));if(next>cur)updateSplitProgress(next,next<55?"Разделяем дорожки":"AI обрабатывает аудио",next<55?"Demucs · анализ вокала":"Demucs · извлечение вокала и инструментала")},1800);
-   const rr=await fetch("/api/cleverutils-vocal-remover",{method:"POST",body:form,headers:{Accept:"application/json"},cache:"no-store"});
-   clearInterval(timer);timer=null;const data=await rr.json().catch(()=>({}));if(!rr.ok)throw new Error(data?.message||data?.error?.message||data?.error||"VOCAL_SPLIT_FAILED");
-   updateSplitProgress(92,"Получаем дорожки","почти готово…");
-   const job=data?.data||data;
+   const mcpRequest=async(id,method,params)=>{
+    const response=await fetch("https://cleverutils.com/mcp",{method:"POST",headers:{"Content-Type":"application/json","Accept":"application/json, text/event-stream"},body:JSON.stringify({jsonrpc:"2.0",id,method,params})});
+    const raw=await response.text();
+    if(!response.ok)throw new Error("CLEVERUTILS_MCP_"+response.status);
+    const lines=raw.split(/\r?\n/).map(x=>x.trim()).filter(Boolean);
+    const candidates=[];
+    for(const line of lines){const value=line.startsWith("data:")?line.slice(5).trim():line;if(!value||value==="[DONE]")continue;try{candidates.push(JSON.parse(value))}catch{}}
+    const result=candidates.find(x=>String(x?.id)===String(id))||candidates[candidates.length-1];
+    if(!result)throw new Error("CLEVERUTILS_MCP_EMPTY");
+    if(result.error)throw new Error(result.error.message||"CLEVERUTILS_MCP_FAILED");
+    return result;
+   };
+   const bytes=new Uint8Array(await uploadFile.arrayBuffer());
+   let binary="";const chunk=0x8000;for(let i=0;i<bytes.length;i+=chunk)binary+=String.fromCharCode(...bytes.subarray(i,Math.min(i+chunk,bytes.length)));
+   const fileBase64=btoa(binary);
+   await mcpRequest(1,"initialize",{protocolVersion:"2025-06-18",capabilities:{},clientInfo:{name:"miya-studio",version:"1.0"}});
+   const call=await mcpRequest(2,"tools/call",{name:"vocal_remover",arguments:{file:fileBase64}});
+   clearInterval(timer);timer=null;updateSplitProgress(92,"Получаем дорожки","CleverUtils MCP · почти готово…");
+   const job=call?.result?.structuredContent||call?.result?.content||call?.result||call;
    const stems=collectCleverStemUrls(job);let vocals=stems.vocals,instrumental=stems.instrumental,output=job?.output?.url||job?.outputUrl||job?.links?.output||"";
    if(!vocals||!instrumental){if(!output)throw new Error("VOCAL_SPLIT_OUTPUT_MISSING");const res=await fetch(output);if(!res.ok)throw new Error("VOCAL_SPLIT_OUTPUT_"+res.status);const blob=await res.blob(),type=String(res.headers.get("content-type")||blob.type||"").toLowerCase();if(type.includes("zip")||/\.zip(?:$|[?#])/i.test(output)){const JSZip=(await import("https://cdn.jsdelivr.net/npm/jszip@3.10.1/+esm")).default,zip=await JSZip.loadAsync(blob);for(const name of Object.keys(zip.files)){const e=zip.files[name];if(e.dir)continue;const lower=name.toLowerCase(),bb=await e.async("blob");if(!vocals&&/(vocal|vocals|acapella)/.test(lower))vocals=bb;if(!instrumental&&/(instrument|karaoke|minus|backing|accompaniment)/.test(lower))instrumental=bb}}}
    if(!vocals||!instrumental)throw new Error("VOCAL_SPLIT_TWO_TRACKS_MISSING");
