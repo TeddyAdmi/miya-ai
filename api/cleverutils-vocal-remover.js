@@ -1,10 +1,36 @@
 export const config = { api: { bodyParser: false } };
 export const maxDuration = 300;
 
-async function readRequestBody(req) {
-  const chunks = [];
-  for await (const chunk of req) chunks.push(Buffer.from(chunk));
-  return Buffer.concat(chunks);
+async function readRequestBody(req, maxBytes = 4 * 1024 * 1024) {
+  return await new Promise((resolve, reject) => {
+    const chunks = [];
+    let total = 0;
+    let settled = false;
+    const fail = error => {
+      if (settled) return;
+      settled = true;
+      reject(error);
+    };
+    req.on("data", chunk => {
+      if (settled) return;
+      const part = Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk);
+      total += part.length;
+      if (total > maxBytes) {
+        settled = true;
+        reject(new Error("AUDIO_TOO_LARGE_FOR_PROXY"));
+        try { req.pause(); } catch {}
+        return;
+      }
+      chunks.push(part);
+    });
+    req.on("end", () => {
+      if (settled) return;
+      settled = true;
+      resolve(Buffer.concat(chunks));
+    });
+    req.on("error", fail);
+    req.on("aborted", () => fail(new Error("REQUEST_ABORTED")));
+  });
 }
 
 function parseMultipartFile(body, contentType) {
@@ -193,7 +219,16 @@ export default async function handler(req, res) {
       return res.status(405).json({ error: "METHOD_NOT_ALLOWED" });
     }
 
-    const body=await readRequestBody(req),contentType=String(req.headers["content-type"]||"");if(!body.length||!contentType.toLowerCase().startsWith("multipart/form-data"))return res.status(400).json({error:"MULTIPART_FILE_REQUIRED"});
+    const contentType=String(req.headers["content-type"]||"");
+    const contentLength=Number(req.headers["content-length"]||0);
+    if(contentLength>4*1024*1024)return res.status(413).json({error:"AUDIO_TOO_LARGE_FOR_PROXY",message:"Аудиофайл больше 4 MB. Выбери MP3 меньшего размера."});
+    if(!contentType.toLowerCase().startsWith("multipart/form-data"))return res.status(400).json({error:"MULTIPART_FILE_REQUIRED"});
+    let body;
+    try { body=await readRequestBody(req); } catch(error) {
+      if(String(error?.message)==="AUDIO_TOO_LARGE_FOR_PROXY")return res.status(413).json({error:"AUDIO_TOO_LARGE_FOR_PROXY",message:"Аудиофайл больше 4 MB. Выбери MP3 меньшего размера."});
+      throw error;
+    }
+    if(!body.length)return res.status(400).json({error:"MULTIPART_FILE_REQUIRED"});
     const {file,filename,mime}=parseMultipartFile(body,contentType);if(file.length>4*1024*1024)return res.status(413).json({error:"AUDIO_TOO_LARGE_FOR_PROXY",message:"Аудиофайл больше 4 MB. Выбери MP3 меньшего размера."});
     const boundary="----MiyaCleverUtils"+Math.random().toString(16).slice(2),head=Buffer.from("--"+boundary+"\r\n"+'Content-Disposition: form-data; name="file"; filename="'+filename.replace(/["\\\r\n]/g,"_")+'"\r\n'+"Content-Type: "+mime+"\r\n\r\n","utf8"),tail=Buffer.from("\r\n--"+boundary+"--\r\n","utf8"),multipart=Buffer.concat([head,file,tail]);
     const upstream=await fetch("https://cleverutils.com/api/v1/tools/vocal-remover",{method:"POST",headers:{"content-type":"multipart/form-data; boundary="+boundary,"content-length":String(multipart.length),accept:"application/json"},body:multipart,cache:"no-store"}),raw=await upstream.text();let payload;try{payload=JSON.parse(raw)}catch{return res.status(upstream.status).json({error:"CLEVERUTILS_INVALID_JSON",message:raw.slice(0,800)})}if(!upstream.ok)return res.status(upstream.status).json({error:"CLEVERUTILS_VOCAL_REMOVER_FAILED",message:payload?.error?.message||payload?.message||"CleverUtils vocal remover failed.",details:payload?.error||payload?.details||null});
