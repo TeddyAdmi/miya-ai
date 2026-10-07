@@ -3548,37 +3548,29 @@ function toolsEditorRender(){
  });
  const body=$("#toolsEditorBody");
  if(!body)return;
- if(st.kind==="editor"){
-  body.innerHTML='<div class="audio-editor-launch-screen" id="audioEditorLaunch"><div class="audio-editor-launch-card"><div class="audio-editor-launch-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9v6M8 6v12M12 3v18M16 6v12M20 9v6"/></svg></div><div class="audio-editor-launch-eyebrow">MIYA AUDIO STUDIO</div><h2>Открыть аудиоредактор</h2><p>MP3, WAV, M4A или FLAC. Выбери файл — он сразу откроется в полноэкранном редакторе.</p><button type="button" class="audio-editor-launch-button" id="pickAudioEditorFile"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg><span>Выбрать аудиофайл</span></button><div class="audio-editor-launch-hint">Можно также перетащить файл в это окно</div></div></div>';
-  const launch=$("#audioEditorLaunch"),pick=$("#pickAudioEditorFile");
-  const input=document.createElement("input");
-  input.type="file";
-  input.accept=".mp3,.wav,.m4a,.flac,audio/mpeg,audio/wav,audio/x-wav,audio/mp4,audio/flac,audio/*";
+ if(st.kind==="editor"||!st.file){
+  const isImage=st.kind==="image",isVideo=st.kind==="video",isVoice=st.kind==="audio"||st.kind==="editor";
+  const data=isImage
+    ?["MIYA IMAGE STUDIO","Открыть редактор изображений","PNG, JPG, WEBP или GIF. Выбери файл — он сразу откроется в редакторе.","Выбрать изображение","Можно также перетащить изображение в это окно",'<path d="M4 5h16v14H4z"/><circle cx="9" cy="10" r="2"/><path d="m4 16 4-4 3 3 3-4 6 6"/>']
+    :isVideo
+    ?["MIYA VIDEO STUDIO","Открыть видеоредактор","MP4, WEBM или MOV. Выбери файл — он сразу откроется в редакторе.","Выбрать видео","Можно также перетащить видео в это окно",'<path d="M4 6h11v12H4z"/><path d="m15 10 5-3v10l-5-3z"/>']
+    :isVoice&&st.kind==="audio"
+    ?["MIYA VOICE STUDIO","Открыть редактор голоса","MP3, WAV, M4A или FLAC. Выбери файл — он сразу откроется в полноэкранном редакторе.","Выбрать аудиофайл","Можно также перетащить аудио в это окно",'<path d="M9 18V6l10-2v12"/><circle cx="6" cy="18" r="3"/><circle cx="16" cy="16" r="3"/>']
+    :["MIYA AUDIO STUDIO","Открыть аудиоредактор","MP3, WAV, M4A или FLAC. Выбери файл — он сразу откроется в полноэкранном редакторе.","Выбрать аудиофайл","Можно также перетащить аудио в это окно",'<path d="M4 9v6M8 6v12M12 3v18M16 6v12M20 9v6"/>'];
+  body.innerHTML='<div class="tools-launch-screen"><div class="tools-launch-copy"><div class="tools-launch-eyebrow">'+data[0]+'</div><h2>'+data[1]+'</h2><p>'+data[2]+'</p></div><div class="tools-launch-card" id="toolsLaunchCard"><div class="tools-launch-icon"><svg viewBox="0 0 24 24" aria-hidden="true">'+data[5]+'</svg></div><button type="button" class="audio-editor-launch-button" id="toolsLaunchPick"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg><span>'+data[3]+'</span></button><div class="audio-editor-launch-hint">'+data[4]+'</div></div></div>';
+  const launch=$("#toolsLaunchCard"),pick=$("#toolsLaunchPick"),input=document.createElement("input");
+  input.type="file";input.accept=isImage?"image/*":isVideo?"video/*":"audio/*";input.hidden=true;document.body.appendChild(input);
   const openFile=file=>{
     if(!file)return;
-    const name=String(file.name||"").toLowerCase();
-    const ext=name.includes(".")?name.split(".").pop():"";
-    const allowed=["mp3","wav","m4a","flac"].includes(ext)||String(file.type||"").startsWith("audio/");
-    if(!allowed){toast("Выбери MP3, WAV, M4A или FLAC");return}
-    openVoiceEditor({model:file.name,prompt:file.name,type:file.type},file);
+    if(isVoice){openVoiceEditor({model:file.name,prompt:file.name,type:file.type},file);return}
+    toolsEditorLoadFile(file);
   };
   input.onchange=()=>openFile(input.files?.[0]);
-  if(pick)pick.onclick=e=>{e.stopPropagation();input.click()};
-  if(launch){
-    launch.onclick=e=>{if(e.target.closest("#pickAudioEditorFile"))return;input.click()};
-    launch.ondragover=e=>{e.preventDefault();launch.classList.add("dragover")};
-    launch.ondragleave=()=>launch.classList.remove("dragover");
-    launch.ondrop=e=>{e.preventDefault();launch.classList.remove("dragover");openFile(e.dataTransfer?.files?.[0])};
-  }
-  return;
- }
- if(!st.file){
-  body.innerHTML='<div class="tools-dropzone" id="toolsDropzone"><div class="tools-empty"><div class="tools-upload-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M12 16V4m0 0L7 9m5-5 5 5"/><path d="M4 15v4a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-4"/></svg></div><h3>Добавь файл в редактор</h3><p>Перетащи файл сюда из проводника или выбери его вручную. До «Сохранить» он не попадёт на стену и в «Мои файлы».</p><button class="tools-pick" id="toolsPick">Выбрать файл</button><div class="tools-hint">Можно также перетащить файл прямо из папки</div></div></div>';
-  const dz=$("#toolsDropzone"),input=document.createElement("input");input.type="file";input.accept=st.kind==="image"?"image/*":st.kind==="video"?"video/*":"audio/*";input.hidden=true;document.body.appendChild(input);
-  const done=f=>{input.remove();toolsEditorLoadFile(f)};$("#toolsPick").onclick=()=>input.click();input.onchange=()=>input.files[0]&&done(input.files[0]);
-  ["dragenter","dragover"].forEach(e=>dz.addEventListener(e,x=>{x.preventDefault();dz.classList.add("drag")}));
-  ["dragleave","drop"].forEach(e=>dz.addEventListener(e,x=>{x.preventDefault();dz.classList.remove("drag")}));
-  dz.addEventListener("drop",e=>{const f=e.dataTransfer.files?.[0];input.remove();if(f)toolsEditorLoadFile(f)});
+  pick.onclick=e=>{e.stopPropagation();input.click()};
+  launch.onclick=e=>{if(e.target.closest("#toolsLaunchPick"))return;input.click()};
+  launch.ondragover=e=>{e.preventDefault();launch.classList.add("dragover")};
+  launch.ondragleave=()=>launch.classList.remove("dragover");
+  launch.ondrop=e=>{e.preventDefault();launch.classList.remove("dragover");openFile(e.dataTransfer?.files?.[0])};
   return;
  }
  const p=st.kind==="image"?'<img id="toolsPreviewImage" src="'+st.url+'">':st.kind==="video"?'<video id="toolsPreviewVideo" src="'+st.url+'" controls playsinline></video>':'<audio id="toolsPreviewAudio" src="'+st.url+'" controls></audio>';
