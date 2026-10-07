@@ -785,7 +785,7 @@ function buildMediaCard(item,{video=false}={}){
   const copyBtn=document.createElement("button");copyBtn.type="button";copyBtn.innerHTML='<span class="action-icon action-svg"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M15 9V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v7a2 2 0 0 0 2 2h3"/></svg></span><span>Копировать</span>';copyBtn.onclick=async e=>{e.stopPropagation();closeAllMediaMenus();try{const response=await fetch(item.url,{headers:{Accept:"image/*"}});if(!response.ok)throw new Error();const blob=await response.blob();if(!navigator.clipboard?.write||!window.ClipboardItem)throw new Error();const bitmap=await createImageBitmap(blob);const canvas=document.createElement("canvas");canvas.width=bitmap.width;canvas.height=bitmap.height;const ctx=canvas.getContext("2d");ctx.fillStyle="#fff";ctx.fillRect(0,0,canvas.width,canvas.height);ctx.drawImage(bitmap,0,0);bitmap.close();const jpeg=await new Promise(resolve=>canvas.toBlob(resolve,"image/jpeg",.95));if(!jpeg)throw new Error();await navigator.clipboard.write([new ClipboardItem({"image/jpeg":jpeg})]);toast("JPG скопирован")}catch{toast("Не удалось скопировать картинку")}};
   const downloadBtn=document.createElement("button");downloadBtn.type="button";downloadBtn.innerHTML='<span class="action-icon action-svg"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4v11M8 11l4 4 4-4M5 19h14"/></svg></span><span>Скачать</span>';downloadBtn.onclick=e=>{e.stopPropagation();closeAllMediaMenus();showDownloadMenu(item,downloadBtn)};
   const deleteBtn=document.createElement("button");deleteBtn.type="button";deleteBtn.innerHTML='<span class="action-icon action-svg"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M9 7V4h6v3M7 7l1 13h8l1-13M10 11v5M14 11v5"/></svg></span><span>Удалить</span>';deleteBtn.onclick=e=>{e.stopPropagation();closeAllMediaMenus();confirmDeleteMedia(item,card)};
-  menu.append(promptBtn ,upscaleMenuBtn,editBtn,videoBtn,copyBtn,downloadBtn,deleteBtn);
+  menu.append(promptBtn,editBtn,videoBtn,copyBtn,downloadBtn,deleteBtn);
  }else{
   const deleteBtn=document.createElement("button");deleteBtn.type="button";deleteBtn.innerHTML='<span class="action-icon">⌫</span><span>Удалить</span>';deleteBtn.onclick=e=>{e.stopPropagation();closeAllMediaMenus();confirmDeleteMedia(item,card)};menu.append(deleteBtn);
  }
@@ -1272,6 +1272,8 @@ body.light .voice-card-menu-floating button{color:#52657b!important;background:t
 body.light .voice-card-menu-floating button:hover{background:#f0f4f8!important;color:#273047!important}
 /* Do not create a second visual style for the dots: image-card .media-more is the source of truth. */
 .voice-editor-more.media-more{position:absolute!important}
+.voice-library-card .voice-editor-more{transition:transform .16s ease,background .16s ease,border-color .16s ease,box-shadow .16s ease!important}
+.voice-library-card .voice-editor-more:hover{transform:translateY(-1px) scale(1.04)!important;box-shadow:0 10px 24px rgba(110,72,220,.20)!important}
 .voice-editor-more svg{width:15px!important;height:15px!important;fill:none!important;stroke:currentColor!important;stroke-width:1.8!important;stroke-linecap:round!important}
 body.light .voice-editor-more.media-more svg{fill:currentColor!important}
 @media(max-width:980px){.voice-wall{grid-template-columns:repeat(2,minmax(0,1fr))!important}}
@@ -1404,7 +1406,7 @@ function createVoiceCard(item,source,options={}){
  const title=document.createElement("b");title.className="voice-result-title";title.textContent=item?.model||"Голос";
  const textEl=document.createElement("div");textEl.className="voice-card-text";textEl.textContent=item?.prompt||"Готовая голосовая запись";
  const more=document.createElement("button");more.type="button";more.className="voice-editor-more media-action media-more";more.title="Действия";more.setAttribute("aria-label","Действия голоса");more.innerHTML='<svg viewBox="0 0 24 24"><circle cx="5" cy="12" r="1.7"/><circle cx="12" cy="12" r="1.7"/><circle cx="19" cy="12" r="1.7"/></svg>';
- more.onclick=e=>{e.preventDefault();e.stopPropagation();openVoiceCardMenu(more,item,source,card)};
+ more.onclick=async e=>{e.preventDefault();e.stopPropagation();closeAllVoiceCardMenus();await openVoiceEditor(item,source)};
 
  const player=buildVoicePlayer(source,card);player.wrap.__cleanup=player.cleanup;
  const actions=document.createElement("div");actions.className="voice-card-actions";
@@ -4343,3 +4345,85 @@ function scheduleMediaOverlayReposition(){
 window.addEventListener("resize",scheduleMediaOverlayReposition);
 document.addEventListener("scroll",scheduleMediaOverlayReposition,true);
 $("#workspace")?.addEventListener("scroll",()=>closeAllMediaMenus(),{passive:true});
+/* MIYA MAIN AUDIO EDITOR — final visual/interaction layer */
+(function miyaMainAudioEditorLayer(){
+  if(window.__miyaMainAudioEditorLayer)return;
+  window.__miyaMainAudioEditorLayer=true;
+
+  const installStyles=()=>{
+    if(document.getElementById("miyaMainAudioEditorUltimate"))return;
+    const s=document.createElement("style");
+    s.id="miyaMainAudioEditorUltimate";
+    s.textContent=`
+      html.miya-editor-page-open,body.miya-editor-page-open{overflow:hidden!important;width:100%!important;height:100%!important}
+      .voice-editor-backdrop{position:fixed!important;inset:0!important;width:100dvw!important;height:100dvh!important;padding:0!important;margin:0!important;display:grid!important;place-items:stretch!important;background:rgba(4,7,18,.78)!important;backdrop-filter:blur(18px)!important;-webkit-backdrop-filter:blur(18px)!important}
+      .voice-editor-dialog.ve2{width:100dvw!important;height:100dvh!important;max-width:none!important;max-height:none!important;min-width:0!important;min-height:0!important;border:0!important;border-radius:0!important;overflow:hidden!important;display:grid!important;grid-template-rows:74px minmax(0,1fr) 76px!important;padding:0!important;margin:0!important;background:radial-gradient(circle at 72% -10%,rgba(160,102,255,.20),transparent 34%),radial-gradient(circle at 18% 110%,rgba(91,102,255,.12),transparent 35%),linear-gradient(145deg,#071225,#091426 55%,#10102a)!important;color:#e9edf6!important;box-shadow:none!important}
+      .ve2-head{min-width:0!important;min-height:0!important;height:74px!important;padding:12px 18px!important;box-sizing:border-box!important;background:rgba(5,10,22,.72)!important;border-bottom:1px solid rgba(255,255,255,.075)!important;backdrop-filter:blur(22px)!important;-webkit-backdrop-filter:blur(22px)!important}
+      .ve2-brand{min-width:0!important}.ve2-brand-mark{width:40px!important;height:40px!important;border-radius:13px!important;background:linear-gradient(135deg,#bd5cff,#695cff)!important;box-shadow:0 12px 30px rgba(114,71,222,.30)!important}
+      .ve2-eyebrow{font-size:9px!important;letter-spacing:.20em!important;color:#b996ff!important}.ve2-title{font-size:17px!important;font-weight:950!important;letter-spacing:-.025em!important}.ve2-meta{font-size:8px!important;color:#778ca5!important}
+      .ve2-head-actions{gap:7px!important}.ve2-clear,.ve2-close{width:38px!important;height:38px!important;min-width:38px!important;border-radius:11px!important;display:grid!important;place-items:center!important}
+      .ve2-body{min-width:0!important;min-height:0!important;overflow:hidden!important;display:grid!important;grid-template-columns:minmax(0,1fr) 390px!important;background:rgba(3,8,17,.20)!important}
+      .ve2-main{min-width:0!important;min-height:0!important;overflow:hidden!important;padding:18px!important;background:radial-gradient(circle at 50% 48%,rgba(132,92,255,.10),transparent 48%),linear-gradient(180deg,#071222,#06101d)!important}
+      .ve2-stage{width:100%!important;height:100%!important;box-sizing:border-box!important;min-width:0!important;min-height:0!important;padding:16px!important;border:1px solid rgba(255,255,255,.075)!important;border-radius:24px!important;background:linear-gradient(145deg,rgba(255,255,255,.045),rgba(255,255,255,.012))!important;box-shadow:inset 0 1px 0 rgba(255,255,255,.035),0 24px 70px rgba(0,0,0,.20)!important;display:grid!important;grid-template-rows:auto minmax(0,1fr) auto auto!important;overflow:hidden!important}
+      .ve2-fileline{gap:12px!important;padding:2px 2px 12px!important}.ve2-name{height:40px!important;border-radius:12px!important;font-size:12px!important;padding:0 13px!important}
+      .ve2-wavebox{min-height:0!important;height:100%!important;border-radius:19px!important;background:linear-gradient(rgba(255,255,255,.025) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.020) 1px,transparent 1px),radial-gradient(circle at 50% 50%,rgba(149,103,255,.09),transparent 62%),#071322!important;background-size:100% 25%,10% 100%,100% 100%,auto!important;border:1px solid rgba(175,137,255,.14)!important;box-shadow:inset 0 0 40px rgba(0,0,0,.20)!important}
+      .ve2-wave-label{font-size:8px!important;letter-spacing:.22em!important;color:#9b82c4!important}.ve2-transport{padding:10px 2px 2px!important;margin:0!important}
+      .ve2-play{width:48px!important;height:48px!important;border-radius:15px!important;box-shadow:0 14px 30px rgba(110,71,220,.28)!important}.ve2-transport-btn{height:36px!important;border-radius:11px!important}
+      .ve2-side{min-width:0!important;min-height:0!important;max-width:none!important;overflow:auto!important;padding:14px!important;border-left:1px solid rgba(255,255,255,.075)!important;background:rgba(5,11,23,.76)!important;scrollbar-width:thin!important;scrollbar-color:rgba(155,116,230,.45) transparent!important}
+      .ve2-section{border-radius:18px!important;background:rgba(255,255,255,.032)!important}.ve2-section-title{padding-bottom:2px!important}.ve2-section-title b{font-size:12px!important}
+      .ve2-tools{grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:8px!important}.ve2-tool{min-height:82px!important;padding:11px!important;border-radius:15px!important;background:linear-gradient(145deg,rgba(255,255,255,.055),rgba(255,255,255,.018))!important}
+      .ve2-tool svg{width:22px!important;height:22px!important;color:#bd9cff!important}.ve2-tool strong{font-size:10px!important}.ve2-tool small{font-size:8px!important}
+      .ve2-tool.active{background:linear-gradient(145deg,rgba(169,92,255,.23),rgba(99,88,235,.13))!important;border-color:rgba(191,153,255,.58)!important;box-shadow:0 12px 30px rgba(104,67,209,.14)!important}
+      .ve2-panel{border-radius:16px!important;background:rgba(143,101,255,.055)!important}.ve2-apply{height:40px!important;border-radius:12px!important;font-size:10px!important}
+      .ve2-upload{min-height:78px!important;margin-top:12px!important;border-radius:17px!important;background:linear-gradient(135deg,rgba(155,111,255,.075),rgba(255,255,255,.018))!important}.ve2-plus{width:46px!important;height:46px!important;border-radius:14px!important}
+      .ve2-results{margin-top:12px!important}.ve2-result{border-radius:15px!important;background:rgba(255,255,255,.032)!important}
+      .ve2-footer{min-height:0!important;height:76px!important;box-sizing:border-box!important;padding:12px 18px!important;background:rgba(4,9,19,.88)!important;border-top:1px solid rgba(255,255,255,.075)!important;backdrop-filter:blur(18px)!important}
+      .ve2-footer-note{font-size:9px!important}.ve2-footer-btn{height:42px!important;border-radius:12px!important}
+      .miya-audio-editor-tabs{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin:0 0 10px;padding:5px;border-radius:14px;background:rgba(255,255,255,.035);border:1px solid rgba(255,255,255,.07)}
+      .miya-audio-editor-tab{height:34px;border:0;border-radius:10px;background:transparent;color:#8193aa;font-size:9px;font-weight:900;letter-spacing:.06em;cursor:pointer}
+      .miya-audio-editor-tab.active{color:#fff;background:linear-gradient(135deg,rgba(169,92,255,.30),rgba(104,94,238,.22));box-shadow:0 7px 18px rgba(99,66,200,.13)}
+      .voice-editor-backdrop.ve2-light{background:#eef2f7!important;backdrop-filter:none!important;-webkit-backdrop-filter:none!important}
+      .voice-editor-backdrop.ve2-light .voice-editor-dialog.ve2{background:#f7f9fc!important;color:#273047!important}
+      .voice-editor-backdrop.ve2-light .ve2-head,.voice-editor-backdrop.ve2-light .ve2-footer{background:rgba(255,255,255,.94)!important;border-color:#dbe4ee!important}
+      .voice-editor-backdrop.ve2-light .ve2-main{background:#eef2f7!important}.voice-editor-backdrop.ve2-light .ve2-stage{background:#fff!important;border-color:#dbe4ee!important}
+      .voice-editor-backdrop.ve2-light .ve2-wavebox{background:#f5f7fa!important;border-color:#d4deea!important}.voice-editor-backdrop.ve2-light .ve2-side{background:#eef2f7!important;border-color:#dbe4ee!important}
+      .voice-editor-backdrop.ve2-light .ve2-section{background:#fff!important;border-color:#dbe4ee!important}.voice-editor-backdrop.ve2-light .miya-audio-editor-tabs{background:#f3f6fa!important;border-color:#dbe4ee!important}
+      .voice-editor-backdrop.ve2-light .miya-audio-editor-tab{color:#64758a}.voice-editor-backdrop.ve2-light .miya-audio-editor-tab.active{color:#4e3976;background:#eee8ff}
+      .voice-editor-backdrop.ve2-light .ve2-tool{background:#f5f7fa!important;color:#52657b!important;border-color:#d3deea!important}.voice-editor-backdrop.ve2-light .ve2-tool.active{background:#eee8ff!important;color:#5d438e!important;border-color:#bfaee0!important}
+      .voice-editor-backdrop.ve2-light .ve2-panel{background:#faf8ff!important;border-color:#ddd1ef!important}.voice-editor-backdrop.ve2-light .ve2-wave-label{color:#7d6aa5!important}
+      @media(max-width:980px){.voice-editor-dialog.ve2{grid-template-rows:68px minmax(0,1fr) 66px!important;height:100dvh!important}.ve2-head{height:68px!important}.ve2-body{grid-template-columns:1fr!important;overflow:auto!important}.ve2-main{min-height:55dvh!important;height:55dvh!important}.ve2-side{border-left:0!important;border-top:1px solid rgba(255,255,255,.075)!important}}
+      @media(max-width:600px){.ve2-main{padding:9px!important}.ve2-stage{padding:10px!important;border-radius:18px!important}.ve2-side{padding:9px!important}.ve2-tools{grid-template-columns:1fr 1fr!important}.ve2-footer-note{display:none!important}.ve2-footer{justify-content:flex-end!important}}
+    `;
+    document.head.appendChild(s);
+  };
+
+  const addTabs=(dialog)=>{
+    if(!dialog||dialog.dataset.miyaTabsReady==="1")return;
+    const side=dialog.querySelector(".ve2-side"),tools=dialog.querySelector(".ve2-tools");
+    if(!side||!tools)return;
+    dialog.dataset.miyaTabsReady="1";
+    const tabs=document.createElement("div");
+    tabs.className="miya-audio-editor-tabs";
+    tabs.innerHTML='<button type="button" class="miya-audio-editor-tab active" data-audio-tab="edit">МОНТАЖ</button><button type="button" class="miya-audio-editor-tab" data-audio-tab="ai">AI ИНСТРУМЕНТЫ</button>';
+    side.querySelector(".ve2-section")?.prepend(tabs);
+    const setTab=(tab)=>{
+      tabs.querySelectorAll(".miya-audio-editor-tab").forEach(b=>b.classList.toggle("active",b.dataset.audioTab===tab));
+      tools.querySelectorAll(".ve2-tool").forEach(b=>{
+        const id=b.dataset.tool||"";
+        const ai=id==="noise"||id==="split";
+        b.style.display=(tab==="ai"?ai:!ai)?"":"none";
+      });
+      const active=tools.querySelector(".ve2-tool.active");
+      if(active&&getComputedStyle(active).display==="none"){
+        const next=[...tools.querySelectorAll(".ve2-tool")].find(b=>getComputedStyle(b).display!=="none");
+        next?.click();
+      }
+    };
+    tabs.querySelectorAll(".miya-audio-editor-tab").forEach(b=>b.onclick=()=>setTab(b.dataset.audioTab));
+    setTab("edit");
+  };
+
+  const watch=()=>{installStyles();document.querySelectorAll(".voice-editor-dialog.ve2").forEach(addTabs)};
+  new MutationObserver(watch).observe(document.body,{childList:true,subtree:true});
+  watch();
+})();
