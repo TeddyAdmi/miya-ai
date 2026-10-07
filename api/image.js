@@ -478,7 +478,31 @@ module.exports = async function imageHandler(req, res) {
       }
 
       try {
-        const target = endpoint + "?prompt=" + encodeURIComponent(cvronPrompt) + "&ratio=" + encodeURIComponent(cvronRatio);
+        const nativeSize = {
+          "1:1":  {width:1024,height:1024},
+          "16:9": {width:1376,height:768},
+          "9:16": {width:768,height:1376},
+          "3:4":  {width:896,height:1200},
+          "4:3":  {width:1200,height:896},
+          "2:3":  {width:848,height:1264},
+          "3:2":  {width:1264,height:848},
+          "21:9": {width:1584,height:672}
+        }[cvronRatio] || {width:1024,height:1024};
+
+        const finalPrompt = requestedModel === "Nano Banana 2"
+          ? cvronPrompt + "\n\nNATIVE OUTPUT: Generate the complete image natively in exactly " +
+            cvronRatio + " aspect ratio. Use the entire frame naturally. Do not crop, trim, zoom, cut off, or remove any part of the scene or subjects."
+          : cvronPrompt;
+
+        const target =
+          endpoint +
+          "?prompt=" + encodeURIComponent(finalPrompt) +
+          "&ratio=" + encodeURIComponent(cvronRatio) +
+          "&aspect_ratio=" + encodeURIComponent(cvronRatio) +
+          "&size=" + encodeURIComponent(cvronRatio) +
+          "&width=" + nativeSize.width +
+          "&height=" + nativeSize.height +
+          "&resolution=1K";
         const upstream = await fetch(target, {
           method:"GET",
           headers:{Accept:"application/json, text/plain, */*"},
@@ -529,42 +553,6 @@ module.exports = async function imageHandler(req, res) {
             message:"CVRON не вернул ссылку на изображение.",
             upstreamBody:raw.slice(0,1500)
           });
-        }
-
-        // Nano Banana 2 may ignore the requested ratio. Normalize its
-        // returned canvas so Miya honors the selected aspect ratio.
-        if (requestedModel === "Nano Banana 2" && cvronRatio !== "1:1") {
-          try {
-            const imageResponse = await fetch(imageUrl, {
-              headers:{Accept:"image/*"},
-              cache:"no-store",
-              signal:AbortSignal.timeout(45000)
-            });
-            if (!imageResponse.ok) throw new Error("Image download HTTP " + imageResponse.status);
-            const sourceBytes = Buffer.from(await imageResponse.arrayBuffer());
-            if (!sourceBytes.length) throw new Error("Empty image");
-            const parts = cvronRatio.split(":").map(Number);
-            const targetRatio = parts[0] / parts[1];
-            const meta = await sharp(sourceBytes).metadata();
-            const width = Number(meta.width || 0), height = Number(meta.height || 0);
-            if (width && height) {
-              const currentRatio = width / height;
-              let cropWidth=width, cropHeight=height;
-              if (currentRatio > targetRatio) cropWidth=Math.max(1,Math.round(height*targetRatio));
-              else if (currentRatio < targetRatio) cropHeight=Math.max(1,Math.round(width/targetRatio));
-              const left=Math.max(0,Math.floor((width-cropWidth)/2));
-              const top=Math.max(0,Math.floor((height-cropHeight)/2));
-              const normalized=await sharp(sourceBytes)
-                .extract({left,top,width:cropWidth,height:cropHeight})
-                .jpeg({quality:92}).toBuffer();
-              const normalizedUrl="data:image/jpeg;base64,"+normalized.toString("base64");
-              return res.status(200).json({
-                ok:true,mode:"image",status:"completed",provider:"CVRON",
-                model:requestedModel,imageUrl:normalizedUrl,imageUrls:[normalizedUrl],count:1,
-                meta:{free:true,endpoint,requestedRatio:cvronRatio,normalized:true}
-              });
-            }
-          } catch {}
         }
 
         return res.status(200).json({
