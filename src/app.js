@@ -497,8 +497,7 @@ function openImageViewer(item){
   stage.addEventListener("wheel",ev=>{
     if(!modal.classList.contains("open"))return;
     ev.preventDefault();
-    setZoom(Number(img.dataset.zoom||"1")+(ev.deltaY<0?.5:-.5));
-  });
+    setZoom(Number(img.dataset.zoom||"1")+(ev.deltaY<0?.5:-.5));  });
   document.addEventListener("keydown",e=>{
     if(!$("#imageViewerModal")?.classList.contains("open"))return;
     if(e.key==="Escape")closeImageViewer();
@@ -997,8 +996,7 @@ body.light .voice-player{background:linear-gradient(135deg,#f7f9fc,#eef3f8);bord
 body.light #voiceOptions .select-pill,
 body.light #voiceOptions .voice-tool,
 body.light #voiceOptions .voice-range{
- background:#fff!important;background-color:#fff!important;color:#273047!important;border-color:#cbd8e5!important;
- color-scheme:light!important;box-shadow:0 2px 7px rgba(50,70,95,.06)!important;
+ background:#fff!important;background-color:#fff!important;color:#273047!important;border-color:#cbd8e5!important; color-scheme:light!important;box-shadow:0 2px 7px rgba(50,70,95,.06)!important;
 }
 body.light #voiceOptions .select-pill:hover,
 body.light #voiceOptions .select-pill:focus,
@@ -1497,8 +1495,7 @@ async function openVoiceEditor(item,source){
 .ve2-player{width:100%;margin:0}
 .ve2-wavebox{position:relative;margin-top:16px;height:154px;border:1px solid rgba(164,126,255,.22);border-radius:18px;overflow:hidden;background:linear-gradient(180deg,rgba(11,26,45,.96),rgba(6,17,30,.98));cursor:crosshair}
 .ve2-wave{position:absolute;inset:0;width:100%;height:100%}
-.ve2-wave-selection{position:absolute;top:0;bottom:0;border-left:1px solid rgba(215,190,255,.78);border-right:1px solid rgba(215,190,255,.78);background:linear-gradient(90deg,rgba(163,115,255,.06),rgba(163,115,255,.16),rgba(163,115,255,.06));pointer-events:none}
-.ve2-playhead{position:absolute;top:0;bottom:0;width:2px;background:#fff;box-shadow:0 0 12px rgba(255,255,255,.5);pointer-events:none;transform:translateX(-1px)}
+.ve2-wave-selection{position:absolute;top:0;bottom:0;border-left:1px solid rgba(215,190,255,.78);border-right:1px solid rgba(215,190,255,.78);background:linear-gradient(90deg,rgba(163,115,255,.06),rgba(163,115,255,.16),rgba(163,115,255,.06));pointer-events:none}.ve2-playhead{position:absolute;top:0;bottom:0;width:2px;background:#fff;box-shadow:0 0 12px rgba(255,255,255,.5);pointer-events:none;transform:translateX(-1px)}
 .ve2-playhead::before{content:"";position:absolute;top:0;left:50%;transform:translate(-50%,-2px);width:8px;height:8px;border-radius:50%;background:#fff;box-shadow:0 0 12px rgba(183,140,255,.8)}
 .ve2-wave-label{position:absolute;left:12px;top:10px;font-size:8px;letter-spacing:.14em;font-weight:900;color:#9f8bc4;pointer-events:none}
 .ve2-transport{display:flex;align-items:center;gap:9px;margin-top:12px}
@@ -1537,14 +1534,32 @@ async function openVoiceEditor(item,source){
 .ve2-footer{min-width:0;overflow:hidden;min-height:70px;padding:12px 18px;display:flex;align-items:center;justify-content:space-between;gap:12px;border-top:1px solid rgba(255,255,255,.075);background:rgba(4,12,22,.72)}
 .ve2-footer-note{font-size:9px;color:#71859a;line-height:1.35}.ve2-footer-actions{display:flex;gap:8px}.ve2-footer-btn{height:40px;padding:0 15px;border-radius:12px;border:1px solid rgba(255,255,255,.10);background:rgba(255,255,255,.045);color:#b5c5d6;font-size:10px;font-weight:900;cursor:pointer}.ve2-footer-btn.primary{border:0;background:linear-gradient(135deg,#a95cff,#6e63ff);color:#fff;box-shadow:0 10px 25px rgba(104,66,210,.22)}.ve2-footer-btn:disabled{opacity:.38;cursor:default;box-shadow:none}
 .ve2-name{width:100%;height:34px;padding:0 10px;border:1px solid rgba(255,255,255,.09);border-radius:10px;background:rgba(255,255,255,.04);color:#d6e0ea;outline:none;font-size:10px}.ve2-name:focus{border-color:rgba(190,154,255,.48);box-shadow:0 0 0 3px rgba(157,111,255,.09)}
-body.light .voice-editor-dialog.ve2{background:#f7f9fc!important;border-color:#dbe4ee!important;color:#273047}
-body.light .ve2-head,body.light .ve2-footer{background:#fff;border-color:#dbe4ee}.body.light .ve2-side{background:#f2f5f9}
-body.light .ve2-side{background:#f2f5f9;border-color:#dbe4ee}.body.light .ve2-stage{background:#fff;border-color:#dbe4ee}
-body.light .ve2-stage,body.light .ve2-section,body.light .ve2-result{background:#fff;border-color:#dbe4ee}
+body.light .voice-editor-backdrop{background:#eef1f5!important;backdrop-filter:none!important;-webkit-backdrop-filter:none!important}
+body.light .voice-editor-dialog.ve2{background:#f7f9fc!important;border-color:#dbe4ee!important;color:#273047!important;box-shadow:0 24px 70px rgba(40,55,80,.12)!important}
+body.light .ve2-head,body.light .ve2-footer{background:#fff!important;border-color:#dbe4ee!important}
+body.light .ve2-side{background:#f2f5f9!important;border-color:#dbe4ee!important}
+body.light .ve2-main{background:#f2f5f9}
+body.light .ve2-stage,body.light .ve2-section,body.light .ve2-result{background:#fff!important;border-color:#dbe4ee!important;box-shadow:0 8px 28px rgba(55,70,95,.05)}
+body.light .ve2-wavebox{background:linear-gradient(180deg,#f8fafc,#eef2f6)!important;border-color:#d4deea!important}
+body.light .ve2-wave-label{color:#7d6aa5}
+body.light .ve2-playhead{background:#6e63ff;box-shadow:0 0 10px rgba(110,99,255,.28)}
+body.light .ve2-playhead::before{background:#6e63ff;box-shadow:0 0 10px rgba(110,99,255,.24)}
+body.light .ve2-time{color:#52657b}
+body.light .ve2-transport-btn{background:#f4f7fa;color:#52657b;border-color:#d3deea}
+body.light .ve2-upload{background:linear-gradient(135deg,#faf9ff,#fff)!important;border-color:#cfc2eb!important}
+body.light .ve2-upload b,body.light .ve2-fileline b{color:#273047}
+body.light .ve2-upload span,body.light .ve2-meta,body.light .ve2-tool small,body.light .ve2-panel p,body.light .ve2-note,body.light .ve2-footer-note{color:#71839a}
 body.light .ve2-title,body.light .ve2-section-title b,body.light .ve2-tool strong,body.light .ve2-panel h4{color:#273047}
-body.light .ve2-meta,body.light .ve2-upload span,body.light .ve2-tool small,body.light .ve2-panel p,body.light .ve2-note,body.light .ve2-footer-note{color:#71839a}
 body.light .ve2-tool,body.light .ve2-transport-btn,body.light .ve2-footer-btn,body.light .ve2-result-save{background:#f4f7fa;color:#52657b;border-color:#d3deea}
+body.light .ve2-tool:hover,body.light .ve2-result-save:hover{background:#eeeaff;color:#493b70;border-color:#bfaee0}
+body.light .ve2-tool.active{background:linear-gradient(145deg,#f0e7ff,#eeeaff);color:#5d438e;border-color:#bfaee0}
 body.light .ve2-name{background:#fff;color:#273047;border-color:#d3deea}
+body.light .ve2-panel{background:#faf8ff;border-color:#ddd1ef}
+body.light .ve2-result audio{background:#fff}
+body.light .ve2-clear{background:linear-gradient(135deg,#fff0f2,#fff)!important;color:#d34e68;border-color:#edc3cc}
+body.light .ve2-close{background:#f4f7fa;color:#52657b;border-color:#d3deea}
+body.light .ve2-close:hover{background:#eeeaff;color:#493b70}
+body.light .ve2-footer-btn.primary{color:#fff}
 @media(max-width:900px){.voice-editor-dialog.ve2{width:100vw!important;height:100vh!important}.ve2-body{grid-template-columns:1fr}.ve2-side{border-left:0;border-top:1px solid rgba(255,255,255,.075);max-height:44vh}.ve2-main{overflow:auto}}
 @media(max-width:560px){.voice-editor-dialog.ve2{border-radius:0!important}.ve2-head{padding:12px}.ve2-clear{width:42px;padding:0;justify-content:center}.ve2-clear span{display:none}.ve2-stage{padding:12px}.ve2-wavebox{height:125px}.ve2-footer-note{display:none}.ve2-footer{justify-content:flex-end}.ve2-tools{grid-template-columns:1fr 1fr}}
 `;
@@ -1997,8 +2012,7 @@ function scrollChatToLatest(behavior="smooth"){
    const target=workspace.scrollTop+(lr.bottom-(cr.top-gap));
    const max=Math.max(0,workspace.scrollHeight-workspace.clientHeight);
    workspace.scrollTo({top:Math.max(0,Math.min(max,target)),behavior});
-  });
- });
+  }); });
 }
 function showLoading(){
  const c=$("#canvas");
@@ -2497,8 +2511,7 @@ function audioBufferToCompactWavBlob(buffer,maxBytes=3200000){
   const rates=[22050,16000,12000,8000];
   const rate=rates.find(r=>Math.ceil(duration*r)*2+44<=maxBytes)||8000;
   const frames=Math.max(1,Math.ceil(duration*rate)),dataSize=frames*2;
-  const arrayBuffer=new ArrayBuffer(44+dataSize),view=new DataView(arrayBuffer);
-  const writeString=(offset,str)=>{for(let i=0;i<str.length;i++)view.setUint8(offset+i,str.charCodeAt(i))};
+  const arrayBuffer=new ArrayBuffer(44+dataSize),view=new DataView(arrayBuffer);  const writeString=(offset,str)=>{for(let i=0;i<str.length;i++)view.setUint8(offset+i,str.charCodeAt(i))};
   writeString(0,"RIFF");view.setUint32(4,36+dataSize,true);writeString(8,"WAVE");
   writeString(12,"fmt ");view.setUint32(16,16,true);view.setUint16(20,1,true);
   view.setUint16(22,1,true);view.setUint32(24,rate,true);view.setUint32(28,rate*2,true);
@@ -2997,8 +3010,7 @@ async function generateVideo(prompt){
      const statusEl=$("#composerStatus"); if(statusEl) statusEl.textContent="LTX-2.3 временно недоступен · квота ZeroGPU";
      toast(until
        ? "LTX-2.3 временно отключён до восстановления бесплатной квоты. Повторный запрос не отправлен."
-       : "LTX-2.3 временно отключён: бесплатная ZeroGPU-квота исчерпана.");
-   }else{
+       : "LTX-2.3 временно отключён: бесплатная ZeroGPU-квота исчерпана.");   }else{
      const statusEl=$("#composerStatus"); if(statusEl) statusEl.textContent="LTX-2.3 Distilled · ошибка · можно повторить";
      toast(rawMessage||"Не удалось создать видео");
    }
@@ -3497,8 +3509,7 @@ function ensureToolsEditorStyles(){if(document.getElementById("miyaToolsEditorSt
 let toolsEditorState={kind:"image",file:null,url:"",vocalResults:null};
 function toolsEditorReset(){
  if(toolsEditorState.url)try{URL.revokeObjectURL(toolsEditorState.url)}catch{}
- const results=toolsEditorState.vocalResults;
- if(results?.vocals?.url)try{URL.revokeObjectURL(results.vocals.url)}catch{}
+ const results=toolsEditorState.vocalResults; if(results?.vocals?.url)try{URL.revokeObjectURL(results.vocals.url)}catch{}
  if(results?.instrumental?.url)try{URL.revokeObjectURL(results.instrumental.url)}catch{}
  toolsEditorState={kind:toolsEditorState.kind,file:null,url:"",vocalResults:null};
 }
@@ -3998,7 +4009,6 @@ function speechSetIdle(){
   }
   speechPlaceholder="";
 }
-
 function ensureSpeechVisualizer(){
   let canvas=$("#composerVoiceVisualizer");
   if(canvas)return canvas;

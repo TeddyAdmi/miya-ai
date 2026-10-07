@@ -34,30 +34,31 @@ export default async function handler(req, res) {
       return res.status(400).json({ error: "MULTIPART_FILE_REQUIRED" });
     }
 
-    // Parse Miya's multipart body first, then rebuild it with Node's FormData.
-    // This prevents the raw Vercel request stream from reaching CleverUtils as
-    // malformed multipart data (the source of the upstream NO_FILE/400 error).
-    const parsed = await new Request("http://miya.local/upload", {
-      method: "POST",
-      headers: { "content-type": contentType },
-      body
-    }).formData();
+    // Parse the single multipart file as raw bytes. This avoids Vercel/Node
+    // FormData coercion that was turning the uploaded File into a non-file value.
+    const boundaryMatch = contentType.match(/boundary=(?:"([^"]+)"|([^;]+))/i);
+    const boundary = boundaryMatch?.[1] || boundaryMatch?.[2];
+    if (!boundary) return res.status(400).json({ error: "MULTIPART_BOUNDARY_REQUIRED" });
 
-    const file = parsed.get("file");
-    if (!file || typeof file.arrayBuffer !== "function") {
-      return res.status(400).json({ error: "FILE_REQUIRED", message: "Please upload an audio file" });
-    }
+    const marker = Buffer.from("\r\n--" + boundary);
+    const headerEnd = body.indexOf(Buffer.from("\r\n\r\n"));
+    if (headerEnd < 0) return res.status(400).json({ error: "MULTIPART_FILE_REQUIRED", message: "Please upload an audio file" });
 
-    const bytes = await file.arrayBuffer();
-    if (!bytes.byteLength) {
-      return res.status(400).json({ error: "FILE_EMPTY", message: "Uploaded audio file is empty" });
-    }
+    const headerText = body.subarray(0, headerEnd).toString("utf8");
+    const disposition = headerText.match(/content-disposition:\s*form-data;\s*name="file";\s*filename="([^"]*)"/i);
+    if (!disposition) return res.status(400).json({ error: "FILE_REQUIRED", message: "Please upload an audio file" });
 
-    // Re-create a real File part (not a generic Blob). CleverUtils validates
-    // the uploaded part as an audio file using its filename/MIME metadata.
-    const filename = String(file.name || "miya-split-source.wav");
+    const fileStart = headerEnd + 4;
+    const fileEnd = body.indexOf(marker, fileStart);
+    if (fileEnd < 0) return res.status(400).json({ error: "MULTIPART_FILE_END_REQUIRED" });
+
+    const bytes = body.subarray(fileStart, fileEnd);
+    if (!bytes.length) return res.status(400).json({ error: "FILE_EMPTY", message: "Uploaded audio file is empty" });
+
+    const filename = disposition[1] || "miya-split-source.wav";
     const lower = filename.toLowerCase();
-    const type = String(file.type || "").toLowerCase() || (
+    const typeMatch = headerText.match(/content-type:\s*([^\r\n]+)/i);
+    const type = String(typeMatch?.[1] || "").trim().toLowerCase() || (
       lower.endsWith(".wav") ? "audio/wav" :
       lower.endsWith(".mp3") ? "audio/mpeg" :
       lower.endsWith(".m4a") ? "audio/mp4" :
@@ -67,7 +68,7 @@ export default async function handler(req, res) {
     );
     const upstreamFile = new File([bytes], filename, { type });
     const form = new FormData();
-    form.append("file", upstreamFile);
+    form.append("file", upstreamFile, filename);
 
     const upstream = await fetch("https://cleverutils.com/api/v1/tools/vocal-remover", {
       method: "POST",
