@@ -1787,17 +1787,32 @@ body.light .ve2-footer-btn.primary{color:#fff}
   if(!workingBlob)return;showSplitProgress(8,"Подготавливаем аудио","проверяем исходный файл…");
   let timer=null;
   try{
-   // Send the original uploaded audio to CleverUtils. The service explicitly
-   // accepts MP3/WAV/FLAC/OGG/M4A/AAC/WMA and video containers. Re-encoding
-   // through AudioContext was unnecessary and could make the provider reject
-   // the generated blob as not being a recognized audio upload.
-   const sourceType=String(workingBlob.type||"").toLowerCase();
-   const sourceName=String(workingName||"miya-audio").trim()||"miya-audio";
-   const ext=(sourceName.match(/\.([a-z0-9]{2,5})$/i)?.[1]||"mp3").toLowerCase();
-   const mime=sourceType.startsWith("audio/")?sourceType:(ext==="wav"?"audio/wav":ext==="flac"?"audio/flac":ext==="ogg"?"audio/ogg":ext==="m4a"?"audio/mp4":ext==="aac"?"audio/aac":"audio/mpeg");
-   const safeName=/\.[a-z0-9]{2,5}$/i.test(sourceName)?sourceName:sourceName+"."+ (mime.includes("wav")?"wav":mime.includes("flac")?"flac":mime.includes("ogg")?"ogg":mime.includes("mp4")?"m4a":mime.includes("aac")?"aac":"mp3");
-   const uploadFile=new File([workingBlob],safeName,{type:mime,lastModified:Date.now()}),form=new FormData();form.append("file",uploadFile,uploadFile.name);
-   updateSplitProgress(18,"Аудио подготовлено","загрузка исходного файла…");
+   // CleverUtils validates the actual media container, not only the browser MIME.
+   // Miya voice cards can contain concatenated MP3 chunks inside a Blob: Firefox
+   // can play that Blob, but the server may reject it as "not an audio file".
+   // Decode it locally and send a real WAV container so the provider receives
+   // a standards-compliant audio file. If the browser cannot decode the source
+   // (for example an unsupported format), keep the original upload as fallback.
+   const sourceFile=makeAudioUploadFile();
+   let uploadFile=sourceFile;
+   try{
+    const AudioContextClass=window.AudioContext||window.webkitAudioContext;
+    if(AudioContextClass){
+     const ctx=new AudioContextClass();
+     try{
+      const buffer=await ctx.decodeAudioData(await sourceFile.arrayBuffer());
+      const wavBlob=audioBufferToWavBlob(buffer);
+      if(wavBlob?.size && wavBlob.size<=50*1024*1024){
+       const base=String(sourceFile.name||"miya-audio").replace(/\.[^.]+$/,"")||"miya-audio";
+       uploadFile=new File([wavBlob],base+".wav",{type:"audio/wav",lastModified:Date.now()});
+      }
+     }finally{try{await ctx.close()}catch{}}
+    }
+   }catch(convertError){
+    console.warn("Miya vocal split WAV conversion fallback",convertError);
+   }
+   const form=new FormData();form.append("file",uploadFile,uploadFile.name);
+   updateSplitProgress(18,"Аудио подготовлено",uploadFile.type==="audio/wav"?"валидный WAV · готов к загрузке":"исходный аудиофайл · готов к загрузке");
    updateSplitProgress(28,"Загружаем аудио","CleverUtils · Demucs");
    timer=setInterval(()=>{const p=panel.querySelector(".progress-percent"),cur=p?parseInt(p.textContent,10)||28:28,next=Math.min(88,cur+(cur<55?2:cur<78?1:0));if(next>cur)updateSplitProgress(next,next<55?"Разделяем дорожки":"AI обрабатывает аудио",next<55?"Demucs · анализ вокала":"Demucs · извлечение вокала и инструментала")},1800);
    const rr=await fetch("https://cleverutils.com/api/v1/tools/vocal-remover",{method:"POST",body:form,headers:{Accept:"application/json"},cache:"no-store"});
@@ -1826,7 +1841,6 @@ body.light .ve2-footer-btn.primary{color:#fff}
   }catch(e){if(timer)clearInterval(timer);console.error("Miya voice editor split failed",e);splitPanel();toast(String(e?.message||"Не удалось разделить песню"))}
   finally{if(timer)clearInterval(timer)}
  };
-
  const input=document.createElement("input");input.type="file";input.accept="audio/*";input.hidden=true;document.body.appendChild(input);
  const replaceSource=async file=>{if(!file?.type?.startsWith("audio/")){toast("Выбери аудиофайл");return}input.value="";stemResults=null;renderResults();await setWorkingBlob(file,file.name||"miya-voice.mp3");setStatus("Новый рабочий файл");toast("Аудио загружено · карточка на стене не изменена")};
  input.onchange=()=>{const f=input.files?.[0];if(f)replaceSource(f)};
