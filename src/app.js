@@ -1795,8 +1795,8 @@ body.light .ve2-footer-btn.primary{color:#fff}
    timer=setInterval(()=>{const p=panel.querySelector(".progress-percent"),cur=p?parseInt(p.textContent,10)||28:28,next=Math.min(88,cur+(cur<55?2:cur<78?1:0));if(next>cur)updateSplitProgress(next,next<55?"Разделяем дорожки":"AI обрабатывает аудио",next<55?"Demucs · анализ вокала":"Demucs · извлечение вокала и инструментала")},1800);
    const boundary="----MiyaVocal"+Math.random().toString(16).slice(2),filename=String(uploadFile.name||"miya-audio.mp3").replace(/["\\\r\n]/g,"_"),mime=String(uploadFile.type||"audio/mpeg");
    const audioBytes=await uploadFile.arrayBuffer();
-   const head=`--${boundary}\\r\\nContent-Disposition: form-data; name="file"; filename="${filename}"\\r\\nContent-Type: ${mime}\\r\\n\\r\\n`;
-   const tail=`\\r\\n--${boundary}--\\r\\n`;
+   const head=`--${boundary}\r\nContent-Disposition: form-data; name="file"; filename="${filename}"\r\nContent-Type: ${mime}\r\n\r\n`;
+   const tail=`\r\n--${boundary}--\r\n`;
    const encoder=new TextEncoder(),hb=encoder.encode(head),tb=encoder.encode(tail),body=new Uint8Array(hb.byteLength+audioBytes.byteLength+tb.byteLength);body.set(hb,0);body.set(new Uint8Array(audioBytes),hb.byteLength);body.set(tb,hb.byteLength+audioBytes.byteLength);
    const response=await fetch("https://cleverutils.com/api/v1/tools/vocal-remover",{method:"POST",body,headers:{"Content-Type":"multipart/form-data; boundary="+boundary,Accept:"application/json"},cache:"no-store"});
    let payload=await response.json().catch(()=>null);if(!response.ok)throw new Error(String(payload?.error?.message||payload?.message||payload?.error?.code||"CLEVERUTILS_"+response.status));
