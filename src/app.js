@@ -1712,7 +1712,17 @@ body.light .ve2-name{background:#fff;color:#273047;border-color:#d3deea}
  const runSplit=async()=>{
   if(!workingBlob)return;const b=panel.querySelector(".ve2-apply");if(b){b.disabled=true;b.textContent="Разделяю…"}
   try{
-   const form=new FormData();form.append("file",new File([workingBlob],workingName,{type:workingBlob.type||"audio/mpeg"}));const rr=await fetch("https://cleverutils.com/api/v1/tools/vocal-remover",{method:"POST",body:form,headers:{Accept:"application/json"},cache:"no-store"});const data=await rr.json().catch(()=>({}));if(!rr.ok)throw new Error(data?.message||data?.error?.message||data?.error||"VOCAL_SPLIT_FAILED");
+   // Send a real WAV file so CleverUtils sees both a valid audio MIME and a matching filename.
+   // Provider blobs can arrive as application/octet-stream or with a stale extension.
+   const AudioContextClass=window.AudioContext||window.webkitAudioContext;if(!AudioContextClass)throw new Error("Браузер не поддерживает аудиообработку");
+   const ctx=new AudioContextClass();
+   const buffer=await ctx.decodeAudioData(await workingBlob.arrayBuffer());
+   await ctx.close();
+   const wavBlob=audioBufferToWavBlob(buffer);
+   if(!wavBlob?.size)throw new Error("VOCAL_SPLIT_AUDIO_EMPTY");
+   const uploadFile=new File([wavBlob],"miya-split-source.wav",{type:"audio/wav",lastModified:Date.now()});
+   const form=new FormData();form.append("file",uploadFile,uploadFile.name);
+   const rr=await fetch("https://cleverutils.com/api/v1/tools/vocal-remover",{method:"POST",body:form,headers:{Accept:"application/json"},cache:"no-store"});const data=await rr.json().catch(()=>({}));if(!rr.ok)throw new Error(data?.message||data?.error?.message||data?.error||"VOCAL_SPLIT_FAILED");
    let job=data?.data||data;const id=job?.job_id||job?.jobId||"";if(id&&!job?.output&&!job?.outputs)job=await pollCleverJobObject(String(id));
    const stems=collectCleverStemUrls(job);let vocals=stems.vocals,instrumental=stems.instrumental;const output=job?.output?.url||job?.outputUrl||job?.links?.output||"";
    if(!vocals||!instrumental){if(!output)throw new Error("VOCAL_SPLIT_OUTPUT_MISSING");const res=await fetch(output);if(!res.ok)throw new Error("VOCAL_SPLIT_OUTPUT_"+res.status);const blob=await res.blob();const type=String(res.headers.get("content-type")||blob.type||"").toLowerCase();if(type.includes("zip")||/\.zip(?:$|[?#])/i.test(output)){const JSZip=(await import("https://cdn.jsdelivr.net/npm/jszip@3.10.1/+esm")).default;const zip=await JSZip.loadAsync(blob);for(const name of Object.keys(zip.files)){const e=zip.files[name];if(e.dir)continue;const lower=name.toLowerCase();const bb=await e.async("blob");if(!vocals&&/(vocal|vocals|acapella)/.test(lower))vocals=bb;if(!instrumental&&/(instrument|karaoke|minus|backing|accompaniment)/.test(lower))instrumental=bb}}}
