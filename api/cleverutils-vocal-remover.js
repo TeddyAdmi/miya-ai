@@ -204,39 +204,129 @@ export default async function handler(req, res) {
     // deterministic multipart/form-data payload with an explicit "file" part.
     // This avoids runtime-specific FormData/stream handling on Vercel while
     // preserving the uploaded audio bytes, filename and MIME type.
-    const boundary = "----MiyaCleverUtils" + Math.random().toString(16).slice(2);
-    const head = Buffer.from(
-      "--" + boundary + "\\r\\n" +
-      'Content-Disposition: form-data; name="file"; filename="' + filename.replace(/"/g, "") + '"\\r\\n' +
-      "Content-Type: " + mime + "\\r\\n\\r\\n",
-      "utf8"
-    );
-    const tail = Buffer.from("\\r\\n--" + boundary + "--\\r\\n", "utf8");
-    const multipart = Buffer.concat([head, file, tail]);
-    const upstream = await fetch("https://cleverutils.com/api/v1/tools/vocal-remover", {
+    const fileBase64 = file.toString("base64");
+
+    // CleverUtils MCP accepts the file as base64 and returns the Demucs
+    // stems as MCP resource_link blocks. Do the normal MCP handshake first.
+    const initialize = await fetch("https://cleverutils.com/mcp", {
       method: "POST",
-      body: multipart,
-      headers: {
-        "content-type": "multipart/form-data; boundary=" + boundary,
-        "content-length": String(multipart.length),
-        accept: "application/json"
-      },
+      headers: { "content-type": "application/json", accept: "application/json" },
+      body: JSON.stringify({
+        jsonrpc: "2.0",
+        id: 1,
+        method: "initialize",
+        params: {
+          protocolVersion: "2025-06-18",
+          capabilities: {},
+          clientInfo: { name: "miya-studio", version: "1.0" }
+        }
+      }),
       cache: "no-store"
     });
-
-    const upstreamText = await upstream.text();
-    let payload;
-    try {
-      payload = JSON.parse(upstreamText);
-    } catch {
+    const initText = await initialize.text();
+    let initPayload = {};
+    try { initPayload = JSON.parse(initText); } catch {}
+    if (!initialize.ok || initPayload?.error) {
       return res.status(502).json({
-        error: "CLEVERUTILS_REST_INVALID_JSON",
-        message: upstreamText.slice(0, 1000)
+        error: "CLEVERUTILS_MCP_INITIALIZE_FAILED",
+        message: initPayload?.error?.message || initText.slice(0, 500)
       });
     }
 
-    if (!upstream.ok) {
-      return res.status(upstream.status).json(payload);
+    const mcp = await fetch("https://cleverutils.com/mcp", {
+      method: "POST",
+      headers: {
+        "content-type": "application/json",
+        accept: "application/json, text/event-stream"
+      },
+      body: JSON.stringify({
+        jsonrpc: "2.0",
+        id: 2,
+        method: "tools/call",
+        params: {
+          name: "vocal_remover",
+          arguments: {
+            file: fileBase64
+          }
+        }
+      }),
+      cache: "no-store"
+    });
+
+    const raw = await mcp.text();
+    let payload = {};
+    try {
+      payload = parseMcpResponse(raw);
+    } catch {
+      return res.status(502).json({
+        error: "CLEVERUTILS_MCP_INVALID_JSON",
+        message: raw.slice(0, 1000)
+      });
+    }
+
+    if (!mcp.ok || payload?.error) {
+      return res.status(mcp.status >= 400 ? mcp.status : 502).json({
+        error: "CLEVERUTILS_MCP_FAILED",
+        message: payload?.error?.message || "CleverUtils MCP vocal remover failed."
+      });
+    }
+
+    // The MCP response is recursive: result.content may contain
+    // resource_link objects directly, or nested under resource/resource_link
+    // wrappers. collectUrls() intentionally walks the complete response.
+    const links = uniqueLinks(collectUrls(payload?.result));
+    if (links.length < 2) {
+      return res.status(502).json({
+        error: "CLEVERUTILS_MCP_OUTPUT_MISSING",
+        message: "CleverUtils MCP did not return both vocal and instrumental files.",
+        filename,
+        mime,
+        received: links.map(x => ({ name: x.name, mime: x.mime, url: x.url }))
+      });
+    }
+
+    const classified = links.map(link => ({ ...link, ...classifyLink(link) }));
+    const vocalLink =
+      classified.find(x => x.vocals && !x.instrumental) ||
+      classified.find(x => /vocal|acapella|voice/i.test(x.name + " " + x.description));
+    const instrumentalLink =
+      classified.find(x => x.url !== vocalLink?.url && x.instrumental) ||
+      classified.find(x => x.url !== vocalLink?.url && /instrument|karaoke|backing|accompaniment|minus/i.test(x.name + " " + x.description));
+
+    // Some Demucs responses label both resources generically. In that case
+    // return the first two distinct audio resources rather than failing.
+    const fallback = classified.filter(x => x.url !== vocalLink?.url);
+    const finalVocal = vocalLink || links[0];
+    const finalInstrumental = instrumentalLink || fallback[0] || links[1];
+
+    if (!finalVocal?.url || !finalInstrumental?.url || finalVocal.url === finalInstrumental.url) {
+      return res.status(502).json({
+        error: "CLEVERUTILS_MCP_OUTPUT_MISSING",
+        message: "CleverUtils MCP returned insufficient distinct stem files.",
+        filename,
+        mime,
+        received: links.map(x => ({ name: x.name, mime: x.mime, url: x.url }))
+      });
+    }
+
+    return res.status(200).json({
+      data: {
+        status: "done",
+        outputs: {
+          vocals: {
+            url: localOutputUrl(req, finalVocal.url),
+            filename: finalVocal.name || "vocals.mp3",
+            mime: finalVocal.mime || "audio/mpeg"
+          },
+          instrumental: {
+            url: localOutputUrl(req, finalInstrumental.url),
+            filename: finalInstrumental.name || "instrumental.mp3",
+            mime: finalInstrumental.mime || "audio/mpeg"
+          }
+        }
+      }
+    });
+
     }
 
     const data = payload?.data || payload;
