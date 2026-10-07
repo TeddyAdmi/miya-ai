@@ -177,12 +177,34 @@ export default async function handler(req, res) {
     const { file, filename, mime } = parseMultipartFile(body, contentType);
     const fileBase64 = file.toString("base64");
 
-    const mcp = await fetch("https://cleverutils.com/mcp", {
+    const mcpEndpoint = "https://cleverutils.com/mcp";
+    const mcpHeaders = {
+      "content-type": "application/json",
+      accept: "application/json, text/event-stream"
+    };
+
+    // CleverUtils documents Streamable HTTP and recommends the MCP
+    // initialize handshake before tools/call. The server is stateless, so
+    // no session id needs to be persisted between these requests.
+    await fetch(mcpEndpoint, {
       method: "POST",
-      headers: {
-        "content-type": "application/json",
-        accept: "application/json, text/event-stream"
-      },
+      headers: mcpHeaders,
+      body: JSON.stringify({
+        jsonrpc: "2.0",
+        id: 1,
+        method: "initialize",
+        params: {
+          protocolVersion: "2025-06-18",
+          capabilities: {},
+          clientInfo: { name: "Miya Studio", version: "1.0" }
+        }
+      }),
+      cache: "no-store"
+    }).catch(() => null);
+
+    const mcp = await fetch(mcpEndpoint, {
+      method: "POST",
+      headers: mcpHeaders,
       body: JSON.stringify({
         jsonrpc: "2.0",
         id: 3,
