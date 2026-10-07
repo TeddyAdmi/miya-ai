@@ -502,8 +502,8 @@ module.exports = async function imageHandler(req, res) {
           if (value == null) return "";
           if (typeof value === "string") {
             const v=value.trim();
-            if (/^https?:\\/\\//i.test(v) && /\\.(?:png|jpe?g|webp|gif)(?:[?#]|$)/i.test(v)) return v;
-            if (/^https?:\\/\\//i.test(v) && /(image|img|photo|picture|output|result|generated)/i.test(v)) return v;
+            if (/^https?:\/\//i.test(v) && /\.(?:png|jpe?g|webp|gif)(?:[?#]|$)/i.test(v)) return v;
+            if (/^https?:\/\//i.test(v) && /(image|img|photo|picture|output|result|generated)/i.test(v)) return v;
             return "";
           }
           if (typeof value !== "object" || seen.has(value)) return "";
