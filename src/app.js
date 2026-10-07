@@ -1534,8 +1534,17 @@ async function openVoiceEditor(item,source){
 .ve2-footer{min-width:0;overflow:hidden;min-height:70px;padding:12px 18px;display:flex;align-items:center;justify-content:space-between;gap:12px;border-top:1px solid rgba(255,255,255,.075);background:rgba(4,12,22,.72)}
 .ve2-footer-note{font-size:9px;color:#71859a;line-height:1.35}.ve2-footer-actions{display:flex;gap:8px}.ve2-footer-btn{height:40px;padding:0 15px;border-radius:12px;border:1px solid rgba(255,255,255,.10);background:rgba(255,255,255,.045);color:#b5c5d6;font-size:10px;font-weight:900;cursor:pointer}.ve2-footer-btn.primary{border:0;background:linear-gradient(135deg,#a95cff,#6e63ff);color:#fff;box-shadow:0 10px 25px rgba(104,66,210,.22)}.ve2-footer-btn:disabled{opacity:.38;cursor:default;box-shadow:none}
 .ve2-name{width:100%;height:34px;padding:0 10px;border:1px solid rgba(255,255,255,.09);border-radius:10px;background:rgba(255,255,255,.04);color:#d6e0ea;outline:none;font-size:10px}.ve2-name:focus{border-color:rgba(190,154,255,.48);box-shadow:0 0 0 3px rgba(157,111,255,.09)}
-body.light .voice-editor-backdrop{background:#eef1f5!important;backdrop-filter:none!important;-webkit-backdrop-filter:none!important}
-body.light .voice-editor-dialog.ve2{background:#f7f9fc!important;border-color:#dbe4ee!important;color:#273047!important;box-shadow:0 24px 70px rgba(40,55,80,.12)!important}
+html.light .voice-editor-backdrop,body.light .voice-editor-backdrop{background:#eef1f5!important;backdrop-filter:none!important;-webkit-backdrop-filter:none!important}
+html.light .voice-editor-dialog.ve2,body.light .voice-editor-dialog.ve2{background:#f7f9fc!important;border-color:#dbe4ee!important;color:#273047!important;box-shadow:0 24px 70px rgba(40,55,80,.12)!important}
+html.light .ve2-body,body.light .ve2-body{background:#f2f5f9!important}
+html.light .voice-editor-backdrop.ve2-light .voice-editor-dialog.ve2,body.light .voice-editor-backdrop.ve2-light .voice-editor-dialog.ve2{background:#f7f9fc!important;color:#273047!important}
+html.light .voice-editor-backdrop.ve2-light .ve2-head,body.light .voice-editor-backdrop.ve2-light .ve2-head{background:#fff!important}
+html.light .voice-editor-backdrop.ve2-light .ve2-footer,body.light .voice-editor-backdrop.ve2-light .ve2-footer{background:#fff!important}
+html.light .voice-editor-backdrop.ve2-light .ve2-stage,body.light .voice-editor-backdrop.ve2-light .ve2-stage{background:#fff!important}
+html.light .voice-editor-backdrop.ve2-light .ve2-section,body.light .voice-editor-backdrop.ve2-light .ve2-section{background:#fff!important}
+html.light .voice-editor-backdrop.ve2-light .ve2-wavebox,body.light .voice-editor-backdrop.ve2-light .ve2-wavebox{background:linear-gradient(180deg,#f8fafc,#eef2f6)!important}
+html.light .ve2-main,body.light .ve2-main{background:#f2f5f9!important;color:#273047!important}
+html.light .ve2-side,body.light .ve2-side{background:#f2f5f9!important;color:#273047!important}
 body.light .ve2-head,body.light .ve2-footer{background:#fff!important;border-color:#dbe4ee!important}
 body.light .ve2-side{background:#f2f5f9!important;border-color:#dbe4ee!important}
 body.light .ve2-main{background:#f2f5f9}
@@ -1567,7 +1576,8 @@ body.light .ve2-footer-btn.primary{color:#fff}
  }
 
  const backdrop=document.createElement("div");
- backdrop.className="voice-editor-backdrop";backdrop.style.cssText="position:fixed!important;inset:0!important;width:100vw!important;height:100vh!important;max-width:none!important;max-height:none!important;margin:0!important;padding:0!important;z-index:2147483647!important;"
+ backdrop.className="voice-editor-backdrop";
+ if(document.body.classList.contains("light")) backdrop.classList.add("ve2-light");backdrop.style.cssText="position:fixed!important;inset:0!important;width:100vw!important;height:100vh!important;max-width:none!important;max-height:none!important;margin:0!important;padding:0!important;z-index:2147483647!important;"
  document.documentElement.classList.add("miya-editor-page-open");
  document.body.classList.add("miya-editor-page-open");
  const previousBodyOverflow=document.body.style.overflow;
