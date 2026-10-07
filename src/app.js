@@ -1803,7 +1803,21 @@ body.light .ve2-footer-btn.primary{color:#fff}
    const rr=await fetch("/api/cleverutils-vocal-remover",{method:"POST",body:form,headers:{Accept:"application/json"},cache:"no-store"});
    clearInterval(timer);timer=null;const data=await rr.json().catch(()=>({}));if(!rr.ok)throw new Error(data?.message||data?.error?.message||data?.error||"VOCAL_SPLIT_FAILED");
    updateSplitProgress(92,"Получаем дорожки","почти готово…");
-   let job=data?.data||data,id=job?.job_id||job?.jobId||"";if(id&&!job?.output&&!job?.outputs)job=await pollCleverJobObject(String(id));
+   let job=data?.data||data,id=job?.job_id||job?.jobId||"";
+   if(id&&!job?.output&&!job?.outputs){
+    for(let i=0;i<100;i++){
+     await new Promise(r=>setTimeout(r,1800));
+     const jr=await fetch("/api/cleverutils-vocal-remover?job="+encodeURIComponent(String(id)),{cache:"no-store"});
+     const jd=await jr.json().catch(()=>({}));
+     if(!jr.ok)throw new Error(jd?.message||jd?.error?.message||jd?.error||"VOCAL_JOB_STATUS_FAILED");
+     job=jd?.data||jd;
+     const pct=Math.min(90,Math.max(30,Number(job?.progress)||30));
+     updateSplitProgress(pct,"AI разделяет дорожки","Demucs · обработка на CleverUtils");
+     if(job?.status==="done")break;
+     if(job?.status==="error"||job?.status==="failed")throw new Error("VOCAL_JOB_FAILED");
+     if(i===99)throw new Error("VOCAL_JOB_TIMEOUT");
+    }
+   }
    const stems=collectCleverStemUrls(job);let vocals=stems.vocals,instrumental=stems.instrumental,output=job?.output?.url||job?.outputUrl||job?.links?.output||"";
    if(!vocals||!instrumental){if(!output)throw new Error("VOCAL_SPLIT_OUTPUT_MISSING");const res=await fetch(output);if(!res.ok)throw new Error("VOCAL_SPLIT_OUTPUT_"+res.status);const blob=await res.blob(),type=String(res.headers.get("content-type")||blob.type||"").toLowerCase();if(type.includes("zip")||/\.zip(?:$|[?#])/i.test(output)){const JSZip=(await import("https://cdn.jsdelivr.net/npm/jszip@3.10.1/+esm")).default,zip=await JSZip.loadAsync(blob);for(const name of Object.keys(zip.files)){const e=zip.files[name];if(e.dir)continue;const lower=name.toLowerCase(),bb=await e.async("blob");if(!vocals&&/(vocal|vocals|acapella)/.test(lower))vocals=bb;if(!instrumental&&/(instrument|karaoke|minus|backing|accompaniment)/.test(lower))instrumental=bb}}}
    if(!vocals||!instrumental)throw new Error("VOCAL_SPLIT_TWO_TRACKS_MISSING");

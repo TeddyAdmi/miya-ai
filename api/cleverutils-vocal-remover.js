@@ -158,9 +158,34 @@ export default async function handler(req, res) {
         { method: "GET", headers: { accept: "application/json" }, cache: "no-store" }
       );
       const text = await upstream.text();
+      let payload;
+      try {
+        payload = JSON.parse(text);
+      } catch {
+        res.status(upstream.status);
+        res.setHeader("content-type", upstream.headers.get("content-type") || "application/json");
+        res.send(text);
+        return;
+      }
+      const data = payload?.data || payload;
+      const rewrite = value => {
+        if (!value || typeof value !== "object") return;
+        if (typeof value.url === "string" && isAllowedOutputHost(value.url)) {
+          value.url = localOutputUrl(req, value.url);
+        }
+        if (typeof value.outputUrl === "string" && isAllowedOutputHost(value.outputUrl)) {
+          value.outputUrl = localOutputUrl(req, value.outputUrl);
+        }
+      };
+      rewrite(data?.output);
+      rewrite(data?.outputs?.vocals);
+      rewrite(data?.outputs?.instrumental);
+      if (data?.links && typeof data.links === "object" && typeof data.links.output === "string" && isAllowedOutputHost(data.links.output)) {
+        data.links.output = localOutputUrl(req, data.links.output);
+      }
       res.status(upstream.status);
       res.setHeader("content-type", upstream.headers.get("content-type") || "application/json");
-      res.send(text);
+      res.send(JSON.stringify(payload));
       return;
     }
 
@@ -177,131 +202,57 @@ export default async function handler(req, res) {
     const { file, filename, mime } = parseMultipartFile(body, contentType);
     const fileBase64 = file.toString("base64");
 
-    const mcpEndpoint = "https://cleverutils.com/mcp";
-    const mcpHeaders = {
-      "content-type": "application/json",
-      accept: "application/json, text/event-stream"
-    };
+    const upstreamForm = new FormData();
+    upstreamForm.append("file", new Blob([file], { type: mime || "application/octet-stream" }), filename);
 
-    // CleverUtils documents Streamable HTTP and recommends the MCP
-    // initialize handshake before tools/call. The server is stateless, so
-    // no session id needs to be persisted between these requests.
-    await fetch(mcpEndpoint, {
+    // Use the documented REST endpoint instead of MCP for this heavy operation.
+    // REST returns a job_id quickly; the browser polls the job while Vercel
+    // avoids holding a serverless request open for the 1–3 minute Demucs run.
+    const upstream = await fetch("https://cleverutils.com/api/v1/tools/vocal-remover", {
       method: "POST",
-      headers: mcpHeaders,
-      body: JSON.stringify({
-        jsonrpc: "2.0",
-        id: 1,
-        method: "initialize",
-        params: {
-          protocolVersion: "2025-06-18",
-          capabilities: {},
-          clientInfo: { name: "Miya Studio", version: "1.0" }
-        }
-      }),
-      cache: "no-store"
-    }).catch(() => null);
-
-    const mcp = await fetch(mcpEndpoint, {
-      method: "POST",
-      headers: mcpHeaders,
-      body: JSON.stringify({
-        jsonrpc: "2.0",
-        id: 3,
-        method: "tools/call",
-        params: {
-          name: "vocal_remover",
-          arguments: { file: fileBase64 }
-        }
-      }),
+      body: upstreamForm,
+      headers: { accept: "application/json" },
       cache: "no-store"
     });
 
-    const raw = await mcp.text();
+    const upstreamText = await upstream.text();
     let payload;
     try {
-      payload = parseMcpResponse(raw);
+      payload = JSON.parse(upstreamText);
     } catch {
       return res.status(502).json({
-        error: "CLEVERUTILS_MCP_INVALID_JSON",
-        message: raw.slice(0, 1000)
+        error: "CLEVERUTILS_REST_INVALID_JSON",
+        message: upstreamText.slice(0, 1000)
       });
     }
 
-    if (!mcp.ok || payload?.error) {
-      const message = payload?.error?.message || "CLEVERUTILS_MCP_FAILED";
-      return res.status(mcp.status >= 400 ? mcp.status : 502).json({
-        error: "CLEVERUTILS_MCP_FAILED",
-        message
-      });
+    if (!upstream.ok) {
+      return res.status(upstream.status).json(payload);
     }
 
-    let links = chooseOutputLinks(collectUrls(payload));
-
-    if (links.length < 2) {
-      const textParts = [];
-      const collectText = value => {
-        if (value == null) return;
-        if (Array.isArray(value)) return value.forEach(collectText);
-        if (typeof value === "object") {
-          return Object.entries(value).forEach(([key, child]) => {
-            if (key === "text" && typeof child === "string") textParts.push(child);
-            else collectText(child);
-          });
-        }
-      };
-      collectText(payload);
-
-      const textUrls = [];
-      for (const match of textParts.join("\n").match(/https?:\/\/[^\s"'<>]+/g) || []) {
-        const clean = match.replace(/[),.;]+$/g, "");
-        if (!textUrls.includes(clean)) textUrls.push(clean);
+    const data = payload?.data || payload;
+    const rewriteOutput = value => {
+      if (!value || typeof value !== "object") return;
+      if (typeof value.url === "string" && isAllowedOutputHost(value.url)) {
+        value.url = localOutputUrl(req, value.url);
       }
-      links = chooseOutputLinks(collectUrls(textUrls));
-    }
-
-    if (links.length < 2) {
-      return res.status(502).json({
-        error: "CLEVERUTILS_MCP_OUTPUT_MISSING",
-        message: "CleverUtils MCP did not return both vocal and instrumental download URLs.",
-        filename,
-        mime,
-        received: links
-      });
-    }
-
-    const vocalLink =
-      links.find(link => classifyLink(link).vocals) || links[0];
-
-    const instrumentalLink =
-      links.find(link => link.url !== vocalLink.url && classifyLink(link).instrumental) ||
-      links.find(link => link.url !== vocalLink.url) ||
-      links[1];
-
-    if (!vocalLink?.url || !instrumentalLink?.url) {
-      return res.status(502).json({
-        error: "CLEVERUTILS_MCP_OUTPUT_MISSING",
-        message: "CleverUtils MCP returned incomplete stem links."
-      });
-    }
-
-    return res.status(200).json({
-      data: {
-        status: "done",
-        outputs: {
-          vocals: {
-            url: localOutputUrl(req, vocalLink.url),
-            filename: vocalLink.name || "vocals.mp3",
-            mime: vocalLink.mime || "audio/mpeg"
-          },
-          instrumental: {
-            url: localOutputUrl(req, instrumentalLink.url),
-            filename: instrumentalLink.name || "instrumental.mp3",
-            mime: instrumentalLink.mime || "audio/mpeg"
-          }
-        }
+      if (typeof value.outputUrl === "string" && isAllowedOutputHost(value.outputUrl)) {
+        value.outputUrl = localOutputUrl(req, value.outputUrl);
       }
-    });
+    };
+    rewriteOutput(data?.output);
+    rewriteOutput(data?.outputs?.vocals);
+    rewriteOutput(data?.outputs?.instrumental);
+    if (data?.links && typeof data.links === "object") {
+      if (typeof data.links.output === "string" && isAllowedOutputHost(data.links.output)) {
+        data.links.output = localOutputUrl(req, data.links.output);
+      }
+      if (typeof data.links.self === "string") {
+        data.links.self = "/api/cleverutils-vocal-remover?job=" + encodeURIComponent(String(data.job_id || ""));
+      }
+    }
+
+    return res.status(upstream.status).json(payload);
   } catch (error) {
     console.error("CleverUtils vocal MCP proxy failed:", error);
     return res.status(502).json({
