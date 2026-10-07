@@ -1802,6 +1802,14 @@ body.light .ve2-footer-btn.primary{color:#fff}
    const job=getData(),stems=collectCleverStemUrls(job);let vocals=stems.vocals,instrumental=stems.instrumental,output=job?.output?.url||job?.outputUrl||job?.links?.output||"";
    if(!vocals||!instrumental){if(!output)throw new Error("VOCAL_SPLIT_OUTPUT_MISSING");const res=await fetch(output);if(!res.ok)throw new Error("VOCAL_SPLIT_OUTPUT_"+res.status);const blob=await res.blob(),type=String(res.headers.get("content-type")||blob.type||"").toLowerCase();if(type.includes("zip")||/\.zip(?:$|[?#])/i.test(output)){const JSZip=(await import("https://cdn.jsdelivr.net/npm/jszip@3.10.1/+esm")).default,zip=await JSZip.loadAsync(blob);for(const name of Object.keys(zip.files)){const e=zip.files[name];if(e.dir)continue;const lower=name.toLowerCase(),bb=await e.async("blob");if(!vocals&&/(vocal|vocals|acapella)/.test(lower))vocals=bb;if(!instrumental&&/(instrument|karaoke|minus|backing|accompaniment)/.test(lower))instrumental=bb}}}
    if(!vocals||!instrumental)throw new Error("VOCAL_SPLIT_TWO_TRACKS_MISSING");const getBlob=async v=>v instanceof Blob?v:(await fetch(v)).blob(),vb=await getBlob(vocals),ib=await getBlob(instrumental);stemResults={vocals:{blob:vb,url:URL.createObjectURL(vb)},instrumental:{blob:ib,url:URL.createObjectURL(ib)}};updateSplitProgress(100,"Готово","вокал и минус получены");await new Promise(r=>setTimeout(r,500));renderResults();toast("Готово · вокал и минус получены");
+  }catch(e){
+   clearInterval(timer);timer=null;
+   console.error("Miya vocal split failed",e);
+   const message=String(e?.message||"Не удалось разделить вокал");
+   updateSplitProgress(100,"Ошибка",message);
+   toast(message==="AUDIO_TOO_LARGE_FOR_PROXY"?"Файл слишком большой для разделения":"Не удалось разделить вокал");
+  }
+ }
 
  const input=document.createElement("input");input.type="file";input.accept="audio/*";input.hidden=true;document.body.appendChild(input);
  const replaceSource=async file=>{if(!file?.type?.startsWith("audio/")){toast("Выбери аудиофайл");return}input.value="";stemResults=null;renderResults();await setWorkingBlob(file,file.name||"miya-voice.mp3");setStatus("Новый рабочий файл");toast("Аудио загружено · карточка на стене не изменена")};
