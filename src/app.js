@@ -1718,7 +1718,8 @@ body.light .ve2-name{background:#fff;color:#273047;border-color:#d3deea}
    const ctx=new AudioContextClass();
    const buffer=await ctx.decodeAudioData(await workingBlob.arrayBuffer());
    await ctx.close();
-   const wavBlob=audioBufferToWavBlob(buffer);
+   // Keep the browser-to-Vercel request safely below the Hobby body-size limit.
+   const wavBlob=audioBufferToCompactWavBlob(buffer,3200000);
    if(!wavBlob?.size)throw new Error("VOCAL_SPLIT_AUDIO_EMPTY");
    const uploadFile=new File([wavBlob],"miya-split-source.wav",{type:"audio/wav",lastModified:Date.now()});
    const form=new FormData();form.append("file",uploadFile,uploadFile.name);
@@ -2458,6 +2459,30 @@ function audioBufferToWavBlob(buffer){
       const sample=Math.max(-1,Math.min(1,buffer.getChannelData(ch)[i]));
       view.setInt16(offset,sample<0?sample*0x8000:sample*0x7fff,true);offset+=2;
     }
+  }
+  return new Blob([arrayBuffer],{type:"audio/wav"});
+}
+
+// Compact transport copy for serverless vocal-remover uploads.
+function audioBufferToCompactWavBlob(buffer,maxBytes=3200000){
+  const duration=Number(buffer.duration||0);
+  const sourceChannels=Math.max(1,Number(buffer.numberOfChannels)||1);
+  const rates=[22050,16000,12000,8000];
+  const rate=rates.find(r=>Math.ceil(duration*r)*2+44<=maxBytes)||8000;
+  const frames=Math.max(1,Math.ceil(duration*rate)),dataSize=frames*2;
+  const arrayBuffer=new ArrayBuffer(44+dataSize),view=new DataView(arrayBuffer);
+  const writeString=(offset,str)=>{for(let i=0;i<str.length;i++)view.setUint8(offset+i,str.charCodeAt(i))};
+  writeString(0,"RIFF");view.setUint32(4,36+dataSize,true);writeString(8,"WAVE");
+  writeString(12,"fmt ");view.setUint32(16,16,true);view.setUint16(20,1,true);
+  view.setUint16(22,1,true);view.setUint32(24,rate,true);view.setUint32(28,rate*2,true);
+  view.setUint16(32,2,true);view.setUint16(34,16,true);writeString(36,"data");view.setUint32(40,dataSize,true);
+  const channels=Array.from({length:sourceChannels},(_,ch)=>buffer.getChannelData(ch));
+  let offset=44;
+  for(let i=0;i<frames;i++){
+    const pos=(i/(frames-1||1))*(buffer.length-1),a=Math.floor(pos),b=Math.min(buffer.length-1,a+1),frac=pos-a;
+    let sample=0;for(let ch=0;ch<channels.length;ch++)sample+=(channels[ch][a]+(channels[ch][b]-channels[ch][a])*frac);
+    sample/=channels.length;sample=Math.max(-1,Math.min(1,sample));
+    view.setInt16(offset,sample<0?sample*0x8000:sample*0x7fff,true);offset+=2;
   }
   return new Blob([arrayBuffer],{type:"audio/wav"});
 }
