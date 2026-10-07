@@ -1,4 +1,4 @@
-export const config = { api: { bodyParser: false } };
+export const config = { api: { bodyParser: false } };\nexport const maxDuration = 300;
 
 export default async function handler(req, res) {
   if (req.method !== "POST") return res.status(405).json({ error: "METHOD_NOT_ALLOWED" });
