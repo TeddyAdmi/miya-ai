@@ -200,16 +200,25 @@ export default async function handler(req, res) {
     }
 
     const { file, filename, mime } = parseMultipartFile(body, contentType);
-    // Forward the exact multipart payload received from the browser.
-    // This preserves the original boundary, file bytes, filename and MIME
-    // instead of rebuilding FormData inside the serverless runtime.
-    // CleverUtils expects a multipart field named "file".
+    // Rebuild a minimal multipart body ourselves so the provider receives a
+    // deterministic multipart/form-data payload with an explicit "file" part.
+    // This avoids runtime-specific FormData/stream handling on Vercel while
+    // preserving the uploaded audio bytes, filename and MIME type.
+    const boundary = "----MiyaCleverUtils" + Math.random().toString(16).slice(2);
+    const head = Buffer.from(
+      "--" + boundary + "\\r\\n" +
+      'Content-Disposition: form-data; name="file"; filename="' + filename.replace(/"/g, "") + '"\\r\\n' +
+      "Content-Type: " + mime + "\\r\\n\\r\\n",
+      "utf8"
+    );
+    const tail = Buffer.from("\\r\\n--" + boundary + "--\\r\\n", "utf8");
+    const multipart = Buffer.concat([head, file, tail]);
     const upstream = await fetch("https://cleverutils.com/api/v1/tools/vocal-remover", {
       method: "POST",
-      body,
+      body: multipart,
       headers: {
-        "content-type": contentType,
-        "content-length": String(body.length),
+        "content-type": "multipart/form-data; boundary=" + boundary,
+        "content-length": String(multipart.length),
         accept: "application/json"
       },
       cache: "no-store"
