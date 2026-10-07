@@ -200,18 +200,18 @@ export default async function handler(req, res) {
     }
 
     const { file, filename, mime } = parseMultipartFile(body, contentType);
-    const fileBase64 = file.toString("base64");
-
-    const upstreamForm = new FormData();
-    upstreamForm.append("file", new Blob([file], { type: mime || "application/octet-stream" }), filename);
-
-    // Use the documented REST endpoint instead of MCP for this heavy operation.
-    // REST returns a job_id quickly; the browser polls the job while Vercel
-    // avoids holding a serverless request open for the 1–3 minute Demucs run.
+    // Forward the exact multipart payload received from the browser.
+    // This preserves the original boundary, file bytes, filename and MIME
+    // instead of rebuilding FormData inside the serverless runtime.
+    // CleverUtils expects a multipart field named "file".
     const upstream = await fetch("https://cleverutils.com/api/v1/tools/vocal-remover", {
       method: "POST",
-      body: upstreamForm,
-      headers: { accept: "application/json" },
+      body,
+      headers: {
+        "content-type": contentType,
+        "content-length": String(body.length),
+        accept: "application/json"
+      },
       cache: "no-store"
     });
 
