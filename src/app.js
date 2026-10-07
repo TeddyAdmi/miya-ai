@@ -1543,6 +1543,27 @@ html.light .voice-editor-backdrop.ve2-light .ve2-footer,body.light .voice-editor
 html.light .voice-editor-backdrop.ve2-light .ve2-stage,body.light .voice-editor-backdrop.ve2-light .ve2-stage{background:#fff!important}
 html.light .voice-editor-backdrop.ve2-light .ve2-section,body.light .voice-editor-backdrop.ve2-light .ve2-section{background:#fff!important}
 html.light .voice-editor-backdrop.ve2-light .ve2-wavebox,body.light .voice-editor-backdrop.ve2-light .ve2-wavebox{background:linear-gradient(180deg,#f8fafc,#eef2f6)!important}
+.voice-editor-backdrop.ve2-light{background:#eef1f5!important;backdrop-filter:none!important;-webkit-backdrop-filter:none!important}
+.voice-editor-backdrop.ve2-light .voice-editor-dialog.ve2{background:#f7f9fc!important;color:#273047!important;box-shadow:0 24px 70px rgba(40,55,80,.12)!important}
+.voice-editor-backdrop.ve2-light .ve2-head,.voice-editor-backdrop.ve2-light .ve2-footer{background:#fff!important;border-color:#dbe4ee!important}
+.voice-editor-backdrop.ve2-light .ve2-main,.voice-editor-backdrop.ve2-light .ve2-side,.voice-editor-backdrop.ve2-light .ve2-body{background:#f2f5f9!important;color:#273047!important}
+.voice-editor-backdrop.ve2-light .ve2-stage,.voice-editor-backdrop.ve2-light .ve2-section,.voice-editor-backdrop.ve2-light .ve2-result{background:#fff!important;border-color:#dbe4ee!important;box-shadow:0 8px 28px rgba(55,70,95,.05)}
+.voice-editor-backdrop.ve2-light .ve2-wavebox{background:linear-gradient(180deg,#f8fafc,#eef2f6)!important;border-color:#d4deea!important}
+.voice-editor-backdrop.ve2-light .ve2-wave-label{color:#7d6aa5}
+.voice-editor-backdrop.ve2-light .ve2-time{color:#52657b}
+.voice-editor-backdrop.ve2-light .ve2-transport-btn,.voice-editor-backdrop.ve2-light .ve2-tool,.voice-editor-backdrop.ve2-light .ve2-footer-btn,.voice-editor-backdrop.ve2-light .ve2-result-save{background:#f4f7fa;color:#52657b;border-color:#d3deea}
+.voice-editor-backdrop.ve2-light .ve2-tool:hover,.voice-editor-backdrop.ve2-light .ve2-result-save:hover,.voice-editor-backdrop.ve2-light .ve2-close:hover{background:#eeeaff;color:#493b70;border-color:#bfaee0}
+.voice-editor-backdrop.ve2-light .ve2-tool.active{background:linear-gradient(145deg,#f0e7ff,#eeeaff);color:#5d438e;border-color:#bfaee0}
+.voice-editor-backdrop.ve2-light .ve2-upload{background:linear-gradient(135deg,#faf9ff,#fff)!important;border-color:#cfc2eb!important}
+.voice-editor-backdrop.ve2-light .ve2-upload b,.voice-editor-backdrop.ve2-light .ve2-fileline b,.voice-editor-backdrop.ve2-light .ve2-title,.voice-editor-backdrop.ve2-light .ve2-section-title b,.voice-editor-backdrop.ve2-light .ve2-tool strong,.voice-editor-backdrop.ve2-light .ve2-panel h4{color:#273047}
+.voice-editor-backdrop.ve2-light .ve2-upload span,.voice-editor-backdrop.ve2-light .ve2-meta,.voice-editor-backdrop.ve2-light .ve2-tool small,.voice-editor-backdrop.ve2-light .ve2-panel p,.voice-editor-backdrop.ve2-light .ve2-note,.voice-editor-backdrop.ve2-light .ve2-footer-note{color:#71839a}
+.voice-editor-backdrop.ve2-light .ve2-name{background:#fff;color:#273047;border-color:#d3deea}
+.voice-editor-backdrop.ve2-light .ve2-panel{background:#faf8ff;border-color:#ddd1ef}
+.voice-editor-backdrop.ve2-light .ve2-result audio{background:#fff}
+.voice-editor-backdrop.ve2-light .ve2-clear{background:linear-gradient(135deg,#fff0f2,#fff)!important;color:#d34e68;border-color:#edc3cc}
+.voice-editor-backdrop.ve2-light .ve2-close{background:#f4f7fa;color:#52657b;border-color:#d3deea}
+.voice-editor-backdrop.ve2-light .ve2-playhead,.voice-editor-backdrop.ve2-light .ve2-playhead::before{background:#6e63ff;box-shadow:0 0 10px rgba(110,99,255,.28)}
+
 html.light .ve2-main,body.light .ve2-main{background:#f2f5f9!important;color:#273047!important}
 html.light .ve2-side,body.light .ve2-side{background:#f2f5f9!important;color:#273047!important}
 body.light .ve2-head,body.light .ve2-footer{background:#fff!important;border-color:#dbe4ee!important}
@@ -1577,7 +1598,7 @@ body.light .ve2-footer-btn.primary{color:#fff}
 
  const backdrop=document.createElement("div");
  backdrop.className="voice-editor-backdrop";
- if(document.body.classList.contains("light")) backdrop.classList.add("ve2-light");backdrop.style.cssText="position:fixed!important;inset:0!important;width:100vw!important;height:100vh!important;max-width:none!important;max-height:none!important;margin:0!important;padding:0!important;z-index:2147483647!important;"
+ backdrop.classList.toggle("ve2-light",document.body.classList.contains("light"));backdrop.style.cssText="position:fixed!important;inset:0!important;width:100vw!important;height:100vh!important;max-width:none!important;max-height:none!important;margin:0!important;padding:0!important;z-index:2147483647!important;"
  document.documentElement.classList.add("miya-editor-page-open");
  document.body.classList.add("miya-editor-page-open");
  const previousBodyOverflow=document.body.style.overflow;
@@ -1773,7 +1794,7 @@ body.light .ve2-footer-btn.primary{color:#fff}
    const uploadFile=new File([wavBlob],"miya-split-source.wav",{type:"audio/wav",lastModified:Date.now()}),form=new FormData();form.append("file",uploadFile,uploadFile.name);
    updateSplitProgress(28,"Загружаем аудио","CleverUtils · Demucs");
    timer=setInterval(()=>{const p=panel.querySelector(".progress-percent"),cur=p?parseInt(p.textContent,10)||28:28,next=Math.min(88,cur+(cur<55?2:cur<78?1:0));if(next>cur)updateSplitProgress(next,next<55?"Разделяем дорожки":"AI обрабатывает аудио",next<55?"Demucs · анализ вокала":"Demucs · извлечение вокала и инструментала")},1800);
-   const rr=await fetch("/api/cleverutils-vocal-remover",{method:"POST",body:form,headers:{Accept:"application/json"},cache:"no-store"});
+   const rr=await fetch("https://cleverutils.com/api/v1/tools/vocal-remover",{method:"POST",body:form,headers:{Accept:"application/json"},cache:"no-store"});
    clearInterval(timer);timer=null;const data=await rr.json().catch(()=>({}));if(!rr.ok)throw new Error(data?.message||data?.error?.message||data?.error||"VOCAL_SPLIT_FAILED");
    updateSplitProgress(92,"Получаем дорожки","почти готово…");
    let job=data?.data||data,id=job?.job_id||job?.jobId||"";if(id&&!job?.output&&!job?.outputs)job=await pollCleverJobObject(String(id));
@@ -4254,7 +4275,8 @@ $("#composerMic").onclick=async()=>{
   await startSpeechRecording();
 };
 document.querySelector('.mobile-tabs [data-mode="voice"]')?.remove();
-$("#themeToggle").onclick=()=>{document.body.classList.toggle("light");$("#themeToggle").textContent=document.body.classList.contains("light")?"☾":"☼"};
+function syncVoiceEditorTheme(){const backdrop=document.querySelector(".voice-editor-backdrop");if(!backdrop)return;const light=document.body.classList.contains("light");backdrop.classList.toggle("ve2-light",light);backdrop.dataset.theme=light?"light":"dark"}
+$("#themeToggle").onclick=()=>{document.body.classList.toggle("light");$("#themeToggle").textContent=document.body.classList.contains("light")?"☾":"☼";syncVoiceEditorTheme()};
 $("#profileButton").onclick=()=>toast("Профиль Miya User · 0 PKOIN");
 document.querySelectorAll("[data-tool]").forEach(b=>b.onclick=()=>{
  const tool=b.dataset.tool;
