@@ -1656,6 +1656,14 @@ body.light .ve2-name{background:#fff;color:#273047;border-color:#d3deea}
  };
  const noisePanel=()=>{panel.innerHTML='<h4>Очистить шум</h4><p>AI-очистка речи через текущий CleverUtils-инструмент.</p><button class="ve2-apply" id="veNoiseApply">Запустить очистку</button><div class="ve2-note">Результат заменит только рабочий файл редактора.</div>';panel.querySelector("#veNoiseApply").onclick=runNoise};
  const splitPanel=()=>{panel.innerHTML='<h4>Разделить вокал</h4><p>Получить отдельные дорожки: вокал и инструментал.</p><button class="ve2-apply" id="veSplitApply">Разделить на 2 дорожки</button><div class="ve2-note">Результаты можно сохранить отдельными голосовыми файлами.</div>';panel.querySelector("#veSplitApply").onclick=runSplit};
+ const showSplitProgress=(percent,title,detail)=>{
+   panel.innerHTML='<div class="generation-loading voice-split-loading" style="display:block;margin:10px 0;padding:22px;border-radius:22px"><div class="generation-progress"><div class="progress-circle is-active"><span class="progress-percent">'+Math.max(1,Math.min(99,Math.round(percent)))+'%</span></div><div class="progress-copy"><b>'+title+'</b><span class="progress-model">CleverUtils · Demucs · '+detail+'</span></div></div><div class="generation-progress-bar"><span style="width:'+Math.max(1,Math.min(99,Math.round(percent)))+'%"></span></div><div style="margin-top:12px;font-size:12px;line-height:1.45;opacity:.68">Разделяем вокал и инструментал. Результат появится здесь после завершения.</div></div>';
+ };
+ const updateSplitProgress=(percent,title,detail)=>{
+   const box=panel.querySelector(".voice-split-loading");if(!box)return;
+   const v=Math.max(1,Math.min(99,Math.round(percent)));const p=box.querySelector(".progress-percent"),bar=box.querySelector(".generation-progress-bar span"),b=box.querySelector(".progress-copy b"),m=box.querySelector(".progress-model");
+   if(p)p.textContent=v+"%";if(bar)bar.style.width=v+"%";if(b)b.textContent=title;if(m)m.textContent="CleverUtils · Demucs · "+detail;
+ };
  const convertPanel=()=>{panel.innerHTML='<h4>Преобразовать</h4><p>Сделать совместимую WAV-копию текущего рабочего файла.</p><button class="ve2-apply" id="veWavApply">Преобразовать в WAV</button><div class="ve2-note">WAV удобен для дальнейшего редактирования и сохраняется как новый голос.</div>';panel.querySelector("#veWavApply").onclick=()=>processClientAudio("wav")};
 
  const tool=(id,label,sub,path,fn)=>{const b=document.createElement("button");b.type="button";b.className="ve2-tool";b.dataset.tool=id;b.innerHTML=svg(path)+"<strong>"+label+"</strong><small>"+sub+"</small>";b.onclick=()=>{tools.querySelectorAll(".ve2-tool").forEach(x=>x.classList.remove("active"));b.classList.add("active");fn()};tools.append(b);return b};
@@ -1710,27 +1718,27 @@ body.light .ve2-name{background:#fff;color:#273047;border-color:#d3deea}
   });
  };
  const runSplit=async()=>{
-  if(!workingBlob)return;const b=panel.querySelector(".ve2-apply");if(b){b.disabled=true;b.textContent="Разделяю…"}
+  if(!workingBlob)return;showSplitProgress(8,"Подготавливаем аудио","создание WAV-копии…");
+  let timer=null;
   try{
-   // Send a real WAV file so CleverUtils sees both a valid audio MIME and a matching filename.
-   // Provider blobs can arrive as application/octet-stream or with a stale extension.
-   const AudioContextClass=window.AudioContext||window.webkitAudioContext;if(!AudioContextClass)throw new Error("Браузер не поддерживает аудиообработку");
-   const ctx=new AudioContextClass();
-   const buffer=await ctx.decodeAudioData(await workingBlob.arrayBuffer());
-   await ctx.close();
-   // Keep the browser-to-Vercel request safely below the Hobby body-size limit.
-   const wavBlob=audioBufferToCompactWavBlob(buffer,3200000);
-   if(!wavBlob?.size)throw new Error("VOCAL_SPLIT_AUDIO_EMPTY");
-   const uploadFile=new File([wavBlob],"miya-split-source.wav",{type:"audio/wav",lastModified:Date.now()});
-   const form=new FormData();form.append("file",uploadFile,uploadFile.name);
-   const rr=await fetch("/api/cleverutils-vocal-remover",{method:"POST",body:form,headers:{Accept:"application/json"},cache:"no-store"});const data=await rr.json().catch(()=>({}));if(!rr.ok)throw new Error(data?.message||data?.error?.message||data?.error||"VOCAL_SPLIT_FAILED");
-   let job=data?.data||data;const id=job?.job_id||job?.jobId||"";if(id&&!job?.output&&!job?.outputs)job=await pollCleverJobObject(String(id));
-   const stems=collectCleverStemUrls(job);let vocals=stems.vocals,instrumental=stems.instrumental;const output=job?.output?.url||job?.outputUrl||job?.links?.output||"";
-   if(!vocals||!instrumental){if(!output)throw new Error("VOCAL_SPLIT_OUTPUT_MISSING");const res=await fetch(output);if(!res.ok)throw new Error("VOCAL_SPLIT_OUTPUT_"+res.status);const blob=await res.blob();const type=String(res.headers.get("content-type")||blob.type||"").toLowerCase();if(type.includes("zip")||/\.zip(?:$|[?#])/i.test(output)){const JSZip=(await import("https://cdn.jsdelivr.net/npm/jszip@3.10.1/+esm")).default;const zip=await JSZip.loadAsync(blob);for(const name of Object.keys(zip.files)){const e=zip.files[name];if(e.dir)continue;const lower=name.toLowerCase();const bb=await e.async("blob");if(!vocals&&/(vocal|vocals|acapella)/.test(lower))vocals=bb;if(!instrumental&&/(instrument|karaoke|minus|backing|accompaniment)/.test(lower))instrumental=bb}}}
+   const C=window.AudioContext||window.webkitAudioContext;if(!C)throw new Error("Браузер не поддерживает аудиообработку");
+   const ctx=new C(),buffer=await ctx.decodeAudioData(await workingBlob.arrayBuffer());await ctx.close();
+   const wavBlob=audioBufferToCompactWavBlob(buffer,3200000);if(!wavBlob?.size)throw new Error("VOCAL_SPLIT_AUDIO_EMPTY");
+   updateSplitProgress(18,"Аудио подготовлено","загрузка файла…");
+   const uploadFile=new File([wavBlob],"miya-split-source.wav",{type:"audio/wav",lastModified:Date.now()}),form=new FormData();form.append("file",uploadFile,uploadFile.name);
+   updateSplitProgress(28,"Загружаем аудио","CleverUtils · Demucs");
+   timer=setInterval(()=>{const p=panel.querySelector(".progress-percent"),cur=p?parseInt(p.textContent,10)||28:28,next=Math.min(88,cur+(cur<55?2:cur<78?1:0));if(next>cur)updateSplitProgress(next,next<55?"Разделяем дорожки":"AI обрабатывает аудио",next<55?"Demucs · анализ вокала":"Demucs · извлечение вокала и инструментала")},1800);
+   const rr=await fetch("/api/cleverutils-vocal-remover",{method:"POST",body:form,headers:{Accept:"application/json"},cache:"no-store"});
+   clearInterval(timer);timer=null;const data=await rr.json().catch(()=>({}));if(!rr.ok)throw new Error(data?.message||data?.error?.message||data?.error||"VOCAL_SPLIT_FAILED");
+   updateSplitProgress(92,"Получаем дорожки","почти готово…");
+   let job=data?.data||data,id=job?.job_id||job?.jobId||"";if(id&&!job?.output&&!job?.outputs)job=await pollCleverJobObject(String(id));
+   const stems=collectCleverStemUrls(job);let vocals=stems.vocals,instrumental=stems.instrumental,output=job?.output?.url||job?.outputUrl||job?.links?.output||"";
+   if(!vocals||!instrumental){if(!output)throw new Error("VOCAL_SPLIT_OUTPUT_MISSING");const res=await fetch(output);if(!res.ok)throw new Error("VOCAL_SPLIT_OUTPUT_"+res.status);const blob=await res.blob(),type=String(res.headers.get("content-type")||blob.type||"").toLowerCase();if(type.includes("zip")||/\.zip(?:$|[?#])/i.test(output)){const JSZip=(await import("https://cdn.jsdelivr.net/npm/jszip@3.10.1/+esm")).default,zip=await JSZip.loadAsync(blob);for(const name of Object.keys(zip.files)){const e=zip.files[name];if(e.dir)continue;const lower=name.toLowerCase(),bb=await e.async("blob");if(!vocals&&/(vocal|vocals|acapella)/.test(lower))vocals=bb;if(!instrumental&&/(instrument|karaoke|minus|backing|accompaniment)/.test(lower))instrumental=bb}}}
    if(!vocals||!instrumental)throw new Error("VOCAL_SPLIT_TWO_TRACKS_MISSING");
-   const getBlob=async v=>v instanceof Blob?v:(await fetch(v)).blob();const vb=await getBlob(vocals),ib=await getBlob(instrumental);stemResults={vocals:{blob:vb,url:URL.createObjectURL(vb)},instrumental:{blob:ib,url:URL.createObjectURL(ib)}};renderResults();toast("Готово · вокал и минус получены");
-  }catch(e){console.error("Miya voice editor split failed",e);toast(String(e?.message||"Не удалось разделить песню"))}
-  finally{if(b){b.disabled=false;b.textContent="Разделить на 2 дорожки"}}
+   const getBlob=async v=>v instanceof Blob?v:(await fetch(v)).blob(),vb=await getBlob(vocals),ib=await getBlob(instrumental);stemResults={vocals:{blob:vb,url:URL.createObjectURL(vb)},instrumental:{blob:ib,url:URL.createObjectURL(ib)}};
+   updateSplitProgress(100,"Готово","вокал и минус получены");await new Promise(r=>setTimeout(r,500));renderResults();toast("Готово · вокал и минус получены");
+  }catch(e){if(timer)clearInterval(timer);console.error("Miya voice editor split failed",e);splitPanel();toast(String(e?.message||"Не удалось разделить песню"))}
+  finally{if(timer)clearInterval(timer)}
  };
 
  const input=document.createElement("input");input.type="file";input.accept="audio/*";input.hidden=true;document.body.appendChild(input);
