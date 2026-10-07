@@ -1532,7 +1532,7 @@ body.light .ve2-name{background:#fff;color:#273047;border-color:#d3deea}
  }
 
  const backdrop=document.createElement("div");
- backdrop.className="voice-detail-backdrop voice-editor-backdrop";
+ backdrop.className="voice-editor-backdrop";backdrop.style.cssText="position:fixed!important;inset:0!important;width:100vw!important;height:100vh!important;max-width:none!important;max-height:none!important;margin:0!important;padding:0!important;z-index:2147483647!important;"
  document.documentElement.classList.add("miya-editor-page-open");
  document.body.classList.add("miya-editor-page-open");
  const previousBodyOverflow=document.body.style.overflow;
