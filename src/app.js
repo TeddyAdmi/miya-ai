@@ -697,8 +697,7 @@ function toggleUpscalePanel(item,card){
    e.stopPropagation();
    const submit=e.currentTarget;
    submit.disabled=true;submit.textContent="Обработка…";
-   try{
-     await runImageBackgroundRemoval(item);
+   try{     await runImageBackgroundRemoval(item);
    }finally{
      submit.disabled=false;submit.textContent="Удалить фон";
    }
@@ -1397,8 +1396,7 @@ function createVoiceCard(item,source,options={}){
  quick("delete","Удалить",'<path d="M5 7h14M9 7V4h6v3M8 7l1 13h6l1-13"/>',()=>confirmDeleteMedia(item,card));
  const date=document.createElement("div");date.className="voice-card-date";date.textContent=item?.createdAt?new Date(item.createdAt).toLocaleDateString("ru-RU",{day:"2-digit",month:"2-digit",year:"numeric"}):"";
  card.append(title,textEl,player.wrap,actions,date,more);
- if(!options.detail){const open=()=>openVoiceDetail(item,source,options.voiceItems||[],Number.isInteger(options.voiceIndex)?options.voiceIndex:-1);card.onclick=e=>{if(e.target.closest("button,input"))return;open()};card.onkeydown=e=>{if((e.key==="Enter"||e.key===" ")&&!e.target.closest("button,input")){e.preventDefault();open()}}}
- return card;
+ if(!options.detail){const open=()=>openVoiceDetail(item,source,options.voiceItems||[],Number.isInteger(options.voiceIndex)?options.voiceIndex:-1);card.onclick=e=>{if(e.target.closest("button,input"))return;open()};card.onkeydown=e=>{if((e.key==="Enter"||e.key===" ")&&!e.target.closest("button,input")){e.preventDefault();open()}}} return card;
 }
 function openVoiceDetail(item,source,voiceItems=[],voiceIndex=-1){
  ensureVoiceWallStyles();document.querySelector(".voice-detail-backdrop")?.remove();document.body.classList.add("voice-modal-open");
@@ -1728,7 +1726,7 @@ body.light .ve2-name{background:#fff;color:#273047;border-color:#d3deea}
    const uploadFile=new File([wavBlob],"miya-split-source.wav",{type:"audio/wav",lastModified:Date.now()}),form=new FormData();form.append("file",uploadFile,uploadFile.name);
    updateSplitProgress(28,"Загружаем аудио","CleverUtils · Demucs");
    timer=setInterval(()=>{const p=panel.querySelector(".progress-percent"),cur=p?parseInt(p.textContent,10)||28:28,next=Math.min(88,cur+(cur<55?2:cur<78?1:0));if(next>cur)updateSplitProgress(next,next<55?"Разделяем дорожки":"AI обрабатывает аудио",next<55?"Demucs · анализ вокала":"Demucs · извлечение вокала и инструментала")},1800);
-   const rr=await fetch("/api/cleverutils-vocal-remover",{method:"POST",body:form,headers:{Accept:"application/json"},cache:"no-store"});
+   const rr=await fetch("https://cleverutils.com/api/v1/tools/vocal-remover",{method:"POST",body:form,headers:{Accept:"application/json"},cache:"no-store"});
    clearInterval(timer);timer=null;const data=await rr.json().catch(()=>({}));if(!rr.ok)throw new Error(data?.message||data?.error?.message||data?.error||"VOCAL_SPLIT_FAILED");
    updateSplitProgress(92,"Получаем дорожки","почти готово…");
    let job=data?.data||data,id=job?.job_id||job?.jobId||"";if(id&&!job?.output&&!job?.outputs)job=await pollCleverJobObject(String(id));
@@ -2097,8 +2095,7 @@ async function generateImage(prompt){
    fakeProgress=Math.min(92,fakeProgress+step);
    setProgress(fakeProgress);
    if($("#composerStatus"))$("#composerStatus").textContent=modelName+" · создание…";
-  },900);
- };
+  },900); };
  startFakeProgress();
  $("#composerStatus").textContent=hasFileUpload?modelName+" · загрузка файла…":modelName+" · создание…";
  try{
@@ -2797,8 +2794,7 @@ async function generateOmegaT2V(prompt){
    updateVideoProgress("OmegaTech T2V",99,"проверка видео…");
    let videoReady=false;
    const readyStarted=Date.now();
-   while(Date.now()-readyStarted<10*60*1000){
-     try{
+   while(Date.now()-readyStarted<10*60*1000){     try{
        const probe=document.createElement("video");
        probe.preload="metadata";
        probe.muted=true;
@@ -3497,8 +3493,7 @@ async function pollCleverJobObject(jobId){
 function collectCleverStemUrls(value,out={},hint="",depth=0){
  if(depth>6||value==null)return out;
  if(typeof value==="string"){
-  if(!/^https?:\/\//i.test(value))return out;
-  const h=String(hint||"").toLowerCase();
+  if(!/^https?:\/\//i.test(value))return out;  const h=String(hint||"").toLowerCase();
   if(/instrument|karaoke|minus|backing|accompaniment/.test(h))out.instrumental=out.instrumental||value;
   if(/vocal|voice|acapella/.test(h))out.vocals=out.vocals||value;
   return out;
