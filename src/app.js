@@ -1451,9 +1451,9 @@ async function openVoiceEditor(item,source){
   const st=document.createElement("style");
   st.id="miyaVoiceEditorV2Styles";
   st.textContent=String.raw`
-.voice-editor-backdrop{position:fixed!important;inset:0!important;width:100dvw!important;max-width:100dvw!important;height:100dvh!important;max-height:100dvh!important;box-sizing:border-box!important;padding:0!important;margin:0!important;background:rgba(3,8,18,.96)!important;backdrop-filter:blur(18px)!important;-webkit-backdrop-filter:blur(18px)!important;overflow:hidden!important;z-index:2147483647!important;display:block!important}
-.voice-editor-backdrop .voice-editor-dialog.ve2{position:absolute!important;top:0!important;right:0!important;bottom:0!important;left:0!important;inset:0!important;width:100%!important;max-width:100%!important;height:100%!important;max-height:100%!important;box-sizing:border-box!important;max-width:none!important;max-height:none!important;margin:0!important;padding:0!important;overflow:hidden!important;display:grid!important;grid-template-rows:auto minmax(0,1fr) auto!important;gap:0!important;border:0!important;border-radius:0!important;background:linear-gradient(145deg,#091a2d 0%,#06111f 55%,#071525 100%)!important;box-shadow:0 35px 100px rgba(0,0,0,.48),inset 0 1px 0 rgba(255,255,255,.06)!important}
-.ve2-head{min-height:76px;padding:15px 18px 14px 22px;display:flex;align-items:center;justify-content:space-between;gap:18px;border-bottom:1px solid rgba(255,255,255,.075);background:linear-gradient(180deg,rgba(255,255,255,.035),transparent)}
+.voice-editor-backdrop{position:fixed!important;inset:0!important;width:100%!important;max-width:100%!important;height:100%!important;max-height:100%!important;box-sizing:border-box!important;padding:0!important;margin:0!important;background:rgba(3,8,18,.96)!important;backdrop-filter:blur(18px)!important;-webkit-backdrop-filter:blur(18px)!important;overflow:hidden!important;z-index:2147483647!important;display:block!important}
+.voice-editor-backdrop .voice-editor-dialog.ve2{min-width:0!important;position:absolute!important;top:0!important;right:0!important;bottom:0!important;left:0!important;inset:0!important;width:100%!important;max-width:100%!important;height:100%!important;max-height:100%!important;box-sizing:border-box!important;max-width:none!important;max-height:none!important;margin:0!important;padding:0!important;overflow:hidden!important;display:grid!important;grid-template-rows:auto minmax(0,1fr) auto!important;gap:0!important;border:0!important;border-radius:0!important;background:linear-gradient(145deg,#091a2d 0%,#06111f 55%,#071525 100%)!important;box-shadow:0 35px 100px rgba(0,0,0,.48),inset 0 1px 0 rgba(255,255,255,.06)!important}
+.ve2-head{min-width:0;overflow:hidden;min-height:76px;padding:15px 18px 14px 22px;display:flex;align-items:center;justify-content:space-between;gap:18px;border-bottom:1px solid rgba(255,255,255,.075);background:linear-gradient(180deg,rgba(255,255,255,.035),transparent)}
 .ve2-brand{display:flex;align-items:center;gap:12px;min-width:0}
 .ve2-brand-mark{width:42px;height:42px;flex:0 0 42px;border-radius:14px;display:grid;place-items:center;color:#fff;background:linear-gradient(135deg,#b65cff,#695dff);box-shadow:0 10px 30px rgba(111,77,226,.30)}
 .ve2-brand-mark svg{width:21px;height:21px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
@@ -1468,8 +1468,8 @@ async function openVoiceEditor(item,source){
 .ve2-close{width:42px;height:42px;border-radius:13px;border:1px solid rgba(255,255,255,.10);background:rgba(255,255,255,.045);color:#aebed0;display:grid;place-items:center;cursor:pointer}
 .ve2-close:hover{background:rgba(255,255,255,.09);color:#fff;border-color:rgba(190,154,255,.35)}
 .ve2-close svg{width:19px;height:19px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round}
-.ve2-body{min-height:0;display:grid;grid-template-columns:minmax(0,1fr) 300px;overflow:hidden}
-.ve2-main{min-width:0;min-height:0;overflow:auto;padding:18px 18px 16px}
+.ve2-body{min-width:0;min-height:0;display:grid;grid-template-columns:minmax(0,1fr) minmax(260px,300px);overflow:hidden}
+.ve2-main{min-width:0;max-width:100%;min-height:0;overflow:auto;padding:18px 18px 16px}
 .ve2-stage{border:1px solid rgba(255,255,255,.08);border-radius:22px;background:radial-gradient(circle at 50% 0%,rgba(155,111,255,.11),transparent 52%),rgba(255,255,255,.025);box-shadow:inset 0 1px 0 rgba(255,255,255,.03);padding:18px}
 .ve2-fileline{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:14px}
 .ve2-fileline b{font-size:12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
@@ -1493,7 +1493,7 @@ async function openVoiceEditor(item,source){
 .ve2-plus{width:44px;height:44px;flex:0 0 44px;border-radius:13px;border:1px solid rgba(192,155,255,.40);background:rgba(157,111,255,.10);color:#dccaff;display:grid;place-items:center}
 .ve2-plus svg{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round}
 .ve2-upload b{display:block;font-size:11px;font-weight:900}.ve2-upload span{display:block;margin-top:3px;font-size:9px;color:#71859c}
-.ve2-side{min-height:0;overflow:auto;padding:14px;border-left:1px solid rgba(255,255,255,.075);background:rgba(0,0,0,.12)}
+.ve2-side{min-width:0;max-width:100%;min-height:0;overflow:auto;padding:14px;border-left:1px solid rgba(255,255,255,.075);background:rgba(0,0,0,.12)}
 .ve2-section{padding:12px;border:1px solid rgba(255,255,255,.075);border-radius:17px;background:rgba(255,255,255,.032);margin-bottom:10px}
 .ve2-section-title{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:10px}
 .ve2-section-title b{font-size:11px;font-weight:900}.ve2-section-title span{font-size:8px;color:#71859a;letter-spacing:.08em;text-transform:uppercase}
@@ -1514,7 +1514,7 @@ async function openVoiceEditor(item,source){
 .ve2-result{padding:10px;border:1px solid rgba(255,255,255,.075);border-radius:13px;background:rgba(255,255,255,.025)}
 .ve2-result-head{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:7px}.ve2-result-head b{font-size:10px}.ve2-result-save{width:30px;height:30px;border-radius:9px;border:1px solid rgba(255,255,255,.10);background:rgba(255,255,255,.045);color:#aebed0;display:grid;place-items:center;cursor:pointer}.ve2-result-save:hover{color:#fff;border-color:rgba(190,154,255,.4)}
 .ve2-result-save svg{width:15px;height:15px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}.ve2-result audio{width:100%;height:34px}
-.ve2-footer{min-height:70px;padding:12px 18px;display:flex;align-items:center;justify-content:space-between;gap:12px;border-top:1px solid rgba(255,255,255,.075);background:rgba(4,12,22,.72)}
+.ve2-footer{min-width:0;overflow:hidden;min-height:70px;padding:12px 18px;display:flex;align-items:center;justify-content:space-between;gap:12px;border-top:1px solid rgba(255,255,255,.075);background:rgba(4,12,22,.72)}
 .ve2-footer-note{font-size:9px;color:#71859a;line-height:1.35}.ve2-footer-actions{display:flex;gap:8px}.ve2-footer-btn{height:40px;padding:0 15px;border-radius:12px;border:1px solid rgba(255,255,255,.10);background:rgba(255,255,255,.045);color:#b5c5d6;font-size:10px;font-weight:900;cursor:pointer}.ve2-footer-btn.primary{border:0;background:linear-gradient(135deg,#a95cff,#6e63ff);color:#fff;box-shadow:0 10px 25px rgba(104,66,210,.22)}.ve2-footer-btn:disabled{opacity:.38;cursor:default;box-shadow:none}
 .ve2-name{width:100%;height:34px;padding:0 10px;border:1px solid rgba(255,255,255,.09);border-radius:10px;background:rgba(255,255,255,.04);color:#d6e0ea;outline:none;font-size:10px}.ve2-name:focus{border-color:rgba(190,154,255,.48);box-shadow:0 0 0 3px rgba(157,111,255,.09)}
 body.light .voice-editor-dialog.ve2{background:#f7f9fc!important;border-color:#dbe4ee!important;color:#273047}
