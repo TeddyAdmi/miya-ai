@@ -4114,6 +4114,19 @@ async function startSpeechRecording(){
   }
 }
 
+const composerMicButton=$("#composerMic");
+if(composerMicButton){
+  composerMicButton.onclick=async e=>{
+    e.preventDefault();
+    e.stopPropagation();
+    if(speechStream){
+      await finishSpeechRecording();
+    }else{
+      await startSpeechRecording();
+    }
+  };
+}
+
 
 document.querySelector('.mobile-tabs [data-mode="voice"]')?.remove();
 function syncVoiceEditorTheme(){const backdrop=document.querySelector(".voice-editor-backdrop");if(!backdrop)return;const light=document.body.classList.contains("light");backdrop.classList.toggle("ve2-light",light);backdrop.dataset.theme=light?"light":"dark"}
