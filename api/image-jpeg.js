@@ -16,7 +16,7 @@ module.exports = async function handler(req, res) {
 
     const target = new URL(rawUrl);
     const requestedRatio = String(req.query?.ratio || "").trim();
-    const ratioMatch = requestedRatio.match(/^(\d+):(\d+)$/);
+    const ratioMatch = requestedRatio.match(/^(\\d+):(\\d+)$/);
     let targetRatio = 0;
     if (ratioMatch) {
       const rw = Number(ratioMatch[1]), rh = Number(ratioMatch[2]);
@@ -42,8 +42,7 @@ module.exports = async function handler(req, res) {
       "www.cleverutils.com",
       "cleverutil",
       "cleverutil.com",
-      "overchat.s3.eu-north-1.amazonaws.com",
-      "cvron.alwaysdata.net"
+      "overchat.s3.eu-north-1.amazonaws.com"
     ];
     if (!allowed.includes(host)) {
       return res.status(403).json({ ok: false, error: "IMAGE_HOST_NOT_ALLOWED" });
@@ -67,14 +66,9 @@ module.exports = async function handler(req, res) {
       return res.status(413).json({ ok: false, error: "IMAGE_TOO_LARGE" });
     }
 
-    // Nano Banana already returns the generated composition. Do not build a
-    // blurred contain/cover canvas around it: that was causing side cropping
-    // and a visibly soft result. Keep the complete source image and only apply
-    // the normal quality enhancement below.
-    const isNanoBanana = /^Nano Banana 2$/i.test(String(req.query?.sourceModel || ""));
     let imagePipeline = sharp(input).rotate();
 
-    if (targetRatio && !isNanoBanana) {
+    if (targetRatio) {
       const width = targetRatio >= 1 ? 1536 : 864;
       const height = Math.max(1, Math.round(width / targetRatio));
 

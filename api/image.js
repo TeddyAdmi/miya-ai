@@ -460,48 +460,62 @@ module.exports = async function imageHandler(req, res) {
 
     if (provider === "cvron") {
       const cvronModels = {
-        "Nano Banana 2": { url:"https://cvron.alwaysdata.net/cvronai/nanobanana2.php", kind:"standard" },
-        "GPT Image 2.5": { url:"https://cvron.alwaysdata.net/cvronai/gpt-image-2-5-flare.php", kind:"standard" }
+        "Nano Banana 2": "https://cvron.alwaysdata.net/cvronai/nanobanana2.php",
+        "GPT Image 2.5": "https://cvron.alwaysdata.net/cvronai/gpt-image-2-5-flare.php"
       };
-
-      const cvronConfig = cvronModels[requestedModel];
-      const endpoint = cvronConfig?.url;
+      const endpoint = cvronModels[requestedModel];
+      const cvronPrompt = typeof body.prompt === "string" ? body.prompt.trim() : "";
       const cvronRatio = ["1:1","3:4","4:3","16:9","9:16","2:3","3:2","21:9"].includes(String(body.ratio || "")) ? String(body.ratio) : "16:9";
-      const cvronBasePrompt = typeof body.prompt === "string" ? body.prompt.trim() : "";
-      const cvronPrompt = cvronBasePrompt
-        ? cvronBasePrompt + "\n\nOUTPUT FORMAT: Generate the image natively in the requested " + cvronRatio + " aspect ratio. Compose the entire scene for this canvas from the start. Do not use a portrait 9:16 canvas for a 16:9 request, do not crop a landscape scene into portrait, and do not place the main image inside a blurred or padded portrait frame. Fill the requested canvas naturally with the complete scene."
-        : "";
-
-      if (!cvronConfig) {
-        return res.status(400).json({ ok:false, error:"CVRON_MODEL_UNSUPPORTED", message:"Неизвестная CVRON-модель." });
+      if (!endpoint) {
+        return res.status(400).json({
+          ok:false,
+          error:"CVRON_MODEL_UNSUPPORTED",
+          message:"Неизвестная CVRON-модель."
+        });
       }
       if (!cvronPrompt) {
         return res.status(400).json({ok:false,error:"PROMPT_REQUIRED"});
       }
-      try {
-        // Use the exact same CVRON request contract that made Nano Banana 2
-        // and GPT Image 2.5 work: GET + prompt only. Do not append width,
-        // height, ratio, size or resolution parameters because CVRON endpoints
-        // are not guaranteed to accept those extra query fields.
-        const target = new URL(endpoint);
-        target.searchParams.set("prompt", cvronPrompt);
 
+      try {
+        const nativeSize = {
+          "1:1":  {width:1024,height:1024},
+          "16:9": {width:1376,height:768},
+          "9:16": {width:768,height:1376},
+          "3:4":  {width:896,height:1200},
+          "4:3":  {width:1200,height:896},
+          "2:3":  {width:848,height:1264},
+          "3:2":  {width:1264,height:848},
+          "21:9": {width:1584,height:672}
+        }[cvronRatio] || {width:1024,height:1024};
+
+        const finalPrompt = requestedModel === "Nano Banana 2"
+          ? cvronPrompt + "\n\nNATIVE OUTPUT: Generate the complete image natively in exactly " +
+            cvronRatio + " aspect ratio. Use the entire frame naturally. Do not crop, trim, zoom, cut off, or remove any part of the scene or subjects."
+          : cvronPrompt;
+
+        const target =
+          endpoint +
+          "?prompt=" + encodeURIComponent(finalPrompt) +
+          "&ratio=" + encodeURIComponent(cvronRatio) +
+          "&aspect_ratio=" + encodeURIComponent(cvronRatio) +
+          "&size=" + encodeURIComponent(cvronRatio) +
+          "&width=" + nativeSize.width +
+          "&height=" + nativeSize.height +
+          "&resolution=1K";
         let upstream;
         let raw = "";
         let data = {};
-
         for (let attempt = 0; attempt < 2; attempt++) {
-          upstream = await fetch(target.toString(), {
+          upstream = await fetch(target, {
             method:"GET",
             headers:{Accept:"application/json, text/plain, */*"},
             cache:"no-store",
             signal:AbortSignal.timeout(180000)
           });
-
           raw = await upstream.text();
           data = {};
           try { data = raw ? JSON.parse(raw) : {}; } catch {}
-
           if (upstream.ok || upstream.status < 500 || attempt === 1) break;
           await new Promise(resolve => setTimeout(resolve, 1200));
         }
@@ -512,8 +526,7 @@ module.exports = async function imageHandler(req, res) {
             error:"CVRON_UPSTREAM_HTTP",
             message:"CVRON вернул HTTP " + upstream.status + ".",
             upstreamStatus:upstream.status,
-            upstreamBody:raw.slice(0,1000),
-            endpoint:target.origin + target.pathname
+            upstreamBody:raw.slice(0,1000)
           });
         }
 
@@ -569,7 +582,6 @@ module.exports = async function imageHandler(req, res) {
             normalized:true,
             noCrop:true,
             enhanced:true,
-            sourceImageUsed:false,
             sourceImageUrl:imageUrl
           }
         });
@@ -581,6 +593,7 @@ module.exports = async function imageHandler(req, res) {
         });
       }
     }
+
     const prompt = typeof body.prompt === "string" ? body.prompt.trim() : "";
     if (!prompt) return res.status(400).json({ ok: false, error: "PROMPT_REQUIRED" });
 
