@@ -502,10 +502,7 @@ module.exports = async function imageHandler(req, res) {
           "?prompt=" + encodeURIComponent(finalPrompt) +
           "&ratio=" + encodeURIComponent(cvronRatio) +
           "&aspect_ratio=" + encodeURIComponent(cvronRatio) +
-          "&size=" + encodeURIComponent(cvronRatio) +
-          "&width=" + nativeSize.width +
-          "&height=" + nativeSize.height +
-          "&resolution=" + encodeURIComponent(quality);
+          "&size=" + encodeURIComponent(cvronRatio);
         let upstream;
         let raw = "";
         let data = {};
