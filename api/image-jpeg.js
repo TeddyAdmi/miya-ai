@@ -110,6 +110,15 @@ module.exports = async function handler(req, res) {
       return res.status(413).json({ ok: false, error: "IMAGE_TOO_LARGE" });
     }
 
+    // If the caller did not request a ratio conversion, return the provider's
+    // original image bytes. Avoid decoding/re-encoding large PNGs with Sharp.
+    if (!targetRatio) {
+      res.setHeader("Content-Type", type.split(";")[0] || "application/octet-stream");
+      res.setHeader("Content-Length", String(input.length));
+      res.setHeader("Content-Disposition", 'inline; filename="miya-source-image"');
+      return res.status(200).send(input);
+    }
+
     let imagePipeline = sharp(input).rotate();
 
     if (targetRatio) {
