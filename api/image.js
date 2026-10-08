@@ -494,6 +494,9 @@ module.exports = async function imageHandler(req, res) {
             cvronRatio + " aspect ratio. Compose the entire scene for this canvas from the beginning. Do not crop, trim, zoom, cut off, or remove any part of the scene or subjects. Fill the requested canvas naturally."
           : cvronPrompt;
 
+        const sourceImageUrl = typeof body.imageUrl === "string" && /^https?:\/\//i.test(body.imageUrl.trim())
+          ? body.imageUrl.trim()
+          : "";
         const target =
           endpoint +
           "?prompt=" + encodeURIComponent(finalPrompt) +
@@ -502,7 +505,10 @@ module.exports = async function imageHandler(req, res) {
           "&size=" + encodeURIComponent(cvronRatio) +
           "&width=" + nativeSize.width +
           "&height=" + nativeSize.height +
-          "&resolution=1K";
+          "&resolution=1K" +
+          (sourceImageUrl
+            ? "&image=" + encodeURIComponent(sourceImageUrl) + "&image_url=" + encodeURIComponent(sourceImageUrl)
+            : "");
         let upstream;
         let raw = "";
         let data = {};
@@ -584,7 +590,8 @@ module.exports = async function imageHandler(req, res) {
             native:true,
             noCrop:true,
             enhanced:requestedModel !== "GPT Image 2.5",
-            sourceImageUrl:imageUrl
+            edit:Boolean(sourceImageUrl),
+            sourceImageUrl:imageUrl || sourceImageUrl
           }
         });
       } catch (error) {
