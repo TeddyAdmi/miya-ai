@@ -554,6 +554,76 @@ module.exports = async function imageHandler(req, res) {
           });
         }
 
+        // Some image hosts are readable in the browser but cannot be fetched
+        // by CVRON's image2image worker. If CVRON explicitly rejects task
+        // creation, mirror the source through its documented FileBin endpoint
+        // and retry the edit once with that provider-hosted URL.
+        if (isEdit && data?.success === false && sourceImageUrl) {
+          try {
+            const mirrorResponse = await fetch(
+              "https://cvron.alwaysdata.net/cvronai/up.php?url=" + encodeURIComponent(sourceImageUrl),
+              {
+                method:"GET",
+                headers:{Accept:"application/json, text/plain, */*"},
+                cache:"no-store",
+                signal:AbortSignal.timeout(45000)
+              }
+            );
+            const mirrorRaw = await mirrorResponse.text();
+            let mirrorData = {};
+            try { mirrorData = mirrorRaw ? JSON.parse(mirrorRaw) : {}; } catch {}
+            const findUrl = (value, seen=new Set()) => {
+              if (typeof value === "string") {
+                const v = value.trim();
+                return /^https?:\\/\\//i.test(v) && !/cvron\\.alwaysdata\\.net\\/cvronai\\/up\\.php/i.test(v) ? v : "";
+              }
+              if (!value || typeof value !== "object" || seen.has(value)) return "";
+              seen.add(value);
+              for (const key of ["url","imageUrl","image_url","image","output","data","result"]) {
+                const found = findUrl(value[key], seen);
+                if (found) return found;
+              }
+              for (const key of Object.keys(value)) {
+                const found = findUrl(value[key], seen);
+                if (found) return found;
+              }
+              return "";
+            };
+            const mirroredUrl = mirrorResponse.ok ? findUrl(mirrorData) : "";
+            if (mirroredUrl && mirroredUrl !== sourceImageUrl) {
+              const retryTarget = "https://cvron.alwaysdata.net/cvronai/image2image.php?prompt=" +
+                encodeURIComponent(finalPrompt) + "&image_url=" + encodeURIComponent(mirroredUrl);
+              const retryResponse = await fetch(retryTarget, {
+                method:"GET",
+                headers:{Accept:"application/json, text/plain, */*"},
+                cache:"no-store",
+                signal:AbortSignal.timeout(180000)
+              });
+              const retryRaw = await retryResponse.text();
+              let retryData = {};
+              try { retryData = retryRaw ? JSON.parse(retryRaw) : {}; } catch {}
+              if (retryResponse.ok && retryData?.success !== false) {
+                upstream = retryResponse;
+                raw = retryRaw;
+                data = retryData;
+              } else {
+                raw = JSON.stringify({
+                  success:false,
+                  error:"CVRON_IMAGE_EDIT_FAILED_AFTER_MIRROR",
+                  originalResponse:data,
+                  mirrorStatus:mirrorResponse.status,
+                  mirrorBody:mirrorRaw.slice(0,500),
+                  retryStatus:retryResponse.status,
+                  retryBody:retryRaw.slice(0,800)
+                });
+                data = {success:false,error:"CVRON_IMAGE_EDIT_FAILED_AFTER_MIRROR"};
+              }
+            }
+          } catch (mirrorError) {
+            // Preserve the original CVRON failure if its optional mirror path fails.
+          }
+        }
+
         const findImageUrl = (value, seen=new Set()) => {
           if (value == null) return "";
           if (typeof value === "string") {
@@ -578,10 +648,16 @@ module.exports = async function imageHandler(req, res) {
 
         const imageUrl=findImageUrl(data) || findImageUrl(raw);
         if (!imageUrl) {
+          const taskFailed = data?.success === false || /CVRON_IMAGE_EDIT_FAILED_AFTER_MIRROR/.test(raw);
           return res.status(502).json({
             ok:false,
-            error:"CVRON_IMAGE_URL_MISSING",
-            message:"CVRON не вернул ссылку на изображение.",
+            error:taskFailed ? "CVRON_TASK_CREATION_FAILED" : "CVRON_IMAGE_URL_MISSING",
+            message:taskFailed
+              ? "CVRON не смог создать задачу редактирования даже после повторной передачи исходного изображения."
+              : "CVRON не вернул ссылку на изображение.",
+            upstreamEndpoint:endpoint,
+            edit:isEdit,
+            sourceHost:sourceImageUrl ? (() => { try { return new URL(sourceImageUrl).hostname; } catch { return ""; } })() : "",
             upstreamBody:raw.slice(0,1500)
           });
         }
