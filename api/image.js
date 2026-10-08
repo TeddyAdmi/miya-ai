@@ -497,14 +497,12 @@ module.exports = async function imageHandler(req, res) {
         const target =
           endpoint +
           "?prompt=" + encodeURIComponent(finalPrompt) +
-          (requestedModel === "GPT Image 2.5"
-            ? "&ratio=" + encodeURIComponent(cvronRatio) +
-              "&aspect_ratio=" + encodeURIComponent(cvronRatio) +
-              "&size=" + encodeURIComponent(cvronRatio) +
-              "&width=" + nativeSize.width +
-              "&height=" + nativeSize.height +
-              "&resolution=1K"
-            : "&ratio=" + encodeURIComponent(cvronRatio));
+          "&ratio=" + encodeURIComponent(cvronRatio) +
+          "&aspect_ratio=" + encodeURIComponent(cvronRatio) +
+          "&size=" + encodeURIComponent(cvronRatio) +
+          "&width=" + nativeSize.width +
+          "&height=" + nativeSize.height +
+          "&resolution=1K";
         let upstream;
         let raw = "";
         let data = {};
