@@ -10,7 +10,7 @@ module.exports = async function handler(req, res) {
     if(!prompt) return res.status(400).json({ok:false,error:"PROMPT_REQUIRED"});
     const ratio=["1:1","3:4","4:3","16:9","9:16","2:3","3:2","21:9"].includes(String(body.ratio))?String(body.ratio):"16:9";
     const n=Math.max(1,Math.min(4,Number(body.n)||1));
-    const qualityPrompt=[
+    const generationPrompt=[
       "Create a bright, vivid, premium-quality photorealistic image with rich, lively colors.",
       "Use luminous natural lighting, clean whites, crisp highlights, balanced contrast, deep but detailed shadows, and accurate skin/material colors.",
       "Avoid a dull, gray, muddy, desaturated, hazy, foggy, washed-out or low-contrast look.",
@@ -19,8 +19,17 @@ module.exports = async function handler(req, res) {
       "Keep the requested composition, subject identity and scene faithful to the user prompt. Do not add decorative elements that were not requested.",
       "Whenever the prompt includes a person, people, a woman, a man, a girl, a boy, or any human subject without a specifically requested ethnicity, depict them with natural Slavic / Eastern European appearance. Use realistic Slavic facial features, proportions, hair and skin characteristics. Do not default to East Asian, Southeast Asian, or other regional facial features unless the user explicitly requests them.",
       "Use the same practical output quality as FLUX Dev, prioritizing fast-loading preview size without sacrificing useful detail.",
-      "USER PROMPT:\n"+prompt
-    ].join("\n");
+      "USER PROMPT:\\n"+prompt
+    ].join("\\n");
+    const editPrompt=[
+      "Edit the supplied source photograph rather than creating a new scene.",
+      "Keep the original framing, camera viewpoint, composition, background, lighting, colors, textures and all unrelated subjects unchanged.",
+      "Apply only the change explicitly requested by the user.",
+      "When removing an object, reconstruct only the area behind it from the surrounding background. Do not introduce a new person, animal, object or decoration into that area.",
+      "The output should look like the same photograph after a precise local edit.",
+      "USER EDIT INSTRUCTION:\\n"+prompt
+    ].join("\\n");
+    const qualityPrompt=source ? editPrompt : generationPrompt;
     // Keep Agnes outputs lightweight so the result preview loads quickly.
     // The UI still supports 16:9 / 9:16 / 1:1, but we intentionally avoid 4K
     // because the generated PNG itself is the bottleneck for preview loading.
