@@ -95,18 +95,12 @@ module.exports = async function handler(req, res) {
           withoutEnlargement: false,
           background: { r: 0, g: 0, b: 0, alpha: 0 }
         })
-        // Subtle professional enhancement: brighter, richer and crisper,
-        // without turning skin tones or highlights into an artificial HDR look.
-        .modulate({ brightness: 1.045, saturation: 1.10 })
-        .sharpen({ sigma: 1.0, m1: 0.65, m2: 2.0 })
         .png()
         .toBuffer();
 
       imagePipeline = sharp(background).composite([{ input: foreground, gravity: "centre" }]);
     } else {
-      imagePipeline = imagePipeline
-        .modulate({ brightness: 1.045, saturation: 1.10 })
-        .sharpen({ sigma: 1.0, m1: 0.65, m2: 2.0 });
+      imagePipeline = imagePipeline;
     }
 
     const jpeg = await imagePipeline

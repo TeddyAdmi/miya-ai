@@ -489,22 +489,6 @@ module.exports = async function imageHandler(req, res) {
           "21:9": {width:1584,height:672}
         }[cvronRatio] || {width:1024,height:1024};
 
-        const finalPrompt = requestedModel === "Nano Banana 2"
-          ? cvronPrompt + "\n\nNATIVE OUTPUT: Generate the complete image natively in exactly " +
-            cvronRatio + " aspect ratio. Use the entire frame naturally. Do not crop, trim, zoom, cut off, or remove any part of the scene or subjects."
-          : cvronPrompt;
-
-        const nativeSize = {
-          "1:1":  {width:1024,height:1024},
-          "16:9": {width:1376,height:768},
-          "9:16": {width:768,height:1376},
-          "3:4":  {width:896,height:1200},
-          "4:3":  {width:1200,height:896},
-          "2:3":  {width:848,height:1264},
-          "3:2":  {width:1264,height:848},
-          "21:9": {width:1584,height:672}
-        }[cvronRatio] || {width:1024,height:1024};
-
         const finalPrompt = requestedModel === "GPT Image 2.5"
           ? cvronPrompt + "\n\nOUTPUT FORMAT: Generate the complete image natively in exactly " +
             cvronRatio + " aspect ratio. Compose the entire scene for this canvas from the beginning. Do not crop, trim, zoom, cut off, or remove any part of the scene or subjects. Fill the requested canvas naturally."
