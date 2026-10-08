@@ -10,7 +10,24 @@ module.exports = async function handler(req, res) {
     if(!prompt) return res.status(400).json({ok:false,error:"PROMPT_REQUIRED"});
     const ratio=["1:1","3:4","4:3","16:9","9:16","2:3","3:2","21:9"].includes(String(body.ratio))?String(body.ratio):"16:9";
     const quality=["1K","2K","4K"].includes(String(body.quality))?String(body.quality):"2K";
-    const source=String(body.imageBase64||body.imageUrl||"").trim();
+    let source=String(body.imageBase64||body.imageUrl||"").trim();
+    // The UI can pass a saved image's Miya proxy URL in imageBase64.
+    // Unwrap our public image proxy so Agnes receives the actual provider URL.
+    if (source.startsWith("/api/image-jpeg?") || /^https?:\/\//i.test(source)) {
+      try {
+        const parsedSource=new URL(source,"https://miya-studio.vercel.app");
+        const ownHost=parsedSource.hostname.toLowerCase()==="miya-studio.vercel.app" ||
+          parsedSource.hostname.toLowerCase()==="www.miya-studio.vercel.app";
+        if (ownHost && parsedSource.pathname==="/api/image-jpeg") {
+          const unwrapped=parsedSource.searchParams.get("url")||"";
+          if (/^https?:\/\//i.test(unwrapped)) source=unwrapped;
+        }
+      } catch {}
+    }
+    // Agnes expects raw base64 for inline image input, not a data-URI prefix.
+    if (/^data:image\/[a-z0-9.+-]+;base64,/i.test(source)) {
+      source=source.slice(source.indexOf(",")+1).replace(/\\s+/g,"");
+    }
     const n=Math.max(1,Math.min(4,Number(body.n)||1));
     const generationPrompt=[
       "Create a bright, vivid, premium-quality photorealistic image with rich, lively colors.",
