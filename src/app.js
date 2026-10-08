@@ -554,7 +554,7 @@ function openVideoViewer(item){
  resolveMediaUrl(item).then(u=>{if(u&&modal.classList.contains("open")&&modal.dataset.viewerItemId===item.id){player.src=u;player.load()}}).catch(()=>{});
  modal.__videoNav?.();modal.classList.add("open");document.body.classList.add("image-viewer-open");
 }
-async function mediaItemToReference(item){
+async function mediaItemToReference(item,card=null){
  if(!item?.id)return "";
  try{
   const cached=await getCachedMedia(item.id);
@@ -565,6 +565,24 @@ async function mediaItemToReference(item){
     reader.onerror=()=>reject(reader.error);
     reader.readAsDataURL(cached.blob);
    });
+  }
+ }catch{}
+ try{
+  const image=card?.querySelector?.("img");
+  const src=String(image?.currentSrc||image?.src||"").trim();
+  const sameOrigin=!/^https?:\/\//i.test(src)||src.startsWith(location.origin);
+  if(image&&src&&sameOrigin){
+   if(!image.complete)await new Promise(resolve=>{
+    const done=()=>{image.removeEventListener("load",done);image.removeEventListener("error",done);resolve()};
+    image.addEventListener("load",done,{once:true});
+    image.addEventListener("error",done,{once:true});
+   });
+   if(image.naturalWidth&&image.naturalHeight){
+    const canvas=document.createElement("canvas");
+    canvas.width=image.naturalWidth;canvas.height=image.naturalHeight;
+    const ctx=canvas.getContext("2d");ctx.drawImage(image,0,0);
+    return canvas.toDataURL("image/jpeg",0.94);
+   }
   }
  }catch{}
  const value=String(item?.url||"").trim();
@@ -778,7 +796,7 @@ function buildMediaCard(item,{video=false}={}){
  const menu=document.createElement("div");menu.className="media-action-menu";
  if(!video){
   const promptBtn=document.createElement("button");promptBtn.type="button";promptBtn.innerHTML='<span class="action-icon action-svg"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 5h14v14H5z"/><path d="M8 9h8M8 12h6M8 15h4"/></svg></span><span>Промт</span>';promptBtn.onclick=e=>{e.stopPropagation();closeAllMediaMenus();showPrompt(item)}; const upscaleMenuBtn=document.createElement("button");upscaleMenuBtn.type="button";upscaleMenuBtn.innerHTML='<span class="action-icon action-svg"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m12 3 1.7 5.3L19 10l-5.3 1.7L12 17l-1.7-5.3L5 10l5.3-1.7L12 3Z"/><path d="m19 15 .8 2.2L22 18l-.8-2.2L19 15Z"/></svg></span><span>Upscale</span>';upscaleMenuBtn.onclick=e=>{e.stopPropagation();closeAllMediaMenus();toggleUpscalePanel(item,card)};
-  const editBtn=document.createElement("button");editBtn.type="button";editBtn.innerHTML='<span class="action-icon action-svg"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m4 16.5-.8 3.3 3.3-.8L18.7 6.8a2.2 2.2 0 0 1 3.1 3.1L6.5 19l-3.3.8.8-3.3Z"/><path d="m14.2 5.8 4 4"/></svg></span><span>Изменить картинку</span>';editBtn.onclick=async e=>{e.stopPropagation();closeAllMediaMenus();await openEditor(await mediaItemToReference(item))};
+  const editBtn=document.createElement("button");editBtn.type="button";editBtn.innerHTML='<span class="action-icon action-svg"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m4 16.5-.8 3.3 3.3-.8L18.7 6.8a2.2 2.2 0 0 1 3.1 3.1L6.5 19l-3.3.8.8-3.3Z"/><path d="m14.2 5.8 4 4"/></svg></span><span>Изменить картинку</span>';editBtn.onclick=async e=>{e.stopPropagation();closeAllMediaMenus();await openEditor(await mediaItemToReference(item,card))};
   const videoBtn=document.createElement("button");videoBtn.type="button";videoBtn.innerHTML='<span class="action-icon action-svg"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="5" width="17" height="14" rx="2"/><path d="m10 9 5 3-5 3Z"/></svg></span><span>Сделать видео</span>';videoBtn.onclick=async e=>{e.stopPropagation();closeAllMediaMenus();openVideoFromImage(await mediaItemToReference(item))};
   const copyBtn=document.createElement("button");copyBtn.type="button";copyBtn.innerHTML='<span class="action-icon action-svg"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M15 9V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v7a2 2 0 0 0 2 2h3"/></svg></span><span>Копировать</span>';copyBtn.onclick=async e=>{e.stopPropagation();closeAllMediaMenus();try{const response=await fetch(item.url,{headers:{Accept:"image/*"}});if(!response.ok)throw new Error();const blob=await response.blob();if(!navigator.clipboard?.write||!window.ClipboardItem)throw new Error();const bitmap=await createImageBitmap(blob);const canvas=document.createElement("canvas");canvas.width=bitmap.width;canvas.height=bitmap.height;const ctx=canvas.getContext("2d");ctx.fillStyle="#fff";ctx.fillRect(0,0,canvas.width,canvas.height);ctx.drawImage(bitmap,0,0);bitmap.close();const jpeg=await new Promise(resolve=>canvas.toBlob(resolve,"image/jpeg",.95));if(!jpeg)throw new Error();await navigator.clipboard.write([new ClipboardItem({"image/jpeg":jpeg})]);toast("JPG скопирован")}catch{toast("Не удалось скопировать картинку")}};
   const downloadBtn=document.createElement("button");downloadBtn.type="button";downloadBtn.innerHTML='<span class="action-icon action-svg"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4v11M8 11l4 4 4-4M5 19h14"/></svg></span><span>Скачать</span>';downloadBtn.onclick=e=>{e.stopPropagation();closeAllMediaMenus();showDownloadMenu(item,downloadBtn)};
@@ -3733,7 +3751,7 @@ if(videoModelSelect)videoModelSelect.addEventListener("change",()=>{
  }
 });
 $("#composerInput").addEventListener("input",()=>{
-  if(!speechRecorder){
+  if(!speechStream){
     speechRecordingCount=0;
     speechCommittedText=$("#composerInput").value.trim();
   }
@@ -4094,15 +4112,15 @@ async function startSpeechRecording(){
   }
 }
 
-$("#composerMic").onclick=async()=>{
-  if(speechStream){
-    await finishSpeechRecording();
-    return;
-  }
-  await startSpeechRecording();
-};
+
 document.querySelector('.mobile-tabs [data-mode="voice"]')?.remove();
 function syncVoiceEditorTheme(){const backdrop=document.querySelector(".voice-editor-backdrop");if(!backdrop)return;const light=document.body.classList.contains("light");backdrop.classList.toggle("ve2-light",light);backdrop.dataset.theme=light?"light":"dark"}
+function syncFloatingWallClearIcon(){
+ const btn=$("#clearImageWall"),svg=btn?.querySelector("svg");if(!svg)return;
+ const light=document.body.classList.contains("light");
+ svg.style.setProperty("stroke",light?"#fff":"#9db0c7","important");
+ svg.style.setProperty("color",light?"#fff":"#9db0c7","important");
+}
 function syncThemeToggleIcon(){
   const btn=$("#themeToggle");
   if(!btn)return;
@@ -4113,7 +4131,7 @@ function syncThemeToggleIcon(){
   btn.title=light?"Тёмная тема":"Светлая тема";
   btn.setAttribute("aria-label",light?"Включить тёмную тему":"Включить светлую тему");
 }
-$("#themeToggle").onclick=()=>{document.body.classList.toggle("light");syncThemeToggleIcon();syncVoiceEditorTheme()};
+$("#themeToggle").onclick=()=>{document.body.classList.toggle("light");syncThemeToggleIcon();syncFloatingWallClearIcon();syncVoiceEditorTheme()};
 $("#profileButton").onclick=()=>toast("Профиль Miya User · 0 PKOIN");
 document.querySelectorAll("[data-tool]").forEach(b=>b.onclick=()=>{
  const tool=b.dataset.tool;
@@ -4141,6 +4159,7 @@ document.querySelectorAll("[data-tool]").forEach(b=>b.onclick=()=>{
 renderChatHistoryMini();
 setMode("chat");
 syncThemeToggleIcon();
+syncFloatingWallClearIcon();
 
 
 const chatNavWrap=$("#chatNavWrap")||$(".chat-nav-wrap");

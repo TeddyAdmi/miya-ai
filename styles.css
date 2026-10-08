@@ -2200,3 +2200,5 @@ body.light .image-viewer-created-date{background:rgba(255,255,255,.86)!important
 /* Audio editor uses its own inline sliders SVG; suppress the generic nav-icon pseudo icon. */
 .nav-icon.icon-sliders::before{display:none!important}
 .nav-icon.icon-sliders{display:inline-grid!important;place-items:center!important}
+
+body.light #clearImageWall svg{stroke:#fff!important;color:#fff!important}
