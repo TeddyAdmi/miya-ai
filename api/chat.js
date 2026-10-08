@@ -60,18 +60,32 @@ async function handler(req, res) {
       max_tokens: 1024
     };
 
-    async function callCvronGPT5Nano(prompt) {
+    async function callCvronGPT5Nano(prompt, image = "") {
       const started = Date.now();
       try {
         const endpoint = "https://cvron.alwaysdata.net/cvronai/gpt-5-nano.php";
-        const target = new URL(endpoint);
-        target.searchParams.set("prompt", prompt);
-        const response = await fetch(target.toString(), {
-          method:"GET",
-          headers:{Accept:"application/json, text/plain, */*"},
-          cache:"no-store",
-          signal:AbortSignal.timeout(90000)
-        });
+        let response;
+        if (image) {
+          response = await fetch(endpoint, {
+            method:"POST",
+            headers:{
+              "Content-Type":"application/json",
+              "Accept":"application/json, text/plain, */*"
+            },
+            body:JSON.stringify({prompt, image}),
+            cache:"no-store",
+            signal:AbortSignal.timeout(30000)
+          });
+        } else {
+          const target = new URL(endpoint);
+          target.searchParams.set("prompt", prompt);
+          response = await fetch(target.toString(), {
+            method:"GET",
+            headers:{Accept:"application/json, text/plain, */*"},
+            cache:"no-store",
+            signal:AbortSignal.timeout(90000)
+          });
+        }
         const raw = await response.text();
         let data = {};
         try { data = raw ? JSON.parse(raw) : {}; } catch {}
@@ -138,104 +152,81 @@ async function handler(req, res) {
       }
     }
 
+
     let result;
 
     if (imageBase64) {
-      // Vision providers are tried in parallel. Never leave the request
-      // hanging forever when every upstream fails.
-      const callAhm7Vision = async () => {
-        try {
-          const controller = new AbortController();
-          const timer = setTimeout(() => controller.abort(), 12000);
-          try {
-            const upstream = await fetch("https://ahm7xmakki.com/api/imgchat", {
-              method: "POST",
-              headers: { "Content-Type": "application/json", "Accept": "application/json" },
-              body: JSON.stringify({
-                image: imageBase64,
-                userPrompt: lastUserText,
-                messages: cleanMessages.slice(-12).map(m => ({
-                  type: m.role === "assistant" ? "ai" : "user",
-                  content: m.content
-                }))
-              }),
-              signal: controller.signal
-            });
-            const raw = await upstream.text();
-            let data = {};
-            try { data = raw ? JSON.parse(raw) : {}; } catch {}
-            const answer = String(data?.response || data?.text || data?.message || "").trim();
-            if (upstream.ok && answer) {
-              return { ok:true, text:answer, model:"VisionSter", provider:"AHM7 Vision" };
-            }
-            return { ok:false, provider:"AHM7 Vision", model:"VisionSter",
-              status:upstream.status, upstreamError:data?.error||data?.message||raw.slice(0,1000) };
-          } finally {
-            clearTimeout(timer);
-          }
-        } catch (error) {
-          return { ok:false, provider:"AHM7 Vision", model:"VisionSter",
-            status:null, upstreamError:String(error?.message||error) };
-        }
-      };
-
+      // BlockRun's free tier may auto-route an unavailable model to a
+      // non-vision model. Never accept such a reroute as a vision result.
       const visionModels = new Set([
         "nvidia/nemotron-3-nano-omni-30b-a3b-reasoning",
         "nvidia/llama-3.2-11b-vision"
       ]);
 
-      const callBlockRunOne = async model => {
-        try {
-          const attempt = await callBlockRun(model);
-          if (attempt.ok && visionModels.has(attempt.model)) return attempt;
-          return { ok:false, provider:"BlockRun", model, upstreamError:"No valid vision response." };
-        } catch (error) {
-          return { ok:false, provider:"BlockRun", model, upstreamError:String(error?.message||error) };
-        }
-      };
-
-      const providers = [
-        callAhm7Vision(),
-        callBlockRunOne("nvidia/nemotron-3-nano-omni-30b-a3b-reasoning"),
-        callBlockRunOne("nvidia/llama-3.2-11b-vision")
+      const visionCandidates = [
+        "nvidia/nemotron-3-nano-omni-30b-a3b-reasoning",
+        "nvidia/llama-3.2-11b-vision"
       ];
 
-      const overallTimeout = new Promise(resolve => {
-        setTimeout(() => resolve({
-          ok:false,
-          provider:"Vision",
-          model:"vision",
-          upstreamError:"Vision providers timed out."
-        }), 45000);
-      });
+      for (const model of visionCandidates) {
+        result = await callBlockRun(model);
 
-      const results = await Promise.race([
-        Promise.all(providers).then(items => ({ all:true, items })),
-        overallTimeout.then(result => ({ all:false, timeout:true, result }))
-      ]);
-
-      if (results.all) {
-        const firstValid = results.items.find(item => item?.ok);
-        if (firstValid) {
+        if (result.ok && visionModels.has(result.model)) {
           return res.status(200).json({
-            ok:true, mode:"chat", text:firstValid.text,
-            model:firstValid.model, provider:firstValid.provider, vision:true
+            ok: true, mode: "chat", text: result.text,
+            model: result.model, provider: result.provider, vision: true
           });
         }
-        return res.status(502).json({
-          ok:false, mode:"chat",
-          error:"Сервисы анализа изображения сейчас не ответили. Попробуйте ещё раз.",
-          vision:true
-        });
+
+        if (result.ok) {
+          result = {
+            ...result,
+            ok: false,
+            upstreamError: `BlockRun rerouted vision request to non-vision model: ${result.model}`
+          };
+        }
       }
 
-      return res.status(504).json({
-        ok:false, mode:"chat",
-        error:"Анализ изображения занял слишком много времени. Попробуйте ещё раз.",
-        vision:true
+      try {
+        const controller = new AbortController();
+        const timer = setTimeout(() => controller.abort(), 25000);
+        const upstream = await fetch("https://ahm7xmakki.com/api/imgchat", {
+          method: "POST",
+          headers: { "Content-Type": "application/json", "Accept": "application/json" },
+          body: JSON.stringify({
+            image: imageBase64,
+            userPrompt: lastUserText,
+            messages: cleanMessages.slice(-12).map(m => ({
+              type: m.role === "assistant" ? "ai" : "user", content: m.content
+            }))
+          }),
+          signal: controller.signal
+        });
+        clearTimeout(timer);
+        const raw = await upstream.text();
+        let data = {};
+        try { data = raw ? JSON.parse(raw) : {}; } catch {}
+        const answer = String(data?.response || data?.text || data?.message || "").trim();
+        if (upstream.ok && answer) {
+          return res.status(200).json({
+            ok: true, mode: "chat", text: answer,
+            model: "VisionSter", provider: "AHM7 Vision", vision: true
+          });
+        }
+      } catch {}
+
+      return res.status(502).json({
+        ok: false,
+        error: "VISION_UPSTREAM_FAILED",
+        message: "Бесплатные сервисы анализа изображения временно недоступны.",
+        upstream: result.provider || "BlockRun",
+        upstreamStatus: result.status,
+        upstreamError: result.upstreamError
       });
     }
 
+    // CVRON GPT-5 Nano is the first text-chat candidate. Keep the existing
+    // free BlockRun models as automatic fallback if CVRON is temporarily unavailable.
     const cvronPrompt = cleanMessages.slice(-12).map(m => m.role + ": " + m.content).join("\n");
     result = await callCvronGPT5Nano(cvronPrompt);
     if (!result.ok) result = await callBlockRun("nvidia/gpt-oss-20b");
