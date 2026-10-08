@@ -496,6 +496,11 @@ module.exports = async function imageHandler(req, res) {
           ? cvronPrompt + "\n\nOUTPUT FORMAT: Generate the complete image natively in exactly " +
             cvronRatio + " aspect ratio. Compose the entire scene for this canvas from the beginning. Do not crop, trim, zoom, cut off, or remove any part of the scene or subjects. Fill the requested canvas naturally."
           : cvronPrompt;
+        // Keep ordinary text-to-image generation independent from edit attachments.
+        // The metadata below still reports the source safely when one is supplied.
+        const sourceImageUrl = typeof body.imageUrl === "string" && /^https?:\\/\\//i.test(body.imageUrl.trim())
+          ? body.imageUrl.trim()
+          : "";
 
         const target =
           endpoint +
