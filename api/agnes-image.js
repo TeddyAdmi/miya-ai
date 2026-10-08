@@ -9,6 +9,7 @@ module.exports = async function handler(req, res) {
     const prompt=typeof body.prompt==="string"?body.prompt.trim():"";
     if(!prompt) return res.status(400).json({ok:false,error:"PROMPT_REQUIRED"});
     const ratio=["1:1","3:4","4:3","16:9","9:16","2:3","3:2","21:9"].includes(String(body.ratio))?String(body.ratio):"16:9";
+    const quality=["1K","2K","4K"].includes(String(body.quality))?String(body.quality):"2K";
     const source=String(body.imageBase64||body.imageUrl||"").trim();
     const n=Math.max(1,Math.min(4,Number(body.n)||1));
     const generationPrompt=[
@@ -32,23 +33,12 @@ module.exports = async function handler(req, res) {
     ].join("\\n");
     const qualityPrompt=source ? editPrompt : generationPrompt;
     // Use the maximum native output size supported by Agnes Image 2.5 Flash (4K).
-    const outputSize=ratio==="16:9"
-      ?"5248x2944"
-      :ratio==="9:16"
-        ?"2944x5248"
-        :ratio==="1:1"
-          ?"4096x4096"
-          :ratio==="3:4"
-            ?"3456x4608"
-            :ratio==="4:3"
-              ?"4608x3456"
-              :ratio==="2:3"
-                ?"3328x4992"
-                :ratio==="3:2"
-                  ?"4992x3328"
-                  :ratio==="21:9"
-                    ?"6272x2688"
-                    :"5248x2944";
+    const qualitySizes={
+      "1K":{"16:9":"1376x768","9:16":"768x1376","1:1":"1024x1024","3:4":"896x1200","4:3":"1200x896","2:3":"848x1264","3:2":"1264x848","21:9":"1584x672"},
+      "2K":{"16:9":"2752x1536","9:16":"1536x2752","1:1":"2048x2048","3:4":"1792x2400","4:3":"2400x1792","2:3":"1696x2528","3:2":"2528x1696","21:9":"3168x1344"},
+      "4K":{"16:9":"5248x2944","9:16":"2944x5248","1:1":"4096x4096","3:4":"3456x4608","4:3":"4608x3456","2:3":"3328x4992","3:2":"4992x3328","21:9":"6272x2688"}
+    };
+    const outputSize=qualitySizes[quality]?.[ratio]||qualitySizes["2K"]["16:9"];
     const payload={model:"agnes-image-2.5-flash",prompt:qualityPrompt,n,size:outputSize,ratio,extra_body:{response_format:"url"}};
     const images=[];
     if(source) payload.extra_body.image=[source];
@@ -64,7 +54,7 @@ module.exports = async function handler(req, res) {
     if(!upstream.ok) return res.status(upstream.status>=400&&upstream.status<500?upstream.status:502).json({ok:false,error:"AGNES_IMAGE_FAILED",message:data?.error?.message||data?.message||raw||("Agnes HTTP "+upstream.status),upstreamStatus:upstream.status});
     const urls=Array.isArray(data?.data)?data.data.map(x=>x?.url).filter(x=>typeof x==="string"&&/^https?:\/\//i.test(x)):[];
     if(!urls.length) return res.status(502).json({ok:false,error:"AGNES_IMAGE_URL_MISSING",providerResponse:data});
-    return res.status(200).json({ok:true,mode:"image",status:"completed",provider:"Agnes",model:"Agnes Image 2.5 Flash",imageUrl:urls[0],imageUrls:urls,count:urls.length,meta:{freeCandidate:true,size:outputSize,ratio,edit:Boolean(source)}});
+    return res.status(200).json({ok:true,mode:"image",status:"completed",provider:"Agnes",model:"Agnes Image 2.5 Flash",imageUrl:urls[0],imageUrls:urls,count:urls.length,meta:{freeCandidate:true,size:outputSize,ratio,quality,edit:Boolean(source)}});
   }catch(e){
     return res.status(e?.name==="TimeoutError"?504:502).json({ok:false,error:"AGNES_IMAGE_HANDLER_ERROR",message:e?.message||"Agnes image request failed"});
   }
