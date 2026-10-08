@@ -170,6 +170,26 @@ function openSavedChat(id){
 }
 
 const LIB_KEY="miyaLibrary";
+const IMAGE_WALL_HIDDEN_KEY="miyaImageWallHidden";
+function getHiddenImageWallIds(){
+  try{
+    const raw=JSON.parse(localStorage.getItem(IMAGE_WALL_HIDDEN_KEY)||"[]");
+    return new Set(Array.isArray(raw)?raw.map(String):[]);
+  }catch{return new Set()}
+}
+function hideImagesFromWall(items){
+  const ids=items.filter(x=>x&&x.type==="image"&&x.id).map(x=>String(x.id));
+  if(!ids.length)return;
+  const hidden=getHiddenImageWallIds();
+  ids.forEach(id=>hidden.add(id));
+  try{localStorage.setItem(IMAGE_WALL_HIDDEN_KEY,JSON.stringify([...hidden]))}catch{}
+}
+function clearImageWall(){
+  const items=getLibrary().filter(x=>x.type==="image");
+  hideImagesFromWall(items);
+  renderImageLibrary();
+  toast("Стена картинок очищена");
+}
 function getLibrary(){
  try{
   const raw=JSON.parse(localStorage.getItem(LIB_KEY)||"[]");
@@ -758,7 +778,7 @@ function buildMediaCard(item,{video=false}={}){
  const menu=document.createElement("div");menu.className="media-action-menu";
  if(!video){
   const promptBtn=document.createElement("button");promptBtn.type="button";promptBtn.innerHTML='<span class="action-icon action-svg"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 5h14v14H5z"/><path d="M8 9h8M8 12h6M8 15h4"/></svg></span><span>Промт</span>';promptBtn.onclick=e=>{e.stopPropagation();closeAllMediaMenus();showPrompt(item)}; const upscaleMenuBtn=document.createElement("button");upscaleMenuBtn.type="button";upscaleMenuBtn.innerHTML='<span class="action-icon action-svg"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m12 3 1.7 5.3L19 10l-5.3 1.7L12 17l-1.7-5.3L5 10l5.3-1.7L12 3Z"/><path d="m19 15 .8 2.2L22 18l-.8-2.2L19 15Z"/></svg></span><span>Upscale</span>';upscaleMenuBtn.onclick=e=>{e.stopPropagation();closeAllMediaMenus();toggleUpscalePanel(item,card)};
-  const editBtn=document.createElement("button");editBtn.type="button";editBtn.innerHTML='<span class="action-icon action-svg"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m4 16.5-.8 3.3 3.3-.8L18.7 6.8a2.2 2.2 0 0 1 3.1 3.1L6.5 19l-3.3.8.8-3.3Z"/><path d="m14.2 5.8 4 4"/></svg></span><span>AI Редактор</span>';editBtn.onclick=async e=>{e.stopPropagation();closeAllMediaMenus();await openAiEditor(item)};
+  const editBtn=document.createElement("button");editBtn.type="button";editBtn.innerHTML='<span class="action-icon action-svg"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m4 16.5-.8 3.3 3.3-.8L18.7 6.8a2.2 2.2 0 0 1 3.1 3.1L6.5 19l-3.3.8.8-3.3Z"/><path d="m14.2 5.8 4 4"/></svg></span><span>Изменить картинку</span>';editBtn.onclick=async e=>{e.stopPropagation();closeAllMediaMenus();await openEditor(await mediaItemToReference(item))};
   const videoBtn=document.createElement("button");videoBtn.type="button";videoBtn.innerHTML='<span class="action-icon action-svg"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="5" width="17" height="14" rx="2"/><path d="m10 9 5 3-5 3Z"/></svg></span><span>Сделать видео</span>';videoBtn.onclick=async e=>{e.stopPropagation();closeAllMediaMenus();openVideoFromImage(await mediaItemToReference(item))};
   const copyBtn=document.createElement("button");copyBtn.type="button";copyBtn.innerHTML='<span class="action-icon action-svg"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M15 9V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v7a2 2 0 0 0 2 2h3"/></svg></span><span>Копировать</span>';copyBtn.onclick=async e=>{e.stopPropagation();closeAllMediaMenus();try{const response=await fetch(item.url,{headers:{Accept:"image/*"}});if(!response.ok)throw new Error();const blob=await response.blob();if(!navigator.clipboard?.write||!window.ClipboardItem)throw new Error();const bitmap=await createImageBitmap(blob);const canvas=document.createElement("canvas");canvas.width=bitmap.width;canvas.height=bitmap.height;const ctx=canvas.getContext("2d");ctx.fillStyle="#fff";ctx.fillRect(0,0,canvas.width,canvas.height);ctx.drawImage(bitmap,0,0);bitmap.close();const jpeg=await new Promise(resolve=>canvas.toBlob(resolve,"image/jpeg",.95));if(!jpeg)throw new Error();await navigator.clipboard.write([new ClipboardItem({"image/jpeg":jpeg})]);toast("JPG скопирован")}catch{toast("Не удалось скопировать картинку")}};
   const downloadBtn=document.createElement("button");downloadBtn.type="button";downloadBtn.innerHTML='<span class="action-icon action-svg"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4v11M8 11l4 4 4-4M5 19h14"/></svg></span><span>Скачать</span>';downloadBtn.onclick=e=>{e.stopPropagation();closeAllMediaMenus();showDownloadMenu(item,downloadBtn)};
@@ -861,12 +881,11 @@ async function restoreCachedImagesIntoLibrary(){
  }catch{}
 }
 function renderImageLibrary(){
- const c=$("#canvas"),items=getLibrary().filter(x=>x.type==="image");
+ const c=$("#canvas");
+ const hidden=getHiddenImageWallIds();
+ const items=getLibrary().filter(x=>x.type==="image"&&!hidden.has(String(x.id)));
  if(!items.length){
-   restoreCachedImagesIntoLibrary().then(()=>{
-     const recovered=getLibrary().filter(x=>x.type==="image");
-     if(recovered.length)renderImageLibrary();else showEmpty();
-   });
+   showEmpty();
    return;
  }
  c.innerHTML='<div class="result-grid"></div>';
@@ -3672,6 +3691,14 @@ function setMode(next,render=true){
  }
  requestAnimationFrame(()=>$("#workspace")?.scrollTo({top:0,behavior:"auto"}));
  syncInput();
+}
+const clearImageWallBtn=$("#clearImageWall");
+if(clearImageWallBtn){
+  clearImageWallBtn.addEventListener("click",()=>{
+    if(mode!=="images"&&mode!=="tools")return;
+    if(mode==="images")clearImageWall();
+    else toast("Откройте раздел «Картинки», чтобы очистить стену");
+  });
 }
 const chatMenuToggle=$("#chatMenuToggle");
 if(chatMenuToggle){
