@@ -16,7 +16,8 @@ module.exports = async function handler(req, res) {
 
     const target = new URL(rawUrl);
     const requestedRatio = String(req.query?.ratio || "").trim();
-    const ratioMatch = requestedRatio.match(/^(\\d+):(\\d+)$/);
+    const enhance = String(req.query?.enhance || "").trim() === "1";
+    const ratioMatch = requestedRatio.match(/^(\d+):(\d+)$/);
     let targetRatio = 0;
     if (ratioMatch) {
       const rw = Number(ratioMatch[1]), rh = Number(ratioMatch[2]);
@@ -103,9 +104,17 @@ module.exports = async function handler(req, res) {
       imagePipeline = imagePipeline;
     }
 
+    if (enhance) {
+      // Nano Banana finish: brighter, cleaner, more vivid and slightly sharper,
+      // while preserving the generated composition and skin/fur/textile detail.
+      imagePipeline = imagePipeline
+        .modulate({ brightness: 1.06, saturation: 1.12 })
+        .sharpen({ sigma: 0.65, m1: 0.8, m2: 2.0 });
+    }
+
     const jpeg = await imagePipeline
       .flatten({ background: "#ffffff" })
-      .jpeg({ quality: 92, mozjpeg: true })
+      .jpeg({ quality: 94, mozjpeg: true })
       .toBuffer();
 
     res.setHeader("Content-Type", "image/jpeg");
