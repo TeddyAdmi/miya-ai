@@ -463,11 +463,11 @@ module.exports = async function imageHandler(req, res) {
         "Nano Banana 2": "https://cvron.alwaysdata.net/cvronai/nanobanana2.php",
         "GPT Image 2.5": "https://cvron.alwaysdata.net/cvronai/gpt-image-2-5-flare.php"
       };
-      const generationEndpoint = cvronModels[requestedModel];
+      const endpoint = cvronModels[requestedModel];
       const cvronPrompt = typeof body.prompt === "string" ? body.prompt.trim() : "";
       const cvronRatio = ["1:1","3:4","4:3","16:9","9:16","2:3","3:2","21:9"].includes(String(body.ratio || "")) ? String(body.ratio) : "16:9";
       const quality = ["1K","2K","4K"].includes(String(body.quality || "")) ? String(body.quality) : "2K";
-      if (!generationEndpoint) {
+      if (!endpoint) {
         return res.status(400).json({
           ok:false,
           error:"CVRON_MODEL_UNSUPPORTED",
@@ -492,26 +492,20 @@ module.exports = async function imageHandler(req, res) {
         const scale = quality === "4K" ? 4 : quality === "2K" ? 2 : 1;
         const nativeSize = {width:Math.round(baseSize.width*scale),height:Math.round(baseSize.height*scale)};
 
-        // Nano Banana 2 and GPT Image 2.5 are generation-only models in Miya.
-        // Image editing is handled by Agnes or FLUX Kontext Dev, never CVRON image2image.
-        const sourceImageUrl = "";
-        const isEdit = false;
-        const endpoint = generationEndpoint;
         const finalPrompt = requestedModel === "GPT Image 2.5"
-          ? cvronPrompt + "\\n\\nOUTPUT FORMAT: Generate the complete image natively in exactly " +
-              cvronRatio + " aspect ratio. Compose the entire scene for this canvas from the beginning. Do not crop, trim, zoom, cut off, or remove any part of the scene or subjects. Fill the requested canvas naturally."
+          ? cvronPrompt + "\n\nOUTPUT FORMAT: Generate the complete image natively in exactly " +
+            cvronRatio + " aspect ratio. Compose the entire scene for this canvas from the beginning. Do not crop, trim, zoom, cut off, or remove any part of the scene or subjects. Fill the requested canvas naturally."
           : cvronPrompt;
+
         const target =
           endpoint +
           "?prompt=" + encodeURIComponent(finalPrompt) +
-          (isEdit
-            ? "&image_url=" + encodeURIComponent(sourceImageUrl)
-            : "&ratio=" + encodeURIComponent(cvronRatio) +
-              "&aspect_ratio=" + encodeURIComponent(cvronRatio) +
-              "&size=" + encodeURIComponent(cvronRatio) +
-              "&width=" + nativeSize.width +
-              "&height=" + nativeSize.height +
-              "&resolution=" + encodeURIComponent(quality));
+          "&ratio=" + encodeURIComponent(cvronRatio) +
+          "&aspect_ratio=" + encodeURIComponent(cvronRatio) +
+          "&size=" + encodeURIComponent(cvronRatio) +
+          "&width=" + nativeSize.width +
+          "&height=" + nativeSize.height +
+          "&resolution=" + encodeURIComponent(quality);
         let upstream;
         let raw = "";
         let data = {};
@@ -563,16 +557,10 @@ module.exports = async function imageHandler(req, res) {
 
         const imageUrl=findImageUrl(data) || findImageUrl(raw);
         if (!imageUrl) {
-          const taskFailed = data?.success === false || /CVRON_IMAGE_EDIT_FAILED_AFTER_MIRROR/.test(raw);
           return res.status(502).json({
             ok:false,
-            error:taskFailed ? "CVRON_TASK_CREATION_FAILED" : "CVRON_IMAGE_URL_MISSING",
-            message:taskFailed
-              ? "CVRON не смог создать задачу редактирования даже после повторной передачи исходного изображения."
-              : "CVRON не вернул ссылку на изображение.",
-            upstreamEndpoint:endpoint,
-            edit:isEdit,
-            sourceHost:sourceImageUrl ? (() => { try { return new URL(sourceImageUrl).hostname; } catch { return ""; } })() : "",
+            error:"CVRON_IMAGE_URL_MISSING",
+            message:"CVRON не вернул ссылку на изображение.",
             upstreamBody:raw.slice(0,1500)
           });
         }
@@ -580,14 +568,15 @@ module.exports = async function imageHandler(req, res) {
         const outputImageUrl = requestedModel === "GPT Image 2.5"
           ? imageUrl
           : "/api/image-jpeg?url=" + encodeURIComponent(imageUrl) +
-            "&ratio=" + encodeURIComponent(cvronRatio);
+            "&ratio=" + encodeURIComponent(cvronRatio) +
+            "&enhance=1";
 
         return res.status(200).json({
           ok:true,
           mode:"image",
           status:"completed",
           provider:"CVRON",
-          model:isEdit ? "CVRON Image To Image" : requestedModel,
+          model:requestedModel,
           imageUrl:outputImageUrl,
           imageUrls:[outputImageUrl],
           count:1,
@@ -598,10 +587,9 @@ module.exports = async function imageHandler(req, res) {
             quality,
             native:true,
             noCrop:true,
-            enhanced:false,
-            edit:isEdit,
-            sourceImageUrl:sourceImageUrl,
-            editMethod:isEdit ? "cvron-image2image" : "text-to-image"
+            enhanced:requestedModel !== "GPT Image 2.5",
+            edit:Boolean(sourceImageUrl),
+            sourceImageUrl:sourceImageUrl
           }
         });
       } catch (error) {
@@ -621,20 +609,8 @@ module.exports = async function imageHandler(req, res) {
 
     const model = typeof body.model === "string" ? body.model.trim() : "Flux Dev";
     const options = body.options && typeof body.options === "object" ? body.options : {};
-    let imageUrl = typeof options.imageUrl === "string" ? options.imageUrl.trim() : "";
+    const imageUrl = typeof options.imageUrl === "string" ? options.imageUrl.trim() : "";
     const imageBase64 = typeof options.imageBase64 === "string" ? options.imageBase64.trim() : "";
-    // Resolve Miya's image proxy wrapper before fetching a source image for Kontext.
-    if (imageUrl.startsWith("/api/image-jpeg?") || /^https?:\/\//i.test(imageUrl)) {
-      try {
-        const parsedSource = new URL(imageUrl, "https://miya-studio.vercel.app");
-        const ownHost = parsedSource.hostname.toLowerCase() === "miya-studio.vercel.app" ||
-          parsedSource.hostname.toLowerCase() === "www.miya-studio.vercel.app";
-        if (ownHost && parsedSource.pathname === "/api/image-jpeg") {
-          const unwrappedSource = parsedSource.searchParams.get("url") || "";
-          if (/^https?:\/\//i.test(unwrappedSource)) imageUrl = unwrappedSource;
-        }
-      } catch {}
-    }
     const isImageToImage = /kontext/i.test(model) && Boolean(imageUrl || imageBase64);
 
     if (/kontext/i.test(model) && !isImageToImage) {
