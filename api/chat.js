@@ -141,9 +141,8 @@ async function handler(req, res) {
     let result;
 
     if (imageBase64) {
-      // Image chat: start the dedicated AHM7 vision service and the free
-      // BlockRun vision fallback at the same time. This avoids waiting 25s
-      // for one upstream to fail before trying the other.
+      // Vision providers are tried in parallel. Never leave the request
+      // hanging forever when every upstream fails.
       const callAhm7Vision = async () => {
         try {
           const controller = new AbortController();
@@ -167,31 +166,16 @@ async function handler(req, res) {
             try { data = raw ? JSON.parse(raw) : {}; } catch {}
             const answer = String(data?.response || data?.text || data?.message || "").trim();
             if (upstream.ok && answer) {
-              return {
-                ok: true,
-                text: answer,
-                model: "VisionSter",
-                provider: "AHM7 Vision"
-              };
+              return { ok:true, text:answer, model:"VisionSter", provider:"AHM7 Vision" };
             }
-            return {
-              ok: false,
-              provider: "AHM7 Vision",
-              model: "VisionSter",
-              status: upstream.status,
-              upstreamError: data?.error || data?.message || raw.slice(0, 1000)
-            };
+            return { ok:false, provider:"AHM7 Vision", model:"VisionSter",
+              status:upstream.status, upstreamError:data?.error||data?.message||raw.slice(0,1000) };
           } finally {
             clearTimeout(timer);
           }
         } catch (error) {
-          return {
-            ok: false,
-            provider: "AHM7 Vision",
-            model: "VisionSter",
-            status: null,
-            upstreamError: String(error?.message || error)
-          };
+          return { ok:false, provider:"AHM7 Vision", model:"VisionSter",
+            status:null, upstreamError:String(error?.message||error) };
         }
       };
 
@@ -200,39 +184,55 @@ async function handler(req, res) {
         "nvidia/llama-3.2-11b-vision"
       ]);
 
-      const callBlockRunVision = async () => {
-        for (const model of [
-          "nvidia/nemotron-3-nano-omni-30b-a3b-reasoning",
-          "nvidia/llama-3.2-11b-vision"
-        ]) {
+      const callBlockRunOne = async model => {
+        try {
           const attempt = await callBlockRun(model);
           if (attempt.ok && visionModels.has(attempt.model)) return attempt;
-          if (!attempt.ok) continue;
+          return { ok:false, provider:"BlockRun", model, upstreamError:"No valid vision response." };
+        } catch (error) {
+          return { ok:false, provider:"BlockRun", model, upstreamError:String(error?.message||error) };
         }
-        return {
-          ok: false,
-          provider: "BlockRun",
-          model: "vision",
-          status: null,
-          upstreamError: "No usable BlockRun vision model responded."
-        };
       };
 
-      // Whichever valid vision answer arrives first wins. This keeps the
-      // normal case fast while retaining AHM7 as the preferred dedicated
-      // vision provider when it responds first.
-      const firstValid = await Promise.race([
-        callAhm7Vision().then(r => r.ok ? r : new Promise(() => {})),
-        callBlockRunVision().then(r => r.ok ? r : new Promise(() => {}))
+      const providers = [
+        callAhm7Vision(),
+        callBlockRunOne("nvidia/nemotron-3-nano-omni-30b-a3b-reasoning"),
+        callBlockRunOne("nvidia/llama-3.2-11b-vision")
+      ];
+
+      const overallTimeout = new Promise(resolve => {
+        setTimeout(() => resolve({
+          ok:false,
+          provider:"Vision",
+          model:"vision",
+          upstreamError:"Vision providers timed out."
+        }), 45000);
+      });
+
+      const results = await Promise.race([
+        Promise.all(providers).then(items => ({ all:true, items })),
+        overallTimeout.then(result => ({ all:false, timeout:true, result }))
       ]);
 
-      return res.status(200).json({
-        ok: true,
-        mode: "chat",
-        text: firstValid.text,
-        model: firstValid.model,
-        provider: firstValid.provider,
-        vision: true
+      if (results.all) {
+        const firstValid = results.items.find(item => item?.ok);
+        if (firstValid) {
+          return res.status(200).json({
+            ok:true, mode:"chat", text:firstValid.text,
+            model:firstValid.model, provider:firstValid.provider, vision:true
+          });
+        }
+        return res.status(502).json({
+          ok:false, mode:"chat",
+          error:"Сервисы анализа изображения сейчас не ответили. Попробуйте ещё раз.",
+          vision:true
+        });
+      }
+
+      return res.status(504).json({
+        ok:false, mode:"chat",
+        error:"Анализ изображения занял слишком много времени. Попробуйте ещё раз.",
+        vision:true
       });
     }
 
