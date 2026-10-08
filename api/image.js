@@ -564,7 +564,8 @@ module.exports = async function imageHandler(req, res) {
 
         const proxiedImageUrl =
           "/api/image-jpeg?url=" + encodeURIComponent(imageUrl) +
-          "&ratio=" + encodeURIComponent(cvronRatio);
+          "&ratio=" + encodeURIComponent(cvronRatio) +
+          (requestedModel === "GPT Image 2.5" ? "&model=GPT%20Image%202.5" : "");
 
         return res.status(200).json({
           ok:true,
