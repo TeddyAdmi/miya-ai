@@ -138,12 +138,9 @@ async function handler(req, res) {
       }
     }
 
-
     let result;
 
     if (imageBase64) {
-      // BlockRun's free tier may auto-route an unavailable model to a
-      // non-vision model. Never accept such a reroute as a vision result.
       const visionModels = new Set([
         "nvidia/nemotron-3-nano-omni-30b-a3b-reasoning",
         "nvidia/llama-3.2-11b-vision"
@@ -159,8 +156,9 @@ async function handler(req, res) {
 
         if (result.ok && visionModels.has(result.model)) {
           return res.status(200).json({
-            ok: true, mode: "chat", text: result.text,
-            model: result.model, provider: result.provider, vision: true
+            ok: true,
+            mode: "chat",
+            text: result.text
           });
         }
 
@@ -168,7 +166,7 @@ async function handler(req, res) {
           result = {
             ...result,
             ok: false,
-            upstreamError: `BlockRun rerouted vision request to non-vision model: ${result.model}`
+            upstreamError: "Vision provider returned an unsupported route."
           };
         }
       }
@@ -195,8 +193,9 @@ async function handler(req, res) {
         const answer = String(data?.response || data?.text || data?.message || "").trim();
         if (upstream.ok && answer) {
           return res.status(200).json({
-            ok: true, mode: "chat", text: answer,
-            model: "VisionSter", provider: "AHM7 Vision", vision: true
+            ok: true,
+            mode: "chat",
+            text: answer
           });
         }
       } catch {}
@@ -204,15 +203,10 @@ async function handler(req, res) {
       return res.status(502).json({
         ok: false,
         error: "VISION_UPSTREAM_FAILED",
-        message: "Бесплатные сервисы анализа изображения временно недоступны.",
-        upstream: result.provider || "BlockRun",
-        upstreamStatus: result.status,
-        upstreamError: result.upstreamError
+        message: "Бесплатные сервисы анализа изображения временно недоступны."
       });
     }
 
-    // CVRON GPT-5 Nano is the first text-chat candidate. Keep the existing
-    // free BlockRun models as automatic fallback if CVRON is temporarily unavailable.
     const cvronPrompt = cleanMessages.slice(-12).map(m => m.role + ": " + m.content).join("\n");
     result = await callCvronGPT5Nano(cvronPrompt);
     if (!result.ok) result = await callBlockRun("nvidia/gpt-oss-20b");
@@ -221,21 +215,16 @@ async function handler(req, res) {
 
     if (result.ok) {
       return res.status(200).json({
-        ok: true, mode: "chat", text: result.text,
-        model: result.model, provider: result.provider
+        ok: true,
+        mode: "chat",
+        text: result.text
       });
     }
 
     return res.status(502).json({
       ok: false,
       error: "CHAT_UPSTREAM_FAILED",
-      message: "Бесплатные AI-сервисы чата временно недоступны.",
-      upstream: result.provider || "unknown",
-      upstreamStatus: result.status,
-      upstreamStatusText: result.statusText || "",
-      upstreamError: result.upstreamError,
-      upstreamBody: result.upstreamBody,
-      elapsedMs: result.elapsedMs
+      message: "Бесплатные AI-сервисы чата временно недоступны."
     });
 
   } catch (error) {
@@ -243,8 +232,7 @@ async function handler(req, res) {
     return res.status(500).json({
       ok: false,
       error: "CHAT_HANDLER_ERROR",
-      message: "Ошибка обработки запроса Miya.",
-      detail: String(error?.message || error)
+      message: "Ошибка обработки запроса Miya."
     });
   }
 }
