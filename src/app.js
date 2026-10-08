@@ -7,18 +7,6 @@ voice:{title:"Голос",eyebrow:"ГОЛОС",subtitle:"Превращай те
 };
 const $=s=>document.querySelector(s);
 
-(function addCvronTestModels(){
-  const select=document.getElementById("composerModel");
-  if(!select)return;
-  const models=["FLUX Dev","DALL-E 3","Stable Diffusion 3.5 Large","ChatGPT Imager","Flux 2 Klein","Image To Image"];
-  models.forEach(name=>{
-    if([...select.options].some(o=>o.value===name))return;
-    const option=document.createElement("option");
-    option.value=name;
-    option.textContent=name;
-    select.appendChild(option);
-  });
-})();
 (function ensureMiyaMediaMoreStyle(){
  if(document.getElementById("miyaMediaDotsFix"))return;
  const st=document.createElement("style");st.id="miyaMediaDotsFix";
@@ -2120,7 +2108,7 @@ async function generateAgnesImage(prompt){
 async function generateImage(prompt){
  const selectedModel=String($("#composerModel")?.value||"").trim();
  const useAgnesImage=/^Agnes Image/i.test(selectedModel);
- const useCvronImage=/^(?:Nano Banana 2|GPT Image 2\.5|FLUX Dev|DALL-E 3|Stable Diffusion 3\.5 Large|ChatGPT Imager|Flux 2 Klein|Image To Image)$/i.test(selectedModel);
+ const useCvronImage=/^(?:Nano Banana 2|GPT Image 2\.5)$/i.test(selectedModel);
  if(useAgnesImage){
   return generateAgnesImage(prompt);
  }
@@ -2130,8 +2118,8 @@ async function generateImage(prompt){
  const percent=ring?.querySelector(".progress-percent");
  const modelName=selectedModel||"FLUX Dev";
  const usesReferenceImage=Boolean(referenceImage) &&
-   (modelName==="FLUX Kontext Dev" || modelName==="Agnes Image 2.5 Flash" || modelName==="Image To Image");
- const hasFileUpload=(modelName==="FLUX Kontext Dev" || modelName==="Image To Image") && Boolean(referenceImage);
+   (modelName==="FLUX Kontext Dev" || modelName==="Agnes Image 2.5 Flash");
+ const hasFileUpload=(modelName==="FLUX Kontext Dev") && Boolean(referenceImage);
  const composerProgress=$("#composerProgress");
  let fakeProgress=0;
  let fakeTimer=null;

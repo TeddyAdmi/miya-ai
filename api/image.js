@@ -461,21 +461,13 @@ module.exports = async function imageHandler(req, res) {
     if (provider === "cvron") {
       const cvronModels = {
         "Nano Banana 2": { url:"https://cvron.alwaysdata.net/cvronai/nanobanana2.php", kind:"standard" },
-        "GPT Image 2.5": { url:"https://cvron.alwaysdata.net/cvronai/gpt-image-2-5-flare.php", kind:"standard" },
-        "FLUX Dev": { url:"https://cvron.alwaysdata.net/cvronai/flux-dev.php", kind:"standard" },
-        "DALL-E 3": { url:"https://cvron.alwaysdata.net/cvronai/multi-gen.php?model=dalle-three", kind:"standard" },
-        "Stable Diffusion 3.5 Large": { url:"https://cvron.alwaysdata.net/cvronai/multi-gen.php?model=stable-diffusion-v35-large", kind:"standard" },
-        "ChatGPT Imager": { url:"https://cvron.alwaysdata.net/cvronai/chatgpt-imager.php", kind:"standard" },
-        "Flux 2 Klein": { url:"https://cvron.alwaysdata.net/cvronvip/flux-2-klein.php", kind:"standard" },
-        "Image To Image": { url:"https://cvron.alwaysdata.net/cvronai/image2image.php", kind:"image2image" }
+        "GPT Image 2.5": { url:"https://cvron.alwaysdata.net/cvronai/gpt-image-2-5-flare.php", kind:"standard" }
       };
 
       const cvronConfig = cvronModels[requestedModel];
       const endpoint = cvronConfig?.url;
       const cvronPrompt = typeof body.prompt === "string" ? body.prompt.trim() : "";
       const cvronRatio = ["1:1","3:4","4:3","16:9","9:16","2:3","3:2","21:9"].includes(String(body.ratio || "")) ? String(body.ratio) : "16:9";
-      const cvronImageUrl = typeof body.imageUrl === "string" ? body.imageUrl.trim() : "";
-      const cvronImageBase64 = typeof body.imageBase64 === "string" ? body.imageBase64.trim() : "";
 
       if (!cvronConfig) {
         return res.status(400).json({ ok:false, error:"CVRON_MODEL_UNSUPPORTED", message:"Неизвестная CVRON-модель." });
@@ -483,14 +475,6 @@ module.exports = async function imageHandler(req, res) {
       if (!cvronPrompt) {
         return res.status(400).json({ok:false,error:"PROMPT_REQUIRED"});
       }
-      if (cvronConfig.kind === "image2image" && !cvronImageUrl && !cvronImageBase64) {
-        return res.status(400).json({
-          ok:false,
-          error:"CVRON_SOURCE_IMAGE_REQUIRED",
-          message:"Для Image To Image загрузите исходное изображение."
-        });
-      }
-
       try {
         // Use the exact same CVRON request contract that made Nano Banana 2
         // and GPT Image 2.5 work: GET + prompt only. Do not append width,
@@ -498,14 +482,6 @@ module.exports = async function imageHandler(req, res) {
         // are not guaranteed to accept those extra query fields.
         const target = new URL(endpoint);
         target.searchParams.set("prompt", cvronPrompt);
-
-        if (cvronConfig.kind === "image2image") {
-          if (cvronImageUrl) {
-            target.searchParams.set("image_url", cvronImageUrl);
-          } else {
-            target.searchParams.set("image_url", cvronImageBase64);
-          }
-        }
 
         let upstream;
         let raw = "";
@@ -590,7 +566,7 @@ module.exports = async function imageHandler(req, res) {
             normalized:true,
             noCrop:true,
             enhanced:true,
-            sourceImageUsed:Boolean(cvronImageUrl || cvronImageBase64),
+            sourceImageUsed:false,
             sourceImageUrl:imageUrl
           }
         });

@@ -42,7 +42,8 @@ module.exports = async function handler(req, res) {
       "www.cleverutils.com",
       "cleverutil",
       "cleverutil.com",
-      "overchat.s3.eu-north-1.amazonaws.com"
+      "overchat.s3.eu-north-1.amazonaws.com",
+      "cvron.alwaysdata.net"
     ];
     if (!allowed.includes(host)) {
       return res.status(403).json({ ok: false, error: "IMAGE_HOST_NOT_ALLOWED" });
