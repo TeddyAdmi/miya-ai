@@ -17,7 +17,15 @@ const $=s=>document.querySelector(s);
 .media-action.media-more svg{width:20px!important;height:20px!important;display:block!important;fill:currentColor!important;stroke:none!important}
 .media-action.media-more svg circle{fill:currentColor!important}
 body.light .media-action.media-more{background:rgba(255,255,255,.52)!important;border-color:rgba(40,30,60,.14)!important;color:#273047!important}
-body.light .media-action.media-more:hover{background:rgba(0,0,0,.10)!important;border-color:rgba(40,30,60,.18)!important;color:#17121f!important}`;
+body.light .media-action.media-more:hover{background:rgba(0,0,0,.10)!important;border-color:rgba(40,30,60,.18)!important;color:#17121f!important}
+.image-viewer-created-info{position:fixed!important;right:22px!important;bottom:18px!important;top:auto!important;left:auto!important;z-index:20!important;display:flex!important;flex-direction:column!important;align-items:flex-end!important;gap:3px!important;padding:7px 10px!important;border-radius:9px!important;background:rgba(20,27,38,.78)!important;color:rgba(255,255,255,.88)!important;border:1px solid rgba(255,255,255,.14)!important;backdrop-filter:blur(8px)!important;-webkit-backdrop-filter:blur(8px)!important;pointer-events:none!important;max-width:min(320px,calc(100vw - 24px))!important}
+.image-viewer-created-info .image-viewer-created-model,.image-viewer-created-info .image-viewer-created-date{position:static!important;inset:auto!important;padding:0!important;margin:0!important;border:0!important;border-radius:0!important;background:transparent!important;backdrop-filter:none!important;-webkit-backdrop-filter:none!important;color:inherit!important;font-size:11px!important;line-height:1.25!important;white-space:normal!important;text-align:right!important}
+.image-viewer-created-info .image-viewer-created-model{font-weight:600!important;color:#fff!important;max-width:100%!important;overflow-wrap:anywhere!important}
+.image-viewer-created-info .image-viewer-created-date{font-weight:400!important;color:rgba(255,255,255,.72)!important}
+body.light .image-viewer-created-info{background:rgba(255,255,255,.9)!important;color:#52627a!important;border-color:rgba(40,30,60,.14)!important;box-shadow:0 4px 18px rgba(0,0,0,.12)!important}
+body.light .image-viewer-created-info .image-viewer-created-model{color:#273047!important}
+body.light .image-viewer-created-info .image-viewer-created-date{color:#64748b!important}
+@media(max-width:800px){.image-viewer-created-info{right:12px!important;bottom:12px!important;max-width:calc(100vw - 24px)!important}}`;
  document.head.appendChild(st);
 })();
 function jpegImageUrl(url){
@@ -374,7 +382,7 @@ function openImageViewer(item){
 <button type="button" class="image-viewer-nav image-viewer-prev" aria-label="Предыдущее изображение" title="Предыдущее изображение"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m14.5 5-7 7 7 7"/><path d="M8 12h10"/></svg></button>
 <button type="button" class="image-viewer-nav image-viewer-next" aria-label="Следующее изображение" title="Следующее изображение"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m9.5 5 7 7-7 7"/><path d="M16 12H6"/></svg></button>
 <div class="image-viewer-controls">
-<div class="image-viewer-created-date"></div>
+<div class="image-viewer-created-info"><div class="image-viewer-created-model"></div><div class="image-viewer-created-date"></div></div>
 <button type="button" class="image-viewer-edit" aria-label="Изменить картинку" title="Изменить картинку"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m4 16.5-.8 3.3 3.3-.8L18.7 6.8a2.2 2.2 0 0 1 3.1 3.1L6.5 19l-3.3.8.8-3.3Z"/><path d="m14.2 5.8 4 4"/></svg></button>
 <button type="button" class="image-viewer-video" aria-label="Создать видео" title="Создать видео"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m8 5 11 7-11 7V5Z"/></svg></button>
 <button type="button" class="image-viewer-prompt" aria-label="Показать промт" title="Промт"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 5h14v14H5z"/><path d="M8 9h8M8 12h6M8 15h4"/></svg></button>
@@ -441,7 +449,7 @@ function openImageViewer(item){
   const showViewerItem=(nextItem)=>{
     if(!nextItem)return;
     modal.dataset.viewerItemId=nextItem.id;
-    const viewerDate=modal.querySelector(".image-viewer-created-date");if(viewerDate)viewerDate.textContent=formatMediaCreationDate(nextItem);
+    const viewerModel=modal.querySelector(".image-viewer-created-model");if(viewerModel)viewerModel.textContent=String(nextItem.model||"Модель не указана");const viewerDate=modal.querySelector(".image-viewer-created-date");if(viewerDate)viewerDate.textContent=formatMediaCreationDate(nextItem);
     const viewerImg=modal.querySelector(".image-viewer-image");
     viewerImg.src=nextItem.url;
     viewerImg.dataset.zoom="1";viewerImg.dataset.panX="0";viewerImg.dataset.panY="0";
