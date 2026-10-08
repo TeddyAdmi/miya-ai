@@ -4057,9 +4057,70 @@ async function processSpeechRecording(){
   const status=$("#composerStatus");
   if(status)status.textContent="Распознаю голос…";
   try{
+    async function parseJson(response){
+      return await response.json().catch(()=>null);
+    }
+    async function waitForCleverJob(jobId){
+      for(let attempt=0;attempt<90;attempt++){
+        if(attempt)await new Promise(resolve=>setTimeout(resolve,1500));
+        const poll=await fetch("https://cleverutils.com/api/v1/jobs/"+encodeURIComponent(jobId));
+        const status=await parseJson(poll);
+        if(!poll.ok)throw new Error("TRANSCRIBE_JOB_"+poll.status);
+        const info=status?.data||status||{};
+        const state=String(info.status||"").toLowerCase();
+        const textValue=String(info.text||info.transcript||"").trim();
+        if(textValue)return textValue;
+        if(state==="done"||state==="failed"||state==="error"){
+          if(state!=="done")throw new Error("TRANSCRIBE_JOB_FAILED");
+          if(info.output?.url){
+            const out=await fetch(info.output.url);
+            if(out.ok)return (await out.text()).trim();
+          }
+          return "";
+        }
+      }
+      throw new Error("TRANSCRIBE_TIMEOUT");
+    }
+    async function cleverConvertToWav(inputBlob,inputName){
+      const form=new FormData();
+      form.append("file",inputBlob,inputName);
+      form.append("to_format","wav");
+      form.append("wav_rate","16000");
+      form.append("wav_channels","1");
+      const response=await fetch("https://cleverutils.com/api/v1/convert",{method:"POST",body:form});
+      const data=await parseJson(response);
+      if(!response.ok)throw new Error("AUDIO_CONVERT_"+response.status);
+      const info=data?.data||data||{};
+      if(info.output?.url){
+        const out=await fetch(info.output.url);
+        if(!out.ok)throw new Error("AUDIO_OUTPUT_"+out.status);
+        return await out.blob();
+      }
+      if(info.job_id){
+        for(let attempt=0;attempt<90;attempt++){
+          if(attempt)await new Promise(resolve=>setTimeout(resolve,1200));
+          const poll=await fetch("https://cleverutils.com/api/v1/jobs/"+encodeURIComponent(info.job_id));
+          const status=await parseJson(poll);
+          if(!poll.ok)throw new Error("AUDIO_JOB_"+poll.status);
+          const job=status?.data||status||{};
+          if(String(job.status||"").toLowerCase()==="done"&&job.output?.url){
+            const out=await fetch(job.output.url);
+            if(!out.ok)throw new Error("AUDIO_OUTPUT_"+out.status);
+            return await out.blob();
+          }
+          if(["failed","error"].includes(String(job.status||"").toLowerCase()))throw new Error("AUDIO_CONVERT_FAILED");
+        }
+      }
+      throw new Error("AUDIO_CONVERT_EMPTY");
+    }
+    let transcriptionBlob=blob;
+    let transcriptionName=mime.includes("ogg")?"miya-voice.ogg":"miya-voice.webm";
+    if(/ogg|webm/i.test(mime)){
+      transcriptionBlob=await cleverConvertToWav(blob,transcriptionName);
+      transcriptionName="miya-voice.wav";
+    }
     const form=new FormData();
-    const filename=mime.includes("ogg")?"miya-voice.ogg":"miya-voice.webm";
-    form.append("file",blob,filename);
+    form.append("file",transcriptionBlob,transcriptionName);
     form.append("format","txt");
     form.append("quality","fast");
     form.append("language","ru");
@@ -4067,25 +4128,11 @@ async function processSpeechRecording(){
       method:"POST",
       body:form
     });
-    const data=await response.json().catch(()=>null);
+    const data=await parseJson(response);
     if(!response.ok)throw new Error("TRANSCRIBE_"+response.status);
     let text=String(data?.text||data?.transcript||data?.data?.text||data?.data?.transcript||"").trim();
-    let job=data?.job_id||data?.data?.job_id||null;
-    for(let attempt=0;!text&&job&&attempt<60;attempt++){
-      if(attempt)await new Promise(resolve=>setTimeout(resolve,2000));
-      const poll=await fetch("https://cleverutils.com/api/v1/jobs/"+encodeURIComponent(job));
-      const status=await poll.json().catch(()=>null);
-      const info=status?.data||status||{};
-      const state=String(info.status||"").toLowerCase();
-      if(state==="failed"||state==="error")throw new Error("TRANSCRIBE_JOB_FAILED");
-      text=String(info.text||info.transcript||"").trim();
-      if(!text&&info.output?.url){
-        const out=await fetch(info.output.url);
-        if(out.ok)text=(await out.text()).trim();
-      }
-      if(state==="done"&&!text)break;
-    }
-    if(!text)throw new Error("TRANSCRIPT_EMPTY");
+    const job=data?.job_id||data?.data?.job_id||null;
+    if(!text&&job)text=await waitForCleverJob(job);
     if(!text)throw new Error("TRANSCRIPT_EMPTY");
     const input=$("#composerInput");
     if(input){
