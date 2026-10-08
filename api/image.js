@@ -492,9 +492,17 @@ module.exports = async function imageHandler(req, res) {
         const scale = quality === "4K" ? 4 : quality === "2K" ? 2 : 1;
         const nativeSize = {width:Math.round(baseSize.width*scale),height:Math.round(baseSize.height*scale)};
 
-        const sourceImageUrl = typeof body.imageUrl === "string" && /^https?:\/\//i.test(body.imageUrl.trim())
-          ? body.imageUrl.trim()
-          : "";
+        const rawSourceImage = typeof body.imageUrl === "string" ? body.imageUrl.trim() : "";
+        let sourceImageUrl = "";
+        if (/^https?:\/\//i.test(rawSourceImage)) {
+          sourceImageUrl = rawSourceImage;
+        } else if (rawSourceImage.startsWith("/api/image-jpeg?")) {
+          try {
+            const parsedSource = new URL(rawSourceImage, "https://miya-studio.vercel.app");
+            const unwrappedSource = parsedSource.searchParams.get("url") || "";
+            if (/^https?:\/\//i.test(unwrappedSource)) sourceImageUrl = unwrappedSource;
+          } catch {}
+        }
 
         const finalPrompt = sourceImageUrl
           ? cvronPrompt + "\n\nEDIT MODE: Edit the supplied source image. Keep the original composition, camera viewpoint, background, lighting, colors, identity and all unrelated details unchanged. Apply only the requested change. Do not regenerate or redesign the whole scene. Preserve the source image aspect ratio and framing."
@@ -576,8 +584,7 @@ module.exports = async function imageHandler(req, res) {
         const outputImageUrl = requestedModel === "GPT Image 2.5"
           ? imageUrl
           : "/api/image-jpeg?url=" + encodeURIComponent(imageUrl) +
-            "&ratio=" + encodeURIComponent(cvronRatio) +
-            "";
+            "&ratio=" + encodeURIComponent(cvronRatio);
 
         return res.status(200).json({
           ok:true,
