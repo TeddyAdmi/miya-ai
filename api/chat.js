@@ -156,16 +156,6 @@ async function handler(req, res) {
     let result;
 
     if (imageBase64) {
-      // Try CVRON GPT-5 Nano first with the uploaded image. If the text-only
-      // endpoint rejects the image, keep the existing vision fallbacks intact.
-      result = await callCvronGPT5Nano(lastUserText, imageBase64);
-      if (result.ok) {
-        return res.status(200).json({
-          ok: true, mode: "chat", text: result.text,
-          model: result.model, provider: result.provider, vision: true
-        });
-      }
-
       // BlockRun's free tier may auto-route an unavailable model to a
       // non-vision model. Never accept such a reroute as a vision result.
       const visionModels = new Set([
