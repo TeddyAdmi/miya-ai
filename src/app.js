@@ -2107,7 +2107,7 @@ async function generateAgnesImage(prompt){
 async function generateImage(prompt){
  const selectedModel=String($("#composerModel")?.value||"").trim();
  const useAgnesImage=/^Agnes Image/i.test(selectedModel);
- const useCvronImage=/^(?:Nano Banana 2|GPT Image 2\.5)$/i.test(selectedModel);
+ const useCvronImage=/^(?:Nano Banana 2|GPT Image 2\.5|FLUX Dev|DALL-E 3|Stable Diffusion 3\.5 Large|ChatGPT Imager|Flux 2 Klein|Image To Image)$/i.test(selectedModel);
  if(useAgnesImage){
   return generateAgnesImage(prompt);
  }
@@ -2117,8 +2117,8 @@ async function generateImage(prompt){
  const percent=ring?.querySelector(".progress-percent");
  const modelName=selectedModel||"FLUX Dev";
  const usesReferenceImage=Boolean(referenceImage) &&
-   (modelName==="FLUX Kontext Dev" || modelName==="Agnes Image 2.5 Flash");
- const hasFileUpload=modelName==="FLUX Kontext Dev" && Boolean(referenceImage);
+   (modelName==="FLUX Kontext Dev" || modelName==="Agnes Image 2.5 Flash" || modelName==="Image To Image");
+ const hasFileUpload=(modelName==="FLUX Kontext Dev" || modelName==="Image To Image") && Boolean(referenceImage);
  const composerProgress=$("#composerProgress");
  let fakeProgress=0;
  let fakeTimer=null;
@@ -2159,7 +2159,15 @@ async function generateImage(prompt){
   const body=useAgnesImage
    ? JSON.stringify({prompt,ratio:$("#composerRatio").value,n:requestedCount,imageBase64:referenceImage||""})
    : useCvronImage
-     ? JSON.stringify({mode:"image",provider:"cvron",prompt:cvronPrompt,model:modelName,ratio:selectedRatio})
+     ? JSON.stringify({
+        mode:"image",
+        provider:"cvron",
+        prompt:cvronPrompt,
+        model:modelName,
+        ratio:selectedRatio,
+        imageUrl:referenceImage && !referenceImage.startsWith("data:image/") ? referenceImage : "",
+        imageBase64:referenceImage && referenceImage.startsWith("data:image/") ? referenceImage : ""
+       })
      : JSON.stringify({
         mode:"image",provider:"ahm7",prompt,model:modelName,
         ratio:$("#composerRatio").value,outputFormat:"jpeg",copies:requestedCount,
