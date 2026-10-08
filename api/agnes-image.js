@@ -38,7 +38,7 @@ module.exports = async function handler(req, res) {
       "2K":{"16:9":"2752x1536","9:16":"1536x2752","1:1":"2048x2048","3:4":"1792x2400","4:3":"2400x1792","2:3":"1696x2528","3:2":"2528x1696","21:9":"3168x1344"},
       "4K":{"16:9":"5248x2944","9:16":"2944x5248","1:1":"4096x4096","3:4":"3456x4608","4:3":"4608x3456","2:3":"3328x4992","3:2":"4992x3328","21:9":"6272x2688"}
     };
-    const outputSize=qualitySizes[quality]?.[ratio]||qualitySizes["2K"]["16:9"];
+    const outputSize=qualitySizes[quality]?.[ratio]||qualitySizes["1K"]["16:9"];
     const payload={model:"agnes-image-2.5-flash",prompt:qualityPrompt,n,size:outputSize,ratio,extra_body:{response_format:"url"}};
     const images=[];
     if(source) payload.extra_body.image=[source];
