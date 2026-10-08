@@ -640,8 +640,20 @@ module.exports = async function imageHandler(req, res) {
 
     const model = typeof body.model === "string" ? body.model.trim() : "Flux Dev";
     const options = body.options && typeof body.options === "object" ? body.options : {};
-    const imageUrl = typeof options.imageUrl === "string" ? options.imageUrl.trim() : "";
+    let imageUrl = typeof options.imageUrl === "string" ? options.imageUrl.trim() : "";
     const imageBase64 = typeof options.imageBase64 === "string" ? options.imageBase64.trim() : "";
+    // Resolve Miya's image proxy wrapper before fetching a source image for Kontext.
+    if (imageUrl.startsWith("/api/image-jpeg?") || /^https?:\/\//i.test(imageUrl)) {
+      try {
+        const parsedSource = new URL(imageUrl, "https://miya-studio.vercel.app");
+        const ownHost = parsedSource.hostname.toLowerCase() === "miya-studio.vercel.app" ||
+          parsedSource.hostname.toLowerCase() === "www.miya-studio.vercel.app";
+        if (ownHost && parsedSource.pathname === "/api/image-jpeg") {
+          const unwrappedSource = parsedSource.searchParams.get("url") || "";
+          if (/^https?:\/\//i.test(unwrappedSource)) imageUrl = unwrappedSource;
+        }
+      } catch {}
+    }
     const isImageToImage = /kontext/i.test(model) && Boolean(imageUrl || imageBase64);
 
     if (/kontext/i.test(model) && !isImageToImage) {
