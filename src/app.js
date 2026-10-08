@@ -264,7 +264,7 @@ function clearComposerAttachment(){
  setComposerAttachment("");
  if(mode==="images"&&$("#composerModel")) $("#composerModel").value="FLUX Dev";
 }
-function openEditor(url){referenceImage=url;try{sessionStorage.setItem("miyaReferenceImage",referenceImage)}catch{};setComposerAttachment(url);mode="images";$("#composerModel").value="FLUX Kontext Dev";$("#composerRatio").value="auto";const m=modes.images;$("#workspaceEyebrow").textContent=m.eyebrow;$("#workspaceTitle").textContent=m.title;$("#workspaceSubtitle").textContent=m.subtitle;const promptInput=$("#composerInput"); if(promptInput){ promptInput.placeholder=m.placeholder; promptInput.setAttribute("aria-label",m.placeholder); promptInput.classList.remove("prompt-chat","prompt-images","prompt-video","prompt-voice"); promptInput.classList.add("prompt-images"); }$("#composerSendText").textContent=m.send;$("#composerStatus").textContent="FLUX Kontext Dev · готово к редактированию";$(".image-settings").style.display="flex";$("#voiceOptions").style.display="none";$("#voiceOptions").classList.remove("show");$("#videoOptions").style.display="none";$("#videoOptions").classList.remove("show");document.querySelectorAll("[data-mode]").forEach(x=>x.classList.toggle("active",x.dataset.mode==="images"));if(!$("#canvas .result-grid")) renderImageLibrary();$("#composerInput").focus();syncInput()}
+function openEditor(url){referenceImage=url;try{sessionStorage.setItem("miyaReferenceImage",referenceImage)}catch{};setComposerAttachment(url);mode="images";$("#composerModel").value="Nano Banana 2";$("#composerRatio").value="16:9";const m=modes.images;$("#workspaceEyebrow").textContent=m.eyebrow;$("#workspaceTitle").textContent=m.title;$("#workspaceSubtitle").textContent=m.subtitle;const promptInput=$("#composerInput"); if(promptInput){ promptInput.placeholder=m.placeholder; promptInput.setAttribute("aria-label",m.placeholder); promptInput.classList.remove("prompt-chat","prompt-images","prompt-video","prompt-voice"); promptInput.classList.add("prompt-images"); }$("#composerSendText").textContent=m.send;$("#composerStatus").textContent="Nano Banana 2 · готово к редактированию";$(".image-settings").style.display="flex";$("#voiceOptions").style.display="none";$("#voiceOptions").classList.remove("show");$("#videoOptions").style.display="none";$("#videoOptions").classList.remove("show");document.querySelectorAll("[data-mode]").forEach(x=>x.classList.toggle("active",x.dataset.mode==="images"));if(!$("#canvas .result-grid")) renderImageLibrary();$("#composerInput").focus();syncInput()}
 async function downloadImage(url){
  try{
   const response=await fetch(jpegImageUrl(url),{mode:"cors"});if(!response.ok)throw new Error("DOWNLOAD_HTTP_"+response.status);
@@ -390,7 +390,7 @@ function openImageViewer(item){
     const current=getLibrary().find(x=>x.id===modal.dataset.viewerItemId);
     if(!current)return;
     closeImageViewer();
-    openEditor(await mediaItemToReference(current));
+    openEditor(await mediaItemToReference(current,null,true));
   };
   modal.querySelector(".image-viewer-video").onclick=()=>{
     const current=getLibrary().find(x=>x.id===modal.dataset.viewerItemId);
@@ -554,8 +554,12 @@ function openVideoViewer(item){
  resolveMediaUrl(item).then(u=>{if(u&&modal.classList.contains("open")&&modal.dataset.viewerItemId===item.id){player.src=u;player.load()}}).catch(()=>{});
  modal.__videoNav?.();modal.classList.add("open");document.body.classList.add("image-viewer-open");
 }
-async function mediaItemToReference(item,card=null){
+async function mediaItemToReference(item,card=null,preferUrl=false){
  if(!item?.id)return "";
+ if(preferUrl){
+  const direct=String(item?.url||"").trim();
+  if(direct&&!isInvalidImageToolSource(direct))return /^https?:\/\//i.test(direct)?direct:(location.origin+direct);
+ }
  try{
   const cached=await getCachedMedia(item.id);
   if(cached?.blob){
@@ -796,7 +800,7 @@ function buildMediaCard(item,{video=false}={}){
  const menu=document.createElement("div");menu.className="media-action-menu";
  if(!video){
   const promptBtn=document.createElement("button");promptBtn.type="button";promptBtn.innerHTML='<span class="action-icon action-svg"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 5h14v14H5z"/><path d="M8 9h8M8 12h6M8 15h4"/></svg></span><span>Промт</span>';promptBtn.onclick=e=>{e.stopPropagation();closeAllMediaMenus();showPrompt(item)}; const upscaleMenuBtn=document.createElement("button");upscaleMenuBtn.type="button";upscaleMenuBtn.innerHTML='<span class="action-icon action-svg"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m12 3 1.7 5.3L19 10l-5.3 1.7L12 17l-1.7-5.3L5 10l5.3-1.7L12 3Z"/><path d="m19 15 .8 2.2L22 18l-.8-2.2L19 15Z"/></svg></span><span>Upscale</span>';upscaleMenuBtn.onclick=e=>{e.stopPropagation();closeAllMediaMenus();toggleUpscalePanel(item,card)};
-  const editBtn=document.createElement("button");editBtn.type="button";editBtn.innerHTML='<span class="action-icon action-svg"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m4 16.5-.8 3.3 3.3-.8L18.7 6.8a2.2 2.2 0 0 1 3.1 3.1L6.5 19l-3.3.8.8-3.3Z"/><path d="m14.2 5.8 4 4"/></svg></span><span>Изменить картинку</span>';editBtn.onclick=async e=>{e.stopPropagation();closeAllMediaMenus();await openEditor(await mediaItemToReference(item,card))};
+  const editBtn=document.createElement("button");editBtn.type="button";editBtn.innerHTML='<span class="action-icon action-svg"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m4 16.5-.8 3.3 3.3-.8L18.7 6.8a2.2 2.2 0 0 1 3.1 3.1L6.5 19l-3.3.8.8-3.3Z"/><path d="m14.2 5.8 4 4"/></svg></span><span>Изменить картинку</span>';editBtn.onclick=async e=>{e.stopPropagation();closeAllMediaMenus();await openEditor(await mediaItemToReference(item,card,true))};
   const videoBtn=document.createElement("button");videoBtn.type="button";videoBtn.innerHTML='<span class="action-icon action-svg"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="5" width="17" height="14" rx="2"/><path d="m10 9 5 3-5 3Z"/></svg></span><span>Сделать видео</span>';videoBtn.onclick=async e=>{e.stopPropagation();closeAllMediaMenus();openVideoFromImage(await mediaItemToReference(item))};
   const copyBtn=document.createElement("button");copyBtn.type="button";copyBtn.innerHTML='<span class="action-icon action-svg"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M15 9V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v7a2 2 0 0 0 2 2h3"/></svg></span><span>Копировать</span>';copyBtn.onclick=async e=>{e.stopPropagation();closeAllMediaMenus();try{const response=await fetch(item.url,{headers:{Accept:"image/*"}});if(!response.ok)throw new Error();const blob=await response.blob();if(!navigator.clipboard?.write||!window.ClipboardItem)throw new Error();const bitmap=await createImageBitmap(blob);const canvas=document.createElement("canvas");canvas.width=bitmap.width;canvas.height=bitmap.height;const ctx=canvas.getContext("2d");ctx.fillStyle="#fff";ctx.fillRect(0,0,canvas.width,canvas.height);ctx.drawImage(bitmap,0,0);bitmap.close();const jpeg=await new Promise(resolve=>canvas.toBlob(resolve,"image/jpeg",.95));if(!jpeg)throw new Error();await navigator.clipboard.write([new ClipboardItem({"image/jpeg":jpeg})]);toast("JPG скопирован")}catch{toast("Не удалось скопировать картинку")}};
   const downloadBtn=document.createElement("button");downloadBtn.type="button";downloadBtn.innerHTML='<span class="action-icon action-svg"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4v11M8 11l4 4 4-4M5 19h14"/></svg></span><span>Скачать</span>';downloadBtn.onclick=e=>{e.stopPropagation();closeAllMediaMenus();showDownloadMenu(item,downloadBtn)};
@@ -2058,7 +2062,7 @@ function showLoading(){
   let grid=c.querySelector(".result-grid");
   if(!grid){c.innerHTML='<div class="result-grid"></div>';grid=c.querySelector(".result-grid")}
   const old=c.querySelector(".generation-loading");if(old)old.remove();
-  const selectedModel=referenceImage?"FLUX Kontext Dev":($("#composerModel")?.value||"FLUX Dev");
+  const selectedModel=referenceImage?($("#composerModel")?.value||"Nano Banana 2"):($("#composerModel")?.value||"FLUX Dev");
   const card=document.createElement("div");card.className="generation-loading"+(referenceImage?" has-upload":" no-upload");
   card.dataset.model=selectedModel;
   card.innerHTML='<div class="generation-progress"><div class="progress-circle is-active"><span class="progress-percent">0%</span></div><div class="progress-copy"><b>Создание изображения</b><span class="progress-model"></span></div></div><div class="generation-progress-bar"><span></span></div>';
@@ -2156,8 +2160,8 @@ async function generateImage(prompt){
  const percent=ring?.querySelector(".progress-percent");
  const modelName=selectedModel||"FLUX Dev";
  const usesReferenceImage=Boolean(referenceImage) &&
-   (modelName==="FLUX Kontext Dev" || modelName==="Agnes Image 2.5 Flash");
- const hasFileUpload=(modelName==="FLUX Kontext Dev") && Boolean(referenceImage);
+   (modelName==="FLUX Kontext Dev" || modelName==="Agnes Image 2.5 Flash" || useCvronImage);
+ const hasFileUpload=Boolean(referenceImage) && (modelName==="FLUX Kontext Dev" || useCvronImage);
  const composerProgress=$("#composerProgress");
  let fakeProgress=0;
  let fakeTimer=null;
@@ -2274,8 +2278,8 @@ async function generateImage(prompt){
   generatedUrls.forEach((url)=>showImage(url,prompt,actualModel,useCvronImage?selectedRatio:""));
   scrollImagesToTop();
   $("#composerInput").value="";syncInput();
-  $("#composerModel").value=referenceImage?"FLUX Kontext Dev":modelName;
-  $("#composerRatio").value=referenceImage?"auto":$("#composerRatio").value;
+  $("#composerModel").value=modelName;
+  $("#composerRatio").value=referenceImage?selectedRatio:$("#composerRatio").value;
   $("#composerStatus").textContent=actualModel+" · готово";
   if(composerProgress)composerProgress.textContent="100%";
   requestAnimationFrame(()=>$("#workspace")?.scrollTo({top:0,behavior:"smooth"}));
