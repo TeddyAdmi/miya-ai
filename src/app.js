@@ -6,6 +6,19 @@ const modes={
 voice:{title:"Голос",eyebrow:"ГОЛОС",subtitle:"Превращай текст в естественную речь с мужскими и женскими голосами.",placeholder:"Введите текст для озвучки...",send:"Создать голос",status:"Svetlana · Female · Russia"}
 };
 const $=s=>document.querySelector(s);
+
+(function addCvronTestModels(){
+  const select=document.getElementById("composerModel");
+  if(!select)return;
+  const models=["FLUX Dev","DALL-E 3","Stable Diffusion 3.5 Large","ChatGPT Imager","Flux 2 Klein","Image To Image"];
+  models.forEach(name=>{
+    if([...select.options].some(o=>o.value===name))return;
+    const option=document.createElement("option");
+    option.value=name;
+    option.textContent=name;
+    select.appendChild(option);
+  });
+})();
 (function ensureMiyaMediaMoreStyle(){
  if(document.getElementById("miyaMediaDotsFix"))return;
  const st=document.createElement("style");st.id="miyaMediaDotsFix";
