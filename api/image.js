@@ -494,15 +494,33 @@ module.exports = async function imageHandler(req, res) {
             cvronRatio + " aspect ratio. Use the entire frame naturally. Do not crop, trim, zoom, cut off, or remove any part of the scene or subjects."
           : cvronPrompt;
 
+        const nativeSize = {
+          "1:1":  {width:1024,height:1024},
+          "16:9": {width:1376,height:768},
+          "9:16": {width:768,height:1376},
+          "3:4":  {width:896,height:1200},
+          "4:3":  {width:1200,height:896},
+          "2:3":  {width:848,height:1264},
+          "3:2":  {width:1264,height:848},
+          "21:9": {width:1584,height:672}
+        }[cvronRatio] || {width:1024,height:1024};
+
+        const finalPrompt = requestedModel === "GPT Image 2.5"
+          ? cvronPrompt + "\n\nOUTPUT FORMAT: Generate the complete image natively in exactly " +
+            cvronRatio + " aspect ratio. Compose the entire scene for this canvas from the beginning. Do not crop, trim, zoom, cut off, or remove any part of the scene or subjects. Fill the requested canvas naturally."
+          : cvronPrompt;
+
         const target =
           endpoint +
           "?prompt=" + encodeURIComponent(finalPrompt) +
-          "&ratio=" + encodeURIComponent(cvronRatio) +
-          "&aspect_ratio=" + encodeURIComponent(cvronRatio) +
-          "&size=" + encodeURIComponent(cvronRatio) +
-          "&width=" + nativeSize.width +
-          "&height=" + nativeSize.height +
-          "&resolution=1K";
+          (requestedModel === "GPT Image 2.5"
+            ? "&ratio=" + encodeURIComponent(cvronRatio) +
+              "&aspect_ratio=" + encodeURIComponent(cvronRatio) +
+              "&size=" + encodeURIComponent(cvronRatio) +
+              "&width=" + nativeSize.width +
+              "&height=" + nativeSize.height +
+              "&resolution=1K"
+            : "&ratio=" + encodeURIComponent(cvronRatio));
         let upstream;
         let raw = "";
         let data = {};
@@ -562,10 +580,10 @@ module.exports = async function imageHandler(req, res) {
           });
         }
 
-        const proxiedImageUrl =
-          "/api/image-jpeg?url=" + encodeURIComponent(imageUrl) +
-          "&ratio=" + encodeURIComponent(cvronRatio) +
-          (requestedModel === "GPT Image 2.5" ? "&model=GPT%20Image%202.5" : "");
+        const outputImageUrl = requestedModel === "GPT Image 2.5"
+          ? imageUrl
+          : "/api/image-jpeg?url=" + encodeURIComponent(imageUrl) +
+            "&ratio=" + encodeURIComponent(cvronRatio);
 
         return res.status(200).json({
           ok:true,
@@ -573,16 +591,16 @@ module.exports = async function imageHandler(req, res) {
           status:"completed",
           provider:"CVRON",
           model:requestedModel,
-          imageUrl:proxiedImageUrl,
-          imageUrls:[proxiedImageUrl],
+          imageUrl:outputImageUrl,
+          imageUrls:[outputImageUrl],
           count:1,
           meta:{
             free:true,
             endpoint,
             requestedRatio:cvronRatio,
-            normalized:true,
+            native:true,
             noCrop:true,
-            enhanced:true,
+            enhanced:requestedModel !== "GPT Image 2.5",
             sourceImageUrl:imageUrl
           }
         });
