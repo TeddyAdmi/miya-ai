@@ -466,6 +466,7 @@ module.exports = async function imageHandler(req, res) {
       const endpoint = cvronModels[requestedModel];
       const cvronPrompt = typeof body.prompt === "string" ? body.prompt.trim() : "";
       const cvronRatio = ["1:1","3:4","4:3","16:9","9:16","2:3","3:2","21:9"].includes(String(body.ratio || "")) ? String(body.ratio) : "16:9";
+      const quality = ["1K","2K","4K"].includes(String(body.quality || "")) ? String(body.quality) : "2K";
       if (!endpoint) {
         return res.status(400).json({
           ok:false,
@@ -478,16 +479,18 @@ module.exports = async function imageHandler(req, res) {
       }
 
       try {
-        const nativeSize = {
+        const baseSize = {
           "1:1":  {width:1024,height:1024},
           "16:9": {width:1376,height:768},
           "9:16": {width:768,height:1376},
           "3:4":  {width:896,height:1200},
           "4:3":  {width:1200,height:896},
           "2:3":  {width:848,height:1264},
-          "3:2":  {width:1264,height:848},
+          "3:2": {width:1264,height:848},
           "21:9": {width:1584,height:672}
         }[cvronRatio] || {width:1024,height:1024};
+        const scale = quality === "4K" ? 4 : quality === "2K" ? 2 : 1;
+        const nativeSize = {width:Math.round(baseSize.width*scale),height:Math.round(baseSize.height*scale)};
 
         const finalPrompt = requestedModel === "GPT Image 2.5"
           ? cvronPrompt + "\n\nOUTPUT FORMAT: Generate the complete image natively in exactly " +
@@ -587,6 +590,7 @@ module.exports = async function imageHandler(req, res) {
             free:true,
             endpoint,
             requestedRatio:cvronRatio,
+            quality,
             native:true,
             noCrop:true,
             enhanced:requestedModel !== "GPT Image 2.5",
@@ -607,6 +611,7 @@ module.exports = async function imageHandler(req, res) {
     if (!prompt) return res.status(400).json({ ok: false, error: "PROMPT_REQUIRED" });
 
     const ratio = typeof body.ratio === "string" ? body.ratio : "16:9";
+    const quality = ["1K","2K","4K"].includes(String(body.quality || "")) ? String(body.quality) : "2K";
 
     const model = typeof body.model === "string" ? body.model.trim() : "Flux Dev";
     const options = body.options && typeof body.options === "object" ? body.options : {};
@@ -630,7 +635,7 @@ module.exports = async function imageHandler(req, res) {
       const upstream = await fetch("https://ahm7xmakki.com/api/tti", {
         method: "POST",
         headers: { "Content-Type": "application/json", "Accept": "application/json" },
-        body: JSON.stringify({ prompt: anatomyPrompt, ratio }),
+        body: JSON.stringify({ prompt: anatomyPrompt, ratio, quality }),
         signal: AbortSignal.timeout(55000)
       });
 
@@ -677,7 +682,7 @@ module.exports = async function imageHandler(req, res) {
         imageUrl: imageUrlResult,
         imageUrls: [imageUrlResult],
         count: 1,
-        meta: { free: true, endpoint: "/api/tti", edit: false }
+        meta: { free: true, endpoint: "/api/tti", edit: false, quality }
       });
     }
 
