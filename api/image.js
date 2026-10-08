@@ -466,11 +466,11 @@ module.exports = async function imageHandler(req, res) {
 
       const cvronConfig = cvronModels[requestedModel];
       const endpoint = cvronConfig?.url;
+      const cvronRatio = ["1:1","3:4","4:3","16:9","9:16","2:3","3:2","21:9"].includes(String(body.ratio || "")) ? String(body.ratio) : "16:9";
       const cvronBasePrompt = typeof body.prompt === "string" ? body.prompt.trim() : "";
       const cvronPrompt = cvronBasePrompt
         ? cvronBasePrompt + "\n\nOUTPUT FORMAT: Generate the image natively in the requested " + cvronRatio + " aspect ratio. Compose the entire scene for this canvas from the start. Do not use a portrait 9:16 canvas for a 16:9 request, do not crop a landscape scene into portrait, and do not place the main image inside a blurred or padded portrait frame. Fill the requested canvas naturally with the complete scene."
         : "";
-      const cvronRatio = ["1:1","3:4","4:3","16:9","9:16","2:3","3:2","21:9"].includes(String(body.ratio || "")) ? String(body.ratio) : "16:9";
 
       if (!cvronConfig) {
         return res.status(400).json({ ok:false, error:"CVRON_MODEL_UNSUPPORTED", message:"Неизвестная CVRON-модель." });
