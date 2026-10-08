@@ -64,28 +64,15 @@ async function handler(req, res) {
       const started = Date.now();
       try {
         const endpoint = "https://cvron.alwaysdata.net/cvronai/gpt-5-nano.php";
-        let response;
-        if (image) {
-          response = await fetch(endpoint, {
-            method:"POST",
-            headers:{
-              "Content-Type":"application/json",
-              "Accept":"application/json, text/plain, */*"
-            },
-            body:JSON.stringify({prompt, image}),
-            cache:"no-store",
-            signal:AbortSignal.timeout(30000)
-          });
-        } else {
-          const target = new URL(endpoint);
-          target.searchParams.set("prompt", prompt);
-          response = await fetch(target.toString(), {
-            method:"GET",
-            headers:{Accept:"application/json, text/plain, */*"},
-            cache:"no-store",
-            signal:AbortSignal.timeout(90000)
-          });
-        }
+        const target = new URL(endpoint);
+        target.searchParams.set("prompt", prompt);
+        if (image) target.searchParams.set("image", image);
+        const response = await fetch(target.toString(), {
+          method:"GET",
+          headers:{Accept:"application/json, text/plain, */*"},
+          cache:"no-store",
+          signal:AbortSignal.timeout(90000)
+        });
         const raw = await response.text();
         let data = {};
         try { data = raw ? JSON.parse(raw) : {}; } catch {}
@@ -156,6 +143,16 @@ async function handler(req, res) {
     let result;
 
     if (imageBase64) {
+      // Try CVRON GPT-5 Nano first with the uploaded image using the
+      // endpoint's original GET + image query contract.
+      result = await callCvronGPT5Nano(lastUserText, imageBase64);
+      if (result.ok) {
+        return res.status(200).json({
+          ok: true, mode: "chat", text: result.text,
+          model: result.model, provider: result.provider, vision: true
+        });
+      }
+
       // BlockRun's free tier may auto-route an unavailable model to a
       // non-vision model. Never accept such a reroute as a vision result.
       const visionModels = new Set([
