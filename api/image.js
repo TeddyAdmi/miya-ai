@@ -463,11 +463,11 @@ module.exports = async function imageHandler(req, res) {
         "Nano Banana 2": "https://cvron.alwaysdata.net/cvronai/nanobanana2.php",
         "GPT Image 2.5": "https://cvron.alwaysdata.net/cvronai/gpt-image-2-5-flare.php"
       };
-      const endpoint = cvronModels[requestedModel];
+      const generationEndpoint = cvronModels[requestedModel];
       const cvronPrompt = typeof body.prompt === "string" ? body.prompt.trim() : "";
       const cvronRatio = ["1:1","3:4","4:3","16:9","9:16","2:3","3:2","21:9"].includes(String(body.ratio || "")) ? String(body.ratio) : "16:9";
       const quality = ["1K","2K","4K"].includes(String(body.quality || "")) ? String(body.quality) : "2K";
-      if (!endpoint) {
+      if (!generationEndpoint) {
         return res.status(400).json({
           ok:false,
           error:"CVRON_MODEL_UNSUPPORTED",
@@ -504,24 +504,29 @@ module.exports = async function imageHandler(req, res) {
           } catch {}
         }
 
-        const finalPrompt = sourceImageUrl
-          ? cvronPrompt + "\n\nEDIT MODE: Edit the supplied source image. Keep the original composition, camera viewpoint, background, lighting, colors, identity and all unrelated details unchanged. Apply only the requested change. Do not regenerate or redesign the whole scene. Preserve the source image aspect ratio and framing."
+        // CVRON documents image2image.php as its dedicated image-edit endpoint.
+        // Use it for edits instead of passing undocumented parameters to generation-only endpoints.
+        const isEdit = Boolean(sourceImageUrl);
+        const endpoint = isEdit
+          ? "https://cvron.alwaysdata.net/cvronai/image2image.php"
+          : generationEndpoint;
+        const finalPrompt = isEdit
+          ? cvronPrompt + "\\n\\nEdit the supplied image. Make only the requested change and preserve the original subject, composition, background, lighting, and all unrelated details."
           : requestedModel === "GPT Image 2.5"
-            ? cvronPrompt + "\n\nOUTPUT FORMAT: Generate the complete image natively in exactly " +
+            ? cvronPrompt + "\\n\\nOUTPUT FORMAT: Generate the complete image natively in exactly " +
               cvronRatio + " aspect ratio. Compose the entire scene for this canvas from the beginning. Do not crop, trim, zoom, cut off, or remove any part of the scene or subjects. Fill the requested canvas naturally."
             : cvronPrompt;
         const target =
           endpoint +
           "?prompt=" + encodeURIComponent(finalPrompt) +
-          "&ratio=" + encodeURIComponent(cvronRatio) +
-          "&aspect_ratio=" + encodeURIComponent(cvronRatio) +
-          "&size=" + encodeURIComponent(cvronRatio) +
-          "&width=" + nativeSize.width +
-          "&height=" + nativeSize.height +
-          "&resolution=" + encodeURIComponent(quality) +
-          (sourceImageUrl
-            ? "&edit=true&image=" + encodeURIComponent(sourceImageUrl) + "&image_url=" + encodeURIComponent(sourceImageUrl)
-            : "");
+          (isEdit
+            ? "&image_url=" + encodeURIComponent(sourceImageUrl)
+            : "&ratio=" + encodeURIComponent(cvronRatio) +
+              "&aspect_ratio=" + encodeURIComponent(cvronRatio) +
+              "&size=" + encodeURIComponent(cvronRatio) +
+              "&width=" + nativeSize.width +
+              "&height=" + nativeSize.height +
+              "&resolution=" + encodeURIComponent(quality));
         let upstream;
         let raw = "";
         let data = {};
@@ -591,7 +596,7 @@ module.exports = async function imageHandler(req, res) {
           mode:"image",
           status:"completed",
           provider:"CVRON",
-          model:requestedModel,
+          model:isEdit ? "CVRON Image To Image" : requestedModel,
           imageUrl:outputImageUrl,
           imageUrls:[outputImageUrl],
           count:1,
@@ -603,8 +608,9 @@ module.exports = async function imageHandler(req, res) {
             native:true,
             noCrop:true,
             enhanced:false,
-            edit:Boolean(sourceImageUrl),
-            sourceImageUrl:sourceImageUrl
+            edit:isEdit,
+            sourceImageUrl:sourceImageUrl,
+            editMethod:isEdit ? "cvron-image2image" : "text-to-image"
           }
         });
       } catch (error) {
