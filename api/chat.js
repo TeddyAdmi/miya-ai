@@ -141,90 +141,98 @@ async function handler(req, res) {
     let result;
 
     if (imageBase64) {
-      // CVRON GPT-5 Nano is a text endpoint; its public contract only documents
-      // the prompt parameter. Do not send the image to it or label a text reply
-      // as vision. Use the dedicated AHM7 Vision API for image chat first.
-      try {
-        const controller = new AbortController();
-        const timer = setTimeout(() => controller.abort(), 25000);
-        const upstream = await fetch("https://ahm7xmakki.com/api/imgchat", {
-          method: "POST",
-          headers: { "Content-Type": "application/json", "Accept": "application/json" },
-          body: JSON.stringify({
-            image: imageBase64,
-            userPrompt: lastUserText,
-            messages: cleanMessages.slice(-12).map(m => ({
-              type: m.role === "assistant" ? "ai" : "user", content: m.content
-            }))
-          }),
-          signal: controller.signal
-        });
-        clearTimeout(timer);
-        const raw = await upstream.text();
-        let data = {};
-        try { data = raw ? JSON.parse(raw) : {}; } catch {}
-        const answer = String(data?.response || data?.text || data?.message || "").trim();
-        if (upstream.ok && answer) {
-          return res.status(200).json({
-            ok: true, mode: "chat", text: answer,
-            model: "VisionSter", provider: "AHM7 Vision", vision: true
-          });
+      // Image chat: start the dedicated AHM7 vision service and the free
+      // BlockRun vision fallback at the same time. This avoids waiting 25s
+      // for one upstream to fail before trying the other.
+      const callAhm7Vision = async () => {
+        try {
+          const controller = new AbortController();
+          const timer = setTimeout(() => controller.abort(), 12000);
+          try {
+            const upstream = await fetch("https://ahm7xmakki.com/api/imgchat", {
+              method: "POST",
+              headers: { "Content-Type": "application/json", "Accept": "application/json" },
+              body: JSON.stringify({
+                image: imageBase64,
+                userPrompt: lastUserText,
+                messages: cleanMessages.slice(-12).map(m => ({
+                  type: m.role === "assistant" ? "ai" : "user",
+                  content: m.content
+                }))
+              }),
+              signal: controller.signal
+            });
+            const raw = await upstream.text();
+            let data = {};
+            try { data = raw ? JSON.parse(raw) : {}; } catch {}
+            const answer = String(data?.response || data?.text || data?.message || "").trim();
+            if (upstream.ok && answer) {
+              return {
+                ok: true,
+                text: answer,
+                model: "VisionSter",
+                provider: "AHM7 Vision"
+              };
+            }
+            return {
+              ok: false,
+              provider: "AHM7 Vision",
+              model: "VisionSter",
+              status: upstream.status,
+              upstreamError: data?.error || data?.message || raw.slice(0, 1000)
+            };
+          } finally {
+            clearTimeout(timer);
+          }
+        } catch (error) {
+          return {
+            ok: false,
+            provider: "AHM7 Vision",
+            model: "VisionSter",
+            status: null,
+            upstreamError: String(error?.message || error)
+          };
         }
-        result = {
-          ok: false,
-          provider: "AHM7 Vision",
-          model: "VisionSter",
-          status: upstream.status,
-          upstreamError: data?.error || data?.message || raw.slice(0, 1000)
-        };
-      } catch (error) {
-        result = {
-          ok: false,
-          provider: "AHM7 Vision",
-          model: "VisionSter",
-          status: null,
-          upstreamError: String(error?.message || error)
-        };
-      }
+      };
 
-      // BlockRun vision fallback. Only accept a response when the gateway
-      // actually returns one of the requested vision-capable model IDs.
       const visionModels = new Set([
         "nvidia/nemotron-3-nano-omni-30b-a3b-reasoning",
         "nvidia/llama-3.2-11b-vision"
       ]);
 
-      const visionCandidates = [
-        "nvidia/nemotron-3-nano-omni-30b-a3b-reasoning",
-        "nvidia/llama-3.2-11b-vision"
-      ];
-
-      for (const model of visionCandidates) {
-        result = await callBlockRun(model);
-
-        if (result.ok && visionModels.has(result.model)) {
-          return res.status(200).json({
-            ok: true, mode: "chat", text: result.text,
-            model: result.model, provider: result.provider, vision: true
-          });
+      const callBlockRunVision = async () => {
+        for (const model of [
+          "nvidia/nemotron-3-nano-omni-30b-a3b-reasoning",
+          "nvidia/llama-3.2-11b-vision"
+        ]) {
+          const attempt = await callBlockRun(model);
+          if (attempt.ok && visionModels.has(attempt.model)) return attempt;
+          if (!attempt.ok) continue;
         }
+        return {
+          ok: false,
+          provider: "BlockRun",
+          model: "vision",
+          status: null,
+          upstreamError: "No usable BlockRun vision model responded."
+        };
+      };
 
-        if (result.ok) {
-          result = {
-            ...result,
-            ok: false,
-            upstreamError: `BlockRun rerouted vision request to non-vision model: ${result.model}`
-          };
-        }
-      }
+      // Whichever valid vision answer arrives first wins. This keeps the
+      // normal case fast while retaining AHM7 as the preferred dedicated
+      // vision provider when it responds first.
+      const firstValid = await Promise.race([
+        callAhm7Vision().then(r => r.ok ? r : new Promise(() => {})),
+        callBlockRunVision().then(r => r.ok ? r : new Promise(() => {}))
+      ]);
 
-      return res.status(502).json({
-        ok: false,
-        error: "VISION_UPSTREAM_FAILED",
-        message: "Бесплатные сервисы анализа изображения временно недоступны.",
-        upstream: result.provider || "BlockRun",
-        upstreamStatus: result.status,
-        upstreamError: result.upstreamError
+      return res.status(200).json({
+        ok: true,
+        mode: "chat",
+        text: firstValid.text,
+        model: firstValid.model,
+        provider: firstValid.provider,
+        vision: true
       });
     }
 
