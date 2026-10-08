@@ -60,13 +60,12 @@ async function handler(req, res) {
       max_tokens: 1024
     };
 
-    async function callCvronGPT5Nano(prompt, image = "") {
+    async function callCvronGPT5Nano(prompt) {
       const started = Date.now();
       try {
         const endpoint = "https://cvron.alwaysdata.net/cvronai/gpt-5-nano.php";
         const target = new URL(endpoint);
         target.searchParams.set("prompt", prompt);
-        if (image) target.searchParams.set("image", image);
         const response = await fetch(target.toString(), {
           method:"GET",
           headers:{Accept:"application/json, text/plain, */*"},
@@ -139,22 +138,57 @@ async function handler(req, res) {
       }
     }
 
-
     let result;
 
     if (imageBase64) {
-      // Try CVRON GPT-5 Nano first with the uploaded image using the
-      // endpoint's original GET + image query contract.
-      result = await callCvronGPT5Nano(lastUserText, imageBase64);
-      if (result.ok) {
-        return res.status(200).json({
-          ok: true, mode: "chat", text: result.text,
-          model: result.model, provider: result.provider, vision: true
+      // CVRON GPT-5 Nano is a text endpoint; its public contract only documents
+      // the prompt parameter. Do not send the image to it or label a text reply
+      // as vision. Use the dedicated AHM7 Vision API for image chat first.
+      try {
+        const controller = new AbortController();
+        const timer = setTimeout(() => controller.abort(), 25000);
+        const upstream = await fetch("https://ahm7xmakki.com/api/imgchat", {
+          method: "POST",
+          headers: { "Content-Type": "application/json", "Accept": "application/json" },
+          body: JSON.stringify({
+            image: imageBase64,
+            userPrompt: lastUserText,
+            messages: cleanMessages.slice(-12).map(m => ({
+              type: m.role === "assistant" ? "ai" : "user", content: m.content
+            }))
+          }),
+          signal: controller.signal
         });
+        clearTimeout(timer);
+        const raw = await upstream.text();
+        let data = {};
+        try { data = raw ? JSON.parse(raw) : {}; } catch {}
+        const answer = String(data?.response || data?.text || data?.message || "").trim();
+        if (upstream.ok && answer) {
+          return res.status(200).json({
+            ok: true, mode: "chat", text: answer,
+            model: "VisionSter", provider: "AHM7 Vision", vision: true
+          });
+        }
+        result = {
+          ok: false,
+          provider: "AHM7 Vision",
+          model: "VisionSter",
+          status: upstream.status,
+          upstreamError: data?.error || data?.message || raw.slice(0, 1000)
+        };
+      } catch (error) {
+        result = {
+          ok: false,
+          provider: "AHM7 Vision",
+          model: "VisionSter",
+          status: null,
+          upstreamError: String(error?.message || error)
+        };
       }
 
-      // BlockRun's free tier may auto-route an unavailable model to a
-      // non-vision model. Never accept such a reroute as a vision result.
+      // BlockRun vision fallback. Only accept a response when the gateway
+      // actually returns one of the requested vision-capable model IDs.
       const visionModels = new Set([
         "nvidia/nemotron-3-nano-omni-30b-a3b-reasoning",
         "nvidia/llama-3.2-11b-vision"
@@ -184,34 +218,6 @@ async function handler(req, res) {
         }
       }
 
-      try {
-        const controller = new AbortController();
-        const timer = setTimeout(() => controller.abort(), 25000);
-        const upstream = await fetch("https://ahm7xmakki.com/api/imgchat", {
-          method: "POST",
-          headers: { "Content-Type": "application/json", "Accept": "application/json" },
-          body: JSON.stringify({
-            image: imageBase64,
-            userPrompt: lastUserText,
-            messages: cleanMessages.slice(-12).map(m => ({
-              type: m.role === "assistant" ? "ai" : "user", content: m.content
-            }))
-          }),
-          signal: controller.signal
-        });
-        clearTimeout(timer);
-        const raw = await upstream.text();
-        let data = {};
-        try { data = raw ? JSON.parse(raw) : {}; } catch {}
-        const answer = String(data?.response || data?.text || data?.message || "").trim();
-        if (upstream.ok && answer) {
-          return res.status(200).json({
-            ok: true, mode: "chat", text: answer,
-            model: "VisionSter", provider: "AHM7 Vision", vision: true
-          });
-        }
-      } catch {}
-
       return res.status(502).json({
         ok: false,
         error: "VISION_UPSTREAM_FAILED",
@@ -222,8 +228,6 @@ async function handler(req, res) {
       });
     }
 
-    // CVRON GPT-5 Nano is the first text-chat candidate. Keep the existing
-    // free BlockRun models as automatic fallback if CVRON is temporarily unavailable.
     const cvronPrompt = cleanMessages.slice(-12).map(m => m.role + ": " + m.content).join("\n");
     result = await callCvronGPT5Nano(cvronPrompt);
     if (!result.ok) result = await callBlockRun("nvidia/gpt-oss-20b");
