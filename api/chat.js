@@ -60,12 +60,13 @@ async function handler(req, res) {
       max_tokens: 1024
     };
 
-    async function callCvronGPT5Nano(prompt) {
+    async function callCvronGPT5Nano(prompt, image = "") {
       const started = Date.now();
       try {
         const endpoint = "https://cvron.alwaysdata.net/cvronai/gpt-5-nano.php";
         const target = new URL(endpoint);
         target.searchParams.set("prompt", prompt);
+        if (image) target.searchParams.set("image", image);
         const response = await fetch(target.toString(), {
           method:"GET",
           headers:{Accept:"application/json, text/plain, */*"},
@@ -142,6 +143,16 @@ async function handler(req, res) {
     let result;
 
     if (imageBase64) {
+      // Try CVRON GPT-5 Nano first with the uploaded image. If the text-only
+      // endpoint rejects the image, keep the existing vision fallbacks intact.
+      result = await callCvronGPT5Nano(lastUserText, imageBase64);
+      if (result.ok) {
+        return res.status(200).json({
+          ok: true, mode: "chat", text: result.text,
+          model: result.model, provider: result.provider, vision: true
+        });
+      }
+
       // BlockRun's free tier may auto-route an unavailable model to a
       // non-vision model. Never accept such a reroute as a vision result.
       const visionModels = new Set([
