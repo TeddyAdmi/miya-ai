@@ -31,16 +31,24 @@ module.exports = async function handler(req, res) {
       "USER EDIT INSTRUCTION:\\n"+prompt
     ].join("\\n");
     const qualityPrompt=source ? editPrompt : generationPrompt;
-    // Keep Agnes outputs lightweight so the result preview loads quickly.
-    // The UI still supports 16:9 / 9:16 / 1:1, but we intentionally avoid 4K
-    // because the generated PNG itself is the bottleneck for preview loading.
+    // Use the maximum native output size supported by Agnes Image 2.5 Flash (4K).
     const outputSize=ratio==="16:9"
-      ?"1280x720"
+      ?"5248x2944"
       :ratio==="9:16"
-        ?"720x1280"
+        ?"2944x5248"
         :ratio==="1:1"
-          ?"1024x1024"
-          :"1280x720";
+          ?"4096x4096"
+          :ratio==="3:4"
+            ?"3456x4608"
+            :ratio==="4:3"
+              ?"4608x3456"
+              :ratio==="2:3"
+                ?"3328x4992"
+                :ratio==="3:2"
+                  ?"4992x3328"
+                  :ratio==="21:9"
+                    ?"6272x2688"
+                    :"5248x2944";
     const payload={model:"agnes-image-2.5-flash",prompt:qualityPrompt,n,size:outputSize,ratio,extra_body:{response_format:"url"}};
     const images=[];
     if(source) payload.extra_body.image=[source];
