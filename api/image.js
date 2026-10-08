@@ -591,7 +591,7 @@ module.exports = async function imageHandler(req, res) {
             noCrop:true,
             enhanced:requestedModel !== "GPT Image 2.5",
             edit:Boolean(sourceImageUrl),
-            sourceImageUrl:imageUrl || sourceImageUrl
+            sourceImageUrl:sourceImageUrl
           }
         });
       } catch (error) {
