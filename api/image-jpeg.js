@@ -67,9 +67,14 @@ module.exports = async function handler(req, res) {
       return res.status(413).json({ ok: false, error: "IMAGE_TOO_LARGE" });
     }
 
+    // Nano Banana already returns the generated composition. Do not build a
+    // blurred contain/cover canvas around it: that was causing side cropping
+    // and a visibly soft result. Keep the complete source image and only apply
+    // the normal quality enhancement below.
+    const isNanoBanana = /^Nano Banana 2$/i.test(String(req.query?.sourceModel || ""));
     let imagePipeline = sharp(input).rotate();
 
-    if (targetRatio) {
+    if (targetRatio && !isNanoBanana) {
       const width = targetRatio >= 1 ? 1536 : 864;
       const height = Math.max(1, Math.round(width / targetRatio));
 

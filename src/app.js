@@ -2045,6 +2045,7 @@ function showImage(url,prompt="",model="FLUX Dev",ratio=""){
    ? rawUrl
    : (ratio&&/^\\d+:\\d+$/.test(String(ratio))
       ? "/api/image-jpeg?url="+encodeURIComponent(rawUrl)+"&ratio="+encodeURIComponent(String(ratio))
+        + (/^Nano Banana 2$/i.test(String(model||"")) ? "&sourceModel=Nano%20Banana%202" : "")
       : rawUrl);
  const item=saveMedia("image",displayUrl,prompt,model);
  const c=$("#canvas");let grid=c.querySelector(".result-grid");
