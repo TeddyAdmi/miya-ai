@@ -43,16 +43,40 @@ module.exports = async function handler(req, res) {
       "www.cleverutils.com",
       "cleverutil",
       "cleverutil.com",
-      "overchat.s3.eu-north-1.amazonaws.com"
+      "overchat.s3.eu-north-1.amazonaws.com",
+      "tmpfiles.org",
+      "www.tmpfiles.org"
     ];
     if (!allowed.includes(host)) {
       return res.status(403).json({ ok: false, error: "IMAGE_HOST_NOT_ALLOWED" });
     }
 
-    const upstream = await fetch(target.toString(), {
-      headers: { Accept: "image/*" },
-      signal: AbortSignal.timeout(45000)
-    });
+    // Follow redirects manually and re-check every destination against the
+    // image-host allowlist. tmpfiles.org download links may redirect, but this
+    // endpoint must not become an unrestricted URL fetcher.
+    let fetchUrl = target;
+    let upstream;
+    for (let redirect = 0; redirect <= 5; redirect++) {
+      const fetchHost = fetchUrl.hostname.toLowerCase();
+      if (fetchUrl.protocol !== "https:" || !allowed.includes(fetchHost)) {
+        return res.status(403).json({ ok: false, error: "IMAGE_REDIRECT_HOST_NOT_ALLOWED" });
+      }
+      upstream = await fetch(fetchUrl.toString(), {
+        redirect: "manual",
+        headers: { Accept: "image/*" },
+        signal: AbortSignal.timeout(45000)
+      });
+      if (![301, 302, 303, 307, 308].includes(upstream.status)) break;
+      const location = upstream.headers.get("location");
+      if (!location || redirect === 5) {
+        return res.status(502).json({ ok: false, error: "IMAGE_REDIRECT_FAILED" });
+      }
+      try {
+        fetchUrl = new URL(location, fetchUrl);
+      } catch {
+        return res.status(502).json({ ok: false, error: "IMAGE_REDIRECT_INVALID" });
+      }
+    }
     if (!upstream.ok) {
       return res.status(upstream.status).json({ ok: false, error: "UPSTREAM_IMAGE_HTTP", status: upstream.status });
     }
