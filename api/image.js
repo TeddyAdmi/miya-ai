@@ -508,7 +508,7 @@ module.exports = async function imageHandler(req, res) {
           "&size=" + encodeURIComponent(cvronRatio) +
           "&width=" + nativeSize.width +
           "&height=" + nativeSize.height +
-          "&resolution=1K" +
+          "&resolution=" + encodeURIComponent(quality) +
           (sourceImageUrl
             ? "&image=" + encodeURIComponent(sourceImageUrl) + "&image_url=" + encodeURIComponent(sourceImageUrl)
             : "");
