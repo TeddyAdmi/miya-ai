@@ -494,13 +494,17 @@ module.exports = async function imageHandler(req, res) {
 
         const rawSourceImage = typeof body.imageUrl === "string" ? body.imageUrl.trim() : "";
         let sourceImageUrl = "";
-        if (/^https?:\/\//i.test(rawSourceImage)) {
-          sourceImageUrl = rawSourceImage;
-        } else if (rawSourceImage.startsWith("/api/image-jpeg?")) {
+        if (/^https?:\/\//i.test(rawSourceImage) || rawSourceImage.startsWith("/api/image-jpeg?")) {
           try {
             const parsedSource = new URL(rawSourceImage, "https://miya-studio.vercel.app");
-            const unwrappedSource = parsedSource.searchParams.get("url") || "";
-            if (/^https?:\/\//i.test(unwrappedSource)) sourceImageUrl = unwrappedSource;
+            const ownHost = parsedSource.hostname.toLowerCase() === "miya-studio.vercel.app" ||
+              parsedSource.hostname.toLowerCase() === "www.miya-studio.vercel.app";
+            if (ownHost && parsedSource.pathname === "/api/image-jpeg") {
+              const unwrappedSource = parsedSource.searchParams.get("url") || "";
+              if (/^https?:\/\//i.test(unwrappedSource)) sourceImageUrl = unwrappedSource;
+            } else if (/^https?:\/\//i.test(rawSourceImage)) {
+              sourceImageUrl = rawSourceImage;
+            }
           } catch {}
         }
 
