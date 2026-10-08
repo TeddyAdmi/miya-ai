@@ -9,6 +9,7 @@ module.exports = async function handler(req, res) {
     const prompt=typeof body.prompt==="string"?body.prompt.trim():"";
     if(!prompt) return res.status(400).json({ok:false,error:"PROMPT_REQUIRED"});
     const ratio=["1:1","3:4","4:3","16:9","9:16","2:3","3:2","21:9"].includes(String(body.ratio))?String(body.ratio):"16:9";
+    const source=String(body.imageBase64||body.imageUrl||"").trim();
     const n=Math.max(1,Math.min(4,Number(body.n)||1));
     const generationPrompt=[
       "Create a bright, vivid, premium-quality photorealistic image with rich, lively colors.",
@@ -42,7 +43,6 @@ module.exports = async function handler(req, res) {
           :"1280x720";
     const payload={model:"agnes-image-2.5-flash",prompt:qualityPrompt,n,size:outputSize,ratio,extra_body:{response_format:"url"}};
     const images=[];
-    const source=String(body.imageBase64||body.imageUrl||"").trim();
     if(source) payload.extra_body.image=[source];
 
     const upstream=await fetch("https://apihub.agnes-ai.com/v1/images/generations",{
