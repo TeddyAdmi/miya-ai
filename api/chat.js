@@ -60,32 +60,18 @@ async function handler(req, res) {
       max_tokens: 1024
     };
 
-    async function callCvronGPT5Nano(prompt, image = "") {
+    async function callCvronGPT5Nano(prompt) {
       const started = Date.now();
       try {
         const endpoint = "https://cvron.alwaysdata.net/cvronai/gpt-5-nano.php";
-        let response;
-        if (image) {
-          response = await fetch(endpoint, {
-            method:"POST",
-            headers:{
-              "Content-Type":"application/json",
-              "Accept":"application/json, text/plain, */*"
-            },
-            body:JSON.stringify({prompt, image}),
-            cache:"no-store",
-            signal:AbortSignal.timeout(30000)
-          });
-        } else {
-          const target = new URL(endpoint);
-          target.searchParams.set("prompt", prompt);
-          response = await fetch(target.toString(), {
-            method:"GET",
-            headers:{Accept:"application/json, text/plain, */*"},
-            cache:"no-store",
-            signal:AbortSignal.timeout(90000)
-          });
-        }
+        const target = new URL(endpoint);
+        target.searchParams.set("prompt", prompt);
+        const response = await fetch(target.toString(), {
+          method:"GET",
+          headers:{Accept:"application/json, text/plain, */*"},
+          cache:"no-store",
+          signal:AbortSignal.timeout(90000)
+        });
         const raw = await response.text();
         let data = {};
         try { data = raw ? JSON.parse(raw) : {}; } catch {}
