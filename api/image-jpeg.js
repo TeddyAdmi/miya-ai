@@ -51,7 +51,7 @@ module.exports = async function handler(req, res) {
 
     const upstream = await fetch(target.toString(), {
       headers: { Accept: "image/*" },
-      signal: AbortSignal.timeout(20000)
+      signal: AbortSignal.timeout(45000)
     });
     if (!upstream.ok) {
       return res.status(upstream.status).json({ ok: false, error: "UPSTREAM_IMAGE_HTTP", status: upstream.status });
@@ -79,13 +79,6 @@ module.exports = async function handler(req, res) {
       });
     }
 
-    // Nano Banana finish: brighter, richer and slightly sharper, without
-    // adding borders, blurred side panels, or changing the composition.
-    if (enhance) {
-      imagePipeline = imagePipeline
-        .modulate({ brightness: 1.06, saturation: 1.12 })
-        .sharpen({ sigma: 0.65, m1: 0.8, m2: 2.0 });
-    }
 
     const jpeg = await imagePipeline
       .flatten({ background: "#ffffff" })
@@ -105,4 +98,4 @@ module.exports = async function handler(req, res) {
   }
 };
 
-module.exports.config = { maxDuration: 30 };
+module.exports.config = { maxDuration: 60 };
