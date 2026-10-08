@@ -141,6 +141,47 @@ async function handler(req, res) {
     let result;
 
     if (imageBase64) {
+      // AHM7 is tried first for image understanding. The instruction asks for
+      // concrete visual details rather than a short generic caption.
+      try {
+        const controller = new AbortController();
+        const timer = setTimeout(() => controller.abort(), 40000);
+        const upstream = await fetch("https://ahm7xmakki.com/api/imgchat", {
+          method: "POST",
+          headers: { "Content-Type": "application/json", "Accept": "application/json" },
+          body: JSON.stringify({
+            image: imageBase64,
+            userPrompt:
+              "Проанализируй это изображение максимально внимательно и точно. " +
+              "Не ограничивайся общей подписью. Опиши только то, что действительно видно: " +
+              "людей и их внешний вид, позы и действия, одежду, лицо и волосы если различимы, " +
+              "предметы и их расположение, фон, помещение или место, освещение, цвета, " +
+              "композицию, перспективу, текст и надписи если они читаются, а также заметные " +
+              "мелкие детали. Не выдумывай детали, которых невозможно уверенно увидеть. " +
+              "Если пользователь задал вопрос об изображении, сначала ответь на него точно, " +
+              "а затем добавь полезные наблюдения. Пользовательский запрос: " + lastUserText,
+            messages: cleanMessages.slice(-12).map(m => ({
+              type: m.role === "assistant" ? "ai" : "user", content: m.content
+            }))
+          }),
+          signal: controller.signal
+        });
+        clearTimeout(timer);
+        const raw = await upstream.text();
+        let data = {};
+        try { data = raw ? JSON.parse(raw) : {}; } catch {}
+        const answer = String(data?.response || data?.text || data?.message || "").trim();
+        if (upstream.ok && answer) {
+          return res.status(200).json({
+            ok: true,
+            mode: "chat",
+            text: answer
+          });
+        }
+      } catch {}
+
+      // If AHM7 is temporarily unavailable, keep the previously working free
+      // vision models as a silent fallback.
       const visionModels = new Set([
         "nvidia/nemotron-3-nano-omni-30b-a3b-reasoning",
         "nvidia/llama-3.2-11b-vision"
@@ -170,35 +211,6 @@ async function handler(req, res) {
           };
         }
       }
-
-      try {
-        const controller = new AbortController();
-        const timer = setTimeout(() => controller.abort(), 25000);
-        const upstream = await fetch("https://ahm7xmakki.com/api/imgchat", {
-          method: "POST",
-          headers: { "Content-Type": "application/json", "Accept": "application/json" },
-          body: JSON.stringify({
-            image: imageBase64,
-            userPrompt: lastUserText,
-            messages: cleanMessages.slice(-12).map(m => ({
-              type: m.role === "assistant" ? "ai" : "user", content: m.content
-            }))
-          }),
-          signal: controller.signal
-        });
-        clearTimeout(timer);
-        const raw = await upstream.text();
-        let data = {};
-        try { data = raw ? JSON.parse(raw) : {}; } catch {}
-        const answer = String(data?.response || data?.text || data?.message || "").trim();
-        if (upstream.ok && answer) {
-          return res.status(200).json({
-            ok: true,
-            mode: "chat",
-            text: answer
-          });
-        }
-      } catch {}
 
       return res.status(502).json({
         ok: false,
