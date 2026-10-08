@@ -492,16 +492,16 @@ module.exports = async function imageHandler(req, res) {
         const scale = quality === "4K" ? 4 : quality === "2K" ? 2 : 1;
         const nativeSize = {width:Math.round(baseSize.width*scale),height:Math.round(baseSize.height*scale)};
 
+        const sourceImageUrl = typeof body.imageUrl === "string" && /^https?:\/\//i.test(body.imageUrl.trim())
+          ? body.imageUrl.trim()
+          : "";
+
         const finalPrompt = sourceImageUrl
           ? cvronPrompt + "\n\nEDIT MODE: Edit the supplied source image. Keep the original composition, camera viewpoint, background, lighting, colors, identity and all unrelated details unchanged. Apply only the requested change. Do not regenerate or redesign the whole scene. Preserve the source image aspect ratio and framing."
           : requestedModel === "GPT Image 2.5"
             ? cvronPrompt + "\n\nOUTPUT FORMAT: Generate the complete image natively in exactly " +
               cvronRatio + " aspect ratio. Compose the entire scene for this canvas from the beginning. Do not crop, trim, zoom, cut off, or remove any part of the scene or subjects. Fill the requested canvas naturally."
             : cvronPrompt;
-
-        const sourceImageUrl = typeof body.imageUrl === "string" && /^https?:\/\//i.test(body.imageUrl.trim())
-          ? body.imageUrl.trim()
-          : "";
         const target =
           endpoint +
           "?prompt=" + encodeURIComponent(finalPrompt) +
