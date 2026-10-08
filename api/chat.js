@@ -60,6 +60,31 @@ async function handler(req, res) {
       max_tokens: 1024
     };
 
+    async function callCvronGPT5Nano(prompt) {
+      const started = Date.now();
+      try {
+        const endpoint = "https://cvron.alwaysdata.net/cvronai/gpt-5-nano.php";
+        const target = new URL(endpoint);
+        target.searchParams.set("prompt", prompt);
+        const response = await fetch(target.toString(), {
+          method:"GET",
+          headers:{Accept:"application/json, text/plain, */*"},
+          cache:"no-store",
+          signal:AbortSignal.timeout(90000)
+        });
+        const raw = await response.text();
+        let data = {};
+        try { data = raw ? JSON.parse(raw) : {}; } catch {}
+        const answer = String(data?.response || data?.text || data?.message || "").trim();
+        if(response.ok && answer){
+          return {ok:true,text:answer,model:"GPT-5 Nano",provider:"CVRON",status:response.status,elapsedMs:Date.now()-started};
+        }
+        return {ok:false,status:response.status,provider:"CVRON",model:"GPT-5 Nano",elapsedMs:Date.now()-started,upstreamBody:raw.slice(0,3000),upstreamError:data?.error||data?.message||null};
+      }catch(error){
+        return {ok:false,status:null,provider:"CVRON",model:"GPT-5 Nano",elapsedMs:Date.now()-started,upstreamBody:"",upstreamError:String(error?.message||error)};
+      }
+    }
+
     async function callBlockRun(model, payload = chatPayload) {
       const started = Date.now();
       try {
@@ -186,7 +211,11 @@ async function handler(req, res) {
       });
     }
 
-    result = await callBlockRun("nvidia/gpt-oss-20b");
+    // CVRON GPT-5 Nano is the first text-chat candidate. Keep the existing
+    // free BlockRun models as automatic fallback if CVRON is temporarily unavailable.
+    const cvronPrompt = cleanMessages.slice(-12).map(m => m.role + ": " + m.content).join("\n");
+    result = await callCvronGPT5Nano(cvronPrompt);
+    if (!result.ok) result = await callBlockRun("nvidia/gpt-oss-20b");
     if (!result.ok) result = await callBlockRun("nvidia/nemotron-3.5-lightning");
     if (!result.ok) result = await callBlockRun("nvidia/nemotron-3-nano-omni-30b-a3b-reasoning");
 
