@@ -2039,9 +2039,12 @@ function showLoading(){
  grid.appendChild(card);scrollImagesToTop();
 }
 function showImage(url,prompt="",model="FLUX Dev",ratio=""){
- const displayUrl=ratio&&/^\\d+:\\d+$/.test(String(ratio))
-   ? "/api/image-jpeg?url="+encodeURIComponent(String(url))+"&ratio="+encodeURIComponent(String(ratio))
-   : url;
+ const rawUrl=String(url||"").trim();
+ const displayUrl=rawUrl.startsWith("/api/image-jpeg?")
+   ? rawUrl
+   : (ratio&&/^\\d+:\\d+$/.test(String(ratio))
+      ? "/api/image-jpeg?url="+encodeURIComponent(rawUrl)+"&ratio="+encodeURIComponent(String(ratio))
+      : rawUrl);
  const item=saveMedia("image",displayUrl,prompt,model);
  const c=$("#canvas");let grid=c.querySelector(".result-grid");
  if(!grid){c.innerHTML='<div class="result-grid"></div>';grid=c.querySelector(".result-grid")}
@@ -2202,7 +2205,7 @@ async function generateImage(prompt){
       reject(new Error(detail));
     }
    };
-   xhr.timeout=60000;
+   xhr.timeout=240000;
    xhr.send(body);
   });
 ;
