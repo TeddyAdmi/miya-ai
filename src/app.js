@@ -2159,9 +2159,8 @@ async function generateImage(prompt){
  const ring=loader?.querySelector(".progress-circle");
  const percent=ring?.querySelector(".progress-percent");
  const modelName=selectedModel||"FLUX Dev";
- const usesReferenceImage=Boolean(referenceImage) &&
-   (modelName==="FLUX Kontext Dev" || modelName==="Agnes Image 2.5 Flash" || useCvronImage);
- const hasFileUpload=Boolean(referenceImage) && (modelName==="FLUX Kontext Dev" || useCvronImage);
+ const usesReferenceImage=Boolean(referenceImage);
+ const hasFileUpload=Boolean(referenceImage);
  const composerProgress=$("#composerProgress");
  let fakeProgress=0;
  let fakeTimer=null;
@@ -3703,9 +3702,9 @@ function setMode(next,render=true){
    referenceImage=referenceImage||null;
    renderImageLibrary();
    const imageModel=$("#composerModel");
-   if(imageModel)imageModel.value=referenceImage?"FLUX Kontext Dev":"FLUX Dev";
+   if(imageModel&&!referenceImage)imageModel.value="FLUX Dev";
    const ratio=$("#composerRatio");
-   if(ratio)ratio.value=referenceImage?"auto":"16:9";
+   if(ratio&&!referenceImage)ratio.value="16:9";
  }else if(target==="voice"){
    renderVoiceLibrary();loadVoiceCatalog();
  }else{
@@ -3819,7 +3818,7 @@ $("#composerModel")?.addEventListener("change",()=>{
   }else{
     $("#composerRatio").value="16:9";
     $("#composerStatus").textContent=referenceImage
-      ?"FLUX Dev · изображение прикреплено, используется только при выборе Kontext Dev"
+      ?model+" · изображение прикреплено"
       :"FLUX Dev · готово";
   }
 });
