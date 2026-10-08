@@ -492,34 +492,15 @@ module.exports = async function imageHandler(req, res) {
         const scale = quality === "4K" ? 4 : quality === "2K" ? 2 : 1;
         const nativeSize = {width:Math.round(baseSize.width*scale),height:Math.round(baseSize.height*scale)};
 
-        const rawSourceImage = typeof body.imageUrl === "string" ? body.imageUrl.trim() : "";
-        let sourceImageUrl = "";
-        if (/^https?:\/\//i.test(rawSourceImage) || rawSourceImage.startsWith("/api/image-jpeg?")) {
-          try {
-            const parsedSource = new URL(rawSourceImage, "https://miya-studio.vercel.app");
-            const ownHost = parsedSource.hostname.toLowerCase() === "miya-studio.vercel.app" ||
-              parsedSource.hostname.toLowerCase() === "www.miya-studio.vercel.app";
-            if (ownHost && parsedSource.pathname === "/api/image-jpeg") {
-              const unwrappedSource = parsedSource.searchParams.get("url") || "";
-              if (/^https?:\/\//i.test(unwrappedSource)) sourceImageUrl = unwrappedSource;
-            } else if (/^https?:\/\//i.test(rawSourceImage)) {
-              sourceImageUrl = rawSourceImage;
-            }
-          } catch {}
-        }
-
-        // CVRON documents image2image.php as its dedicated image-edit endpoint.
-        // Use it for edits instead of passing undocumented parameters to generation-only endpoints.
-        const isEdit = Boolean(sourceImageUrl);
-        const endpoint = isEdit
-          ? "https://cvron.alwaysdata.net/cvronai/image2image.php"
-          : generationEndpoint;
-        const finalPrompt = isEdit
-          ? cvronPrompt + "\\n\\nEdit the supplied image. Make only the requested change and preserve the original subject, composition, background, lighting, and all unrelated details."
-          : requestedModel === "GPT Image 2.5"
-            ? cvronPrompt + "\\n\\nOUTPUT FORMAT: Generate the complete image natively in exactly " +
+        // Nano Banana 2 and GPT Image 2.5 are generation-only models in Miya.
+        // Image editing is handled by Agnes or FLUX Kontext Dev, never CVRON image2image.
+        const sourceImageUrl = "";
+        const isEdit = false;
+        const endpoint = generationEndpoint;
+        const finalPrompt = requestedModel === "GPT Image 2.5"
+          ? cvronPrompt + "\\n\\nOUTPUT FORMAT: Generate the complete image natively in exactly " +
               cvronRatio + " aspect ratio. Compose the entire scene for this canvas from the beginning. Do not crop, trim, zoom, cut off, or remove any part of the scene or subjects. Fill the requested canvas naturally."
-            : cvronPrompt;
+          : cvronPrompt;
         const target =
           endpoint +
           "?prompt=" + encodeURIComponent(finalPrompt) +
