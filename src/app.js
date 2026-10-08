@@ -4168,13 +4168,9 @@ async function startSpeechRecording(){
   }
 }
 
-let composerMicLastPress=0;
 async function handleComposerMicPress(e){
   e?.preventDefault?.();
   e?.stopPropagation?.();
-  const now=Date.now();
-  if(now-composerMicLastPress<350)return;
-  composerMicLastPress=now;
   if(speechRecorder){
     await finishSpeechRecording();
     return;
@@ -4183,8 +4179,7 @@ async function handleComposerMicPress(e){
 }
 const composerMicButton=$("#composerMic");
 if(composerMicButton){
-  composerMicButton.addEventListener("pointerdown",handleComposerMicPress,{capture:true});
-  composerMicButton.onclick=e=>{e.preventDefault();e.stopPropagation()};
+  composerMicButton.onclick=handleComposerMicPress;
 }
 document.querySelector('.mobile-tabs [data-mode="voice"]')?.remove();
 function syncVoiceEditorTheme(){const backdrop=document.querySelector(".voice-editor-backdrop");if(!backdrop)return;const light=document.body.classList.contains("light");backdrop.classList.toggle("ve2-light",light);backdrop.dataset.theme=light?"light":"dark"}
