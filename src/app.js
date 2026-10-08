@@ -4057,20 +4057,35 @@ async function processSpeechRecording(){
   const status=$("#composerStatus");
   if(status)status.textContent="Распознаю голос…";
   try{
-    const audio=await blobToDataUrl(blob);
-    const response=await fetch("/api/cloudflare-transcribe",{
+    const form=new FormData();
+    const filename=mime.includes("ogg")?"miya-voice.ogg":"miya-voice.webm";
+    form.append("file",blob,filename);
+    form.append("format","txt");
+    form.append("quality","fast");
+    form.append("language","ru");
+    const response=await fetch("https://cleverutils.com/api/v1/tools/speech-to-text",{
       method:"POST",
-      headers:{"Content-Type":"application/json"},
-      body:JSON.stringify({
-        audio,
-        filename:mime.includes("ogg")?"miya-voice.ogg":"miya-voice.webm",
-        mime,
-        language:"ru"
-      })
+      body:form
     });
     const data=await response.json().catch(()=>null);
     if(!response.ok)throw new Error("TRANSCRIBE_"+response.status);
-    const text=String(data?.text||data?.transcript||"").trim();
+    let text=String(data?.text||data?.transcript||data?.data?.text||data?.data?.transcript||"").trim();
+    let job=data?.job_id||data?.data?.job_id||null;
+    for(let attempt=0;!text&&job&&attempt<60;attempt++){
+      if(attempt)await new Promise(resolve=>setTimeout(resolve,2000));
+      const poll=await fetch("https://cleverutils.com/api/v1/jobs/"+encodeURIComponent(job));
+      const status=await poll.json().catch(()=>null);
+      const info=status?.data||status||{};
+      const state=String(info.status||"").toLowerCase();
+      if(state==="failed"||state==="error")throw new Error("TRANSCRIBE_JOB_FAILED");
+      text=String(info.text||info.transcript||"").trim();
+      if(!text&&info.output?.url){
+        const out=await fetch(info.output.url);
+        if(out.ok)text=(await out.text()).trim();
+      }
+      if(state==="done"&&!text)break;
+    }
+    if(!text)throw new Error("TRANSCRIPT_EMPTY");
     if(!text)throw new Error("TRANSCRIPT_EMPTY");
     const input=$("#composerInput");
     if(input){
