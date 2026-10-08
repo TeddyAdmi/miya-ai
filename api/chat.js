@@ -141,8 +141,26 @@ async function handler(req, res) {
     let result;
 
     if (imageBase64) {
-      // AHM7 is tried first for image understanding. The instruction asks for
-      // concrete visual details rather than a short generic caption.
+      // Primary free vision model: NVIDIA Nemotron 3 Nano Omni via BlockRun.
+      // It accepts native OpenAI-style image_url content and is free without
+      // an API key or wallet. AHM7 remains the next fallback.
+      const visionCandidates = [
+        "nvidia/nemotron-3-nano-omni-30b-a3b-reasoning"
+      ];
+
+      for (const model of visionCandidates) {
+        result = await callBlockRun(model);
+
+        if (result.ok && result.model === model) {
+          return res.status(200).json({
+            ok: true,
+            mode: "chat",
+            text: result.text
+          });
+        }
+      }
+
+      // AHM7 is the second free vision fallback.
       try {
         const controller = new AbortController();
         const timer = setTimeout(() => controller.abort(), 40000);
@@ -180,36 +198,14 @@ async function handler(req, res) {
         }
       } catch {}
 
-      // If AHM7 is temporarily unavailable, keep the previously working free
-      // vision models as a silent fallback.
-      const visionModels = new Set([
-        "nvidia/nemotron-3-nano-omni-30b-a3b-reasoning",
-        "nvidia/llama-3.2-11b-vision"
-      ]);
-
-      const visionCandidates = [
-        "nvidia/nemotron-3-nano-omni-30b-a3b-reasoning",
-        "nvidia/llama-3.2-11b-vision"
-      ];
-
-      for (const model of visionCandidates) {
-        result = await callBlockRun(model);
-
-        if (result.ok && visionModels.has(result.model)) {
-          return res.status(200).json({
-            ok: true,
-            mode: "chat",
-            text: result.text
-          });
-        }
-
-        if (result.ok) {
-          result = {
-            ...result,
-            ok: false,
-            upstreamError: "Vision provider returned an unsupported route."
-          };
-        }
+      // Last fallback: the older free vision model.
+      result = await callBlockRun("nvidia/llama-3.2-11b-vision");
+      if (result.ok && result.model === "nvidia/llama-3.2-11b-vision") {
+        return res.status(200).json({
+          ok: true,
+          mode: "chat",
+          text: result.text
+        });
       }
 
       return res.status(502).json({
