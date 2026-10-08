@@ -3914,6 +3914,8 @@ if(composerAttach){
 }
 let speechRecognition=null;
 let speechBaseText="";
+let speechRecordingCount=0;
+let speechCommittedText="";
 let speechStream=null;
 let speechAudioContext=null;
 let speechSource=null;
