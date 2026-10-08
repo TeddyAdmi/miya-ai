@@ -2105,24 +2105,6 @@ function showImage(url,prompt="",model="FLUX Dev",ratio=""){
  const card=buildMediaCard(item);grid.prepend(card);
  $("#composerStatus").textContent=model+" · готово";
 }
-async function detectAgnesEditRatio(url){
- if(!url)return "";
- const allowed=[["1:1",1],["3:4",3/4],["4:3",4/3],["16:9",16/9],["9:16",9/16],["2:3",2/3],["3:2",3/2],["21:9",21/9]];
- return new Promise(resolve=>{
-  const image=new Image();
-  let settled=false;
-  const finish=value=>{if(settled)return;settled=true;resolve(value)};
-  const timeout=setTimeout(()=>finish(""),2500);
-  image.onload=()=>{
-   clearTimeout(timeout);
-   const actual=image.naturalWidth/Math.max(1,image.naturalHeight);
-   if(!Number.isFinite(actual)||actual<=0){finish("");return}
-   finish(allowed.reduce((best,item)=>Math.abs(Math.log(item[1]/actual))<Math.abs(Math.log(best[1]/actual))?item:best,allowed[0])[0]);
-  };
-  image.onerror=()=>{clearTimeout(timeout);finish("")};
-  image.src=url;
- });
-}
 async function generateAgnesImage(prompt){
  if(videoGenerationBusy){}
  showLoading();if($("#composerSend"))$("#composerSend").disabled=true;
@@ -2141,8 +2123,7 @@ async function generateAgnesImage(prompt){
  try{
    setProgress(8);$("#composerStatus").textContent=model+" · подключение…";
    const selectedRatio=["1:1","3:4","4:3","16:9","9:16","2:3","3:2","21:9"].includes(String($("#composerRatio")?.value))?String($("#composerRatio").value):"16:9";
-   // On edits, match the source photograph's native framing instead of forcing every photo into 16:9.
-   const ratio=referenceImage?(await detectAgnesEditRatio(referenceImage))||selectedRatio:selectedRatio;
+   const ratio=selectedRatio;
    const quality=["1K","2K","4K"].includes(String($("#composerQuality")?.value))?String($("#composerQuality").value):"2K";
    const requestedCount=Math.max(1,Math.min(4,Number($("#composerCount")?.value||1)));
    const response=await fetch("/api/agnes-image",{
