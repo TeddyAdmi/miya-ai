@@ -63,7 +63,11 @@ module.exports = async function handler(req, res) {
       }
       upstream = await fetch(fetchUrl.toString(), {
         redirect: "manual",
-        headers: { Accept: "image/*" },
+        headers: {
+          Accept: "image/avif,image/webp,image/apng,image/svg+xml,image/*,*/*;q=0.8",
+          "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:128.0) Gecko/20100101 Firefox/128.0",
+          Referer: "https://tmpfiles.org/"
+        },
         signal: AbortSignal.timeout(45000)
       });
       if (![301, 302, 303, 307, 308].includes(upstream.status)) break;
@@ -83,7 +87,18 @@ module.exports = async function handler(req, res) {
 
     const type = String(upstream.headers.get("content-type") || "").toLowerCase();
     if (!type.startsWith("image/")) {
-      return res.status(415).json({ ok: false, error: "UPSTREAM_NOT_IMAGE" });
+      const upstreamBody = await upstream.text().catch(() => "");
+      // tmpfiles can return its landing/download HTML instead of the file
+      // when the /dl/ link is requested without a browser-like request.
+      // Report the actual upstream response so a provider-side block is visible.
+      return res.status(415).json({
+        ok: false,
+        error: "UPSTREAM_NOT_IMAGE",
+        upstreamContentType: type || "unknown",
+        upstreamUrl: fetchUrl.toString(),
+        upstreamStatus: upstream.status,
+        upstreamBody: upstreamBody.slice(0, 300)
+      });
     }
 
     const input = Buffer.from(await upstream.arrayBuffer());
