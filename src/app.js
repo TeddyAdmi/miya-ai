@@ -2105,6 +2105,24 @@ function showImage(url,prompt="",model="FLUX Dev",ratio=""){
  const card=buildMediaCard(item);grid.prepend(card);
  $("#composerStatus").textContent=model+" · готово";
 }
+async function detectAgnesEditRatio(url){
+ if(!url)return "";
+ const allowed=[["1:1",1],["3:4",3/4],["4:3",4/3],["16:9",16/9],["9:16",9/16],["2:3",2/3],["3:2",3/2],["21:9",21/9]];
+ return new Promise(resolve=>{
+  const image=new Image();
+  let settled=false;
+  const finish=value=>{if(settled)return;settled=true;resolve(value)};
+  const timeout=setTimeout(()=>finish(""),2500);
+  image.onload=()=>{
+   clearTimeout(timeout);
+   const actual=image.naturalWidth/Math.max(1,image.naturalHeight);
+   if(!Number.isFinite(actual)||actual<=0){finish("");return}
+   finish(allowed.reduce((best,item)=>Math.abs(Math.log(item[1]/actual))<Math.abs(Math.log(best[1]/actual))?item:best,allowed[0])[0]);
+  };
+  image.onerror=()=>{clearTimeout(timeout);finish("")};
+  image.src=url;
+ });
+}
 async function generateAgnesImage(prompt){
  if(videoGenerationBusy){}
  showLoading();if($("#composerSend"))$("#composerSend").disabled=true;
@@ -2122,7 +2140,9 @@ async function generateAgnesImage(prompt){
  };
  try{
    setProgress(8);$("#composerStatus").textContent=model+" · подключение…";
-   const ratio=["1:1","3:4","4:3","16:9","9:16","2:3","3:2","21:9"].includes(String($("#composerRatio")?.value))?String($("#composerRatio").value):"16:9";
+   const selectedRatio=["1:1","3:4","4:3","16:9","9:16","2:3","3:2","21:9"].includes(String($("#composerRatio")?.value))?String($("#composerRatio").value):"16:9";
+   // On edits, match the source photograph's native framing instead of forcing every photo into 16:9.
+   const ratio=referenceImage?(await detectAgnesEditRatio(referenceImage))||selectedRatio:selectedRatio;
    const quality=["1K","2K","4K"].includes(String($("#composerQuality")?.value))?String($("#composerQuality").value):"2K";
    const requestedCount=Math.max(1,Math.min(4,Number($("#composerCount")?.value||1)));
    const response=await fetch("/api/agnes-image",{
@@ -3776,7 +3796,14 @@ $("#composerInput").addEventListener("input",()=>{
   syncInput();
 });
 const composerInput=$("#composerInput");
-$("#composerInput").addEventListener("keydown",e=>{if(e.key==="Enter"&&!e.shiftKey){e.preventDefault();$("#composerSend").click()}});
+composerInput.addEventListener("contextmenu",()=>{
+  // Close the prompt viewer when the user opens the browser paste menu.
+  $("#mediaPromptModal")?.classList.remove("open");
+});
+composerInput.addEventListener("paste",()=>{
+  $("#mediaPromptModal")?.classList.remove("open");
+});
+composerInput.addEventListener("keydown",e=>{if(e.key==="Enter"&&!e.shiftKey){e.preventDefault();$("#composerSend").click()}});
 $("#composerSend").addEventListener("click",async()=>{
  const value=$("#composerInput").value.trim();
  if(!value){
@@ -3824,17 +3851,17 @@ $("#composerModel")?.addEventListener("change",()=>{
     $("#composerRatio").value="auto";
     $("#composerStatus").textContent=referenceImage
       ?"FLUX Kontext Dev · изображение готово к редактированию"
-      :"FLUX Kontext Dev · готово к редактированию";
+      :"FLUX Kontext Dev · готов к созданию";
   }else if(model==="Agnes Image 2.5 Flash"){
     $("#composerRatio").value="16:9";
     $("#composerStatus").textContent=referenceImage
-      ?"Agnes Image 2.5 Flash · изображение прикреплено"
-      :"Agnes Image 2.5 Flash · готово";
+      ?"Agnes Image 2.5 Flash · изображение прикреплено · готово к редактированию"
+      :"Agnes Image 2.5 Flash · готов к созданию";
   }else{
     $("#composerRatio").value="16:9";
     $("#composerStatus").textContent=referenceImage
       ?model+" · изображение прикреплено"
-      :"FLUX Dev · готово";
+      :model+" · готов к созданию";
   }
 });
 $("#improve")?.addEventListener("click",improveComposerPrompt);
