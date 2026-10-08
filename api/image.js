@@ -469,18 +469,19 @@ module.exports = async function imageHandler(req, res) {
         "Flux 2 Klein": { url:"https://cvron.alwaysdata.net/cvronvip/flux-2-klein.php", kind:"standard" },
         "Image To Image": { url:"https://cvron.alwaysdata.net/cvronai/image2image.php", kind:"image2image" }
       };
+
       const cvronConfig = cvronModels[requestedModel];
       const endpoint = cvronConfig?.url;
       const cvronPrompt = typeof body.prompt === "string" ? body.prompt.trim() : "";
       const cvronRatio = ["1:1","3:4","4:3","16:9","9:16","2:3","3:2","21:9"].includes(String(body.ratio || "")) ? String(body.ratio) : "16:9";
       const cvronImageUrl = typeof body.imageUrl === "string" ? body.imageUrl.trim() : "";
       const cvronImageBase64 = typeof body.imageBase64 === "string" ? body.imageBase64.trim() : "";
+
       if (!cvronConfig) {
-        return res.status(400).json({
-          ok:false,
-          error:"CVRON_MODEL_UNSUPPORTED",
-          message:"Неизвестная CVRON-модель."
-        });
+        return res.status(400).json({ ok:false, error:"CVRON_MODEL_UNSUPPORTED", message:"Неизвестная CVRON-модель." });
+      }
+      if (!cvronPrompt) {
+        return res.status(400).json({ok:false,error:"PROMPT_REQUIRED"});
       }
       if (cvronConfig.kind === "image2image" && !cvronImageUrl && !cvronImageBase64) {
         return res.status(400).json({
@@ -489,58 +490,39 @@ module.exports = async function imageHandler(req, res) {
           message:"Для Image To Image загрузите исходное изображение."
         });
       }
-      if (!cvronPrompt) {
-        return res.status(400).json({ok:false,error:"PROMPT_REQUIRED"});
-      }
 
       try {
-        const nativeSize = {
-          "1:1":  {width:1024,height:1024},
-          "16:9": {width:1376,height:768},
-          "9:16": {width:768,height:1376},
-          "3:4":  {width:896,height:1200},
-          "4:3":  {width:1200,height:896},
-          "2:3":  {width:848,height:1264},
-          "3:2":  {width:1264,height:848},
-          "21:9": {width:1584,height:672}
-        }[cvronRatio] || {width:1024,height:1024};
-
-        const finalPrompt =
-          cvronPrompt +
-          "\n\nOUTPUT FORMAT: Generate the complete image natively in exactly " +
-          cvronRatio +
-          " aspect ratio. Compose the entire scene for this canvas from the beginning. Do not crop, trim, zoom, cut off, or remove any part of the scene or subjects. Keep the full composition visible.";
-
+        // Use the exact same CVRON request contract that made Nano Banana 2
+        // and GPT Image 2.5 work: GET + prompt only. Do not append width,
+        // height, ratio, size or resolution parameters because CVRON endpoints
+        // are not guaranteed to accept those extra query fields.
         const target = new URL(endpoint);
         target.searchParams.set("prompt", cvronPrompt);
+
         if (cvronConfig.kind === "image2image") {
           if (cvronImageUrl) {
             target.searchParams.set("image_url", cvronImageUrl);
-          } else if (cvronImageBase64) {
+          } else {
             target.searchParams.set("image_url", cvronImageBase64);
           }
-        } else {
-          target.searchParams.set("prompt", finalPrompt);
-          target.searchParams.set("ratio", cvronRatio);
-          target.searchParams.set("aspect_ratio", cvronRatio);
-          target.searchParams.set("size", cvronRatio);
-          target.searchParams.set("width", String(nativeSize.width));
-          target.searchParams.set("height", String(nativeSize.height));
-          target.searchParams.set("resolution", "1K");
         }
+
         let upstream;
         let raw = "";
         let data = {};
+
         for (let attempt = 0; attempt < 2; attempt++) {
-          upstream = await fetch(target, {
+          upstream = await fetch(target.toString(), {
             method:"GET",
             headers:{Accept:"application/json, text/plain, */*"},
             cache:"no-store",
             signal:AbortSignal.timeout(180000)
           });
+
           raw = await upstream.text();
           data = {};
           try { data = raw ? JSON.parse(raw) : {}; } catch {}
+
           if (upstream.ok || upstream.status < 500 || attempt === 1) break;
           await new Promise(resolve => setTimeout(resolve, 1200));
         }
@@ -551,7 +533,8 @@ module.exports = async function imageHandler(req, res) {
             error:"CVRON_UPSTREAM_HTTP",
             message:"CVRON вернул HTTP " + upstream.status + ".",
             upstreamStatus:upstream.status,
-            upstreamBody:raw.slice(0,1000)
+            upstreamBody:raw.slice(0,1000),
+            endpoint:target.origin + target.pathname
           });
         }
 
@@ -604,11 +587,10 @@ module.exports = async function imageHandler(req, res) {
             free:true,
             endpoint,
             requestedRatio:cvronRatio,
-            testMode:["FLUX Dev","DALL-E 3","Stable Diffusion 3.5 Large","ChatGPT Imager","Flux 2 Klein","Image To Image"].includes(requestedModel),
-            sourceImageUsed:Boolean(cvronImageUrl || cvronImageBase64),
             normalized:true,
             noCrop:true,
             enhanced:true,
+            sourceImageUsed:Boolean(cvronImageUrl || cvronImageBase64),
             sourceImageUrl:imageUrl
           }
         });
@@ -620,7 +602,6 @@ module.exports = async function imageHandler(req, res) {
         });
       }
     }
-
     const prompt = typeof body.prompt === "string" ? body.prompt.trim() : "";
     if (!prompt) return res.status(400).json({ ok: false, error: "PROMPT_REQUIRED" });
 
