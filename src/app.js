@@ -2112,11 +2112,12 @@ async function generateAgnesImage(prompt){
  try{
    setProgress(8);$("#composerStatus").textContent=model+" · подключение…";
    const ratio=["1:1","3:4","4:3","16:9","9:16","2:3","3:2","21:9"].includes(String($("#composerRatio")?.value))?String($("#composerRatio").value):"16:9";
+   const quality=["1K","2K","4K"].includes(String($("#composerQuality")?.value))?String($("#composerQuality").value):"2K";
    const requestedCount=Math.max(1,Math.min(4,Number($("#composerCount")?.value||1)));
    const response=await fetch("/api/agnes-image",{
      method:"POST",
      headers:{"Content-Type":"application/json","Accept":"application/json"},
-     body:JSON.stringify({prompt,ratio,n:requestedCount,imageBase64:referenceImage||""}),
+     body:JSON.stringify({prompt,ratio,quality,n:requestedCount,imageBase64:referenceImage||""}),
      signal:AbortSignal.timeout(60000)
    });
    const raw=await response.text();let data={};try{data=raw?JSON.parse(raw):{}}catch{}
@@ -2197,6 +2198,8 @@ async function generateImage(prompt){
   const requestedCount=Number($("#composerCount")?.value||1);
   const selectedRatio=["1:1","3:4","4:3","16:9","9:16","2:3","3:2","21:9"].includes(String($("#composerRatio")?.value))
     ? String($("#composerRatio").value) : "16:9";
+  const selectedQuality=["1K","2K","4K"].includes(String($("#composerQuality")?.value))
+    ? String($("#composerQuality").value) : "2K";
   const cvronPrompt=prompt;
   const body=useAgnesImage
    ? JSON.stringify({prompt,ratio:$("#composerRatio").value,n:requestedCount,imageBase64:referenceImage||""})
@@ -2207,12 +2210,13 @@ async function generateImage(prompt){
         prompt:cvronPrompt,
         model:modelName,
         ratio:selectedRatio,
+        quality:selectedQuality,
         imageUrl:referenceImage && !referenceImage.startsWith("data:image/") ? referenceImage : "",
         imageBase64:referenceImage && referenceImage.startsWith("data:image/") ? referenceImage : ""
        })
      : JSON.stringify({
         mode:"image",provider:"ahm7",prompt,model:modelName,
-        ratio:$("#composerRatio").value,outputFormat:"jpeg",copies:requestedCount,
+        ratio:$("#composerRatio").value,quality:selectedQuality,outputFormat:"jpeg",copies:requestedCount,
         options:referenceImage?payload:{}
        });
   let data;
