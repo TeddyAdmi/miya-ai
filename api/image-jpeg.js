@@ -1,5 +1,3 @@
-const sharp = require("sharp");
-
 module.exports = async function handler(req, res) {
   res.setHeader("Cache-Control", "public, max-age=86400, s-maxage=86400");
   res.setHeader("Access-Control-Allow-Origin", "*");
@@ -119,6 +117,19 @@ module.exports = async function handler(req, res) {
       return res.status(200).send(input);
     }
 
+    // Load Sharp only for requested ratio conversion. Plain proxy requests must
+    // still work even if the optional native Sharp runtime cannot initialize.
+    let sharp;
+    try {
+      sharp = require("sharp");
+    } catch (error) {
+      return res.status(503).json({
+        ok: false,
+        error: "IMAGE_RESIZER_UNAVAILABLE",
+        message: "Преобразование размера временно недоступно.",
+        detail: error?.message || "Sharp failed to initialize."
+      });
+    }
     let imagePipeline = sharp(input).rotate();
 
     if (targetRatio) {
