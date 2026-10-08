@@ -88,15 +88,19 @@ module.exports = async function handler(req, res) {
     const type = String(upstream.headers.get("content-type") || "").toLowerCase();
     if (!type.startsWith("image/")) {
       const upstreamBody = await upstream.text().catch(() => "");
-      // tmpfiles can return its landing/download HTML instead of the file
-      // when the /dl/ link is requested without a browser-like request.
-      // Report the actual upstream response so a provider-side block is visible.
+      // If tmpfiles returns its file landing page, expose the actual download
+      // links and form actions so we can identify the direct-file endpoint.
+      const upstreamLinks = [...upstreamBody.matchAll(/(?:href|src|action)\\s*=\\s*["']([^"']+)["']/gi)]
+        .map(match => match[1])
+        .filter(value => /download|\\/dl\\/|file|image|download/i.test(value))
+        .slice(0, 20);
       return res.status(415).json({
         ok: false,
         error: "UPSTREAM_NOT_IMAGE",
         upstreamContentType: type || "unknown",
         upstreamUrl: fetchUrl.toString(),
         upstreamStatus: upstream.status,
+        upstreamLinks,
         upstreamBody: upstreamBody.slice(0, 300)
       });
     }
