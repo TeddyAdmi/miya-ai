@@ -1,3 +1,5 @@
+const sharp = require("sharp");
+
 module.exports = async function handler(req, res) {
   res.setHeader("Cache-Control","no-store");
   res.setHeader("Content-Type","application/json; charset=utf-8");
@@ -10,23 +12,73 @@ module.exports = async function handler(req, res) {
     if(!prompt) return res.status(400).json({ok:false,error:"PROMPT_REQUIRED"});
     const ratio=["1:1","3:4","4:3","16:9","9:16","2:3","3:2","21:9"].includes(String(body.ratio))?String(body.ratio):"16:9";
     const quality=["1K","2K","4K"].includes(String(body.quality))?String(body.quality):"2K";
-    let source=String(body.imageBase64||body.imageUrl||"").trim();
-    // The UI can pass a saved image's Miya proxy URL in imageBase64.
-    // Unwrap our public image proxy so Agnes receives the actual provider URL.
-    if (source.startsWith("/api/image-jpeg?") || /^https?:\/\//i.test(source)) {
-      try {
-        const parsedSource=new URL(source,"https://miya-studio.vercel.app");
-        const ownHost=parsedSource.hostname.toLowerCase()==="miya-studio.vercel.app" ||
-          parsedSource.hostname.toLowerCase()==="www.miya-studio.vercel.app";
-        if (ownHost && parsedSource.pathname==="/api/image-jpeg") {
-          const unwrapped=parsedSource.searchParams.get("url")||"";
-          if (/^https?:\/\//i.test(unwrapped)) source=unwrapped;
+    let sourceInput=String(body.imageBase64||body.imageUrl||"").trim();
+    let source="";
+    if(sourceInput) {
+      let sourceBytes=null;
+      if(sourceInput.startsWith("/api/image-jpeg?") || /^https?:\/\//i.test(sourceInput)) {
+        let sourceUrl="";
+        try {
+          const parsed=new URL(sourceInput,"https://miya-studio.vercel.app");
+          const ownHost=parsed.hostname.toLowerCase()==="miya-studio.vercel.app" ||
+            parsed.hostname.toLowerCase()==="www.miya-studio.vercel.app";
+          if(ownHost && parsed.pathname==="/api/image-jpeg") {
+            const original=parsed.searchParams.get("url")||"";
+            if(/^https:\/\//i.test(original))sourceUrl=original;
+          } else if(parsed.protocol==="https:") {
+            sourceUrl=parsed.toString();
+          }
+        } catch {}
+        if(!sourceUrl) return res.status(400).json({ok:false,error:"INVALID_SOURCE_IMAGE_URL"});
+        let parsedUrl;
+        try{parsedUrl=new URL(sourceUrl)}catch{return res.status(400).json({ok:false,error:"INVALID_SOURCE_IMAGE_URL"})}
+        const host=parsedUrl.hostname.toLowerCase();
+        const allowedHost=
+          host==="overchat.s3.eu-north-1.amazonaws.com" ||
+          host==="access.vheer.com" || host.endsWith(".access.vheer.com") ||
+          host==="platform-outputs.agnes-ai.space" ||
+          host==="ahm7xmakki.com" || host.endsWith(".ahm7xmakki.com") ||
+          host==="sora.aritek.app" || host.endsWith(".aritek.app") ||
+          host==="cvron.alwaysdata.net" ||
+          host==="modelscope.cn" || host.endsWith(".modelscope.cn") ||
+          host.endsWith(".aliyuncs.com");
+        if(parsedUrl.protocol!=="https:" || !allowedHost) {
+          return res.status(400).json({ok:false,error:"SOURCE_IMAGE_HOST_NOT_ALLOWED"});
         }
-      } catch {}
-    }
-    // Agnes expects raw base64 for inline image input, not a data-URI prefix.
-    if (/^data:image\/[a-z0-9.+-]+;base64,/i.test(source)) {
-      source=source.slice(source.indexOf(",")+1).replace(/\\s+/g,"");
+        let sourceResponse;
+        try {
+          sourceResponse=await fetch(sourceUrl,{headers:{Accept:"image/*"},cache:"no-store",signal:AbortSignal.timeout(20000)});
+        } catch(error) {
+          return res.status(502).json({ok:false,error:"SOURCE_IMAGE_FETCH_FAILED",message:String(error?.message||error)});
+        }
+        if(!sourceResponse.ok) return res.status(400).json({ok:false,error:"SOURCE_IMAGE_FETCH_FAILED",upstreamStatus:sourceResponse.status});
+        const sourceType=(sourceResponse.headers.get("content-type")||"image/jpeg").split(";")[0].toLowerCase();
+        if(!/^image\/(jpeg|png|webp|avif)$/i.test(sourceType)) {
+          return res.status(415).json({ok:false,error:"SOURCE_IMAGE_NOT_SUPPORTED",contentType:sourceType});
+        }
+        sourceBytes=Buffer.from(await sourceResponse.arrayBuffer());
+      } else {
+        const dataMatch=sourceInput.match(/^data:image\/([a-z0-9.+-]+);base64,([\s\S]+)$/i);
+        const rawBase64=dataMatch?dataMatch[2].replace(/\s+/g,""):sourceInput.replace(/^base64,/i,"").replace(/\s+/g,"");
+        if(rawBase64.length<100) return res.status(400).json({ok:false,error:"INVALID_IMAGE_BASE64"});
+        if(Math.ceil(rawBase64.length*3/4)>30*1024*1024) return res.status(413).json({ok:false,error:"SOURCE_IMAGE_TOO_LARGE"});
+        sourceBytes=Buffer.from(rawBase64,"base64");
+      }
+      if(!sourceBytes?.length) return res.status(400).json({ok:false,error:"SOURCE_IMAGE_EMPTY"});
+      if(sourceBytes.length>30*1024*1024) return res.status(413).json({ok:false,error:"SOURCE_IMAGE_TOO_LARGE"});
+      try {
+        source=await sharp(sourceBytes)
+          .rotate()
+          .resize({width:2048,height:2048,fit:"inside",withoutEnlargement:true})
+          .jpeg({quality:86,mozjpeg:true})
+          .toBuffer()
+          .then(buffer=>buffer.toString("base64"));
+      } catch(error) {
+        return res.status(415).json({ok:false,error:"SOURCE_IMAGE_NORMALIZE_FAILED",message:String(error?.message||error)});
+      }
+      if(!source || Math.ceil(source.length*3/4)>5*1024*1024) {
+        return res.status(413).json({ok:false,error:"SOURCE_IMAGE_TOO_LARGE",message:"Не удалось подготовить исходное изображение для Agnes."});
+      }
     }
     const n=Math.max(1,Math.min(4,Number(body.n)||1));
     const generationPrompt=[
