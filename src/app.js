@@ -260,11 +260,31 @@ async function resolveMediaUrl(item){
  }catch{}
  return item.url;
 }
+function imageModelLabel(model){
+ const name=String(model||"").trim();
+ if(name==="Nano Banana 2")return "Nano Banana 2 · T2I";
+ if(name==="GPT Image 2.5")return "GPT Image 2.5 · T2I";
+ if(name==="Agnes Image"||name==="Agnes Image 2.5 Flash")return "Agnes Image · T2I / I2I";
+ if(name==="FLUX Dev")return "FLUX Dev · T2I";
+ if(name==="FLUX Kontext Dev")return "FLUX Kontext Dev · I2I";
+ return name;
+}
 function setComposerAttachment(url){
  const box=$("#composerAttachment"),img=$("#composerAttachmentImage");
  if(!box||!img)return;
- if(url){img.src=url;box.hidden=false}
- else{img.removeAttribute("src");box.hidden=true}
+ const source=String(url||"").trim();
+ if(source){
+  img.alt="Исходное изображение для редактирования";
+  img.style.display="block";
+  img.src=source;
+  box.hidden=false;
+  box.classList.add("has-image");
+ }else{
+  img.removeAttribute("src");
+  img.style.display="none";
+  box.classList.remove("has-image");
+  box.hidden=true;
+ }
 }
 function clearComposerAttachment(){
  referenceImage=null;
@@ -272,7 +292,7 @@ function clearComposerAttachment(){
  setComposerAttachment("");
  if(mode==="images"&&$("#composerModel")) $("#composerModel").value="FLUX Dev";
 }
-function openEditor(url){referenceImage=url;try{sessionStorage.setItem("miyaReferenceImage",referenceImage)}catch{};setComposerAttachment(url);mode="images";$("#composerModel").value="Agnes Image 2.5 Flash";$("#composerRatio").value="auto";const m=modes.images;$("#workspaceEyebrow").textContent=m.eyebrow;$("#workspaceTitle").textContent=m.title;$("#workspaceSubtitle").textContent=m.subtitle;const promptInput=$("#composerInput"); if(promptInput){ promptInput.placeholder=m.placeholder; promptInput.setAttribute("aria-label",m.placeholder); promptInput.classList.remove("prompt-chat","prompt-images","prompt-video","prompt-voice"); promptInput.classList.add("prompt-images"); }$("#composerSendText").textContent=m.send;$("#composerStatus").textContent="Agnes Image 2.5 Flash · исходное изображение готово к редактированию";$(".image-settings").style.display="flex";$("#voiceOptions").style.display="none";$("#voiceOptions").classList.remove("show");$("#videoOptions").style.display="none";$("#videoOptions").classList.remove("show");document.querySelectorAll("[data-mode]").forEach(x=>x.classList.toggle("active",x.dataset.mode==="images"));if(!$("#canvas .result-grid")) renderImageLibrary();$("#composerInput").focus();syncInput()}
+function openEditor(url){referenceImage=url;try{sessionStorage.setItem("miyaReferenceImage",referenceImage)}catch{};setComposerAttachment(url);mode="images";$("#composerModel").value="Agnes Image 2.5 Flash";$("#composerRatio").value="auto";const m=modes.images;$("#workspaceEyebrow").textContent=m.eyebrow;$("#workspaceTitle").textContent=m.title;$("#workspaceSubtitle").textContent=m.subtitle;const promptInput=$("#composerInput"); if(promptInput){ promptInput.placeholder=m.placeholder; promptInput.setAttribute("aria-label",m.placeholder); promptInput.classList.remove("prompt-chat","prompt-images","prompt-video","prompt-voice"); promptInput.classList.add("prompt-images"); }$("#composerSendText").textContent=m.send;$("#composerStatus").textContent="Agnes Image · исходное изображение готово к редактированию";$(".image-settings").style.display="flex";$("#voiceOptions").style.display="none";$("#voiceOptions").classList.remove("show");$("#videoOptions").style.display="none";$("#videoOptions").classList.remove("show");document.querySelectorAll("[data-mode]").forEach(x=>x.classList.toggle("active",x.dataset.mode==="images"));if(!$("#canvas .result-grid")) renderImageLibrary();$("#composerInput").focus();syncInput()}
 async function downloadImage(url){
  try{
   const response=await fetch(jpegImageUrl(url),{mode:"cors"});if(!response.ok)throw new Error("DOWNLOAD_HTTP_"+response.status);
@@ -2077,7 +2097,7 @@ function showLoading(){
   const card=document.createElement("div");card.className="generation-loading"+(referenceImage?" has-upload":" no-upload");
   card.dataset.model=selectedModel;
   card.innerHTML='<div class="generation-progress"><div class="progress-circle is-active"><span class="progress-percent">0%</span></div><div class="progress-copy"><b>Создание изображения</b><span class="progress-model"></span></div></div><div class="generation-progress-bar"><span></span></div>';
-  card.querySelector(".progress-model").textContent=referenceImage?selectedModel+" · загрузка файла…":selectedModel+" · создание…";
+  card.querySelector(".progress-model").textContent=referenceImage?imageModelLabel(selectedModel)+" · загрузка файла…":imageModelLabel(selectedModel)+" · создание…";
   grid.prepend(card);scrollImagesToTop();return;
  }
  const selectedVideoModel=$("#videoModel")?.value||"LTX-2.3 Distilled";
@@ -2103,12 +2123,13 @@ function showImage(url,prompt="",model="FLUX Dev",ratio=""){
  const c=$("#canvas");let grid=c.querySelector(".result-grid");
  if(!grid){c.innerHTML='<div class="result-grid"></div>';grid=c.querySelector(".result-grid")}
  const card=buildMediaCard(item);grid.prepend(card);
- $("#composerStatus").textContent=model+" · готово";
+ $("#composerStatus").textContent=displayModel+" · готово";
 }
 async function generateAgnesImage(prompt){
  if(videoGenerationBusy){}
  showLoading();if($("#composerSend"))$("#composerSend").disabled=true;
  const model="Agnes Image 2.5 Flash";
+ const displayModel=imageModelLabel(model);
  const loader=$("#canvas .generation-loading");
  const ring=loader?.querySelector(".progress-circle");
  const percent=ring?.querySelector(".progress-percent");
@@ -2121,7 +2142,7 @@ async function generateAgnesImage(prompt){
    if(composerProgress)composerProgress.textContent=v+"%";
  };
  try{
-   setProgress(8);$("#composerStatus").textContent=model+" · подключение…";
+   setProgress(8);$("#composerStatus").textContent=displayModel+" · подключение…";
    const ratioChoice=String($("#composerRatio")?.value||"auto");
    let selectedRatio=["1:1","3:4","4:3","16:9","9:16","2:3","3:2","21:9"].includes(ratioChoice)?ratioChoice:"16:9";
    if(ratioChoice==="auto"&&referenceImage){
@@ -2153,7 +2174,7 @@ async function generateAgnesImage(prompt){
    if(!response.ok||!data.imageUrl)throw new Error(String(data.message||data.error||raw||"Agnes Image не вернул изображение").slice(0,500));
    setProgress(100);
    const urls=Array.isArray(data.imageUrls)&&data.imageUrls.length?data.imageUrls:[data.imageUrl];
-   urls.forEach(url=>showImage(url,prompt,model));
+   urls.forEach(url=>showImage(url,prompt,displayModel));
    scrollImagesToTop();
    $("#composerInput").value="";syncInput();
    $("#composerModel").value="Agnes Image 2.5 Flash";
@@ -2195,6 +2216,7 @@ async function generateImage(prompt){
  const ring=loader?.querySelector(".progress-circle");
  const percent=ring?.querySelector(".progress-percent");
  const modelName=selectedModel||"FLUX Dev";
+ const displayModel=imageModelLabel(modelName);
  const usesReferenceImage=Boolean(referenceImage);
  const hasFileUpload=Boolean(referenceImage);
  const composerProgress=$("#composerProgress");
@@ -2215,10 +2237,10 @@ async function generateImage(prompt){
    const step=remaining>45?Math.random()*7+2:remaining>18?Math.random()*3+1:Math.random()*0.8+0.2;
    fakeProgress=Math.min(92,fakeProgress+step);
    setProgress(fakeProgress);
-   if($("#composerStatus"))$("#composerStatus").textContent=modelName+" · создание…";
+   if($("#composerStatus"))$("#composerStatus").textContent=displayModel+" · создание…";
   },900); };
  startFakeProgress();
- $("#composerStatus").textContent=hasFileUpload?modelName+" · загрузка файла…":modelName+" · создание…";
+ $("#composerStatus").textContent=hasFileUpload?displayModel+" · загрузка файла…":displayModel+" · создание…";
  try{
   const payload={
    prompt,
@@ -2265,15 +2287,15 @@ async function generateImage(prompt){
     const p=Math.max(0,Math.min(100,Math.round(e.loaded/e.total*100)));
     fakeProgress=p;
     setProgress(p);
-    if($("#composerStatus"))$("#composerStatus").textContent=modelName+" · загрузка файла "+p+"%";
+    if($("#composerStatus"))$("#composerStatus").textContent=displayModel+" · загрузка файла "+p+"%";
    };
    xhr.upload.onload=()=>{
     if(!hasFileUpload)return;
     fakeProgress=100;
     setProgress(100);
     const modelLabel=loader?.querySelector(".progress-model");
-    if(modelLabel)modelLabel.textContent=modelName+" · файл загружен · создание…";
-    if($("#composerStatus"))$("#composerStatus").textContent=modelName+" · файл загружен · создание…";
+    if(modelLabel)modelLabel.textContent=displayModel+" · файл загружен · создание…";
+    if($("#composerStatus"))$("#composerStatus").textContent=displayModel+" · файл загружен · создание…";
     if(fakeTimer){clearInterval(fakeTimer);fakeTimer=null;}
     fakeProgress=Math.max(fakeProgress,72);
     setProgress(fakeProgress);
@@ -2307,13 +2329,13 @@ async function generateImage(prompt){
   if(loader){
    setProgress(100);
    const modelLabel=loader.querySelector(".progress-model");
-   if(modelLabel)modelLabel.textContent=actualModel+" · готово";
+   if(modelLabel)modelLabel.textContent=imageModelLabel(actualModel)+" · готово";
   }
   const generatedUrls=Array.isArray(data.imageUrls)&&data.imageUrls.length
    ? data.imageUrls
    : data.imageUrl?[data.imageUrl]:[];
   if(!generatedUrls.length)throw new Error("Сервер не вернул готовое изображение");
-  generatedUrls.forEach((url)=>showImage(url,prompt,actualModel,useCvronImage?selectedRatio:""));
+  generatedUrls.forEach((url)=>showImage(url,prompt,imageModelLabel(actualModel),useCvronImage?selectedRatio:""));
   scrollImagesToTop();
   $("#composerInput").value="";syncInput();
   $("#composerModel").value=modelName;
@@ -3859,8 +3881,8 @@ $("#composerModel")?.addEventListener("change",()=>{
   }else if(model==="Agnes Image 2.5 Flash"){
     $("#composerRatio").value="16:9";
     $("#composerStatus").textContent=referenceImage
-      ?"Agnes Image 2.5 Flash · изображение прикреплено · готово к редактированию"
-      :"Agnes Image 2.5 Flash · готов к созданию";
+      ?"Agnes Image · изображение прикреплено · готово к редактированию"
+      :"Agnes Image · готов к созданию";
   }else{
     $("#composerRatio").value="16:9";
     $("#composerStatus").textContent=referenceImage
