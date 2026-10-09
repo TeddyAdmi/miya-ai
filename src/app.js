@@ -2283,8 +2283,8 @@ async function generateImage(prompt){
         model:modelName,
         ratio:selectedRatio,
         quality:selectedQuality,
-        imageUrl:referenceImage && !referenceImage.startsWith("data:image/") ? referenceImage : "",
-        imageBase64:referenceImage && referenceImage.startsWith("data:image/") ? referenceImage : ""
+        imageUrl:modelName === "Nano Banana 2" ? "" : (referenceImage && !referenceImage.startsWith("data:image/") ? referenceImage : ""),
+        imageBase64:modelName === "Nano Banana 2" ? "" : (referenceImage && referenceImage.startsWith("data:image/") ? referenceImage : "")
        })
      : JSON.stringify({
         mode:"image",provider:"ahm7",prompt,model:modelName,
