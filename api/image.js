@@ -668,37 +668,81 @@ module.exports = async function imageHandler(req, res) {
       });
     }
 
-    // Kontext keeps the existing proven raw-base64 /api/pti contract.
-    let sourceBase64 = imageBase64;
-    if (imageUrl) {
-      const source = await fetch(imageUrl, { headers: { Accept: "image/*" }, signal: AbortSignal.timeout(15000) });
-      if (!source.ok) {
-        return res.status(400).json({
-          ok: false,
-          error: "SOURCE_IMAGE_FETCH_FAILED",
-          message: "Не удалось получить исходное изображение (HTTP " + source.status + ")."
-        });
+    // Normalize source images before sending them to AHM7. Generated PNGs can
+    // exceed the upstream size limit, and Miya proxy URLs must be unwrapped first.
+    const unwrapMiyaImageUrl = value => {
+      const raw=String(value||"").trim();
+      if(!raw)return "";
+      try {
+        const parsed=new URL(raw,"https://miya-studio.vercel.app");
+        const ownHost=parsed.hostname.toLowerCase()==="miya-studio.vercel.app" ||
+          parsed.hostname.toLowerCase()==="www.miya-studio.vercel.app";
+        if(ownHost && parsed.pathname==="/api/image-jpeg") {
+          const original=parsed.searchParams.get("url")||"";
+          if(/^https:\/\//i.test(original))return original;
+        }
+        if(parsed.protocol==="https:")return parsed.toString();
+      }catch{}
+      return "";
+    };
+    const allowedImageHost = hostname => {
+      const host=String(hostname||"").toLowerCase();
+      return host==="overchat.s3.eu-north-1.amazonaws.com" ||
+        host==="access.vheer.com" || host.endsWith(".access.vheer.com") ||
+        host==="platform-outputs.agnes-ai.space" ||
+        host==="ahm7xmakki.com" || host.endsWith(".ahm7xmakki.com") ||
+        host==="sora.aritek.app" || host.endsWith(".aritek.app") ||
+        host==="cvron.alwaysdata.net" ||
+        host==="modelscope.cn" || host.endsWith(".modelscope.cn") ||
+        host.endsWith(".aliyuncs.com");
+    };
+
+    let sourceBytes=null;
+    let sourceMime="image/jpeg";
+    if(imageUrl) {
+      const sourceUrl=unwrapMiyaImageUrl(imageUrl);
+      if(!sourceUrl) return res.status(400).json({ok:false,error:"INVALID_SOURCE_IMAGE_URL"});
+      let parsedSource;
+      try{parsedSource=new URL(sourceUrl)}catch{return res.status(400).json({ok:false,error:"INVALID_SOURCE_IMAGE_URL"})}
+      if(parsedSource.protocol!=="https:" || !allowedImageHost(parsedSource.hostname)) {
+        return res.status(400).json({ok:false,error:"SOURCE_IMAGE_HOST_NOT_ALLOWED"});
       }
-      const bytes = Buffer.from(await source.arrayBuffer());
-      if (bytes.length > 3.5 * 1024 * 1024) {
-        return res.status(413).json({ ok: false, error: "SOURCE_IMAGE_TOO_LARGE" });
+      let sourceResponse;
+      try {
+        sourceResponse=await fetch(sourceUrl,{headers:{Accept:"image/*"},cache:"no-store",signal:AbortSignal.timeout(20000)});
+      } catch(error) {
+        return res.status(502).json({ok:false,error:"SOURCE_IMAGE_FETCH_FAILED",message:String(error?.message||error)});
       }
-      const type = source.headers.get("content-type") || "image/jpeg";
-      const mime = /^image\/(jpeg|png|webp)$/i.test(type) ? type.split(";")[0] : "image/jpeg";
-      sourceBase64 = "data:" + mime + ";base64," + bytes.toString("base64");
+      if(!sourceResponse.ok) return res.status(400).json({ok:false,error:"SOURCE_IMAGE_FETCH_FAILED",upstreamStatus:sourceResponse.status});
+      sourceMime=(sourceResponse.headers.get("content-type")||"image/jpeg").split(";")[0].toLowerCase();
+      if(!/^image\/(jpeg|png|webp|avif)$/i.test(sourceMime)) return res.status(415).json({ok:false,error:"SOURCE_IMAGE_NOT_SUPPORTED",contentType:sourceMime});
+      sourceBytes=Buffer.from(await sourceResponse.arrayBuffer());
+    } else {
+      const dataInput=String(imageBase64||"").trim();
+      const dataMatch=dataInput.match(/^data:image\/([a-z0-9.+-]+);base64,([\s\S]+)$/i);
+      const rawBase64=dataMatch?dataMatch[2].replace(/\s+/g,""):dataInput.replace(/^base64,/i,"").replace(/\s+/g,"");
+      if(rawBase64.length<100) return res.status(400).json({ok:false,error:"INVALID_IMAGE_BASE64"});
+      if(Math.ceil(rawBase64.length*3/4)>30*1024*1024) return res.status(413).json({ok:false,error:"SOURCE_IMAGE_TOO_LARGE"});
+      sourceBytes=Buffer.from(rawBase64,"base64");
+      if(dataMatch) sourceMime="image/"+dataMatch[1].toLowerCase();
     }
 
-    const match = String(sourceBase64 || "").match(/^data:image\/[^;]+;base64,(.+)$/i);
-    const rawBase64 = match
-      ? match[1].replace(/\s+/g, "")
-      : String(sourceBase64 || "").replace(/^base64,/i, "").replace(/\s+/g, "");
+    if(!sourceBytes?.length) return res.status(400).json({ok:false,error:"SOURCE_IMAGE_EMPTY"});
+    if(sourceBytes.length>30*1024*1024) return res.status(413).json({ok:false,error:"SOURCE_IMAGE_TOO_LARGE"});
 
-    if (rawBase64.length < 100) {
-      return res.status(400).json({ ok: false, error: "INVALID_IMAGE_BASE64" });
+    let sourceBase64="";
+    try {
+      const normalized=await sharp(sourceBytes)
+        .rotate()
+        .resize({width:2048,height:2048,fit:"inside",withoutEnlargement:true})
+        .jpeg({quality:85,mozjpeg:true})
+        .toBuffer();
+      sourceBase64=normalized.toString("base64");
+    } catch(error) {
+      return res.status(415).json({ok:false,error:"SOURCE_IMAGE_NORMALIZE_FAILED",message:String(error?.message||error)});
     }
-
-    if (Math.ceil(rawBase64.length * 3 / 4) > 3.5 * 1024 * 1024) {
-      return res.status(413).json({ ok: false, error: "SOURCE_IMAGE_TOO_LARGE" });
+    if(!sourceBase64 || Math.ceil(sourceBase64.length*3/4)>3.5*1024*1024) {
+      return res.status(413).json({ok:false,error:"SOURCE_IMAGE_TOO_LARGE",message:"Не удалось уменьшить исходное изображение до размера, допустимого для Flux Kontext."});
     }
 
     // Keep the proven Kontext contract: send the user's edit prompt unchanged.
