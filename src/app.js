@@ -3889,11 +3889,17 @@ $("#voicePitch")?.addEventListener("input",e=>$("#voicePitchValue").textContent=
 $("#voiceCopyPrompt")?.addEventListener("click",copyComposerPrompt);
 $("#voiceTrash")?.addEventListener("click",()=>{$("#composerInput").value="";syncInput();$("#composerInput").focus();$("#composerStatus").textContent="Svetlana · Female · Russia"});
 $("#composerTrash")?.addEventListener("click",()=>{
-  $("#composerInput").value="";
-  clearComposerAttachment();
+  // This control clears only the prompt text. It must not change the selected
+  // model, detach an image, or overwrite the status of an active generation.
+  const input=$("#composerInput");
+  if(input)input.value="";
   syncInput();
-  $("#composerInput").focus();
-  $("#composerStatus").textContent=modes[mode]?.status||"Готово";
+  input?.focus();
+  if(!$("#composerSend")?.disabled){
+    const model=String($("#composerModel")?.value||"").trim();
+    const status=$("#composerStatus");
+    if(status)status.textContent=model ? model+" · готов к созданию" : (modes[mode]?.status||"Готово");
+  }
 });
 $("#composerAttachmentRemove")?.addEventListener("click",()=>clearComposerAttachment());
 
