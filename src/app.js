@@ -3854,7 +3854,13 @@ composerInput.addEventListener("paste",e=>{
   const previewUrl=URL.createObjectURL(file);
   referenceImage=previewUrl;
   setComposerAttachment(previewUrl);
-  $("#composerStatus").textContent="Изображение вставлено · готово";
+  if(mode==="images"){
+    $("#composerModel").value="Agnes Image 2.5 Flash";
+    $("#composerRatio").value="auto";
+    $("#composerStatus").textContent="Agnes Image · исходное изображение готово к редактированию";
+  }else{
+    $("#composerStatus").textContent="Изображение вставлено · готово";
+  }
   syncInput();
 });
 composerInput.addEventListener("keydown",e=>{if(e.key==="Enter"&&!e.shiftKey){e.preventDefault();$("#composerSend").click()}});
@@ -3960,9 +3966,11 @@ async function attachReferenceFile(file){
     try{sessionStorage.setItem("miyaReferenceImage",referenceImage)}catch{}
     setComposerAttachment(referenceImage);
     if(mode==="images"){
-      $("#composerModel").value="FLUX Kontext Dev";
+      // In Images, every newly uploaded reference starts the Agnes edit flow.
+      // Keep this change local to the UI; generation-only model flows are untouched.
+      $("#composerModel").value="Agnes Image 2.5 Flash";
       $("#composerRatio").value="auto";
-      $("#composerStatus").textContent="FLUX Kontext Dev · готово к редактированию";
+      $("#composerStatus").textContent="Agnes Image · исходное изображение готово к редактированию";
     }else if(mode==="video"){
       $("#composerStatus").textContent=String($("#videoModel")?.value||"LTX-2.3 Distilled")+" · изображение готово";
     }else{
