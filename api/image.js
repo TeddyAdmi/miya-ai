@@ -478,13 +478,33 @@ module.exports = async function imageHandler(req, res) {
       }
 
       try {
-        // Keep the original prompt untouched. Only pass the selected ratio;
-        // extra size aliases and synthetic prompt instructions can change upstream
-        // model behavior and were not part of the previously working request.
+        // Send explicit canvas dimensions as well as the ratio. The upstream
+        // endpoint has previously ignored ratio-only requests and returned squares.
+        const nativeSize = {
+          "1:1":  {width:1024,height:1024},
+          "16:9": {width:1376,height:768},
+          "9:16": {width:768,height:1376},
+          "3:4":  {width:896,height:1200},
+          "4:3":  {width:1200,height:896},
+          "2:3":  {width:848,height:1264},
+          "3:2":  {width:1264,height:848},
+          "21:9": {width:1584,height:672}
+        }[cvronRatio] || {width:1024,height:1024};
+
+        // Keep the user's wording intact, while making the fidelity requirement
+        // explicit so the model does not invent wardrobe, accessories, or props.
+        const finalPrompt = cvronPrompt +
+          "\\n\\nPROMPT FIDELITY: Follow the current prompt exactly. Do not invent or add specific clothing items, accessories, bags, jewelry, or props that are not requested. Preserve any clothing and appearance explicitly described by the user. Do not carry over details from previous generations. Do not change the scene or reinterpret the request.";
+
         const target =
           endpoint +
-          "?prompt=" + encodeURIComponent(cvronPrompt) +
-          "&ratio=" + encodeURIComponent(cvronRatio);
+          "?prompt=" + encodeURIComponent(finalPrompt) +
+          "&ratio=" + encodeURIComponent(cvronRatio) +
+          "&aspect_ratio=" + encodeURIComponent(cvronRatio) +
+          "&size=" + encodeURIComponent(cvronRatio) +
+          "&width=" + nativeSize.width +
+          "&height=" + nativeSize.height +
+          "&resolution=1K";
         let upstream;
         let raw = "";
         let data = {};
