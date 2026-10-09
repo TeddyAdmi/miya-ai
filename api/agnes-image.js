@@ -26,7 +26,7 @@ module.exports = async function handler(req, res) {
     }
     // Agnes expects raw base64 for inline image input, not a data-URI prefix.
     if (/^data:image\/[a-z0-9.+-]+;base64,/i.test(source)) {
-      source=source.slice(source.indexOf(",")+1).replace(/\\s+/g,"");
+      source=source.slice(source.indexOf(",")+1).replace(/\s+/g,"");
     }
     const n=Math.max(1,Math.min(4,Number(body.n)||1));
     const generationPrompt=[
@@ -63,14 +63,14 @@ module.exports = async function handler(req, res) {
       try{
         const sharp=require("sharp");
         let sourceBuffer=null;
-        if(/^https?:\\/\\//i.test(source)){
+        if(/^https?:\/\//i.test(source)){
           const sourceResponse=await fetch(source,{signal:AbortSignal.timeout(12000)});
           if(sourceResponse.ok){
             const sourceBytes=await sourceResponse.arrayBuffer();
             if(sourceBytes.byteLength>0&&sourceBytes.byteLength<=25*1024*1024)sourceBuffer=Buffer.from(sourceBytes);
           }
         }else{
-          const base64=source.replace(/^data:image\\/[a-z0-9.+-]+;base64,/i,"").replace(/\\s+/g,"");
+          const base64=source.replace(/^data:image\/[a-z0-9.+-]+;base64,/i,"").replace(/\s+/g,"");
           if(base64.length>0&&base64.length<=35*1024*1024)sourceBuffer=Buffer.from(base64,"base64");
         }
         if(sourceBuffer){
