@@ -1,7 +1,7 @@
 import { Client, handle_file } from "https://cdn.jsdelivr.net/npm/@gradio/client/dist/index.min.js";
 const modes={
  chat:{title:"Твоя AI-комната",eyebrow:"AI CHAT",subtitle:"Общайся с Miya, придумывай идеи и управляй созданием контента.",placeholder:"Напиши сообщение...",send:"Отправить",status:"AI Chat готов"},
- images:{title:"Картинки",eyebrow:"КАРТИНКИ",subtitle:"Создавай изображения с нуля или загружай исходник и описывай изменения.",placeholder:"Опиши картинку или что изменить в загруженном изображении...",send:"Создать",status:"FLUX Dev · создание и редактирование"},
+ images:{title:"Картинки",eyebrow:"КАРТИНКИ",subtitle:"Создавай изображения с нуля или загружай исходник и описывай изменения.",placeholder:"Опиши картинку или что изменить в загруженном изображении...",send:"Создать",status:"Nano Banana 2 · создание изображения"},
  video:{title:"Видео",eyebrow:"ВИДЕО",subtitle:"Создавай короткие видео по сцене, действиям и движению — со звуком.",placeholder:"Опиши сцену, действия персонажей, движение камеры и атмосферу...",send:"Создать видео",status:"OmegaTech T2V · 16:9 · 5 сек"},
 voice:{title:"Голос",eyebrow:"ГОЛОС",subtitle:"Превращай текст в естественную речь с мужскими и женскими голосами.",placeholder:"Введите текст для озвучки...",send:"Создать голос",status:"Svetlana · Female · Russia"}
 };
@@ -290,7 +290,7 @@ function clearComposerAttachment(){
  referenceImage=null;
  chatAttachmentFile=null;
  setComposerAttachment("");
- if(mode==="images"&&$("#composerModel")) $("#composerModel").value="FLUX Dev";
+ if(mode==="images"&&$("#composerModel")) $("#composerModel").value="Nano Banana 2";
 }
 function openEditor(url){referenceImage=url;try{sessionStorage.setItem("miyaReferenceImage",referenceImage)}catch{};setComposerAttachment(url);mode="images";$("#composerModel").value="Agnes Image 2.5 Flash";$("#composerRatio").value="auto";const m=modes.images;$("#workspaceEyebrow").textContent=m.eyebrow;$("#workspaceTitle").textContent=m.title;$("#workspaceSubtitle").textContent=m.subtitle;const promptInput=$("#composerInput"); if(promptInput){ promptInput.placeholder=m.placeholder; promptInput.setAttribute("aria-label",m.placeholder); promptInput.classList.remove("prompt-chat","prompt-images","prompt-video","prompt-voice"); promptInput.classList.add("prompt-images"); }$("#composerSendText").textContent=m.send;$("#composerStatus").textContent="Agnes Image · исходное изображение готово к редактированию";$(".image-settings").style.display="flex";$("#voiceOptions").style.display="none";$("#voiceOptions").classList.remove("show");$("#videoOptions").style.display="none";$("#videoOptions").classList.remove("show");document.querySelectorAll("[data-mode]").forEach(x=>x.classList.toggle("active",x.dataset.mode==="images"));if(!$("#canvas .result-grid")) renderImageLibrary();$("#composerInput").focus();syncInput()}
 async function downloadImage(url){
@@ -346,7 +346,14 @@ function confirmDeleteMedia(item,card){
   modal.className="delete-confirm-modal";
   modal.innerHTML='<div class="delete-confirm-backdrop"></div><div class="delete-confirm-dialog" role="dialog" aria-modal="true" aria-labelledby="deleteConfirmTitle"><div class="delete-confirm-loader"><div class="delete-confirm-ring"><span class="delete-confirm-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M9 7V4h6v3M7 7l1 13h8l1-13M10 11v5M14 11v5"/></svg></span></div></div><div class="delete-confirm-copy"><div class="delete-confirm-eyebrow">MIYA STUDIO</div><h3 id="deleteConfirmTitle">Удалить материал?</h3><p>Это действие удалит выбранный материал из истории и библиотеки.</p></div><div class="delete-confirm-actions"><button type="button" class="delete-confirm-cancel">Отмена</button><button type="button" class="delete-confirm-submit"><span class="action-svg"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M9 7V4h6v3M7 7l1 13h8l1-13"/></svg></span><span>Удалить</span></button></div></div></div>';
   document.body.appendChild(modal);
-  const close=()=>modal.classList.remove("open");
+  const close=()=>{
+    modal.classList.remove("open");
+    if(modal.__composerDisplaySaved){
+      const composer=$("#composer");
+      if(composer)composer.style.display=modal.__composerPreviousDisplay||"";
+      modal.__composerDisplaySaved=false;
+    }
+  };
   modal.querySelector(".delete-confirm-backdrop").onclick=close;
   modal.querySelector(".delete-confirm-cancel").onclick=close;
   modal.querySelector(".delete-confirm-submit").onclick=()=>{
@@ -356,6 +363,14 @@ function confirmDeleteMedia(item,card){
   };
  }
  modal.__deleteTarget={item,card};
+ if(!modal.classList.contains("open")){
+   const composer=$("#composer");
+   if(composer){
+     modal.__composerPreviousDisplay=composer.style.display;
+     modal.__composerDisplaySaved=true;
+     composer.style.display="none";
+   }
+ }
  modal.classList.add("open");
  requestAnimationFrame(()=>modal.querySelector(".delete-confirm-cancel")?.focus());
 }
@@ -834,7 +849,7 @@ function buildMediaCard(item,{video=false}={}){
   const editBtn=document.createElement("button");editBtn.type="button";editBtn.innerHTML='<span class="action-icon action-svg"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m4 16.5-.8 3.3 3.3-.8L18.7 6.8a2.2 2.2 0 0 1 3.1 3.1L6.5 19l-3.3.8.8-3.3Z"/><path d="m14.2 5.8 4 4"/></svg></span><span>Изменить картинку</span>';editBtn.onclick=async e=>{e.stopPropagation();closeAllMediaMenus();const source=await mediaItemToReference(item,card,true);const preview=card?.querySelector("img")?.currentSrc||card?.querySelector("img")?.src||item?.url||"";openEditor(source||preview)};
   const videoBtn=document.createElement("button");videoBtn.type="button";videoBtn.innerHTML='<span class="action-icon action-svg"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="5" width="17" height="14" rx="2"/><path d="m10 9 5 3-5 3Z"/></svg></span><span>Сделать видео</span>';videoBtn.onclick=async e=>{e.stopPropagation();closeAllMediaMenus();openVideoFromImage(await mediaItemToReference(item))};
   const copyBtn=document.createElement("button");copyBtn.type="button";copyBtn.innerHTML='<span class="action-icon action-svg"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M15 9V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v7a2 2 0 0 0 2 2h3"/></svg></span><span>Копировать</span>';copyBtn.onclick=async e=>{e.stopPropagation();closeAllMediaMenus();try{const response=await fetch(item.url,{headers:{Accept:"image/*"}});if(!response.ok)throw new Error();const blob=await response.blob();if(!navigator.clipboard?.write||!window.ClipboardItem)throw new Error();const bitmap=await createImageBitmap(blob);const canvas=document.createElement("canvas");canvas.width=bitmap.width;canvas.height=bitmap.height;const ctx=canvas.getContext("2d");ctx.fillStyle="#fff";ctx.fillRect(0,0,canvas.width,canvas.height);ctx.drawImage(bitmap,0,0);bitmap.close();const jpeg=await new Promise(resolve=>canvas.toBlob(resolve,"image/jpeg",.95));if(!jpeg)throw new Error();await navigator.clipboard.write([new ClipboardItem({"image/jpeg":jpeg})]);toast("JPG скопирован")}catch{toast("Не удалось скопировать картинку")}};
-  const downloadBtn=document.createElement("button");downloadBtn.type="button";downloadBtn.innerHTML='<span class="action-icon action-svg"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4v11M8 11l4 4 4-4M5 19h14"/></svg></span><span>Скачать</span>';downloadBtn.onclick=e=>{e.stopPropagation();closeAllMediaMenus();showDownloadMenu(item,downloadBtn)};
+  const downloadBtn=document.createElement("button");downloadBtn.type="button";downloadBtn.innerHTML='<span class="action-icon action-svg"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4v11M8 11l4 4 4-4M5 19h14"/></svg></span><span>Скачать</span>';downloadBtn.onclick=e=>{e.stopPropagation();closeAllMediaMenus();downloadImage(item.url)};
   const deleteBtn=document.createElement("button");deleteBtn.type="button";deleteBtn.innerHTML='<span class="action-icon action-svg"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M9 7V4h6v3M7 7l1 13h8l1-13M10 11v5M14 11v5"/></svg></span><span>Удалить</span>';deleteBtn.onclick=e=>{e.stopPropagation();closeAllMediaMenus();confirmDeleteMedia(item,card)};
   menu.append(promptBtn,upscaleMenuBtn,editBtn,videoBtn,copyBtn,downloadBtn,deleteBtn);
  }else{
@@ -3763,7 +3778,7 @@ function setMode(next,render=true){
    referenceImage=referenceImage||null;
    renderImageLibrary();
    const imageModel=$("#composerModel");
-   if(imageModel&&!referenceImage)imageModel.value="FLUX Dev";
+   if(imageModel&&!referenceImage)imageModel.value="Nano Banana 2";
    const ratio=$("#composerRatio");
    if(ratio&&!referenceImage)ratio.value="16:9";
  }else if(target==="voice"){
@@ -3822,12 +3837,25 @@ $("#composerInput").addEventListener("input",()=>{
   syncInput();
 });
 const composerInput=$("#composerInput");
-composerInput.addEventListener("contextmenu",()=>{
-  // Close the prompt viewer when the user opens the browser paste menu.
-  $("#mediaPromptModal")?.classList.remove("open");
-});
-composerInput.addEventListener("paste",()=>{
-  $("#mediaPromptModal")?.classList.remove("open");
+const closeMediaPrompt=()=>$("#mediaPromptModal")?.classList.remove("open");
+composerInput.addEventListener("pointerdown",closeMediaPrompt);
+composerInput.addEventListener("focus",closeMediaPrompt);
+composerInput.addEventListener("contextmenu",closeMediaPrompt);
+composerInput.addEventListener("paste",e=>{
+  closeMediaPrompt();
+  // Browsers expose clipboard images as file items. Attach them to the plus area
+  // instead of letting a right-click paste silently do nothing in the textarea.
+  const items=Array.from(e.clipboardData?.items||[]);
+  const imageItem=items.find(item=>item.kind==="file"&&/^image\//i.test(item.type||""));
+  const file=imageItem?.getAsFile();
+  if(!file)return;
+  e.preventDefault();
+  chatAttachmentFile=file;
+  const previewUrl=URL.createObjectURL(file);
+  referenceImage=previewUrl;
+  setComposerAttachment(previewUrl);
+  $("#composerStatus").textContent="Изображение вставлено · готово";
+  syncInput();
 });
 composerInput.addEventListener("keydown",e=>{if(e.key==="Enter"&&!e.shiftKey){e.preventDefault();$("#composerSend").click()}});
 $("#composerSend").addEventListener("click",async()=>{
