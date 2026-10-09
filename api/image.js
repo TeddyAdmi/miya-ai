@@ -492,10 +492,7 @@ module.exports = async function imageHandler(req, res) {
         const finalPrompt = requestedModel === "GPT Image 2.5"
           ? cvronPrompt + "\n\nOUTPUT FORMAT: Generate the complete image natively in exactly " +
             cvronRatio + " aspect ratio. Compose the entire scene for this canvas from the beginning. Do not crop, trim, zoom, cut off, or remove any part of the scene or subjects. Fill the requested canvas naturally."
-          : requestedModel === "Nano Banana 2"
-            ? cvronPrompt +
-              "\n\nPROMPT FIDELITY: Treat this as a completely independent image request. Follow only the details explicitly stated in the current prompt; do not carry over, remember, or reuse characters' clothing, bags, backpacks, briefcases, accessories, props, poses, or composition from any previous generation. Do not invent extra items or clothing that the user did not request. Keep the scene simple and faithful to the current description. Make objects interact naturally with the character: if a character is looking at a phone, the phone screen should face the character unless the prompt explicitly asks for a different orientation."
-            : cvronPrompt;
+          : cvronPrompt;
 
         const target =
           endpoint +
