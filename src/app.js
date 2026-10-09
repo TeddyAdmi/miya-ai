@@ -2217,12 +2217,6 @@ async function generateImage(prompt){
  const selectedModel=String($("#composerModel")?.value||"").trim();
  const useAgnesImage=/^Agnes Image/i.test(selectedModel);
  const useCvronImage=/^(?:Nano Banana 2|GPT Image 2\.5)$/i.test(selectedModel);
- // Nano Banana and GPT Image are generation-only models in Miya. If a source
- // image is attached, route the edit through Agnes instead of CVRON image-to-image.
- if(referenceImage && useCvronImage){
-  $("#composerModel").value="Agnes Image 2.5 Flash";
-  return generateAgnesImage(prompt);
- }
  if(useAgnesImage){
   return generateAgnesImage(prompt);
  }
@@ -2283,8 +2277,8 @@ async function generateImage(prompt){
         model:modelName,
         ratio:selectedRatio,
         quality:selectedQuality,
-        imageUrl:modelName === "Nano Banana 2" ? "" : (referenceImage && !referenceImage.startsWith("data:image/") ? referenceImage : ""),
-        imageBase64:modelName === "Nano Banana 2" ? "" : (referenceImage && referenceImage.startsWith("data:image/") ? referenceImage : "")
+        imageUrl:referenceImage && !referenceImage.startsWith("data:image/") ? referenceImage : "",
+        imageBase64:referenceImage && referenceImage.startsWith("data:image/") ? referenceImage : ""
        })
      : JSON.stringify({
         mode:"image",provider:"ahm7",prompt,model:modelName,
