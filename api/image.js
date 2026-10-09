@@ -478,32 +478,28 @@ module.exports = async function imageHandler(req, res) {
       }
 
       try {
-        // Restore CVRON image-to-image for edits while keeping generation prompts untouched.
-        const rawSourceImage = typeof body.imageUrl === "string" ? body.imageUrl.trim() : "";
-        let sourceImageUrl = "";
-        if (/^https?:\/\//i.test(rawSourceImage) || rawSourceImage.startsWith("/api/image-jpeg?")) {
-          try {
-            const parsedSource = new URL(rawSourceImage, "https://miya-studio.vercel.app");
-            const ownHost = parsedSource.hostname.toLowerCase() === "miya-studio.vercel.app" ||
-              parsedSource.hostname.toLowerCase() === "www.miya-studio.vercel.app";
-            if (ownHost && parsedSource.pathname === "/api/image-jpeg") {
-              const unwrappedSource = parsedSource.searchParams.get("url") || "";
-              if (/^https?:\/\//i.test(unwrappedSource)) sourceImageUrl = unwrappedSource;
-            } else if (/^https?:\/\//i.test(rawSourceImage)) {
-              sourceImageUrl = rawSourceImage;
-            }
-          } catch {}
-        }
+        // Keep the original prompt untouched. Send the selected canvas ratio and
+        // explicit dimensions to CVRON; never post-process a square into a wide image.
+        const nativeSize = {
+          "1:1":  {width:1024,height:1024},
+          "16:9": {width:1376,height:768},
+          "9:16": {width:768,height:1376},
+          "3:4":  {width:896,height:1200},
+          "4:3":  {width:1200,height:896},
+          "2:3":  {width:848,height:1264},
+          "3:2":  {width:1264,height:848},
+          "21:9": {width:1584,height:672}
+        }[cvronRatio] || {width:1024,height:1024};
 
-        const isEdit = Boolean(sourceImageUrl);
-        const requestEndpoint = isEdit
-          ? "https://cvron.alwaysdata.net/cvronai/image2image.php"
-          : endpoint;
-        const target = requestEndpoint +
+        const target =
+          endpoint +
           "?prompt=" + encodeURIComponent(cvronPrompt) +
-          (isEdit
-            ? "&image_url=" + encodeURIComponent(sourceImageUrl)
-            : "&ratio=" + encodeURIComponent(cvronRatio));
+          "&ratio=" + encodeURIComponent(cvronRatio) +
+          "&aspect_ratio=" + encodeURIComponent(cvronRatio) +
+          "&size=" + encodeURIComponent(cvronRatio) +
+          "&width=" + nativeSize.width +
+          "&height=" + nativeSize.height +
+          "&resolution=1K";
         let upstream;
         let raw = "";
         let data = {};
@@ -563,12 +559,7 @@ module.exports = async function imageHandler(req, res) {
           });
         }
 
-        const outputImageUrl = isEdit
-          ? imageUrl
-          : requestedModel === "GPT Image 2.5"
-            ? imageUrl
-            : "/api/image-jpeg?url=" + encodeURIComponent(imageUrl) +
-              "&ratio=" + encodeURIComponent(cvronRatio);
+        const outputImageUrl = imageUrl;
 
         return res.status(200).json({
           ok:true,
@@ -581,13 +572,13 @@ module.exports = async function imageHandler(req, res) {
           count:1,
           meta:{
             free:true,
-            endpoint:requestEndpoint,
+            endpoint,
             requestedRatio:cvronRatio,
             native:true,
             noCrop:true,
             enhanced:false,
-            edit:isEdit,
-            sourceImageUrl:sourceImageUrl
+            edit:false,
+            sourceImageUrl:""
           }
         });
       } catch (error) {
