@@ -756,7 +756,7 @@ module.exports = async function imageHandler(req, res) {
       body: JSON.stringify({
         prompt: editPrompt,
         ratio: ratio === "1:1" ? "auto" : ratio,
-        imageBase64: rawBase64
+        imageBase64: sourceBase64
       }),
       signal: AbortSignal.timeout(45000)
     });
