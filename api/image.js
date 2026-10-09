@@ -478,12 +478,32 @@ module.exports = async function imageHandler(req, res) {
       }
 
       try {
-        // Preserve the original prompt and selected ratio; do not append model instructions
-        // or send extra dimension aliases.
-        const target =
-          endpoint +
+        // Restore CVRON image-to-image for edits while keeping generation prompts untouched.
+        const rawSourceImage = typeof body.imageUrl === "string" ? body.imageUrl.trim() : "";
+        let sourceImageUrl = "";
+        if (/^https?:\/\//i.test(rawSourceImage) || rawSourceImage.startsWith("/api/image-jpeg?")) {
+          try {
+            const parsedSource = new URL(rawSourceImage, "https://miya-studio.vercel.app");
+            const ownHost = parsedSource.hostname.toLowerCase() === "miya-studio.vercel.app" ||
+              parsedSource.hostname.toLowerCase() === "www.miya-studio.vercel.app";
+            if (ownHost && parsedSource.pathname === "/api/image-jpeg") {
+              const unwrappedSource = parsedSource.searchParams.get("url") || "";
+              if (/^https?:\/\//i.test(unwrappedSource)) sourceImageUrl = unwrappedSource;
+            } else if (/^https?:\/\//i.test(rawSourceImage)) {
+              sourceImageUrl = rawSourceImage;
+            }
+          } catch {}
+        }
+
+        const isEdit = Boolean(sourceImageUrl);
+        const requestEndpoint = isEdit
+          ? "https://cvron.alwaysdata.net/cvronai/image2image.php"
+          : endpoint;
+        const target = requestEndpoint +
           "?prompt=" + encodeURIComponent(cvronPrompt) +
-          "&ratio=" + encodeURIComponent(cvronRatio);
+          (isEdit
+            ? "&image_url=" + encodeURIComponent(sourceImageUrl)
+            : "&ratio=" + encodeURIComponent(cvronRatio));
         let upstream;
         let raw = "";
         let data = {};
@@ -543,10 +563,12 @@ module.exports = async function imageHandler(req, res) {
           });
         }
 
-        const outputImageUrl = requestedModel === "GPT Image 2.5"
+        const outputImageUrl = isEdit
           ? imageUrl
-          : "/api/image-jpeg?url=" + encodeURIComponent(imageUrl) +
-            "&ratio=" + encodeURIComponent(cvronRatio);
+          : requestedModel === "GPT Image 2.5"
+            ? imageUrl
+            : "/api/image-jpeg?url=" + encodeURIComponent(imageUrl) +
+              "&ratio=" + encodeURIComponent(cvronRatio);
 
         return res.status(200).json({
           ok:true,
@@ -559,12 +581,13 @@ module.exports = async function imageHandler(req, res) {
           count:1,
           meta:{
             free:true,
-            endpoint,
+            endpoint:requestEndpoint,
             requestedRatio:cvronRatio,
             native:true,
             noCrop:true,
             enhanced:false,
-            sourceImageUrl:imageUrl
+            edit:isEdit,
+            sourceImageUrl:sourceImageUrl
           }
         });
       } catch (error) {
