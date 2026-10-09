@@ -2352,6 +2352,12 @@ async function generateImage(prompt){
   if(!generatedUrls.length)throw new Error("Сервер не вернул готовое изображение");
   generatedUrls.forEach((url)=>showImage(url,prompt,imageModelLabel(actualModel),useCvronImage?selectedRatio:""));
   scrollImagesToTop();
+  if(modelName === "Nano Banana 2"){
+   referenceImage=null;
+   chatAttachmentFile=null;
+   try{sessionStorage.removeItem("miyaReferenceImage")}catch{}
+   setComposerAttachment("");
+  }
   $("#composerInput").value="";syncInput();
   $("#composerModel").value=modelName;
   $("#composerRatio").value=referenceImage?selectedRatio:$("#composerRatio").value;
