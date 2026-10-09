@@ -567,7 +567,10 @@ module.exports = async function imageHandler(req, res) {
           });
         }
 
-        const outputImageUrl = imageUrl;
+        const outputImageUrl = requestedModel === "GPT Image 2.5"
+          ? imageUrl
+          : "/api/image-jpeg?url=" + encodeURIComponent(imageUrl) +
+            "&ratio=" + encodeURIComponent(cvronRatio);
 
         return res.status(200).json({
           ok:true,
