@@ -2138,7 +2138,7 @@ function showImage(url,prompt="",model="FLUX Dev",ratio=""){
  const c=$("#canvas");let grid=c.querySelector(".result-grid");
  if(!grid){c.innerHTML='<div class="result-grid"></div>';grid=c.querySelector(".result-grid")}
  const card=buildMediaCard(item);grid.prepend(card);
- $("#composerStatus").textContent=displayModel+" · готово";
+ $("#composerStatus").textContent=imageModelLabel(model)+" · готово";
 }
 async function generateAgnesImage(prompt){
  if(videoGenerationBusy){}
