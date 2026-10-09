@@ -16,7 +16,6 @@ module.exports = async function handler(req, res) {
 
     const target = new URL(rawUrl);
     const requestedRatio = String(req.query?.ratio || "").trim();
-    const enhance = String(req.query?.enhance || "").trim() === "1";
     const ratioMatch = requestedRatio.match(/^(\d+):(\d+)$/);
     let targetRatio = 0;
     if (ratioMatch) {
@@ -51,7 +50,7 @@ module.exports = async function handler(req, res) {
 
     const upstream = await fetch(target.toString(), {
       headers: { Accept: "image/*" },
-      signal: AbortSignal.timeout(45000)
+      signal: AbortSignal.timeout(20000)
     });
     if (!upstream.ok) {
       return res.status(upstream.status).json({ ok: false, error: "UPSTREAM_IMAGE_HTTP", status: upstream.status });
@@ -79,7 +78,6 @@ module.exports = async function handler(req, res) {
       });
     }
 
-
     const jpeg = await imagePipeline
       .flatten({ background: "#ffffff" })
       .jpeg({ quality: 94, mozjpeg: true })
@@ -98,4 +96,4 @@ module.exports = async function handler(req, res) {
   }
 };
 
-module.exports.config = { maxDuration: 60 };
+module.exports.config = { maxDuration: 30 };
