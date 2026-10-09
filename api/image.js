@@ -478,30 +478,12 @@ module.exports = async function imageHandler(req, res) {
       }
 
       try {
-        // Send explicit canvas dimensions as well as the ratio. The upstream
-        // endpoint has previously ignored ratio-only requests and returned squares.
-        const nativeSize = {
-          "1:1":  {width:1024,height:1024},
-          "16:9": {width:1376,height:768},
-          "9:16": {width:768,height:1376},
-          "3:4":  {width:896,height:1200},
-          "4:3":  {width:1200,height:896},
-          "2:3":  {width:848,height:1264},
-          "3:2":  {width:1264,height:848},
-          "21:9": {width:1584,height:672}
-        }[cvronRatio] || {width:1024,height:1024};
-
-        // Preserve the user's prompt exactly. Ratio is handled by the request
-        // parameters below, not by adding synthetic instructions to the prompt.
+        // Preserve the original prompt and selected ratio; do not append model instructions
+        // or send extra dimension aliases.
         const target =
           endpoint +
           "?prompt=" + encodeURIComponent(cvronPrompt) +
-          "&ratio=" + encodeURIComponent(cvronRatio) +
-          "&aspect_ratio=" + encodeURIComponent(cvronRatio) +
-          "&size=" + encodeURIComponent(cvronRatio) +
-          "&width=" + nativeSize.width +
-          "&height=" + nativeSize.height +
-          "&resolution=1K";
+          "&ratio=" + encodeURIComponent(cvronRatio);
         let upstream;
         let raw = "";
         let data = {};
