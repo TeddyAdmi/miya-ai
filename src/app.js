@@ -272,7 +272,7 @@ function clearComposerAttachment(){
  setComposerAttachment("");
  if(mode==="images"&&$("#composerModel")) $("#composerModel").value="FLUX Dev";
 }
-function openEditor(url){referenceImage=url;try{sessionStorage.setItem("miyaReferenceImage",referenceImage)}catch{};setComposerAttachment(url);mode="images";$("#composerModel").value="FLUX Kontext Dev";$("#composerRatio").value="auto";const m=modes.images;$("#workspaceEyebrow").textContent=m.eyebrow;$("#workspaceTitle").textContent=m.title;$("#workspaceSubtitle").textContent=m.subtitle;const promptInput=$("#composerInput"); if(promptInput){ promptInput.placeholder=m.placeholder; promptInput.setAttribute("aria-label",m.placeholder); promptInput.classList.remove("prompt-chat","prompt-images","prompt-video","prompt-voice"); promptInput.classList.add("prompt-images"); }$("#composerSendText").textContent=m.send;$("#composerStatus").textContent="FLUX Kontext Dev · готово к редактированию";$(".image-settings").style.display="flex";$("#voiceOptions").style.display="none";$("#voiceOptions").classList.remove("show");$("#videoOptions").style.display="none";$("#videoOptions").classList.remove("show");document.querySelectorAll("[data-mode]").forEach(x=>x.classList.toggle("active",x.dataset.mode==="images"));if(!$("#canvas .result-grid")) renderImageLibrary();$("#composerInput").focus();syncInput()}
+function openEditor(url){referenceImage=url;try{sessionStorage.setItem("miyaReferenceImage",referenceImage)}catch{};setComposerAttachment(url);mode="images";$("#composerModel").value="Agnes Image 2.5 Flash";$("#composerRatio").value="auto";const m=modes.images;$("#workspaceEyebrow").textContent=m.eyebrow;$("#workspaceTitle").textContent=m.title;$("#workspaceSubtitle").textContent=m.subtitle;const promptInput=$("#composerInput"); if(promptInput){ promptInput.placeholder=m.placeholder; promptInput.setAttribute("aria-label",m.placeholder); promptInput.classList.remove("prompt-chat","prompt-images","prompt-video","prompt-voice"); promptInput.classList.add("prompt-images"); }$("#composerSendText").textContent=m.send;$("#composerStatus").textContent="Agnes Image 2.5 Flash · исходное изображение готово к редактированию";$(".image-settings").style.display="flex";$("#voiceOptions").style.display="none";$("#voiceOptions").classList.remove("show");$("#videoOptions").style.display="none";$("#videoOptions").classList.remove("show");document.querySelectorAll("[data-mode]").forEach(x=>x.classList.toggle("active",x.dataset.mode==="images"));if(!$("#canvas .result-grid")) renderImageLibrary();$("#composerInput").focus();syncInput()}
 async function downloadImage(url){
  try{
   const response=await fetch(jpegImageUrl(url),{mode:"cors"});if(!response.ok)throw new Error("DOWNLOAD_HTTP_"+response.status);
@@ -2122,7 +2122,24 @@ async function generateAgnesImage(prompt){
  };
  try{
    setProgress(8);$("#composerStatus").textContent=model+" · подключение…";
-   const selectedRatio=["1:1","3:4","4:3","16:9","9:16","2:3","3:2","21:9"].includes(String($("#composerRatio")?.value))?String($("#composerRatio").value):"16:9";
+   const ratioChoice=String($("#composerRatio")?.value||"auto");
+   let selectedRatio=["1:1","3:4","4:3","16:9","9:16","2:3","3:2","21:9"].includes(ratioChoice)?ratioChoice:"16:9";
+   if(ratioChoice==="auto"&&referenceImage){
+     try{
+       const sourcePreview=$("#composerAttachmentImage");
+       let width=sourcePreview?.naturalWidth||0,height=sourcePreview?.naturalHeight||0;
+       if(!width||!height){
+         const probe=new Image();
+         await new Promise(resolve=>{probe.onload=()=>{width=probe.naturalWidth;height=probe.naturalHeight;resolve()};probe.onerror=resolve;probe.src=jpegImageUrl(referenceImage)});
+       }
+       if(width>0&&height>0){
+         const aspect=width/height;
+         const ratios=[["1:1",1],["3:4",3/4],["4:3",4/3],["16:9",16/9],["9:16",9/16],["2:3",2/3],["3:2",3/2],["21:9",21/9]];
+         ratios.sort((a,b)=>Math.abs(a[1]-aspect)-Math.abs(b[1]-aspect));
+         selectedRatio=ratios[0][0];
+       }
+     }catch{}
+   }
    const ratio=selectedRatio;
    const quality=["1K","2K","4K"].includes(String($("#composerQuality")?.value))?String($("#composerQuality").value):"2K";
    const requestedCount=Math.max(1,Math.min(4,Number($("#composerCount")?.value||1)));
