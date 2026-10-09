@@ -491,10 +491,13 @@ module.exports = async function imageHandler(req, res) {
           "21:9": {width:1584,height:672}
         }[cvronRatio] || {width:1024,height:1024};
 
-        // Keep the user's wording intact, while making the fidelity requirement
-        // explicit so the model does not invent wardrobe, accessories, or props.
-        const finalPrompt = cvronPrompt +
-          "\n\nPROMPT FIDELITY: Follow the current prompt exactly. Do not invent or add specific clothing items, accessories, bags, jewelry, or props that are not requested. Preserve any clothing and appearance explicitly described by the user. Do not carry over details from previous generations. Do not change the scene or reinterpret the request.";
+        // Keep model-specific prompt handling isolated. Nano Banana gets a
+        // strict single-request rule to prevent wardrobe/prop carry-over; GPT Image
+        // receives the user's prompt unchanged.
+        const finalPrompt = requestedModel === "Nano Banana 2"
+          ? cvronPrompt +
+            "\n\nSTRICT INSTRUCTION: Follow only the current user prompt. Do not reuse or carry over any objects, clothing, bags, accessories, or other details from previous images, edits, or requests. Do not add clothing or accessories unless the current prompt explicitly asks for them. Do not invent extra items or change the described subject or scene."
+          : cvronPrompt;
 
         const target =
           endpoint +
