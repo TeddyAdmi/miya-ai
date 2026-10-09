@@ -55,7 +55,49 @@ module.exports = async function handler(req, res) {
       "2K":{"16:9":"2752x1536","9:16":"1536x2752","1:1":"2048x2048","3:4":"1792x2400","4:3":"2400x1792","2:3":"1696x2528","3:2":"2528x1696","21:9":"3168x1344"},
       "4K":{"16:9":"2048x1152","9:16":"1152x2048","1:1":"2048x2048","3:4":"1536x2048","4:3":"2048x1536","2:3":"1365x2048","3:2":"2048x1365","21:9":"2048x878"}
     };
-    const outputSize=qualitySizes[quality]?.[ratio]||qualitySizes["1K"]["16:9"];
+    let outputSize=qualitySizes[quality]?.[ratio]||qualitySizes["1K"]["16:9"];
+    // In Auto editing, the UI sends the nearest supported ratio. Recover the
+    // original image dimensions and use a custom size with the same aspect
+    // ratio, rather than forcing the source into a standard canvas.
+    if(source){
+      try{
+        const sharp=require("sharp");
+        let sourceBuffer=null;
+        if(/^https?:\\/\\//i.test(source)){
+          const sourceResponse=await fetch(source,{signal:AbortSignal.timeout(12000)});
+          if(sourceResponse.ok){
+            const sourceBytes=await sourceResponse.arrayBuffer();
+            if(sourceBytes.byteLength>0&&sourceBytes.byteLength<=25*1024*1024)sourceBuffer=Buffer.from(sourceBytes);
+          }
+        }else{
+          const base64=source.replace(/^data:image\\/[a-z0-9.+-]+;base64,/i,"").replace(/\\s+/g,"");
+          if(base64.length>0&&base64.length<=35*1024*1024)sourceBuffer=Buffer.from(base64,"base64");
+        }
+        if(sourceBuffer){
+          const metadata=await sharp(sourceBuffer,{failOn:"none"}).metadata();
+          const sourceWidth=Number(metadata.width)||0;
+          const sourceHeight=Number(metadata.height)||0;
+          const sourceAspect=sourceWidth/sourceHeight;
+          const standardRatios={"1:1":1,"3:4":0.75,"4:3":4/3,"16:9":16/9,"9:16":9/16,"2:3":2/3,"3:2":1.5,"21:9":21/9};
+          const nearestRatio=Object.entries(standardRatios).sort((a,b)=>Math.abs(a[1]-sourceAspect)-Math.abs(b[1]-sourceAspect))[0]?.[0];
+          // Auto currently arrives as its nearest standard ratio. If the
+          // chosen ratio differs from that nearest ratio, preserve the user's
+          // explicit format choice and leave the existing behavior unchanged.
+          if(sourceWidth>0&&sourceHeight>0&&nearestRatio===ratio){
+            const [baseWidth,baseHeight]=outputSize.split("x").map(Number);
+            const maxEdge=Math.max(baseWidth||0,baseHeight||0);
+            if(maxEdge>0){
+              const scale=maxEdge/Math.max(sourceWidth,sourceHeight);
+              let width=Math.max(1,Math.round(sourceWidth*scale));
+              let height=Math.max(1,Math.round(sourceHeight*scale));
+              if(width%2)width++;
+              if(height%2)height++;
+              outputSize=width+"x"+height;
+            }
+          }
+        }
+      }catch{}
+    }
     const payload={model:"agnes-image-2.5-flash",prompt:qualityPrompt,n,size:outputSize,ratio,extra_body:{response_format:"url"}};
     const images=[];
     if(source) payload.extra_body.image=[source];
