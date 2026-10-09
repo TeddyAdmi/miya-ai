@@ -709,7 +709,7 @@ module.exports = async function imageHandler(req, res) {
       }
       let sourceResponse;
       try {
-        sourceResponse=await fetch(sourceUrl,{headers:{Accept:"image/*"},cache:"no-store",signal:AbortSignal.timeout(20000)});
+        sourceResponse=await fetch(sourceUrl,{headers:{Accept:"image/*"},cache:"no-store",signal:AbortSignal.timeout(10000)});
       } catch(error) {
         return res.status(502).json({ok:false,error:"SOURCE_IMAGE_FETCH_FAILED",message:String(error?.message||error)});
       }
@@ -758,7 +758,7 @@ module.exports = async function imageHandler(req, res) {
         ratio: ratio === "1:1" ? "auto" : ratio,
         imageBase64: rawBase64
       }),
-      signal: AbortSignal.timeout(55000)
+      signal: AbortSignal.timeout(45000)
     });
 
     const raw = await upstream.text();

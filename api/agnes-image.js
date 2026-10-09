@@ -47,7 +47,7 @@ module.exports = async function handler(req, res) {
         }
         let sourceResponse;
         try {
-          sourceResponse=await fetch(sourceUrl,{headers:{Accept:"image/*"},cache:"no-store",signal:AbortSignal.timeout(20000)});
+          sourceResponse=await fetch(sourceUrl,{headers:{Accept:"image/*"},cache:"no-store",signal:AbortSignal.timeout(10000)});
         } catch(error) {
           return res.status(502).json({ok:false,error:"SOURCE_IMAGE_FETCH_FAILED",message:String(error?.message||error)});
         }
@@ -116,7 +116,7 @@ module.exports = async function handler(req, res) {
       method:"POST",
       headers:{"Authorization":"Bearer "+key,"Content-Type":"application/json","Accept":"application/json"},
       body:JSON.stringify(payload),
-      signal:AbortSignal.timeout(55000)
+      signal:AbortSignal.timeout(45000)
     });
     const raw=await upstream.text();
     let data={};try{data=raw?JSON.parse(raw):{}}catch{}
@@ -128,3 +128,5 @@ module.exports = async function handler(req, res) {
     return res.status(e?.name==="TimeoutError"?504:502).json({ok:false,error:"AGNES_IMAGE_HANDLER_ERROR",message:e?.message||"Agnes image request failed"});
   }
 };
+
+module.exports.config = { maxDuration: 60 };
