@@ -565,11 +565,10 @@ module.exports = async function imageHandler(req, res) {
           });
         }
 
-        const outputImageUrl = requestedModel === "GPT Image 2.5"
-          ? imageUrl
-          : "/api/image-jpeg?url=" + encodeURIComponent(imageUrl) +
-            "&ratio=" + encodeURIComponent(cvronRatio) +
-            "&enhance=1";
+        // CVRON already receives the requested native ratio and dimensions.
+        // Return its original image URL directly: reprocessing through image-jpeg
+        // could add blurred side bars and change the delivered framing.
+        const outputImageUrl = imageUrl;
 
         return res.status(200).json({
           ok:true,
@@ -587,9 +586,8 @@ module.exports = async function imageHandler(req, res) {
             quality,
             native:true,
             noCrop:true,
-            enhanced:requestedModel !== "GPT Image 2.5",
-            edit:Boolean(sourceImageUrl),
-            sourceImageUrl:sourceImageUrl
+            enhanced:false,
+            edit:false
           }
         });
       } catch (error) {
