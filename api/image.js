@@ -494,7 +494,7 @@ module.exports = async function imageHandler(req, res) {
         // Keep the user's wording intact, while making the fidelity requirement
         // explicit so the model does not invent wardrobe, accessories, or props.
         const finalPrompt = cvronPrompt +
-          "\\n\\nPROMPT FIDELITY: Follow the current prompt exactly. Do not invent or add specific clothing items, accessories, bags, jewelry, or props that are not requested. Preserve any clothing and appearance explicitly described by the user. Do not carry over details from previous generations. Do not change the scene or reinterpret the request.";
+          "\n\nPROMPT FIDELITY: Follow the current prompt exactly. Do not invent or add specific clothing items, accessories, bags, jewelry, or props that are not requested. Preserve any clothing and appearance explicitly described by the user. Do not carry over details from previous generations. Do not change the scene or reinterpret the request.";
 
         const target =
           endpoint +
