@@ -4106,7 +4106,8 @@ function ensureSpeechVisualizer(){
     position:"absolute",left:"52px",right:"58px",top:"50%",
     width:"calc(100% - 110px)",height:"30px",
     transform:"translateY(-50%)",display:"none",
-    pointerEvents:"none",zIndex:"5",opacity:".96"
+    pointerEvents:"none",zIndex:"1004",opacity:"1",
+    mixBlendMode:"screen"
   });
   return canvas;
 }
@@ -4223,7 +4224,23 @@ async function finishSpeechRecording(){
     return;
   }
 
-  const mono=downsampleSpeech(samples,inputRate,speechSampleRate);
+  // ScriptProcessor stores each audio callback as a Float32Array chunk.
+  // Flatten the chunks before resampling; passing the chunk array directly
+  // produced a silent/invalid WAV and therefore an empty transcription.
+  const totalSamples=samples.reduce((total,chunk)=>total+(chunk?.length||0),0);
+  if(!totalSamples){
+    speechSetIdle();
+    toast("Микрофон не записал звук — проверь выбранный микрофон");
+    return;
+  }
+  const joined=new Float32Array(totalSamples);
+  let sampleOffset=0;
+  for(const chunk of samples){
+    if(!chunk?.length)continue;
+    joined.set(chunk,sampleOffset);
+    sampleOffset+=chunk.length;
+  }
+  const mono=downsampleSpeech(joined,inputRate,speechSampleRate);
   const wav=encodeWav(mono,speechSampleRate);
   if(wav.size<1000){
     speechSetIdle();
