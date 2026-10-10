@@ -2489,7 +2489,7 @@ body.light .video-options .composer-paste:hover{background:#edf3f9!important;col
 .composer.mode-chat .chat-attachment-list{
   position:absolute!important;
   left:43px!important;
-  bottom:43px!important;
+  bottom:21px!important;
   z-index:1005!important;
   display:flex!important;
   flex-direction:row!important;
@@ -2529,6 +2529,6 @@ body.light .video-options .composer-paste:hover{background:#edf3f9!important;col
   line-height:1!important;
 }
 @media(max-width:800px){
- .composer.mode-chat .chat-attachment-list{max-width:calc(100% - 130px)!important;bottom:43px!important}
+ .composer.mode-chat .chat-attachment-list{max-width:calc(100% - 130px)!important;bottom:21px!important}
  .chat-attachment-thumb{flex-basis:39px!important;width:39px!important;height:29px!important}
 }
