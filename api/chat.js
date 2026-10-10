@@ -67,13 +67,17 @@ async function handler(req, res) {
       .filter(m => m && (m.role === "user" || m.role === "assistant") && typeof m.content === "string")
       .map(m => ({ role: m.role, content: m.content.slice(0, 12000) }));
 
-    const imageBase64 = typeof body.imageBase64 === "string" ? body.imageBase64.trim() : "";
-    const imageBytesApprox = imageBase64 ? Math.floor((imageBase64.length * 3) / 4) : 0;
-    if (imageBase64 && imageBytesApprox > 120000) {
+    const suppliedImages = Array.isArray(body.imageBase64s)
+      ? body.imageBase64s.filter(value => typeof value === "string" && value.trim()).slice(0, 5).map(value => value.trim())
+      : [];
+    const imageBase64 = suppliedImages[0] || (typeof body.imageBase64 === "string" ? body.imageBase64.trim() : "");
+    const visionImages = suppliedImages.length ? suppliedImages : (imageBase64 ? [imageBase64] : []);
+    const imageBytesApprox = visionImages.reduce((sum, value) => sum + Math.floor((value.length * 3) / 4), 0);
+    if (visionImages.some(value => !value.startsWith("data:image/")) || imageBytesApprox > 600000) {
       return res.status(413).json({
         ok: false,
         error: "IMAGE_TOO_LARGE",
-        message: "Изображение слишком большое для бесплатного vision-запроса."
+        message: "Слишком большой набор фотографий для бесплатного vision-запроса. Добавь меньше фото или уменьши их размер."
       });
     }
 
@@ -94,12 +98,12 @@ async function handler(req, res) {
     const lastUserText = cleanMessages[cleanMessages.length - 1].content;
 
     const blockRunMessages = cleanMessages.slice(-12).map((m, index, arr) => {
-      if (imageBase64 && index === arr.length - 1 && m.role === "user") {
+      if (visionImages.length && index === arr.length - 1 && m.role === "user") {
         return {
           role: "user",
           content: [
             { type: "text", text: m.content },
-            { type: "image_url", image_url: { url: imageBase64 } }
+            ...visionImages.map(url => ({ type: "image_url", image_url: { url } }))
           ]
         };
       }
@@ -149,7 +153,7 @@ async function handler(req, res) {
             "Accept": "application/json"
           },
           body: JSON.stringify({ ...payload, model }),
-          signal: AbortSignal.timeout(imageBase64 ? 30000 : 20000)
+          signal: AbortSignal.timeout(visionImages.length ? 45000 : 20000)
         });
 
         const raw = await response.text();
@@ -194,7 +198,7 @@ async function handler(req, res) {
 
     let result;
 
-    if (imageBase64) {
+    if (visionImages.length) {
       // Primary free vision model: NVIDIA Nemotron 3 Nano Omni via BlockRun.
       // It accepts native OpenAI-style image_url content and is free without
       // an API key or wallet. AHM7 remains the next fallback.

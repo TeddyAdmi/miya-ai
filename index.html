@@ -79,6 +79,7 @@
           <img id="composerAttachmentImage" alt="Прикреплённое изображение">
           <button type="button" id="composerAttachmentRemove" title="Удалить изображение">×</button>
         </div>
+        <div class="chat-attachment-list" id="chatComposerAttachments" aria-label="Фотографии для анализа"></div>
         <textarea id="composerInput" rows="1" maxlength="4000" placeholder="Напиши сообщение..."></textarea>        <button class="mic" id="composerMic" type="button" title="Голосовой ввод" aria-label="Начать голосовой ввод">
           <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 14.5a3.5 3.5 0 0 0 3.5-3.5V6a3.5 3.5 0 0 0-7 0v5a3.5 3.5 0 0 0 3.5 3.5Z"/><path d="M19 11a7 7 0 0 1-14 0"/><path d="M12 18v3M8 21h8"/></svg>
         </button>
@@ -134,7 +135,7 @@
     </div>
   </section>
 
-  <input id="referenceInput" type="file" accept="image/*" hidden>
+  <input id="referenceInput" type="file" accept="image/*" multiple hidden>
   <nav class="mobile-tabs">
     <button class="active" data-mode="chat"><span class="nav-icon icon-chat" aria-hidden="true"></span><small>AI Chat</small></button>
     <button data-mode="images"><span class="nav-icon icon-image" aria-hidden="true"></span><small>Картинки</small></button>

@@ -40,7 +40,7 @@ function jpegImageUrl(url){
   }
   return value;
 }
-let mode="chat",referenceImage=null,chatAttachmentFile=null,chatMessages=[];
+let mode="chat",referenceImage=null,chatAttachmentFile=null,chatAttachmentImages=[],chatMessages=[];
 let videoGenerationBusy=false;
 const CHAT_KEY="miyaChats";
 let chatMenuSuppressed=false;
@@ -286,9 +286,40 @@ function setComposerAttachment(url){
   box.hidden=true;
  }
 }
+function renderChatAttachmentImages(){
+ const list=$("#chatComposerAttachments");
+ if(!list)return;
+ list.replaceChildren();
+ chatAttachmentImages.forEach((src,index)=>{
+  const item=document.createElement("div");
+  item.className="chat-attachment-thumb";
+  const image=document.createElement("img");
+  image.src=src;
+  image.alt="Фото "+(index+1);
+  const remove=document.createElement("button");
+  remove.type="button";
+  remove.className="chat-attachment-remove";
+  remove.title="Убрать фото "+(index+1);
+  remove.setAttribute("aria-label","Убрать фото "+(index+1));
+  remove.textContent="×";
+  remove.addEventListener("click",()=>{
+   chatAttachmentImages.splice(index,1);
+   referenceImage=chatAttachmentImages[0]||null;
+   chatAttachmentFile=chatAttachmentImages.length>0;
+   renderChatAttachmentImages();
+   if(!chatAttachmentFile)clearComposerAttachment();
+   else $("#composerStatus").textContent="Прикреплено фото: "+chatAttachmentImages.length+" · можно спросить Miya";
+  });
+  item.append(image,remove);
+  list.append(item);
+ });
+ list.hidden=chatAttachmentImages.length===0;
+}
 function clearComposerAttachment(){
  referenceImage=null;
  chatAttachmentFile=null;
+ chatAttachmentImages=[];
+ renderChatAttachmentImages();
  setComposerAttachment("");
  if(mode==="images"&&$("#composerModel")) $("#composerModel").value="Nano Banana 2";
 }
@@ -2520,15 +2551,16 @@ async function prepareChatVisionImage(dataUrl){
 }
 async function requestChat(){
  const status=$("#composerStatus");
- const hasVisionImage=mode==="chat"&&chatAttachmentFile&&/^data:image\//i.test(String(referenceImage||""));
- status.textContent=hasVisionImage?"Miya · анализ изображения…":"Miya думает…";
+ const sourceImages=mode==="chat"?chatAttachmentImages.filter(src=>/^data:image\//i.test(String(src||""))):[];
+ const hasVisionImage=sourceImages.length>0;
+ status.textContent=hasVisionImage?"Miya · анализ "+sourceImages.length+" фото…":"Miya думает…";
  $("#composerSend").disabled=true;
  try{
-   const chatImage=hasVisionImage?await prepareChatVisionImage(String(referenceImage||"")):"";
+   const chatImages=hasVisionImage?await Promise.all(sourceImages.slice(0,5).map(src=>prepareChatVisionImage(String(src)))):[];
    const response=await fetch("/api/chat",{
      method:"POST",
      headers:{"Content-Type":"application/json","Accept":"application/json"},
-     body:JSON.stringify({messages:chatMessages,imageBase64:chatImage}),
+     body:JSON.stringify({messages:chatMessages,imageBase64:chatImages[0]||"",imageBase64s:chatImages}),
      signal:AbortSignal.timeout(90000)
    });
    const data=await response.json().catch(()=>({}));
@@ -3908,7 +3940,7 @@ $("#composerSend").addEventListener("click",async()=>{
  if(mode==="images"){await generateImage(value);return}
  if(mode==="video"){await generateVideo(value);return}
  if(mode==="voice"){await generateVoice(value);return}
- if(mode==="chat"){const attachedImage=referenceImage;const attachedFile=chatAttachmentFile;chatMessages.push({role:"user",content:value,image:attachedImage||""});addChatMessage(value,true,attachedImage||"");$("#composerInput").value="";syncInput();saveCurrentChat();await requestChat();chatAttachmentFile=null;clearComposerAttachment();return}
+ if(mode==="chat"){const attachedImages=[...chatAttachmentImages];const attachedImage=attachedImages[0]||referenceImage;chatMessages.push({role:"user",content:value,image:attachedImage||"",images:attachedImages});addChatMessage(value,true,attachedImage||"");$("#composerInput").value="";syncInput();saveCurrentChat();await requestChat();chatAttachmentFile=null;clearComposerAttachment();return}
  showLoading();await generateVideo(value)
 });
 $("#composerAttach").onclick=()=>$("#referenceInput").click();
@@ -4065,6 +4097,18 @@ async function attachReferenceFile(file){
  reader.onload=()=>{
   const rawData=String(reader.result||"");
   const finishAttachment=(dataUrl)=>{
+    if(mode==="chat"){
+      if(chatAttachmentImages.length>=5){toast("Можно прикрепить до 5 фотографий за одно сообщение");return}
+      chatAttachmentImages.push(dataUrl);
+      referenceImage=chatAttachmentImages[0]||null;
+      chatAttachmentFile=true;
+      renderChatAttachmentImages();
+      try{sessionStorage.setItem("miyaReferenceImage",referenceImage||"")}catch{}
+      $("#composerStatus").textContent="Прикреплено фото: "+chatAttachmentImages.length+" · можно спросить Miya";
+      toast("Фото добавлено ("+chatAttachmentImages.length+"/5)");
+      $("#composerInput").focus();
+      return;
+    }
     referenceImage=dataUrl;
     try{sessionStorage.setItem("miyaReferenceImage",referenceImage)}catch{}
     setComposerAttachment(referenceImage);
@@ -4100,8 +4144,12 @@ async function attachReferenceFile(file){
  reader.readAsDataURL(file);
 }
 $("#referenceInput").onchange=e=>{
- const file=e.target.files?.[0];
- if(file)attachReferenceFile(file)
+ const files=[...(e.target.files||[])].filter(file=>String(file.type||"").startsWith("image/"));
+ if(mode==="chat"){
+  const available=Math.max(0,5-chatAttachmentImages.length);
+  if(files.length>available)toast("За одно сообщение можно прикрепить до 5 фотографий");
+  files.slice(0,available).forEach(file=>attachReferenceFile(file));
+ }else if(files[0])attachReferenceFile(files[0]);
  e.target.value="";
 };
 

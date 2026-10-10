@@ -2484,3 +2484,51 @@ body.light .video-options .composer-paste:hover{background:#edf3f9!important;col
   line-height:1.2!important;
 }
 .composer.mode-chat .composer-status .status-dot{flex:0 0 auto!important}
+
+/* Chat image previews live beside the plus, not in the text flow. */
+.composer.mode-chat .chat-attachment-list{
+  position:absolute!important;
+  left:43px!important;
+  bottom:43px!important;
+  z-index:1005!important;
+  display:flex!important;
+  flex-direction:row!important;
+  align-items:center!important;
+  gap:5px!important;
+  max-width:calc(100% - 170px)!important;
+  overflow-x:auto!important;
+  overflow-y:hidden!important;
+  padding:2px!important;
+  scrollbar-width:thin!important;
+}
+.composer.mode-chat .chat-attachment-list[hidden]{display:none!important}
+.chat-attachment-thumb{
+  position:relative!important;
+  flex:0 0 44px!important;
+  width:44px!important;
+  height:32px!important;
+  border:1px solid rgba(125,158,195,.55)!important;
+  border-radius:5px!important;
+  overflow:hidden!important;
+  background:rgba(7,22,40,.96)!important;
+}
+.chat-attachment-thumb img{width:100%!important;height:100%!important;display:block!important;object-fit:cover!important}
+.chat-attachment-remove{
+  position:absolute!important;
+  top:0!important;
+  right:0!important;
+  width:14px!important;
+  height:14px!important;
+  display:grid!important;
+  place-items:center!important;
+  padding:0!important;
+  border-radius:0 0 0 5px!important;
+  background:rgba(4,13,25,.88)!important;
+  color:#fff!important;
+  font-size:12px!important;
+  line-height:1!important;
+}
+@media(max-width:800px){
+ .composer.mode-chat .chat-attachment-list{max-width:calc(100% - 130px)!important;bottom:43px!important}
+ .chat-attachment-thumb{flex-basis:39px!important;width:39px!important;height:29px!important}
+}
