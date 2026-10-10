@@ -3912,10 +3912,10 @@ $("#composerSend").addEventListener("click",async()=>{
  showLoading();await generateVideo(value)
 });
 $("#composerAttach").onclick=()=>$("#referenceInput").click();
-function copyComposerPrompt(){
+function copyComposerPrompt(button){
  const value=$("#composerInput")?.value||"";
  if(!value.trim()){toast("Промт пуст");return}
- if(navigator.clipboard?.writeText) navigator.clipboard.writeText(value).then(()=>{showCopySuccess($("#voiceCopyPrompt"));toast("Промт скопирован")}).catch(()=>toast("Не удалось скопировать промт"));
+ if(navigator.clipboard?.writeText) navigator.clipboard.writeText(value).then(()=>{showCopySuccess(button);toast("Промт скопирован")}).catch(()=>toast("Не удалось скопировать промт"));
  else toast("Копирование недоступно в этом браузере");
 }
 function improveComposerPrompt(){
@@ -3928,7 +3928,7 @@ $("#voiceLanguage")?.addEventListener("change",refreshVoiceSelects);
 $("#voiceGender")?.addEventListener("change",refreshVoiceSelects);
 $("#voiceRate")?.addEventListener("input",e=>$("#voiceRateValue").textContent=e.target.value);
 $("#voicePitch")?.addEventListener("input",e=>$("#voicePitchValue").textContent=e.target.value);
-$("#voiceCopyPrompt")?.addEventListener("click",copyComposerPrompt);
+$("#voiceCopyPrompt")?.addEventListener("click",e=>copyComposerPrompt(e.currentTarget));
 $("#voiceTrash")?.addEventListener("click",()=>{$("#composerInput").value="";syncInput();$("#composerInput").focus();$("#composerStatus").textContent="Svetlana · Female · Russia"});
 $("#composerTrash")?.addEventListener("click",()=>{
   // This control clears only the prompt text. It must not change the selected
@@ -3967,9 +3967,9 @@ $("#composerModel")?.addEventListener("change",()=>{
   }
 });
 $("#improve")?.addEventListener("click",improveComposerPrompt);
-$("#copyPrompt")?.addEventListener("click",copyComposerPrompt);
+$("#copyPrompt")?.addEventListener("click",e=>copyComposerPrompt(e.currentTarget));
 $("#videoImprove")?.addEventListener("click",improveComposerPrompt);
-$("#videoCopyPrompt")?.addEventListener("click",copyComposerPrompt);
+$("#videoCopyPrompt")?.addEventListener("click",e=>copyComposerPrompt(e.currentTarget));
 $("#videoModel")?.addEventListener("change",()=>{
  const model=$("#videoModel").value;
  const duration=$("#videoDuration");
