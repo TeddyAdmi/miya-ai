@@ -12,7 +12,7 @@ function installAnimatedStatusDots(){
  const animateIfNeeded=()=>{
    if(status.querySelector(".thinking-dots"))return;
    const value=String(status.textContent||"");
-   const match=value.match(/(?:…|\\.{3})\\s*$/);
+   const match=value.match(/(?:…|\.{3})\s*$/);
    if(!match)return;
    const base=value.slice(0,match.index).trimEnd();
    status.replaceChildren(document.createTextNode(base+" "));
