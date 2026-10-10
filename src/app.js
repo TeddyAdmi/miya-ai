@@ -4248,7 +4248,7 @@ function ensureSpeechVisualizer(){
     width:canvasWidth+"px",height:"30px",
     transform:"translateY(-50%)",
     pointerEvents:"none",zIndex:"1004",opacity:"1",display:"block",
-    mixBlendMode:"screen"
+    mixBlendMode:"normal"
   });
   return canvas;
 }
@@ -4278,7 +4278,8 @@ function drawSpeechVisualizer(){
     const amp=bins[index]/255;
     const h=Math.max(2*dpr,amp*(height*.88));
     const x=i*step+(step-barWidth)/2;
-    ctx.fillStyle="rgba(177,126,255,"+(.38+amp*.62)+")";
+    const lightTheme=document.body.classList.contains("light");
+    ctx.fillStyle=(lightTheme?"rgba(91,62,158,":"rgba(177,126,255,")+(.48+amp*.52)+")";
     ctx.beginPath();
     ctx.roundRect(x,(height-h)/2,barWidth,h,barWidth/2);
     ctx.fill();
@@ -4554,9 +4555,13 @@ function syncVoiceEditorTheme(){const backdrop=document.querySelector(".voice-ed
 function syncFloatingWallClearIcon(){
  const btn=$("#clearImageWall"),svg=btn?.querySelector("svg");if(!svg)return;
  const light=document.body.classList.contains("light");
- svg.style.setProperty("stroke",light?"#fff":"#9db0c7","important");
- svg.style.setProperty("color",light?"#fff":"#9db0c7","important");
+ const color=light?"#fff":"#9db0c7";
+ btn.style.setProperty("color",color,"important");
+ svg.style.setProperty("stroke",color,"important");
+ svg.style.setProperty("color",color,"important");
+ svg.querySelectorAll("*").forEach(part=>part.style.setProperty("stroke",color,"important"));
 }
+syncFloatingWallClearIcon();
 function syncThemeToggleIcon(){
   const btn=$("#themeToggle");
   if(!btn)return;
