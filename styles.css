@@ -2784,3 +2784,14 @@ body.light #composer .chat-options button:hover,body.light #composer .image-sett
 #composer .voice-options .voice-tool{border:0!important;outline:0!important;box-shadow:none!important}
 #composerVoiceVisualizer{position:absolute!important;max-width:calc(100% - 80px)!important;height:28px!important;overflow:hidden!important;pointer-events:none!important;z-index:1004!important}
 .composer-wrap:has(#composer[style*="display: none"]){display:none!important}
+
+
+/* Keep the live speech waveform inside the input row and clear of every control. */
+.composer-input-row{overflow:visible!important}
+#composerVoiceVisualizer{
+  max-width:none!important;min-width:0!important;box-sizing:border-box!important;
+  clip-path:inset(0)!important;overflow:hidden!important;
+}
+#composer .composer-input-row #composerVoiceVisualizer{z-index:1003!important}
+#composer .composer-input-row #composerMic,
+#composer .composer-input-row #composerSend{position:relative!important;z-index:1006!important}

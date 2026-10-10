@@ -4487,11 +4487,26 @@ function ensureSpeechVisualizer(){
   row.style.setProperty("position","relative","important");
   const rowRect=row.getBoundingClientRect();
   const mic=row.querySelector("#composerMic"),micRect=mic?.getBoundingClientRect();
-  const attach=row.querySelector("#composerAttach"),attachRect=attach?.getBoundingClientRect();
-  // Anchor the live voice indicator to the composer itself, between + and mic.
+  // Re-measure every animation frame so adding/removing a picture moves the
+  // waveform immediately instead of leaving it underneath composer controls.
+  const leftCandidates=[
+    row.querySelector(".composer-left-actions"),
+    row.querySelector("#composerAttachment"),
+    row.querySelector("#chatComposerAttachments"),
+    row.querySelector("#chatOptions")
+  ];
+  let leftEdge=12;
+  for(const el of leftCandidates){
+    if(!el)continue;
+    const rect=el.getBoundingClientRect(),style=getComputedStyle(el);
+    if(style.display==="none"||style.visibility==="hidden"||rect.width<1||rect.height<1)continue;
+    leftEdge=Math.max(leftEdge,rect.right-rowRect.left+10);
+  }
+  // In Voice there may be no attachment/actions: keep the waveform inset
+  // from the left edge, and always stop before the mic/send controls.
   const centerY=micRect?micRect.top+micRect.height/2-rowRect.top:rowRect.height/2;
-  const leftEdge=attachRect?attachRect.right-rowRect.left+10:12;
   const rightEdge=micRect?micRect.left-rowRect.left-10:rowRect.width-12;
+  leftEdge=Math.min(leftEdge,Math.max(12,rightEdge-24));
   const canvasWidth=Math.max(0,rightEdge-leftEdge);
   Object.assign(canvas.style,{
     position:"absolute",left:leftEdge+"px",right:"auto",top:centerY+"px",
