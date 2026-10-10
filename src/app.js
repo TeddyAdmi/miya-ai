@@ -198,7 +198,8 @@ function closeChatFlyout(){
  $("#chatMenuToggle")?.setAttribute("aria-expanded","false");
  setTimeout(()=>$("#composerInput")?.focus(),0);
 }
-window.addEventListener("resize",()=>requestAnimationFrame(fitActiveChatTitle));\nfunction resetChatMenus(){
+window.addEventListener("resize",()=>requestAnimationFrame(fitActiveChatTitle));
+function resetChatMenus(){
  document.querySelectorAll(".chat-history-row.menu-open").forEach(x=>x.classList.remove("menu-open"));
  document.querySelectorAll(".chat-history-menu").forEach(menu=>{
    menu.classList.remove("rename-open");
