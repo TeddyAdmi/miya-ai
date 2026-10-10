@@ -2697,7 +2697,7 @@ function addChatMessage(text,isUser,image="",isError=false){
      selectionBar.querySelector('[data-selection-action="answer"]').onclick=()=>{
        const t=selectionBar.dataset.selectionText||"";
        if(!t)return;
-       const quoted="Цитата из ответа Miya:\\n"+t.split("\\n").map(line=>"> "+line).join("\\n")+"\\n\\nОтветь на эту цитату:";
+       const quoted="Цитата из ответа Miya:\n"+t.split("\n").map(line=>"> "+line).join("\n")+"\n\nОтветь на эту цитату:";
        const input=$("#composerInput");input.value=quoted;syncInput();input.focus();input.selectionStart=input.selectionEnd=input.value.length;
        selectionBar.hidden=true;toast("Цитата из ответа Miya добавлена в промпт");
      };
