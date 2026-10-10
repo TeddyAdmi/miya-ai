@@ -2415,9 +2415,12 @@ body.light .voice-options .composer-paste:hover,
 body.light .video-options .composer-paste:hover{background:#edf3f9!important;color:#182436!important;}
 
 
-/* AI Chat composer: actions sit directly under Send, ordered from the right edge inward. */
+/* AI Chat composer: prompt at top, attachment/status bottom-left, text actions bottom-right. */
+.composer.mode-chat .composer-input-row{
+  position:static!important;
+}
 .composer.mode-chat .chat-options{
-  justify-content:flex-start!important;
+  justify-content:flex-end!important;
   flex-direction:row!important;
   gap:2px!important;
   padding:1px 0 0!important;
@@ -2440,14 +2443,14 @@ body.light .video-options .composer-paste:hover{background:#edf3f9!important;col
   width:15px!important;
   height:15px!important;
 }
-/* Keep the editable prompt close to its controls instead of leaving a tall blank band. */
+/* The prompt stays on the upper line and grows upward as text is entered. */
 .composer.mode-chat #composerInput{
   min-height:30px!important;
   padding-top:5px!important;
   padding-bottom:3px!important;
   line-height:1.4!important;
 }
-/* The attachment plus is visually anchored beside the ready status, not beside the first text line. */
+/* Anchor the plus in the lower-left control row, just above the ready status. */
 .composer.mode-chat .composer-left-actions{
   position:absolute!important;
   left:10px!important;
@@ -2475,7 +2478,7 @@ body.light .video-options .composer-paste:hover{background:#edf3f9!important;col
 }
 .composer.mode-chat .composer-status{
   min-height:17px!important;
-  padding:3px 2px 0 39px!important;
+  padding:3px 2px 0!important;
   margin-top:0!important;
   gap:5px!important;
   line-height:1.2!important;
