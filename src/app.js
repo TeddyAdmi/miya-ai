@@ -3918,6 +3918,58 @@ function copyComposerPrompt(button){
  if(navigator.clipboard?.writeText) navigator.clipboard.writeText(value).then(()=>{showCopySuccess(button);toast("Промт скопирован")}).catch(()=>toast("Не удалось скопировать промт"));
  else toast("Копирование недоступно в этом браузере");
 }
+
+async function pasteComposerContent(button){
+ const input=$("#composerInput");
+ if(!input){toast("Поле ввода недоступно");return}
+ const insertText=text=>{
+  const value=String(text||"");
+  if(!value){toast("В буфере обмена нет текста");return false}
+  const start=input.selectionStart??input.value.length;
+  const end=input.selectionEnd??start;
+  input.setRangeText(value,start,end,"end");
+  syncInput();
+  input.focus();
+  toast("Текст вставлен");
+  return true;
+ };
+ try{
+  if(mode==="images"&&navigator.clipboard?.read){
+   const items=await navigator.clipboard.read();
+   for(const item of items){
+    const imageType=item.types.find(type=>/^image\//i.test(type));
+    if(imageType){
+     const blob=await item.getType(imageType);
+     const file=new File([blob],"clipboard-image."+((imageType.split("/")[1]||"png").replace("jpeg","jpg")),{type:imageType});
+     await attachReferenceFile(file);
+     toast("Изображение вставлено");
+     return;
+    }
+   }
+   for(const item of items){
+    if(item.types.includes("text/plain")){
+     const blob=await item.getType("text/plain");
+     if(insertText(await blob.text()))return;
+    }
+   }
+  }
+  if(navigator.clipboard?.readText){
+   const text=await navigator.clipboard.readText();
+   if(insertText(text))return;
+  }else{
+   toast("Браузер не разрешил доступ к буферу обмена");
+  }
+ }catch(error){
+  try{
+   if(navigator.clipboard?.readText){
+    const text=await navigator.clipboard.readText();
+    if(insertText(text))return;
+   }
+  }catch{}
+  toast(mode==="images"?"Не удалось прочитать буфер. Разреши доступ к буферу обмена.":"Не удалось вставить текст. Разреши доступ к буферу обмена.");
+ }
+}
+
 function improveComposerPrompt(){
  const i=$("#composerInput");if(!i)return;
  if(i.value.trim())i.value=i.value.trim()+", cinematic composition, professional lighting, realistic textures, highly detailed, premium quality";
@@ -3968,6 +4020,10 @@ $("#composerModel")?.addEventListener("change",()=>{
 });
 $("#improve")?.addEventListener("click",improveComposerPrompt);
 $("#copyPrompt")?.addEventListener("click",e=>copyComposerPrompt(e.currentTarget));
+$("#chatPastePrompt")?.addEventListener("click",e=>pasteComposerContent(e.currentTarget));
+$("#imagePastePrompt")?.addEventListener("click",e=>pasteComposerContent(e.currentTarget));
+$("#videoPastePrompt")?.addEventListener("click",e=>pasteComposerContent(e.currentTarget));
+$("#voicePastePrompt")?.addEventListener("click",e=>pasteComposerContent(e.currentTarget));
 $("#chatCopyPrompt")?.addEventListener("click",e=>copyComposerPrompt(e.currentTarget));
 $("#chatTrash")?.addEventListener("click",()=>{
   const input=$("#composerInput");

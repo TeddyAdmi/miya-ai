@@ -2380,3 +2380,36 @@ body.light .chat-options .composer-trash:hover{
   background:#edf3f9!important;
   color:#182436!important;
 }
+
+
+/* Unified prompt actions in all four composer sections. */
+.chat-options{justify-content:flex-end!important;width:100%!important;box-sizing:border-box!important;}
+.chat-options .composer-paste,
+.composer-options .composer-paste,
+.voice-options .composer-paste,
+.video-options .composer-paste{
+  appearance:none!important;-webkit-appearance:none!important;
+  flex:0 0 38px!important;width:38px!important;height:38px!important;
+  min-width:38px!important;min-height:38px!important;padding:0!important;
+  display:grid!important;place-items:center!important;border:0!important;
+  border-radius:9px!important;background:transparent!important;color:var(--muted)!important;
+  box-shadow:none!important;cursor:pointer!important;
+  transition:color .16s ease,background .16s ease!important;
+}
+.chat-options .composer-paste svg,
+.composer-options .composer-paste svg,
+.voice-options .composer-paste svg,
+.video-options .composer-paste svg{
+  display:block!important;width:16px!important;height:16px!important;fill:none!important;
+  stroke:currentColor!important;stroke-width:1.8!important;stroke-linecap:round!important;stroke-linejoin:round!important;
+}
+.chat-options .composer-paste:hover,
+.composer-options .composer-paste:hover,
+.voice-options .composer-paste:hover,
+.video-options .composer-paste:hover{
+  background:rgba(120,150,190,.12)!important;color:inherit!important;
+}
+body.light .chat-options .composer-paste:hover,
+body.light .composer-options .composer-paste:hover,
+body.light .voice-options .composer-paste:hover,
+body.light .video-options .composer-paste:hover{background:#edf3f9!important;color:#182436!important;}
