@@ -4074,13 +4074,81 @@ let speechProcessor=null;
 let speechSamples=[];
 let speechSampleRate=16000;
 
-function speechSetIdle(){
+function setSpeechMicIdle(){
   const mic=$("#composerMic");
-  if(mic){
-    mic.classList.remove("recording");
-    mic.setAttribute("aria-label","Начать голосовой ввод");
-    mic.title="Голосовой ввод";
+  if(!mic)return;
+  mic.classList.remove("recording");
+  mic.setAttribute("aria-label","Начать голосовой ввод");
+  mic.title="Голосовой ввод";
+  mic.innerHTML='<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 14.5a3.5 3.5 0 0 0 3.5-3.5V6a3.5 3.5 0 0 0-7 0v5a3.5 3.5 0 0 0 3.5 3.5Z"/><path d="M19 11a7 7 0 0 1-14 0"/><path d="M12 18v3M8 21h8"/></svg>';
+}
+function setSpeechMicRecording(){
+  const mic=$("#composerMic");
+  if(!mic)return;
+  mic.classList.add("recording");
+  mic.setAttribute("aria-label","Завершить запись и распознать голос");
+  mic.title="Завершить запись и вставить текст";
+  mic.innerHTML='<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8.5"/><path d="m8.2 12.1 2.3 2.3 5.3-5.3"/></svg>';
+}
+function ensureSpeechVisualizer(){
+  let canvas=$("#composerVoiceVisualizer");
+  const row=document.querySelector(".composer-input-row");
+  if(!row)return null;
+  if(canvas&&canvas.parentElement!==row)canvas.remove();
+  if(!canvas){
+    canvas=document.createElement("canvas");
+    canvas.id="composerVoiceVisualizer";
+    canvas.setAttribute("aria-hidden","true");
+    row.appendChild(canvas);
   }
+  row.style.position="relative";
+  Object.assign(canvas.style,{
+    position:"absolute",left:"52px",right:"58px",top:"50%",
+    width:"calc(100% - 110px)",height:"30px",
+    transform:"translateY(-50%)",display:"none",
+    pointerEvents:"none",zIndex:"5",opacity:".96"
+  });
+  return canvas;
+}
+function stopSpeechVisualizer(){
+  if(speechVisualizerFrame)cancelAnimationFrame(speechVisualizerFrame);
+  speechVisualizerFrame=0;
+  const canvas=$("#composerVoiceVisualizer");
+  if(canvas){const ctx=canvas.getContext("2d");ctx?.clearRect(0,0,canvas.width,canvas.height);canvas.style.display="none";}
+  speechAnalyser=null;
+}
+function drawSpeechVisualizer(){
+  const canvas=ensureSpeechVisualizer();
+  if(!canvas||!speechAnalyser)return;
+  const rect=canvas.getBoundingClientRect();
+  const dpr=Math.max(1,window.devicePixelRatio||1);
+  const width=Math.max(1,Math.round(rect.width*dpr)),height=Math.max(1,Math.round(rect.height*dpr));
+  if(canvas.width!==width||canvas.height!==height){canvas.width=width;canvas.height=height;}
+  const ctx=canvas.getContext("2d");
+  if(!ctx)return;
+  const bins=new Uint8Array(speechAnalyser.frequencyBinCount);
+  speechAnalyser.getByteFrequencyData(bins);
+  ctx.clearRect(0,0,width,height);
+  const count=Math.max(28,Math.min(110,Math.floor(rect.width/5)));
+  const step=width/count,barWidth=Math.max(1,dpr*2);
+  for(let i=0;i<count;i++){
+    const index=Math.floor(i*bins.length/count);
+    const amp=bins[index]/255;
+    const h=Math.max(2*dpr,amp*(height*.88));
+    const x=i*step+(step-barWidth)/2;
+    ctx.fillStyle="rgba(177,126,255,"+(.38+amp*.62)+")";
+    ctx.beginPath();
+    ctx.roundRect(x,(height-h)/2,barWidth,h,barWidth/2);
+    ctx.fill();
+  }
+  speechVisualizerFrame=requestAnimationFrame(drawSpeechVisualizer);
+}
+function speechSetIdle(){
+  stopSpeechVisualizer();
+  const mic=$("#composerMic");
+  if(mic)setSpeechMicIdle();
+  const input=$("#composerInput");
+  if(input){input.placeholder=modes[mode]?.placeholder||"Напиши сообщение...";input.classList.remove("speech-recording");}
   const status=$("#composerStatus");
   if(status)status.textContent=modes[mode]?.status||"Готово";
 }
@@ -4163,6 +4231,7 @@ async function finishSpeechRecording(){
     return;
   }
 
+  stopSpeechVisualizer();
   const mic=$("#composerMic"),status=$("#composerStatus");
   if(mic){
     mic.classList.add("recording");
@@ -4192,7 +4261,12 @@ async function finishSpeechRecording(){
     const input=$("#composerInput");
     if(input){
       const prefix=speechBaseText.trim();
-      input.value=prefix+(prefix?" ":"")+text;
+      const separator=prefix?( /[.!?…]$/.test(prefix) ? " " : ". " ):"";
+      input.value=prefix+separator+text;
+      speechCommittedText=input.value.trim();
+      speechRecordingCount++;
+      input.placeholder=modes[mode]?.placeholder||"Напиши сообщение...";
+      input.classList.remove("speech-recording");
       input.focus();
       input.selectionStart=input.selectionEnd=input.value.length;
       syncInput();
@@ -4200,6 +4274,13 @@ async function finishSpeechRecording(){
     toast("Голос распознан");
   }catch(error){
     console.error("Miya speech-to-text failed",error);
+    const input=$("#composerInput");
+    if(input){
+      input.value=speechBaseText;
+      input.placeholder=modes[mode]?.placeholder||"Напиши сообщение...";
+      input.classList.remove("speech-recording");
+      syncInput();
+    }
     toast("Не удалось распознать голос");
   }finally{
     speechSetIdle();
@@ -4226,10 +4307,15 @@ async function startSpeechRecording(){
     const context=new AudioContextClass();
     await context.resume();
     const source=context.createMediaStreamSource(stream);
+    const analyser=context.createAnalyser();
+    analyser.fftSize=256;
+    analyser.smoothingTimeConstant=.78;
+    source.connect(analyser);
     const processor=context.createScriptProcessor(4096,1,1);
     speechStream=stream;
     speechAudioContext=context;
     speechSource=source;
+    speechAnalyser=analyser;
     speechProcessor=processor;
     speechSamples=[];
 
@@ -4246,19 +4332,26 @@ async function startSpeechRecording(){
     source.connect(processor);
     processor.connect(context.destination);
 
-    const mic=$("#composerMic");
-    speechBaseText=$("#composerInput").value.trim();
-    if(mic){
-      mic.classList.add("recording");
-      mic.setAttribute("aria-label","Остановить голосовой ввод");
-      mic.title="Остановить голосовой ввод";
+    const mic=$("#composerMic"),input=$("#composerInput");
+    speechBaseText=input.value.trim();
+    if(input){
+      input.value="";
+      input.placeholder="";
+      input.classList.add("speech-recording");
+      syncInput();
     }
+    setSpeechMicRecording();
+    const canvas=ensureSpeechVisualizer();
+    if(canvas)canvas.style.display="block";
+    drawSpeechVisualizer();
     const status=$("#composerStatus");
     if(status)status.textContent="Слушаю… говори спокойно";
   }catch(error){
     console.error("Miya microphone start failed",error);
     try{speechStream?.getTracks().forEach(track=>track.stop())}catch{}
-    speechStream=null;speechAudioContext=null;speechSource=null;speechProcessor=null;speechSamples=[];
+    speechStream=null;speechAudioContext=null;speechSource=null;speechAnalyser=null;speechProcessor=null;speechSamples=[];
+    const input=$("#composerInput");
+    if(input){input.value=speechBaseText;syncInput();}
     speechSetIdle();
     if(error?.name==="NotAllowedError")toast("Разреши Miya доступ к микрофону в Firefox");
     else toast("Не удалось открыть микрофон");
