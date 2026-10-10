@@ -4353,7 +4353,11 @@ async function finishSpeechRecording(){
     // If CleverUtils rejects the converted WAV as containing no speech,
     // retry the original recorder container once instead of losing the dictation.
     if(!result.response.ok&&result.response.status===400&&transcriptionBlob!==blob){
-      console.warn("Miya WAV transcription rejected; retrying original microphone recording",{
+      // CleverUtils enforces a one-second cooldown between STT requests.
+      // Wait before retrying the original recording; an immediate retry gets 429
+      // and masks whether the original audio container can be transcribed.
+      await new Promise(resolve=>setTimeout(resolve,1200));
+      console.warn("Miya WAV transcription rejected; retrying original microphone recording after cooldown",{
         originalType:blob.type,originalSize:blob.size,wavSize:transcriptionBlob.size
       });
       result=await requestTranscription(blob,mime.includes("ogg")?"miya-voice.ogg":"miya-voice.webm");
