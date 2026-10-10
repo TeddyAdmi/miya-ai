@@ -79,6 +79,7 @@ function saveCurrentChat(){
  persistChats(chats);
  window.__miyaChatId=currentId;
  renderChatHistoryMini();
+ syncActiveChatTitle();
 }
 function renderChatHistoryMini(){
  const box=$("#chatHistoryMini");if(!box)return;
@@ -181,6 +182,7 @@ function openSavedChat(id){
  const c=$("#canvas");c.classList.add("chat-canvas");c.innerHTML='<div class="chat-stream"></div>';
  chatMessages.forEach(m=>addChatMessage(m.content,m.role==="user",m.image||""));
  renderChatHistoryMini();
+ syncActiveChatTitle();
  scrollChatToLatest("auto");
    $("#composerInput")?.focus();
 }
@@ -3803,6 +3805,7 @@ function setMode(next,render=true){
    if(input)input.value="";
  }
  mode=target;
+ syncActiveChatTitle();
  const m=modes[target];
  const composer=$("#composer"); if(composer){ composer.classList.remove("mode-chat","mode-images","mode-video","mode-voice"); composer.classList.add("mode-"+target); composer.classList.toggle("voice-mode",target==="voice"); }
  const canvas=$("#canvas");
