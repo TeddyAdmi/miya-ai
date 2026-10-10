@@ -2795,3 +2795,88 @@ body.light #composer .chat-options button:hover,body.light #composer .image-sett
 #composer .composer-input-row #composerVoiceVisualizer{z-index:1003!important}
 #composer .composer-input-row #composerMic,
 #composer .composer-input-row #composerSend{position:relative!important;z-index:1006!important}
+
+
+/* Unified attachment control and centered thumbnail placement in AI Chat, Images and Video. */
+.composer.mode-images .composer-left-actions,
+.composer.mode-video .composer-left-actions{
+  position:absolute!important;
+  left:10px!important;
+  bottom:23px!important;
+  z-index:1004!important;
+  width:29px!important;
+  height:29px!important;
+  display:flex!important;
+  align-items:center!important;
+  justify-content:center!important;
+  pointer-events:none!important;
+}
+.composer.mode-images .composer-left-actions .attach,
+.composer.mode-video .composer-left-actions .attach{
+  width:27px!important;
+  height:27px!important;
+  min-width:27px!important;
+  min-height:27px!important;
+  flex:0 0 27px!important;
+  padding:0!important;
+  border:0!important;
+  border-radius:7px!important;
+  background:transparent!important;
+  color:var(--muted)!important;
+  font-size:22px!important;
+  line-height:1!important;
+  display:grid!important;
+  place-items:center!important;
+  pointer-events:auto!important;
+  transform:none!important;
+}
+.composer.mode-images .composer-attachment.has-image,
+.composer.mode-video .composer-attachment.has-image{
+  position:absolute!important;
+  left:43px!important;
+  bottom:21px!important;
+  z-index:1005!important;
+  width:36px!important;
+  height:36px!important;
+  min-width:36px!important;
+  max-width:36px!important;
+  min-height:36px!important;
+  max-height:36px!important;
+  flex:0 0 36px!important;
+  align-self:auto!important;
+  box-sizing:border-box!important;
+  margin:0!important;
+  transform:none!important;
+}
+.composer.mode-images .composer-attachment.has-image img,
+.composer.mode-video .composer-attachment.has-image img{
+  display:block!important;
+  width:100%!important;
+  height:100%!important;
+  object-fit:cover!important;
+  object-position:center!important;
+}
+.composer.mode-images .composer-input-row,
+.composer.mode-video .composer-input-row{position:static!important}
+
+/* Chat bubbles: softer navy in dark mode; near-white in light mode. */
+.chat-row.user .chat-bubble{
+  background:#19314f!important;
+  border-color:#304b6a!important;
+}
+.chat-row.assistant .chat-bubble{
+  background:#142941!important;
+  border-color:#2b4057!important;
+}
+body.light .chat-row.assistant .chat-bubble{
+  background:#fff!important;
+  border-color:#e1e6ed!important;
+  color:#182436!important;
+  box-shadow:0 2px 5px rgba(36,57,83,.035)!important;
+}
+body.light .chat-row.user .chat-bubble{
+  background:#fcfcfe!important;
+  border-color:#e0e4ec!important;
+  color:#26364c!important;
+  box-shadow:0 2px 5px rgba(36,57,83,.035)!important;
+}
