@@ -1,4 +1,9 @@
-<!doctype html>
+<!doctype htm
+      <div class="chat-options" id="chatOptions" aria-label="Действия с текстом сообщения">
+        <button class="composer-copy" id="chatCopyPrompt" type="button" title="Копировать текст" aria-label="Копировать текст"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M15 9V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v7a2 2 0 0 0 2 2h3"/></svg></button>
+        <button class="composer-paste" id="chatPastePrompt" type="button" title="Вставить" aria-label="Вставить"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 4.5h6a2 2 0 0 1 2 2V8H7V6.5a2 2 0 0 1 2-2Z"/><rect x="5" y="8" width="14" height="13" rx="2"/><path d="M9 12h6M9 16h4"/></svg></button>
+        <button class="composer-trash" id="chatTrash" type="button" title="Очистить текст" aria-label="Очистить текст"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M9 7V4h6v3M7 7l1 13h8l1-13M10 11v5M14 11v5"/></svg></button>
+      </div>l>
 <html lang="ru">
 <head>
 <meta charset="UTF-8">
@@ -105,11 +110,7 @@
         </button>
         <span class="composer-spacer"></span>
       </div>
-      <div class="chat-options" id="chatOptions" aria-label="Действия с текстом сообщения">
-        <button class="composer-copy" id="chatCopyPrompt" type="button" title="Копировать текст" aria-label="Копировать текст"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M15 9V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v7a2 2 0 0 0 2 2h3"/></svg></button>
-        <button class="composer-paste" id="chatPastePrompt" type="button" title="Вставить" aria-label="Вставить"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 4.5h6a2 2 0 0 1 2 2V8H7V6.5a2 2 0 0 1 2-2Z"/><rect x="5" y="8" width="14" height="13" rx="2"/><path d="M9 12h6M9 16h4"/></svg></button>
-        <button class="composer-trash" id="chatTrash" type="button" title="Очистить текст" aria-label="Очистить текст"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M9 7V4h6v3M7 7l1 13h8l1-13M10 11v5M14 11v5"/></svg></button>
-      </div>
+
       <div class="voice-options" id="voiceOptions">
         <select class="select-pill" id="voiceLanguage" aria-label="Язык"><option value="ru" selected>Русский</option><option value="en">English</option><option value="de">Deutsch</option><option value="fr">Français</option><option value="es">Español</option></select>
         <select class="select-pill" id="voiceGender" aria-label="Пол"><option value="female" selected>Женский</option><option value="male">Мужской</option></select>

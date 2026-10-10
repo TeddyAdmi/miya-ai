@@ -2607,3 +2607,82 @@ body.light .video-options .composer-paste:hover{background:#edf3f9!important;col
   align-self:center!important;
   margin:0!important;
 }
+
+
+/* AI Chat: keep copy/paste/clear beside +, with one photo inserted before those icons. */
+.composer.mode-chat .composer-input-row{
+  display:grid!important;
+  grid-template-columns:29px auto auto minmax(0,1fr) auto auto!important;
+  grid-template-rows:auto auto!important;
+  align-items:center!important;
+  column-gap:7px!important;
+  row-gap:8px!important;
+  height:auto!important;
+  min-height:0!important;
+}
+.composer.mode-chat #composerInput{
+  grid-column:1 / -1!important;
+  grid-row:1!important;
+  width:100%!important;
+  min-width:0!important;
+  box-sizing:border-box!important;
+  align-self:stretch!important;
+  margin:0!important;
+  max-height:120px!important;
+  padding-top:5px!important;
+  padding-bottom:3px!important;
+}
+.composer.mode-chat .composer-left-actions{
+  position:static!important;
+  grid-column:1!important;
+  grid-row:2!important;
+  align-self:center!important;
+  justify-self:start!important;
+  width:29px!important;
+  height:29px!important;
+  margin:0!important;
+  pointer-events:auto!important;
+}
+.composer.mode-chat .chat-attachment-list{
+  position:static!important;
+  grid-column:2!important;
+  grid-row:2!important;
+  align-self:center!important;
+  justify-self:start!important;
+  width:max-content!important;
+  min-width:0!important;
+  max-width:42px!important;
+  max-height:42px!important;
+  margin:0!important;
+  padding:2px!important;
+  box-sizing:border-box!important;
+  overflow:hidden!important;
+}
+.composer.mode-chat .chat-attachment-list[hidden]{display:none!important}
+.composer.mode-chat .chat-options{
+  grid-column:3!important;
+  grid-row:2!important;
+  width:auto!important;
+  min-width:0!important;
+  display:flex!important;
+  justify-content:flex-start!important;
+  align-items:center!important;
+  gap:2px!important;
+  margin:0!important;
+  padding:0!important;
+  min-height:29px!important;
+}
+.composer.mode-chat #composerMic{
+  grid-column:5!important;
+  grid-row:2!important;
+  justify-self:end!important;
+  align-self:center!important;
+  margin:0!important;
+}
+.composer.mode-chat #composerSend{
+  grid-column:6!important;
+  grid-row:2!important;
+  justify-self:end!important;
+  align-self:center!important;
+  margin:0!important;
+}

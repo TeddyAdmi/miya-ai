@@ -4103,14 +4103,14 @@ async function attachReferenceFile(file){
   const rawData=String(reader.result||"");
   const finishAttachment=(dataUrl)=>{
     if(mode==="chat"){
-      if(chatAttachmentImages.length>=5){toast("Можно прикрепить до 5 фотографий за одно сообщение");return}
+      if(chatAttachmentImages.length>=1){toast("Пока можно прикрепить только одну фотографию");return}
       chatAttachmentImages.push(dataUrl);
       referenceImage=chatAttachmentImages[0]||null;
       chatAttachmentFile=true;
       renderChatAttachmentImages();
       try{sessionStorage.setItem("miyaReferenceImage",referenceImage||"")}catch{}
       $("#composerStatus").textContent="Прикреплено фото: "+chatAttachmentImages.length+" · можно спросить Miya";
-      toast("Фото добавлено ("+chatAttachmentImages.length+"/5)");
+      toast("Фото добавлено");
       $("#composerInput").focus();
       return;
     }
