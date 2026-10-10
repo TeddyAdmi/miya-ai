@@ -2413,3 +2413,71 @@ body.light .chat-options .composer-paste:hover,
 body.light .composer-options .composer-paste:hover,
 body.light .voice-options .composer-paste:hover,
 body.light .video-options .composer-paste:hover{background:#edf3f9!important;color:#182436!important;}
+
+
+/* AI Chat composer: actions sit directly under Send, ordered from the right edge inward. */
+.composer.mode-chat .chat-options{
+  justify-content:flex-end!important;
+  flex-direction:row-reverse!important;
+  gap:2px!important;
+  padding:1px 0 0!important;
+  margin:0!important;
+  min-height:29px!important;
+}
+.composer.mode-chat .chat-options .composer-copy,
+.composer.mode-chat .chat-options .composer-paste,
+.composer.mode-chat .chat-options .composer-trash{
+  flex:0 0 29px!important;
+  width:29px!important;
+  height:29px!important;
+  min-width:29px!important;
+  min-height:29px!important;
+  border-radius:7px!important;
+}
+.composer.mode-chat .chat-options .composer-copy svg,
+.composer.mode-chat .chat-options .composer-paste svg,
+.composer.mode-chat .chat-options .composer-trash svg{
+  width:15px!important;
+  height:15px!important;
+}
+/* Keep the editable prompt close to its controls instead of leaving a tall blank band. */
+.composer.mode-chat #composerInput{
+  min-height:30px!important;
+  padding-top:5px!important;
+  padding-bottom:3px!important;
+  line-height:1.4!important;
+}
+/* The attachment plus is visually anchored beside the ready status, not beside the first text line. */
+.composer.mode-chat .composer-left-actions{
+  position:absolute!important;
+  left:10px!important;
+  bottom:13px!important;
+  z-index:1004!important;
+  width:29px!important;
+  height:29px!important;
+  display:flex!important;
+  align-items:center!important;
+  justify-content:center!important;
+  pointer-events:none!important;
+}
+.composer.mode-chat .composer-left-actions .attach{
+  width:27px!important;
+  height:27px!important;
+  min-width:27px!important;
+  flex:0 0 27px!important;
+  border:0!important;
+  border-radius:7px!important;
+  background:transparent!important;
+  color:var(--muted)!important;
+  font-size:22px!important;
+  line-height:1!important;
+  pointer-events:auto!important;
+}
+.composer.mode-chat .composer-status{
+  min-height:17px!important;
+  padding:3px 2px 0 39px!important;
+  margin-top:0!important;
+  gap:5px!important;
+  line-height:1.2!important;
+}
+.composer.mode-chat .composer-status .status-dot{flex:0 0 auto!important}
