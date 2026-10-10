@@ -315,6 +315,7 @@ function renderChatAttachmentImages(){
  });
  list.hidden=chatAttachmentImages.length===0;
  $("#composer")?.classList.toggle("has-chat-attachments",chatAttachmentImages.length>0);
+ syncInput();
 }
 function clearComposerAttachment(){
  referenceImage=null;
@@ -2043,7 +2044,7 @@ function toast(message){
  t.textContent=message;t.classList.add("show");clearTimeout(window.__toast);
  window.__toast=setTimeout(()=>t.classList.remove("show"),2600)
 }
-function syncInput(){const i=$("#composerInput");if(!i)return;i.style.height="auto";const attached=mode==="chat"&&chatAttachmentImages.length>0;const maxHeight=attached?58:120;const h=Math.min(maxHeight,Math.max(42,i.scrollHeight));i.style.height=h+"px";i.style.overflowY=i.scrollHeight>h?"auto":"hidden";const row=i.closest(".composer-input-row");if(row)row.style.height=h+"px"}
+function syncInput(){const i=$("#composerInput");if(!i)return;i.style.height="auto";const h=Math.min(120,Math.max(42,i.scrollHeight));i.style.height=h+"px";i.style.overflowY=i.scrollHeight>h?"auto":"hidden";const row=i.closest(".composer-input-row");if(row)row.style.height=""}
 function modeHero(){
  if(mode==="chat") return `<div class="studio-room clean-canvas chat-room">
    <div class="chat-welcome section-welcome">
