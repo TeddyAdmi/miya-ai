@@ -2417,7 +2417,7 @@ body.light .video-options .composer-paste:hover{background:#edf3f9!important;col
 
 /* AI Chat composer: actions sit directly under Send, ordered from the right edge inward. */
 .composer.mode-chat .chat-options{
-  justify-content:flex-end!important;
+  justify-content:flex-start!important;
   flex-direction:row-reverse!important;
   gap:2px!important;
   padding:1px 0 0!important;
