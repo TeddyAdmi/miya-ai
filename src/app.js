@@ -162,7 +162,7 @@ function syncActiveChatTitle(){
  const renameEl=document.createElement("button");renameEl.type="button";renameEl.className="active-chat-title-rename";
  renameEl.title="Переименовать чат";renameEl.setAttribute("aria-label","Переименовать чат");
  renameEl.innerHTML='<svg viewBox="0 0 24 24" aria-hidden="true"><path d="m4 16.5-.8 3.3 3.3-.8L18.7 6.8a2.2 2.2 0 0 0-3.1-3.1L4 16.5Z"/><path d="m14.2 5.8 4 4"/></svg>';
- styleActiveChatAction(renameEl);renameEl.onclick=startInlineChatRename;el.append(titleEl,dateEl,renameEl);
+ styleActiveChatAction(renameEl);renameEl.onclick=startInlineChatRename;el.append(titleEl,renameEl,dateEl);
  requestAnimationFrame(fitActiveChatTitle);
 }
 function saveCurrentChat(){
