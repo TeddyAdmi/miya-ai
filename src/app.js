@@ -34,10 +34,14 @@ body.light .image-viewer-created-info .image-viewer-created-date{color:#64748b!i
  st.textContent=`#composerMic.transcribing svg{animation:miyaSpeechSpin .8s linear infinite;transform-origin:50% 50%}
 #composerMic.transcribing svg circle{fill:none!important;stroke:currentColor!important;stroke-width:2.2!important;stroke-linecap:round!important}
 @keyframes miyaSpeechSpin{to{transform:rotate(360deg)}}
-.chat-selection-actions{position:fixed!important;z-index:2147482000!important;display:flex!important;align-items:center!important;gap:6px!important;flex-wrap:wrap!important;max-width:min(460px,calc(100vw - 16px))!important;padding:7px!important;border:1px solid rgba(148,163,184,.3)!important;border-radius:11px!important;background:var(--surface,#111827)!important;box-shadow:0 8px 28px rgba(0,0,0,.22)!important}
+.chat-selection-actions{position:fixed!important;z-index:2147482000!important;display:flex!important;align-items:center!important;justify-content:center!important;gap:8px!important;flex-wrap:nowrap!important;max-width:calc(100vw - 16px)!important;padding:2px!important;border:0!important;border-radius:0!important;background:transparent!important;box-shadow:none!important}
 .chat-selection-actions[hidden]{display:none!important}
-.chat-selection-actions button{border:1px solid var(--line)!important;background:var(--surface2)!important;color:var(--text)!important;border-radius:7px!important;padding:6px 9px!important;font-size:11px!important;line-height:1.2!important;white-space:nowrap!important;cursor:pointer!important}
-.chat-selection-actions button:hover{border-color:#9d70ff!important;background:rgba(157,112,255,.14)!important}
+.chat-selection-actions button{appearance:none!important;display:grid!important;place-items:center!important;width:30px!important;height:30px!important;flex:0 0 30px!important;padding:5px!important;border:1px solid transparent!important;border-radius:8px!important;background:transparent!important;color:var(--text,#e5e7eb)!important;cursor:pointer!important;transition:background .15s,border-color .15s,color .15s!important}
+.chat-selection-actions button svg{width:18px!important;height:18px!important;fill:none!important;stroke:currentColor!important;stroke-width:1.8!important;stroke-linecap:round!important;stroke-linejoin:round!important;pointer-events:none!important}
+.chat-selection-actions button:hover,.chat-selection-actions button:focus-visible{border-color:rgba(157,112,255,.42)!important;background:rgba(157,112,255,.13)!important;color:#b99aff!important;outline:none!important}
+.chat-selection-actions button[aria-label^="Прослушать"]{color:#b99aff!important}
+body.light .chat-selection-actions button{color:#51417f!important}
+body.light .chat-selection-actions button:hover,body.light .chat-selection-actions button:focus-visible{background:rgba(125,83,220,.1)!important;color:#7040c9!important}
 .chat-actions button[title="Остановить голос"][hidden]{display:none!important}
 .chat-actions button[title="Остановить голос"]{color:#e87979!important}
 body.light .chat-selection-actions{background:#fff!important;border-color:#dbe2ec!important;box-shadow:0 8px 28px rgba(30,45,70,.18)!important}
@@ -2653,7 +2657,7 @@ function addChatMessage(text,isUser,image="",isError=false){
    const selectionBar=document.createElement("div");
    selectionBar.className="chat-selection-actions";
    selectionBar.hidden=true;
-   selectionBar.innerHTML='<button type="button" data-selection-action="image">Создать картинку</button><button type="button" data-selection-action="video">Создать видео</button><button type="button" data-selection-action="copy">Копировать</button><button type="button" data-selection-action="answer">Ответить</button>';
+   selectionBar.innerHTML='<button type="button" data-selection-action="image" title="Создать картинку" aria-label="Создать картинку"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="m21 15-5-5L5 21"/></svg></button><button type="button" data-selection-action="video" title="Создать видео" aria-label="Создать видео"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="13" height="14" rx="2"/><path d="m16 10 5-3v10l-5-3z"/></svg></button><button type="button" data-selection-action="copy" title="Копировать выделенный текст" aria-label="Копировать выделенный текст"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="8" y="8" width="12" height="12" rx="2"/><path d="M16 8V5a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h3"/></svg></button><button type="button" data-selection-action="answer" title="Ответить на выделенный текст" aria-label="Ответить на выделенный текст"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 10 4 15l5 5"/><path d="M4 15h9a7 7 0 0 0 7-7V5"/></svg></button><button type="button" data-selection-action="listen" title="Прослушать выделенный текст голосом Светланы" aria-label="Прослушать выделенный текст голосом Светланы"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 10v4h4l5 4V6l-5 4H3Z"/><path d="M16 9a5 5 0 0 1 0 6M18.5 6.5a8.5 8.5 0 0 1 0 11"/></svg></button>';
    selectionBar.querySelector('[data-selection-action="image"]').onclick=()=>{
      const t=selectionBar.dataset.selectionText||"";
      if(t){setMode("images");$("#composerInput").value=t;syncInput();$("#composerInput").focus()}
@@ -2675,6 +2679,10 @@ function addChatMessage(text,isUser,image="",isError=false){
      const input=$("#composerInput");input.value=t;syncInput();input.focus();input.selectionStart=input.selectionEnd=input.value.length;
      selectionBar.hidden=true;toast("Выделенный текст добавлен в промпт");
    };
+   selectionBar.querySelector('[data-selection-action="listen"]').onclick=e=>{
+     const t=selectionBar.dataset.selectionText||"";
+     if(t)speakChatResponse(t,e.currentTarget);
+   };
    bubble.addEventListener("mouseup",()=>{
      const sel=window.getSelection?.();
      const selected=String(sel?.toString()||"").trim();
@@ -2682,8 +2690,8 @@ function addChatMessage(text,isUser,image="",isError=false){
      selectionBar.dataset.selectionText=selected;
      const rect=sel.getRangeAt(0).getBoundingClientRect();
      selectionBar.style.position="fixed";selectionBar.style.zIndex="2147482000";selectionBar.style.marginTop="0";
-     selectionBar.style.left=Math.max(8,Math.min(window.innerWidth-250,rect.left+rect.width/2-125))+"px";
-     selectionBar.style.top=Math.max(8,Math.min(window.innerHeight-44,rect.bottom+8))+"px";
+     selectionBar.style.left=Math.max(8,Math.min(window.innerWidth-210,rect.left+rect.width/2-105))+"px";
+     selectionBar.style.top=Math.max(8,Math.min(window.innerHeight-48,rect.bottom+8))+"px";
      selectionBar.hidden=false;
    });
    content.appendChild(selectionBar);
