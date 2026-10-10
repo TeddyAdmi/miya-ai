@@ -43,6 +43,7 @@ body.light .image-viewer-created-info .image-viewer-created-date{color:#64748b!i
 .chat-selection-actions button[aria-label^="Прослушать"]{color:#b99aff!important}
 body.light .chat-selection-actions button{color:#51417f!important}
 body.light .chat-selection-actions button:hover,body.light .chat-selection-actions button:focus-visible{background:rgba(125,83,220,.1)!important;color:#7040c9!important}
+.chat-speech-spinner{width:17px!important;height:17px!important;display:block!important;animation:miyaSpeechSpin .8s linear infinite!important;transform-origin:50% 50%!important}
 .chat-actions button[title="Остановить голос"][hidden]{display:none!important}
 .chat-actions button[title="Остановить голос"]{color:#e87979!important}
 body.light .chat-selection-actions{background:#fff!important;border-color:#dbe2ec!important;box-shadow:0 8px 28px rgba(30,45,70,.18)!important}
@@ -109,18 +110,18 @@ async function speakChatResponse(text,button){
  if(activeChatSpeechAudio||activeChatSpeechController){stopChatSpeech();return}
  const controller=new AbortController();
  activeChatSpeechController=controller;activeChatSpeechButton=button;
- activeChatSpeechStopButton=button.closest(".chat-actions")?.querySelector('[title="Остановить голос"]')||null;
+ activeChatSpeechStopButton=button.closest(".chat-actions")?.querySelector(".chat-stop-speech")||null;
  const isSelectionListen=!!button.closest(".chat-selection-actions");
  button.dataset.originalHtml=button.innerHTML;button.dataset.originalTitle=button.title;button.dataset.originalAriaLabel=button.getAttribute("aria-label")||button.title;
  button.disabled=true;
- if(isSelectionListen){button.title="Готовлю речь…";button.setAttribute("aria-label","Готовлю речь…")}
- else button.textContent="Готовлю речь…";
- if(activeChatSpeechStopButton)activeChatSpeechStopButton.hidden=false;
+ button.innerHTML='<svg class="chat-speech-spinner" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-dasharray="28 18" fill="none"/></svg>';
+ button.title="Подготавливаю озвучивание…";button.setAttribute("aria-label","Подготавливаю озвучивание…");
+ if(activeChatSpeechStopButton)activeChatSpeechStopButton.hidden=true;
  try{
   if(!Array.isArray(voiceCatalog)||!voiceCatalog.length)await loadVoiceCatalog();
   if(controller.signal.aborted)return;
   const voice=voiceCatalog.find(v=>/svetlana|светлана/i.test(String(v.name||"")));
-  if(!voice)throw new Error("Голос Светлана не найден в каталоге");
+  if(!voice)throw new Error("Не удалось подготовить озвучивание");
   const chunks=[];let rest=value;
   while(rest.length>1800){
    let cut=Math.max(rest.lastIndexOf(". ",1800),rest.lastIndexOf("! ",1800),rest.lastIndexOf("? ",1800),rest.lastIndexOf("\\n",1800),rest.lastIndexOf(" ",1800));
@@ -139,12 +140,17 @@ async function speakChatResponse(text,button){
   activeChatSpeechUrl=URL.createObjectURL(new Blob(blobs,{type:"audio/mpeg"}));
   activeChatSpeechAudio=new Audio(activeChatSpeechUrl);activeChatSpeechAudio.onended=stopChatSpeech;
   button.disabled=false;
-  if(isSelectionListen){button.innerHTML=button.dataset.originalHtml;button.title="Остановить воспроизведение";button.setAttribute("aria-label","Остановить воспроизведение")}
-  else button.textContent="Прослушать";
+  if(isSelectionListen){
+    button.innerHTML='<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="6" y="6" width="12" height="12" rx="2" fill="currentColor" stroke="currentColor"/></svg>';
+    button.title="Остановить воспроизведение";button.setAttribute("aria-label","Остановить воспроизведение");
+  }else{
+    button.innerHTML=button.dataset.originalHtml;button.title=button.dataset.originalTitle;button.setAttribute("aria-label",button.dataset.originalAriaLabel);
+    if(activeChatSpeechStopButton)activeChatSpeechStopButton.hidden=false;
+  }
   activeChatSpeechController=null;
   await activeChatSpeechAudio.play();
  }catch(error){
-  if(error?.name!=="AbortError"){console.error("Chat TTS failed",error);toast(error.message||"Не удалось озвучить ответ")}
+  if(error?.name!=="AbortError"){console.error("Chat TTS failed",error);toast(error.message||"Не удалось озвучить текст")}
   if(activeChatSpeechController===controller)stopChatSpeech();
  }
 }
@@ -2640,7 +2646,9 @@ function addChatMessage(text,isUser,image="",isError=false){
 
  const actions=document.createElement("div");actions.className="chat-actions";
  if(isUser){
-   actions.innerHTML='<button type="button" title="Копировать"><span class="action-mini-icon">⧉</span>Копировать</button><button type="button" title="Повторить"><span class="action-mini-icon">↻</span>Повторить</button>';
+   actions.innerHTML='<button type="button" title="Прослушать сообщение" aria-label="Прослушать сообщение"><span class="action-mini-icon">♫</span>Прослушать</button><button type="button" class="chat-stop-speech" title="Остановить голос" hidden><span class="action-mini-icon">■</span>Стоп</button><button type="button" title="Копировать"><span class="action-mini-icon">⧉</span>Копировать</button><button type="button" title="Повторить"><span class="action-mini-icon">↻</span>Повторить</button>';
+   actions.querySelector('[title="Прослушать сообщение"]').onclick=e=>speakChatResponse(text,e.currentTarget);
+   actions.querySelector('[title="Остановить голос"]').onclick=stopChatSpeech;
    actions.querySelector('[title="Копировать"]').onclick=e=>copyChatText(text,e.currentTarget);
    actions.querySelector('[title="Повторить"]').onclick=()=>{
      const value=String(text||"").trim();
@@ -2683,12 +2691,17 @@ function addChatMessage(text,isUser,image="",isError=false){
      if(t)copyChatText(t,selectionBar.querySelector('[data-selection-action="copy"]'));
      selectionBar.hidden=true;
    };
-   selectionBar.querySelector('[data-selection-action="answer"]').onclick=()=>{
-     const t=selectionBar.dataset.selectionText||"";
-     if(!t)return;
-     const input=$("#composerInput");input.value=t;syncInput();input.focus();input.selectionStart=input.selectionEnd=input.value.length;
-     selectionBar.hidden=true;toast("Выделенный текст добавлен в промпт");
-   };
+   if(isUser){
+     selectionBar.querySelector('[data-selection-action="answer"]')?.remove();
+   }else{
+     selectionBar.querySelector('[data-selection-action="answer"]').onclick=()=>{
+       const t=selectionBar.dataset.selectionText||"";
+       if(!t)return;
+       const quoted="Цитата из ответа Miya:\\n"+t.split("\\n").map(line=>"> "+line).join("\\n")+"\\n\\nОтветь на эту цитату:";
+       const input=$("#composerInput");input.value=quoted;syncInput();input.focus();input.selectionStart=input.selectionEnd=input.value.length;
+       selectionBar.hidden=true;toast("Цитата из ответа Miya добавлена в промпт");
+     };
+   }
    selectionBar.querySelector('[data-selection-action="listen"]').onclick=e=>{
      const t=selectionBar.dataset.selectionText||"";
      if(t)speakChatResponse(t,e.currentTarget);
@@ -3984,6 +3997,7 @@ function setMode(next,render=true){
    if(input)input.value="";
  }
  mode=target;
+ const wallClear=$("#clearImageWall");if(wallClear)wallClear.style.display=target==="chat"?"none":"";
  syncActiveChatTitle();
  const m=modes[target];
  const composer=$("#composer"); if(composer){ composer.classList.remove("mode-chat","mode-images","mode-video","mode-voice"); composer.classList.add("mode-"+target); composer.classList.toggle("voice-mode",target==="voice"); }
