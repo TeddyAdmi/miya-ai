@@ -2693,8 +2693,10 @@ body.light button.floating-theme:hover,body.light button.floating-wall-clear:hov
 body.light button.floating-theme svg,body.light button.floating-wall-clear svg{stroke:currentColor}
 
 
-/* Selected saved-chat title, nested below the workspace description. */
-.active-chat-title{margin:8px 0 0!important;font-size:18px!important;line-height:1.3!important;font-weight:750!important;letter-spacing:-.025em;color:var(--text,#eaf1ff);overflow-wrap:anywhere;}
+/* Selected saved-chat title and creation date share one right-aligned row. */
+.active-chat-title{display:flex;align-items:center;gap:12px;width:100%;min-width:0;margin:8px 0 0!important;font-size:18px!important;line-height:1.3!important;font-weight:750!important;letter-spacing:-.025em;color:var(--text,#eaf1ff);white-space:nowrap;}
 .active-chat-title[hidden]{display:none!important;}
+.active-chat-title-text{display:block;min-width:0;flex:0 1 auto;overflow:hidden;white-space:nowrap;text-overflow:clip;}
+.active-chat-title-date{display:block;flex:0 0 auto;margin-left:auto;font-size:12px;font-weight:600;letter-spacing:0;color:var(--muted,#8297b2);white-space:nowrap;}
 body.light .active-chat-title{color:#273047;}
-@media(max-width:800px){.active-chat-title{font-size:16px!important;margin-top:7px!important;}}
+@media(max-width:800px){.active-chat-title{font-size:16px!important;margin-top:7px!important;gap:8px;}.active-chat-title-date{font-size:11px;}}

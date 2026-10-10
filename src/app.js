@@ -54,12 +54,44 @@ function getChats(){
 function persistChats(chats){
  try{localStorage.setItem(CHAT_KEY,JSON.stringify(chats.slice(0,50)))}catch{}
 }
+function fitActiveChatTitle(){
+ const el=$("#activeChatTitle");if(!el||el.hidden)return;
+ const titleEl=el.querySelector(".active-chat-title-text");
+ const dateEl=el.querySelector(".active-chat-title-date");
+ if(!titleEl||!dateEl)return;
+ const title=String(titleEl.dataset.fullTitle||"");
+ const available=Math.max(0,el.clientWidth-dateEl.getBoundingClientRect().width-12);
+ const canvas=document.createElement("canvas");
+ const ctx=canvas.getContext("2d");
+ if(!ctx){titleEl.textContent=title;return}
+ const style=getComputedStyle(titleEl);
+ ctx.font=style.font||("750 18px "+getComputedStyle(el).fontFamily);
+ const words=title.split(/\\s+/).filter(Boolean);
+ let fitted="";
+ for(const word of words){
+  const candidate=fitted?fitted+" "+word:word;
+  if(ctx.measureText(candidate).width>available)break;
+  fitted=candidate;
+ }
+ titleEl.textContent=fitted;
+ titleEl.title=title;
+}
 function syncActiveChatTitle(){
  const el=$("#activeChatTitle");if(!el)return;
  const chat=mode==="chat"&&window.__miyaChatId?getChats().find(x=>x.id===window.__miyaChatId):null;
  const title=String(chat?.title||"").trim();
- el.textContent=title;
+ const timestamp=Number(chat?.createdAt)||Number(chat?.updatedAt)||0;
+ el.replaceChildren();
  el.hidden=!title;
+ if(!title)return;
+ const titleEl=document.createElement("span");
+ titleEl.className="active-chat-title-text";
+ titleEl.dataset.fullTitle=title;
+ const dateEl=document.createElement("span");
+ dateEl.className="active-chat-title-date";
+ dateEl.textContent=timestamp?new Date(timestamp).toLocaleDateString("ru-RU",{day:"2-digit",month:"2-digit",year:"numeric"}):"";
+ el.append(titleEl,dateEl);
+ requestAnimationFrame(fitActiveChatTitle);
 }
 function saveCurrentChat(){
  if(!chatMessages.length)return;
@@ -73,7 +105,7 @@ function saveCurrentChat(){
   const image=String(m.image);
   return image.length<=900000?{...m,image}:{...m,image:""};
 });
- const item={id:currentId,title,messages:messagesForStorage,updatedAt:Date.now(),pinned:Boolean(existing?.pinned)};
+ const now=Date.now();\n const item={id:currentId,title,messages:messagesForStorage,createdAt:Number(existing?.createdAt)||Number(existing?.updatedAt)||now,updatedAt:now,pinned:Boolean(existing?.pinned)};
  const index=chats.findIndex(x=>x.id===currentId);
  if(index>=0)chats[index]=item;else chats.unshift(item);
  persistChats(chats);
@@ -165,7 +197,7 @@ function closeChatFlyout(){
  $("#chatMenuToggle")?.setAttribute("aria-expanded","false");
  setTimeout(()=>$("#composerInput")?.focus(),0);
 }
-function resetChatMenus(){
+window.addEventListener("resize",()=>requestAnimationFrame(fitActiveChatTitle));\nfunction resetChatMenus(){
  document.querySelectorAll(".chat-history-row.menu-open").forEach(x=>x.classList.remove("menu-open"));
  document.querySelectorAll(".chat-history-menu").forEach(menu=>{
    menu.classList.remove("rename-open");
@@ -317,7 +349,7 @@ function renderChatAttachmentImages(){
    referenceImage=chatAttachmentImages[0]||null;
    chatAttachmentFile=chatAttachmentImages.length>0;
    renderChatAttachmentImages();
-   if(!chatAttachmentFile)clearComposerAttachment();
+   if(!chatAttachmentFile){clearComposerAttachment();if(mode==="chat")$("#composerStatus").textContent="AI Chat готов";}
    else $("#composerStatus").textContent="Картинка прикреплена — можно спросить меня о ней.";
   });
   item.append(image,remove);
