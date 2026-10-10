@@ -30,11 +30,12 @@ body.light .image-viewer-created-info .image-viewer-created-date{color:#64748b!i
 })();
 (function ensureChatSpeechAndSelectionStyles(){
  if(document.getElementById("miyaChatSpeechSelectionStyles"))return;
+ document.addEventListener("selectionchange",()=>{const selected=String(window.getSelection?.()?.toString()||"").trim();if(!selected)document.querySelectorAll(".chat-selection-actions").forEach(el=>{el.hidden=true})});
  const st=document.createElement("style");st.id="miyaChatSpeechSelectionStyles";
  st.textContent=`#composerMic.transcribing svg{animation:miyaSpeechSpin .8s linear infinite;transform-origin:50% 50%}
 #composerMic.transcribing svg circle{fill:none!important;stroke:currentColor!important;stroke-width:2.2!important;stroke-linecap:round!important}
 @keyframes miyaSpeechSpin{to{transform:rotate(360deg)}}
-.chat-selection-actions{position:fixed!important;z-index:2147482000!important;display:flex!important;align-items:center!important;justify-content:center!important;gap:8px!important;flex-wrap:nowrap!important;max-width:calc(100vw - 16px)!important;padding:5px!important;border:1px solid #34384b!important;border-radius:12px!important;background:#191c2b!important;box-shadow:0 10px 30px rgba(0,0,0,.38)!important;isolation:isolate!important;backdrop-filter:none!important;-webkit-backdrop-filter:none!important}
+.chat-selection-actions{position:fixed!important;z-index:2147482000!important;display:flex!important;align-items:center!important;justify-content:center!important;gap:8px!important;flex-wrap:nowrap!important;max-width:calc(100vw - 16px)!important;padding:5px!important;border:1px solid #34384b!important;border-radius:12px!important;background:var(--surface,#0b1d34)!important;border-color:var(--line,#154d83)!important;box-shadow:0 10px 30px rgba(0,0,0,.28)!important;isolation:isolate!important;backdrop-filter:none!important;-webkit-backdrop-filter:none!important}
 .chat-selection-actions[hidden]{display:none!important}
 .chat-selection-actions button{appearance:none!important;display:grid!important;place-items:center!important;width:30px!important;height:30px!important;flex:0 0 30px!important;padding:5px!important;border:1px solid transparent!important;border-radius:8px!important;background:transparent!important;color:var(--text,#e5e7eb)!important;cursor:pointer!important;transition:background .15s,border-color .15s,color .15s!important}
 .chat-selection-actions button svg{width:18px!important;height:18px!important;fill:none!important;stroke:currentColor!important;stroke-width:1.8!important;stroke-linecap:round!important;stroke-linejoin:round!important;pointer-events:none!important}
@@ -2653,20 +2654,20 @@ function addChatMessage(text,isUser,image="",isError=false){
      }
    };
  }else{
-   actions.innerHTML='<button type="button" title="Копировать"><span class="action-mini-icon">⧉</span>Копировать</button><button type="button" title="Прослушать ответ голосом Светланы"><span class="action-mini-icon">♫</span>Прослушать</button><button type="button" class="chat-stop-speech" title="Остановить голос" hidden><span class="action-mini-icon">■</span>Стоп</button><button type="button" title="В промпт"><span class="action-mini-icon">✦</span>В промпт</button><button type="button" title="Повторить"><span class="action-mini-icon">↻</span>Повторить</button>';
+   actions.innerHTML='<button type="button" title="Копировать"><span class="action-mini-icon">⧉</span>Копировать</button><button type="button" title="Прослушать ответ"><span class="action-mini-icon">♫</span>Прослушать</button><button type="button" class="chat-stop-speech" title="Остановить голос" hidden><span class="action-mini-icon">■</span>Стоп</button><button type="button" title="В промпт"><span class="action-mini-icon">✦</span>В промпт</button><button type="button" title="Повторить"><span class="action-mini-icon">↻</span>Повторить</button>';
    actions.querySelector('[title="Копировать"]').onclick=e=>copyChatText(text,e.currentTarget);
-   actions.querySelector('[title="Прослушать ответ голосом Светланы"]').onclick=e=>speakChatResponse(text,e.currentTarget);
+   actions.querySelector('[title="Прослушать ответ"]').onclick=e=>speakChatResponse(text,e.currentTarget);
    actions.querySelector('[title="Остановить голос"]').onclick=stopChatSpeech;
    actions.querySelector('[title="В промпт"]').onclick=()=>{$("#composerInput").value=text;syncInput();$("#composerInput").focus();toast("Ответ добавлен в промпт")};
    actions.querySelector('[title="Повторить"]').onclick=()=>retryLastChat();
  }
  content.appendChild(actions);
 
- if(!isUser&&!isError){
+ if(!isError){
    const selectionBar=document.createElement("div");
    selectionBar.className="chat-selection-actions";
    selectionBar.hidden=true;
-   selectionBar.innerHTML='<button type="button" data-selection-action="image" title="Создать картинку" aria-label="Создать картинку"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="m21 15-5-5L5 21"/></svg></button><button type="button" data-selection-action="video" title="Создать видео" aria-label="Создать видео"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="13" height="14" rx="2"/><path d="m16 10 5-3v10l-5-3z"/></svg></button><button type="button" data-selection-action="copy" title="Копировать выделенный текст" aria-label="Копировать выделенный текст"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="8" y="8" width="12" height="12" rx="2"/><path d="M16 8V5a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h3"/></svg></button><button type="button" data-selection-action="answer" title="Ответить на выделенный текст" aria-label="Ответить на выделенный текст"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 10 4 15l5 5"/><path d="M4 15h9a7 7 0 0 0 7-7V5"/></svg></button><button type="button" data-selection-action="listen" title="Прослушать выделенный текст голосом Светланы" aria-label="Прослушать выделенный текст голосом Светланы"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 10v4h4l5 4V6l-5 4H3Z"/><path d="M16 9a5 5 0 0 1 0 6M18.5 6.5a8.5 8.5 0 0 1 0 11"/></svg></button>';
+   selectionBar.innerHTML='<button type="button" data-selection-action="image" title="Создать картинку" aria-label="Создать картинку"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="m21 15-5-5L5 21"/></svg></button><button type="button" data-selection-action="video" title="Создать видео" aria-label="Создать видео"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="13" height="14" rx="2"/><path d="m16 10 5-3v10l-5-3z"/></svg></button><button type="button" data-selection-action="copy" title="Копировать выделенный текст" aria-label="Копировать выделенный текст"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="8" y="8" width="12" height="12" rx="2"/><path d="M16 8V5a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h3"/></svg></button><button type="button" data-selection-action="answer" title="Ответить на выделенный текст" aria-label="Ответить на выделенный текст"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 10 4 15l5 5"/><path d="M4 15h9a7 7 0 0 0 7-7V5"/></svg></button><button type="button" data-selection-action="listen" title="Прослушать выделенный текст" aria-label="Прослушать выделенный текст"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 10v4h4l5 4V6l-5 4H3Z"/><path d="M16 9a5 5 0 0 1 0 6M18.5 6.5a8.5 8.5 0 0 1 0 11"/></svg></button>';
    selectionBar.querySelector('[data-selection-action="image"]').onclick=()=>{
      const t=selectionBar.dataset.selectionText||"";
      if(t){setMode("images");$("#composerInput").value=t;syncInput();$("#composerInput").focus()}
@@ -2692,16 +2693,18 @@ function addChatMessage(text,isUser,image="",isError=false){
      const t=selectionBar.dataset.selectionText||"";
      if(t)speakChatResponse(t,e.currentTarget);
    };
+   selectionBar.addEventListener("mousedown",e=>e.preventDefault());
    bubble.addEventListener("mouseup",()=>{
      const sel=window.getSelection?.();
      const selected=String(sel?.toString()||"").trim();
-     if(!selected||!sel?.rangeCount||!bubble.contains(sel.anchorNode)||!bubble.contains(sel.focusNode))return;
+     if(!selected||!sel?.rangeCount||!bubble.contains(sel.anchorNode)||!bubble.contains(sel.focusNode)){selectionBar.hidden=true;return;}
      selectionBar.dataset.selectionText=selected;
      const rect=sel.getRangeAt(0).getBoundingClientRect();
      selectionBar.style.position="fixed";selectionBar.style.zIndex="2147482000";selectionBar.style.marginTop="0";
-     selectionBar.style.left=Math.max(8,Math.min(window.innerWidth-200,rect.right))+"px";
-     selectionBar.style.top=Math.max(8,Math.min(window.innerHeight-48,rect.bottom+8))+"px";
      selectionBar.hidden=false;
+     const barWidth=selectionBar.offsetWidth;
+     selectionBar.style.left=Math.max(8,Math.min(window.innerWidth-barWidth-8,rect.right-barWidth))+"px";
+     selectionBar.style.top=Math.max(8,Math.min(window.innerHeight-selectionBar.offsetHeight-8,rect.bottom+8))+"px";
    });
    content.appendChild(selectionBar);
  }
