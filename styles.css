@@ -2446,7 +2446,7 @@ body.light .video-options .composer-paste:hover{background:#edf3f9!important;col
 /* The prompt stays on the upper line and grows upward as text is entered. */
 .composer.mode-chat #composerInput{
   min-height:30px!important;
-  padding-top:5px!important;
+  padding-top:8px!important;
   padding-bottom:3px!important;
   line-height:1.4!important;
 }

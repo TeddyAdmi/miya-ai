@@ -4221,28 +4221,33 @@ function ensureSpeechVisualizer(){
     canvas.setAttribute("aria-hidden","true");
     row.appendChild(canvas);
   }
-  row.style.position="relative";
+  // CSS has a legacy !important rule setting this grid row to position:static.
+  // Override it explicitly so the canvas coordinates are measured from this row.
+  row.style.setProperty("position","relative","important");
   const rowRect=row.getBoundingClientRect();
   const mic=row.querySelector("#composerMic");
   const micRect=mic?.getBoundingClientRect();
   const clearButton=row.querySelector("#chatTrash");
   const clearRect=clearButton?.getBoundingClientRect();
-  // Keep the waveform strictly in the gap between Clear text and the microphone.
-  const centerY=micRect
-    ? micRect.top+micRect.height/2-rowRect.top
-    : (clearRect ? clearRect.top+clearRect.height/2-rowRect.top : rowRect.height*.75);
+  // Align the waveform's true center with the center of both lower-row controls.
+  const clearCenter=clearRect ? clearRect.top+clearRect.height/2 : null;
+  const micCenter=micRect ? micRect.top+micRect.height/2 : null;
+  const centerY=((clearCenter!==null&&micCenter!==null)
+    ? (clearCenter+micCenter)/2
+    : (micCenter!==null ? micCenter : (clearCenter!==null ? clearCenter : rowRect.top+rowRect.height*.75)))-rowRect.top+2;
+  // Leave a visibly wider breathing gap on both sides of the waveform.
   const leftEdge=clearRect
-    ? clearRect.right-rowRect.left+6
-    : (micRect ? micRect.left-rowRect.left-80 : rowRect.width*.55);
+    ? clearRect.right-rowRect.left+14
+    : (micRect ? micRect.left-rowRect.left-90 : rowRect.width*.55);
   const rightEdge=micRect
-    ? micRect.left-rowRect.left-6
+    ? micRect.left-rowRect.left-14
     : rowRect.width-10;
   const canvasWidth=Math.max(0,rightEdge-leftEdge);
   Object.assign(canvas.style,{
     position:"absolute",left:leftEdge+"px",right:"auto",top:centerY+"px",
     width:canvasWidth+"px",height:"30px",
     transform:"translateY(-50%)",
-    pointerEvents:"none",zIndex:"1004",opacity:"1",
+    pointerEvents:"none",zIndex:"1004",opacity:"1",display:"block",
     mixBlendMode:"screen"
   });
   return canvas;
