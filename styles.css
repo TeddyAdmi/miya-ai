@@ -2758,3 +2758,29 @@ body.light .composer-quote-label{color:#674bb4}
 .chat-row.assistant .chat-bubble{background:#0e1c2d!important;border-color:#27394d!important}
 body.light .chat-row.user .chat-bubble{background:#edf0fb!important;border-color:#d0d7ee!important;color:#26364c!important;box-shadow:0 2px 5px rgba(36,57,83,.045)!important}
 body.light .chat-row.assistant .chat-bubble{background:#f1f4f8!important;border-color:#d8e1eb!important;color:#182436!important;box-shadow:0 2px 5px rgba(36,57,83,.035)!important}
+
+
+/* One compact, unboxed icon system for all prompt toolbars. */
+#composer .chat-options .composer-copy,#composer .chat-options .composer-paste,#composer .chat-options .composer-trash,
+#composer .image-settings .composer-copy,#composer .image-settings .composer-paste,#composer .image-settings .composer-trash,#composer .image-settings .improve,
+#composer .video-options .composer-copy,#composer .video-options .composer-paste,#composer .video-options .composer-trash,#composer .video-options .video-tool,
+#composer .voice-options .composer-copy,#composer .voice-options .composer-paste,#composer .voice-options .composer-trash,#composer .voice-options .voice-tool {
+ flex:0 0 30px!important;width:30px!important;min-width:30px!important;height:30px!important;min-height:30px!important;padding:0!important;
+ display:grid!important;place-items:center!important;border:0!important;border-radius:7px!important;background:transparent!important;
+ box-shadow:none!important;color:var(--muted)!important;outline:none!important;transition:color .15s ease,background .15s ease!important;
+}
+#composer .chat-options .composer-copy svg,#composer .chat-options .composer-paste svg,#composer .chat-options .composer-trash svg,
+#composer .image-settings .composer-copy svg,#composer .image-settings .composer-paste svg,#composer .image-settings .composer-trash svg,#composer .image-settings .improve svg,
+#composer .video-options .composer-copy svg,#composer .video-options .composer-paste svg,#composer .video-options .composer-trash svg,#composer .video-options .video-tool svg,
+#composer .voice-options .composer-copy svg,#composer .voice-options .composer-paste svg,#composer .voice-options .composer-trash svg,#composer .voice-options .voice-tool svg {
+ display:block!important;width:17px!important;height:17px!important;fill:none!important;stroke:currentColor!important;stroke-width:1.8!important;
+ stroke-linecap:round!important;stroke-linejoin:round!important;
+}
+#composer .chat-options,#composer .image-settings,#composer .video-options,#composer .voice-options {gap:4px!important;column-gap:4px!important;align-items:center!important}
+#composer .chat-options button:hover,#composer .image-settings button:hover,#composer .video-options button:hover,#composer .voice-options button:hover,
+body.light #composer .chat-options button:hover,body.light #composer .image-settings button:hover,body.light #composer .video-options button:hover,body.light #composer .voice-options button:hover {
+ background:rgba(157,112,255,.12)!important;color:#b99aff!important;border:0!important;box-shadow:none!important;
+}
+#composer .voice-options .voice-tool{border:0!important;outline:0!important;box-shadow:none!important}
+#composerVoiceVisualizer{position:absolute!important;max-width:calc(100% - 80px)!important;height:28px!important;overflow:hidden!important;pointer-events:none!important;z-index:1004!important}
+.composer-wrap:has(#composer[style*="display: none"]){display:none!important}

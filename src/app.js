@@ -380,25 +380,24 @@ function openSavedChat(id){
 }
 
 const LIB_KEY="miyaLibrary";
-const IMAGE_WALL_HIDDEN_KEY="miyaImageWallHidden";
-function getHiddenImageWallIds(){
-  try{
-    const raw=JSON.parse(localStorage.getItem(IMAGE_WALL_HIDDEN_KEY)||"[]");
-    return new Set(Array.isArray(raw)?raw.map(String):[]);
-  }catch{return new Set()}
+const WALL_HIDDEN_KEYS={image:"miyaImageWallHidden",video:"miyaVideoWallHidden",audio:"miyaVoiceWallHidden"};
+function getHiddenWallIds(type){
+  try{const raw=JSON.parse(localStorage.getItem(WALL_HIDDEN_KEYS[type]||"")||"[]");return new Set(Array.isArray(raw)?raw.map(String):[])}catch{return new Set()}
 }
-function hideImagesFromWall(items){
-  const ids=items.filter(x=>x&&x.type==="image"&&x.id).map(x=>String(x.id));
+function hideMediaFromWall(items,type){
+  const ids=items.filter(x=>x&&x.id&&(x.type===type||(type==="video"&&isStoredVideo(x)))).map(x=>String(x.id));
   if(!ids.length)return;
-  const hidden=getHiddenImageWallIds();
-  ids.forEach(id=>hidden.add(id));
-  try{localStorage.setItem(IMAGE_WALL_HIDDEN_KEY,JSON.stringify([...hidden]))}catch{}
+  const hidden=getHiddenWallIds(type);ids.forEach(id=>hidden.add(id));
+  try{localStorage.setItem(WALL_HIDDEN_KEYS[type],JSON.stringify([...hidden]))}catch{}
 }
-function clearImageWall(){
-  const items=getLibrary().filter(x=>x.type==="image");
-  hideImagesFromWall(items);
-  renderImageLibrary();
-  toast("Стена картинок очищена");
+function clearActiveWall(){
+  const type=({images:"image",video:"video",voice:"audio"})[mode];
+  if(!type)return;
+  hideMediaFromWall(getLibrary().filter(x=>x.type===type||(type==="video"&&isStoredVideo(x))),type);
+  if(mode==="images")renderImageLibrary();
+  else if(mode==="video")renderVideoLibrary();
+  else renderVoiceLibrary();
+  toast(mode==="images"?"Стена картинок очищена":mode==="video"?"Стена видео очищена":"Стена голосов очищена");
 }
 function getLibrary(){
  try{
@@ -1135,7 +1134,7 @@ function isStoredVideo(item){
  return type==="video"||type==="videos"||/\.(mp4|webm|mov)(?:[?#]|$)/i.test(url)||/ltx-2[.-]3||motion synthesis|agnes video/i.test(model);
 }
 function renderVideoLibrary(){
- const c=$("#canvas"),items=getLibrary().filter(isStoredVideo);
+ const c=$("#canvas"),hidden=getHiddenWallIds("video"),items=getLibrary().filter(x=>isStoredVideo(x)&&!hidden.has(String(x.id)));
  if(!items.length){showEmpty();return}
  c.innerHTML='<div class="result-grid video-result-grid"></div>';
  const grid=c.querySelector(".result-grid");
@@ -1185,7 +1184,7 @@ async function restoreCachedImagesIntoLibrary(){
 }
 function renderImageLibrary(){
  const c=$("#canvas");
- const hidden=getHiddenImageWallIds();
+ const hidden=getHiddenWallIds("image");
  const items=getLibrary().filter(x=>x.type==="image"&&!hidden.has(String(x.id)));
  if(!items.length){
    showEmpty();
@@ -2222,7 +2221,7 @@ async function generateVoice(text){
    toast("Не удалось создать голос");
  }
 }
-function renderVoiceLibrary(){ensureVoiceWallStyles();ensureVoiceCardFinalStyles();const c=$("#canvas"),items=getLibrary().filter(x=>x.type==="audio");if(!items.length){showEmpty();return}c.innerHTML='<div class="library-section"><div class="voice-wall"></div></div>';const wall=c.querySelector(".voice-wall");items.forEach((item,index)=>wall.appendChild(createVoiceCard(item,()=>resolveMediaUrl(item),{voiceItems:items,voiceIndex:index})))}
+function renderVoiceLibrary(){ensureVoiceWallStyles();ensureVoiceCardFinalStyles();const c=$("#canvas"),hidden=getHiddenWallIds("audio"),items=getLibrary().filter(x=>x.type==="audio"&&!hidden.has(String(x.id)));if(!items.length){showEmpty();return}c.innerHTML='<div class="library-section"><div class="voice-wall"></div></div>';const wall=c.querySelector(".voice-wall");items.forEach((item,index)=>wall.appendChild(createVoiceCard(item,()=>resolveMediaUrl(item),{voiceItems:items,voiceIndex:index})))}
 function renderLibrary(tab="images"){
  const c=$("#canvas"),items=getLibrary(),images=items.filter(x=>x.type==="image"),videos=items.filter(x=>x.type==="video"),audios=items.filter(x=>x.type==="audio");
  c.innerHTML='<div class="library-section"><div class="library-tabs"><button type="button" class="library-tab" data-library-tab="images">Картинки</button><button type="button" class="library-tab" data-library-tab="videos">Видео</button><button type="button" class="library-tab" data-library-tab="audio">Музыка</button><button type="button" class="library-tab" data-library-tab="editor">Аудиоредактор</button></div><div class="result-grid library-media-grid"></div></div>';
@@ -4015,14 +4014,16 @@ function toolsEditorRender(){
  }
 }
 async function toolsEditorSave(){const st=toolsEditorState;if(!st.file||!st.url)return;const status=$("#toolsStatus");if(status)status.textContent="Сохраняю…";try{let url=st.url;if(st.kind==="image"){const im=$("#toolsPreviewImage");const blob=await new Promise((resolve,reject)=>{const img=new Image();img.onload=()=>{const angle=Number(im.dataset.rot||0),rad=angle*Math.PI/180,swap=angle%180!==0,cv=document.createElement("canvas");cv.width=swap?img.naturalHeight:img.naturalWidth;cv.height=swap?img.naturalWidth:img.naturalHeight;const ctx=cv.getContext("2d");ctx.translate(cv.width/2,cv.height/2);ctx.rotate(rad);ctx.filter=im.style.filter||"none";ctx.drawImage(img,-img.naturalWidth/2,-img.naturalHeight/2);cv.toBlob(b=>b?resolve(b):reject(new Error("IMAGE_SAVE_FAILED")),"image/jpeg",.95)};img.onerror=()=>reject(new Error("IMAGE_READ_FAILED"));img.src=st.url});url=URL.createObjectURL(blob)}const item=saveMedia(st.kind==="audio"?"audio":st.kind,url,st.file.name,st.kind==="image"?"Tools Image":st.kind==="video"?"Tools Video":"Tools Voice",st.file.type);if(!item)throw new Error("SAVE_FAILED");if(st.kind==="image")renderImageLibrary();else if(st.kind==="video")renderVideoLibrary();else renderVoiceLibrary();toast("Файл сохранён в стену и в «Мои файлы»");toolsEditorReset();toolsEditorRender()}catch(e){console.error("Miya Tools editor save failed",e);if(status)status.textContent="Не удалось сохранить файл"}}
-function openToolsEditor(){closeAllMediaMenus();closeMediaMenus();resetChatMenus();chatAttachmentImages=[];chatAttachmentFile=null;renderChatAttachmentImages();mode="tools";const composer=$("#composer");if(composer)composer.style.display="none";ensureToolsEditorStyles();document.querySelectorAll("[data-mode]").forEach(x=>x.classList.remove("active"));document.querySelectorAll("[data-tool]").forEach(x=>x.classList.toggle("active",x.dataset.tool==="editor"));$("#workspaceEyebrow").textContent="MIYA TOOLS · EDITOR";$("#workspaceTitle").textContent="Инструменты";$("#workspaceSubtitle").textContent="Редактор картинок, видео и голоса. Файл появляется в библиотеке только после сохранения.";$(".image-settings").style.display="none";$("#videoOptions").classList.remove("show");$("#voiceOptions").classList.remove("show");$("#canvas").classList.remove("chat-canvas");toolsEditorRender();requestAnimationFrame(()=>$("#workspace")?.scrollTo({top:0,behavior:"auto"}))}
+function openToolsEditor(){closeAllMediaMenus();closeMediaMenus();resetChatMenus();stopSpeechForSectionChange();chatAttachmentImages=[];chatAttachmentFile=null;renderChatAttachmentImages();mode="tools";const wrap=document.querySelector(".composer-wrap");if(wrap)wrap.style.display="none";const composer=$("#composer");if(composer)composer.style.display="none";ensureToolsEditorStyles();document.querySelectorAll("[data-mode]").forEach(x=>x.classList.remove("active"));document.querySelectorAll("[data-tool]").forEach(x=>x.classList.toggle("active",x.dataset.tool==="editor"));$("#workspaceEyebrow").textContent="MIYA TOOLS · EDITOR";$("#workspaceTitle").textContent="Инструменты";$("#workspaceSubtitle").textContent="Редактор картинок, видео и голоса. Файл появляется в библиотеке только после сохранения.";$(".image-settings").style.display="none";$("#videoOptions").classList.remove("show");$("#voiceOptions").classList.remove("show");$("#canvas").classList.remove("chat-canvas");toolsEditorRender();requestAnimationFrame(()=>$("#workspace")?.scrollTo({top:0,behavior:"auto"}))}
 
 function setMode(next,render=true){
  const target=String(next||"chat");
  if(target==="tools"){openToolsEditor();return}
  if(!modes[target])return;
  const leavingTools=mode==="tools"&&target!=="tools";
- if(leavingTools){const composer=$("#composer");if(composer)composer.style.display="";}
+ if(leavingTools){const wrap=document.querySelector(".composer-wrap");if(wrap)wrap.style.display="";const composer=$("#composer");if(composer)composer.style.display="";}
+ const wrapForSection=document.querySelector(".composer-wrap");if(wrapForSection)wrapForSection.style.display="";
+ const composerForSection=$("#composer");if(composerForSection)composerForSection.style.display="";
  const changedSection=target!==mode;
  if(target==="chat"&&changedSection){
    chatMessages=[];
@@ -4030,6 +4031,7 @@ function setMode(next,render=true){
    window.__miyaChatId=null;
    renderAssistantQuoteBlock();
  }
+ if(changedSection)stopSpeechForSectionChange();
  if(changedSection){
    closeAllMediaMenus();
    closeMediaMenus();
@@ -4047,7 +4049,7 @@ function setMode(next,render=true){
    if(input)input.value="";
  }
  mode=target;
- const wallClear=$("#clearImageWall");if(wallClear)wallClear.style.display=target==="chat"?"none":"";
+ const wallClear=$("#clearImageWall");if(wallClear)wallClear.style.display=["images","video","voice"].includes(target)?"":"none";
  syncActiveChatTitle();
  const m=modes[target];
  const composer=$("#composer"); if(composer){ composer.classList.remove("mode-chat","mode-images","mode-video","mode-voice"); composer.classList.add("mode-"+target); composer.classList.toggle("voice-mode",target==="voice"); }
@@ -4117,13 +4119,7 @@ function setMode(next,render=true){
  syncInput();
 }
 const clearImageWallBtn=$("#clearImageWall");
-if(clearImageWallBtn){
-  clearImageWallBtn.addEventListener("click",()=>{
-    if(mode!=="images"&&mode!=="tools")return;
-    if(mode==="images")clearImageWall();
-    else toast("Откройте раздел «Картинки», чтобы очистить стену");
-  });
-}
+if(clearImageWallBtn)clearImageWallBtn.addEventListener("click",()=>{if(["images","video","voice"].includes(mode))clearActiveWall()});
 const chatMenuToggle=$("#chatMenuToggle");
 if(chatMenuToggle){
  chatMenuToggle.addEventListener("click",()=>{
@@ -4448,6 +4444,17 @@ let speechProcessor=null;
 let speechSamples=[];
 let speechSampleRate=16000;
 
+function stopSpeechForSectionChange(){
+  stopSpeechVisualizer();
+  if(speechStream){
+    try{speechStream.getTracks().forEach(track=>track.stop())}catch{}
+    try{speechProcessor?.disconnect()}catch{}
+    try{speechSource?.disconnect()}catch{}
+    try{speechAudioContext?.close()}catch{}
+    speechStream=null;speechAudioContext=null;speechSource=null;speechAnalyser=null;speechProcessor=null;speechSamples=[];
+  }
+  speechSetIdle();
+}
 function setSpeechMicIdle(){
   const mic=$("#composerMic");
   if(!mic)return;
@@ -4479,23 +4486,12 @@ function ensureSpeechVisualizer(){
   // Override it explicitly so the canvas coordinates are measured from this row.
   row.style.setProperty("position","relative","important");
   const rowRect=row.getBoundingClientRect();
-  const mic=row.querySelector("#composerMic");
-  const micRect=mic?.getBoundingClientRect();
-  const clearButton=row.querySelector("#chatTrash");
-  const clearRect=clearButton?.getBoundingClientRect();
-  // Align the waveform's true center with the center of both lower-row controls.
-  const clearCenter=clearRect ? clearRect.top+clearRect.height/2 : null;
-  const micCenter=micRect ? micRect.top+micRect.height/2 : null;
-  const centerY=((clearCenter!==null&&micCenter!==null)
-    ? (clearCenter+micCenter)/2
-    : (micCenter!==null ? micCenter : (clearCenter!==null ? clearCenter : rowRect.top+rowRect.height*.75)))-rowRect.top+2;
-  // Leave a visibly wider breathing gap on both sides of the waveform.
-  const leftEdge=clearRect
-    ? clearRect.right-rowRect.left+14
-    : (micRect ? micRect.left-rowRect.left-90 : rowRect.width*.55);
-  const rightEdge=micRect
-    ? micRect.left-rowRect.left-14
-    : rowRect.width-10;
+  const mic=row.querySelector("#composerMic"),micRect=mic?.getBoundingClientRect();
+  const attach=row.querySelector("#composerAttach"),attachRect=attach?.getBoundingClientRect();
+  // Anchor the live voice indicator to the composer itself, between + and mic.
+  const centerY=micRect?micRect.top+micRect.height/2-rowRect.top:rowRect.height/2;
+  const leftEdge=attachRect?attachRect.right-rowRect.left+10:12;
+  const rightEdge=micRect?micRect.left-rowRect.left-10:rowRect.width-12;
   const canvasWidth=Math.max(0,rightEdge-leftEdge);
   Object.assign(canvas.style,{
     position:"absolute",left:leftEdge+"px",right:"auto",top:centerY+"px",
@@ -4847,11 +4843,15 @@ document.querySelectorAll("[data-tool]").forEach(b=>b.onclick=()=>{
    document.querySelectorAll("[data-mode]").forEach(x=>x.classList.remove("active"));
    $("#chatMenuToggle")?.classList.remove("active");
    referenceImage=null;try{sessionStorage.removeItem("miyaReferenceImage")}catch{};setComposerAttachment("");$("#composerInput").value="";syncInput();
-   mode="images";
+   stopSpeechForSectionChange();
+   mode="library";
+   const wallClear=$("#clearImageWall");if(wallClear)wallClear.style.display="none";
+   const wrap=document.querySelector(".composer-wrap");if(wrap)wrap.style.display="none";
+   const composer=$("#composer");if(composer)composer.style.display="none";
    const m=modes.images;
    const wall=tool==="history"?{eyebrow:"MIYA HISTORY · MEDIA",title:"История",subtitle:"Твои созданные изображения и видео в одном месте."}:{eyebrow:"MIYA LIBRARY · MEDIA",title:"Библиотека",subtitle:"Сохраняй, просматривай и редактируй созданные материалы."};
    $("#workspaceEyebrow").textContent=wall.eyebrow;$("#workspaceTitle").textContent=wall.title;$("#workspaceSubtitle").textContent=wall.subtitle;
-   $(".image-settings").style.display="none";$("#videoOptions").classList.remove("show");
+   $(".image-settings").style.display="none";$("#voiceOptions").style.display="none";$("#voiceOptions").classList.remove("show");$("#videoOptions").style.display="none";$("#videoOptions").classList.remove("show");
    renderLibrary("images");
    requestAnimationFrame(()=>$("#workspace")?.scrollTo({top:0,behavior:"auto"}));
  }
