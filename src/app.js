@@ -1,4 +1,3 @@
-import { Client, handle_file } from "https://cdn.jsdelivr.net/npm/@gradio/client/dist/index.min.js";
 const modes={
  chat:{title:"Твоя AI-комната",eyebrow:"AI CHAT",subtitle:"Общайся с Miya, придумывай идеи и управляй созданием контента.",placeholder:"Напиши сообщение...",send:"Отправить",status:"AI Chat готов"},
  images:{title:"Картинки",eyebrow:"КАРТИНКИ",subtitle:"Создавай изображения с нуля или загружай исходник и описывай изменения.",placeholder:"Опиши картинку или что изменить в загруженном изображении...",send:"Создать",status:"Nano Banana 2 · создание изображения"},
@@ -350,7 +349,7 @@ function resetChatFlyoutScroll(){const el=$("#chatSubmenu");if(el)requestAnimati
 function openSavedChat(id){
  const chat=getChats().find(x=>x.id===id);if(!chat)return;
  chatMenuSuppressed=true;$("#chatSubmenu")?.classList.add("suppressed");resetChatMenus();resetChatFlyoutScroll();$("#chatMenuToggle")?.setAttribute("aria-expanded","false");
- mode="chat";pendingAssistantQuote="";chatMessages=chat.messages.map(m=>({...m}));window.__miyaChatId=chat.id;
+ mode="chat";pendingAssistantQuote="";renderAssistantQuoteBlock();chatMessages=chat.messages.map(m=>({...m}));window.__miyaChatId=chat.id;
  setMode("chat",false);
  const c=$("#canvas");c.classList.add("chat-canvas");c.innerHTML='<div class="chat-stream"></div>';
  restoringSavedChat=true;
@@ -2774,10 +2773,11 @@ async function requestChat(){
  const status=$("#composerStatus");
  const sourceImages=mode==="chat"?chatAttachmentImages.filter(src=>/^data:image\//i.test(String(src||""))):[];
  const hasVisionImage=sourceImages.length>0;
- status.textContent=hasVisionImage?"Miya · анализ "+sourceImages.length+" фото…":"Miya думает…";
+ status.textContent=hasVisionImage?"Miya · подготовка "+sourceImages.length+" фото к анализу…":"Miya · отправка сообщения…";
  $("#composerSend").disabled=true;
  try{
    const chatImages=hasVisionImage?await Promise.all(sourceImages.slice(0,5).map(src=>prepareChatVisionImage(String(src)))):[];
+   status.textContent=hasVisionImage?"Miya · отправка изображений и вопроса…":"Miya · ожидание ответа модели…";
    const response=await fetch("/api/chat",{
      method:"POST",
      headers:{"Content-Type":"application/json","Accept":"application/json"},
@@ -2785,6 +2785,7 @@ async function requestChat(){
      signal:AbortSignal.timeout(90000)
    });
    const data=await response.json().catch(()=>({}));
+   status.textContent="Miya · ответ получен, обновляю чат…";
    const answer=String(data?.text||"").trim();
    const serverMessage=typeof data?.message==="string"?data.message:typeof data?.error==="string"?data.error:"Не удалось получить ответ Miya";
    if(!response.ok||!answer)throw new Error(serverMessage);
@@ -3309,6 +3310,7 @@ async function generateVideo(prompt){
      prompt
    ].join("\\n");
    updateVideoProgress("LTX-2.3 Distilled",1,"подключение к LTX-2.3…");
+   const {Client,handle_file}=await import("https://cdn.jsdelivr.net/npm/@gradio/client/dist/index.min.js");
    const client=await Promise.race([
      Client.connect("Lightricks/LTX-2-3",{events:["status","data"]}),
      new Promise((_,reject)=>setTimeout(()=>reject(new Error("LTX-2.3 Space не отвечает за 20 секунд")),20000))
