@@ -4284,6 +4284,23 @@ async function finishSpeechRecording(){
       }
       throw new Error("TRANSCRIBE_TIMEOUT");
     }
+    async function fetchCleverAudioOutput(url){
+      for(let attempt=0;attempt<5;attempt++){
+        const out=await fetch(url,{cache:"no-store"});
+        if(out.ok)return await out.blob();
+        if(out.status===429&&attempt<4){
+          let retryAfter=Number(out.headers.get("Retry-After"))||1;
+          try{
+            const payload=await out.clone().json();
+            retryAfter=Number(payload?.error?.details?.retry_after||payload?.details?.retry_after||retryAfter)||1;
+          }catch{}
+          await new Promise(resolve=>setTimeout(resolve,Math.max(1,retryAfter)*1000));
+          continue;
+        }
+        throw new Error("AUDIO_OUTPUT_"+out.status);
+      }
+      throw new Error("AUDIO_OUTPUT_429");
+    }
     async function cleverConvertToWav(inputBlob,inputName){
       const form=new FormData();
       form.append("file",inputBlob,inputName);
@@ -4294,11 +4311,7 @@ async function finishSpeechRecording(){
       const data=await parseJson(response);
       if(!response.ok)throw new Error("AUDIO_CONVERT_"+response.status);
       const info=data?.data||data||{};
-      if(info.output?.url){
-        const out=await fetch(info.output.url,{cache:"no-store"});
-        if(!out.ok)throw new Error("AUDIO_OUTPUT_"+out.status);
-        return await out.blob();
-      }
+      if(info.output?.url)return await fetchCleverAudioOutput(info.output.url);
       if(info.job_id){
         for(let attempt=0;attempt<90;attempt++){
           if(attempt)await new Promise(resolve=>setTimeout(resolve,1200));
@@ -4307,9 +4320,7 @@ async function finishSpeechRecording(){
           if(!poll.ok)throw new Error("AUDIO_JOB_"+poll.status);
           const job=status?.data||status||{};
           if(String(job.status||"").toLowerCase()==="done"&&job.output?.url){
-            const out=await fetch(job.output.url,{cache:"no-store"});
-            if(!out.ok)throw new Error("AUDIO_OUTPUT_"+out.status);
-            return await out.blob();
+            return await fetchCleverAudioOutput(job.output.url);
           }
           if(["failed","error"].includes(String(job.status||"").toLowerCase()))throw new Error("AUDIO_CONVERT_FAILED");
         }
