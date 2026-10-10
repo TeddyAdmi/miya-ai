@@ -818,9 +818,9 @@ function buildMediaCard(item,{video=false}={}){
    media.loading=isAgnesPreview?"lazy":"eager";
    media.fetchPriority=isAgnesPreview?"low":"high";
    if(isAgnesPreview){media.style.maxHeight="280px";media.style.objectFit="contain";media.style.objectPosition="center"}
-   // Show the original provider image immediately. Convert to the requested
-   // ratio/JPEG in parallel and use it only when that optimized version is ready.
-   if(!isDeadVheer&&directUrl)media.src=directUrl;
+   // Load the normalized proxy first to avoid browser decode warnings from malformed provider files.
+   // If the proxy fails, the error handler below still falls back to the original provider URL.
+   if(!isDeadVheer&&(proxyUrl||directUrl))media.src=proxyUrl||directUrl;
    resolveMediaUrl(item).then(url=>{
      if(!url||mediaFailed)return;
      if(url.startsWith("blob:")){setImageSource(url);return}
