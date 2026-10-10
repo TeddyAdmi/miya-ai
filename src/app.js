@@ -4518,7 +4518,7 @@ function ensureSpeechVisualizer(){
   }
   const centerY=micRect?micRect.top+micRect.height/2-composerRect.top:composerRect.height/2;
   const rightEdge=micRect?micRect.left-composerRect.left-8:composerRect.width-12;
-  leftEdge=Math.min(leftEdge,Math.max(12,rightEdge-24));
+  leftEdge=Math.min(leftEdge,rightEdge);
   const canvasWidth=Math.max(0,rightEdge-leftEdge);
   Object.assign(canvas.style,{
     position:"absolute",left:leftEdge+"px",right:"auto",top:centerY+"px",
