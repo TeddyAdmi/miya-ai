@@ -2723,3 +2723,38 @@ body.light .chat-row.assistant .chat-bubble{background:#fff!important;border-col
 body.light .composer-quote-block{background:#f3efff;border-color:#d8cdfb;border-left-color:#8060d8}
 body.light .composer-quote-label{color:#674bb4}
 .composer-status #composerStatus{transition:color .15s ease}
+
+
+/* Animated one-two-three dots while a status is waiting on a result. */
+.thinking-dots{display:inline-block;min-width:1.25em;height:1em;vertical-align:baseline;color:currentColor}
+.thinking-dots::after{content:".";display:inline-block;animation:miya-thinking-dots 1.05s steps(1,end) infinite}
+@keyframes miya-thinking-dots{
+  0%,100%{content:"."}
+  33.333%{content:".."}
+  66.666%{content:"..."}
+}
+
+/* Compact square send button, aligned with the microphone in every section. */
+#composerSend.send{
+  width:34px!important;
+  min-width:34px!important;
+  max-width:34px!important;
+  height:34px!important;
+  min-height:34px!important;
+  padding:0!important;
+  flex:0 0 34px!important;
+  display:grid!important;
+  place-items:center!important;
+  gap:0!important;
+  border-radius:8px!important;
+  box-sizing:border-box!important;
+}
+#composerSend #composerSendText{display:none!important}
+#composerSend .send-icon{display:block!important;width:17px!important;height:17px!important;margin:0!important;flex:none!important}
+#composerSend:disabled{opacity:.48!important;cursor:wait!important}
+
+/* Keep the two speakers easy to distinguish without harsh contrast. */
+.chat-row.user .chat-bubble{background:#172640!important;border-color:#304663!important}
+.chat-row.assistant .chat-bubble{background:#0e1c2d!important;border-color:#27394d!important}
+body.light .chat-row.user .chat-bubble{background:#edf0fb!important;border-color:#d0d7ee!important;color:#26364c!important;box-shadow:0 2px 5px rgba(36,57,83,.045)!important}
+body.light .chat-row.assistant .chat-bubble{background:#f1f4f8!important;border-color:#d8e1eb!important;color:#182436!important;box-shadow:0 2px 5px rgba(36,57,83,.035)!important}
