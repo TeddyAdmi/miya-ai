@@ -280,11 +280,18 @@ async function handler(req, res) {
     result = await callCvronGPT5Nano(cvronPrompt);
     if (!result.ok) result = await callBlockRun("nvidia/gpt-oss-20b");
     if (!result.ok) {
-      const fallbackResults = await Promise.all([
+      const fallbackCalls = [
         callBlockRun("nvidia/nemotron-3.5-lightning"),
         callBlockRun("nvidia/nemotron-3-nano-omni-30b-a3b-reasoning")
-      ]);
-      result = fallbackResults.find(candidate => candidate.ok) || result;
+      ];
+      let remaining = fallbackCalls.length;
+      const firstFallbackSuccess = await new Promise(resolve => {
+        fallbackCalls.forEach(call => call.then(candidate => {
+          if (candidate.ok) resolve(candidate);
+          else if (--remaining === 0) resolve(null);
+        }));
+      });
+      result = firstFallbackSuccess || result;
     }
 
     if (result.ok) {
