@@ -97,6 +97,8 @@ function stopChatSpeech(){
   if(activeChatSpeechButton){
     activeChatSpeechButton.disabled=false;
     activeChatSpeechButton.innerHTML=activeChatSpeechButton.dataset.originalHtml||'<span class="action-mini-icon">♫</span>Прослушать';
+    if(activeChatSpeechButton.dataset.originalTitle!==undefined)activeChatSpeechButton.title=activeChatSpeechButton.dataset.originalTitle;
+    if(activeChatSpeechButton.dataset.originalAriaLabel!==undefined)activeChatSpeechButton.setAttribute("aria-label",activeChatSpeechButton.dataset.originalAriaLabel);
   }
   if(activeChatSpeechStopButton)activeChatSpeechStopButton.hidden=true;
   activeChatSpeechButton=null;activeChatSpeechStopButton=null;
@@ -107,7 +109,11 @@ async function speakChatResponse(text,button){
  const controller=new AbortController();
  activeChatSpeechController=controller;activeChatSpeechButton=button;
  activeChatSpeechStopButton=button.closest(".chat-actions")?.querySelector('[title="Остановить голос"]')||null;
- button.dataset.originalHtml=button.innerHTML;button.disabled=true;button.textContent="Готовлю речь…";
+ const isSelectionListen=!!button.closest(".chat-selection-actions");
+ button.dataset.originalHtml=button.innerHTML;button.dataset.originalTitle=button.title;button.dataset.originalAriaLabel=button.getAttribute("aria-label")||button.title;
+ button.disabled=true;
+ if(isSelectionListen){button.title="Готовлю речь…";button.setAttribute("aria-label","Готовлю речь…")}
+ else button.textContent="Готовлю речь…";
  if(activeChatSpeechStopButton)activeChatSpeechStopButton.hidden=false;
  try{
   if(!Array.isArray(voiceCatalog)||!voiceCatalog.length)await loadVoiceCatalog();
@@ -131,7 +137,10 @@ async function speakChatResponse(text,button){
   if(controller.signal.aborted)return;
   activeChatSpeechUrl=URL.createObjectURL(new Blob(blobs,{type:"audio/mpeg"}));
   activeChatSpeechAudio=new Audio(activeChatSpeechUrl);activeChatSpeechAudio.onended=stopChatSpeech;
-  button.disabled=false;button.textContent="Прослушать";activeChatSpeechController=null;
+  button.disabled=false;
+  if(isSelectionListen){button.innerHTML=button.dataset.originalHtml;button.title="Остановить воспроизведение";button.setAttribute("aria-label","Остановить воспроизведение")}
+  else button.textContent="Прослушать";
+  activeChatSpeechController=null;
   await activeChatSpeechAudio.play();
  }catch(error){
   if(error?.name!=="AbortError"){console.error("Chat TTS failed",error);toast(error.message||"Не удалось озвучить ответ")}
