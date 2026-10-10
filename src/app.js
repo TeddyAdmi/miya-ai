@@ -3968,6 +3968,17 @@ $("#composerModel")?.addEventListener("change",()=>{
 });
 $("#improve")?.addEventListener("click",improveComposerPrompt);
 $("#copyPrompt")?.addEventListener("click",e=>copyComposerPrompt(e.currentTarget));
+$("#chatCopyPrompt")?.addEventListener("click",e=>copyComposerPrompt(e.currentTarget));
+$("#chatTrash")?.addEventListener("click",()=>{
+  const input=$("#composerInput");
+  if(input)input.value="";
+  syncInput();
+  input?.focus();
+  if(mode==="chat"&&!$("#composerSend")?.disabled){
+    const status=$("#composerStatus");
+    if(status)status.textContent=modes.chat.status;
+  }
+});
 $("#videoImprove")?.addEventListener("click",improveComposerPrompt);
 $("#videoCopyPrompt")?.addEventListener("click",e=>copyComposerPrompt(e.currentTarget));
 $("#videoModel")?.addEventListener("change",()=>{
