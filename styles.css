@@ -2711,3 +2711,15 @@ body.light .active-chat-title{color:#273047;}
 .active-chat-title-save,.active-chat-title-cancel{flex:0 0 25px!important}
 .chat-actions button[title="Прослушать ответ голосом Светланы"]{display:inline-flex;align-items:center;gap:5px}
 .chat-actions button:disabled{opacity:.6;cursor:wait}
+
+/* Chat readability, explicit quote context, and composer activity feedback */
+body.light .chat-row.user .chat-bubble{background:#e7edf7!important;border-color:#c7d3e3!important;color:#26364c!important;box-shadow:0 2px 5px rgba(36,57,83,.045)}
+body.light .chat-row.assistant .chat-bubble{background:#fff!important;border-color:#dbe4ee!important;color:#182436!important}
+.composer-quote-block{position:relative;display:grid;gap:4px;margin:2px 0 8px;padding:9px 34px 9px 11px;border:1px solid rgba(139,105,235,.45);border-left:3px solid #8b69eb;border-radius:9px;background:rgba(139,105,235,.09);min-width:0}
+.composer-quote-label{font-size:8px;font-weight:800;letter-spacing:.075em;color:#a68af7}
+.composer-quote-text{font-size:11px;line-height:1.45;color:var(--text);white-space:pre-wrap;overflow-wrap:anywhere;max-height:76px;overflow:auto}
+.composer-quote-remove{position:absolute;right:7px;top:7px;width:22px;height:22px;border:0;border-radius:6px;background:transparent;color:var(--muted);font-size:19px;line-height:1;cursor:pointer}
+.composer-quote-remove:hover{background:rgba(130,110,190,.14);color:var(--text)}
+body.light .composer-quote-block{background:#f3efff;border-color:#d8cdfb;border-left-color:#8060d8}
+body.light .composer-quote-label{color:#674bb4}
+.composer-status #composerStatus{transition:color .15s ease}
