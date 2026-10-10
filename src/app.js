@@ -105,7 +105,8 @@ function saveCurrentChat(){
   const image=String(m.image);
   return image.length<=900000?{...m,image}:{...m,image:""};
 });
- const now=Date.now();\n const item={id:currentId,title,messages:messagesForStorage,createdAt:Number(existing?.createdAt)||Number(existing?.updatedAt)||now,updatedAt:now,pinned:Boolean(existing?.pinned)};
+ const now=Date.now();
+ const item={id:currentId,title,messages:messagesForStorage,createdAt:Number(existing?.createdAt)||Number(existing?.updatedAt)||now,updatedAt:now,pinned:Boolean(existing?.pinned)};
  const index=chats.findIndex(x=>x.id===currentId);
  if(index>=0)chats[index]=item;else chats.unshift(item);
  persistChats(chats);
