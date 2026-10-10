@@ -491,9 +491,14 @@ module.exports = async function imageHandler(req, res) {
           "21:9": {width:1584,height:672}
         }[cvronRatio] || {width:1024,height:1024};
 
+        // Add only two targeted visual constraints for CVRON models. Keep the user's
+        // scene prompt intact and preserve the existing native-ratio request contract.
+        const cvronPromptForModel = cvronPrompt +
+          "\n\nVISUAL FIDELITY: Do not add clothing, costumes, shoes, jewelry, bags, or accessories to any character or animal unless the user explicitly requests them. If a character is holding and looking at a phone screen, orient the screen toward that character's eyes and the back of the phone toward the viewer; do not show the screen facing away from the character. Follow the user's described scene and appearance without adding unrequested items.";
+
         const target =
           endpoint +
-          "?prompt=" + encodeURIComponent(cvronPrompt) +
+          "?prompt=" + encodeURIComponent(cvronPromptForModel) +
           "&ratio=" + encodeURIComponent(cvronRatio) +
           "&aspect_ratio=" + encodeURIComponent(cvronRatio) +
           "&size=" + encodeURIComponent(cvronRatio) +
