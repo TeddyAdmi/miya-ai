@@ -2700,3 +2700,14 @@ body.light button.floating-theme svg,body.light button.floating-wall-clear svg{s
 .active-chat-title-date{display:block;flex:0 0 auto;margin-left:auto;font-size:12px;font-weight:600;letter-spacing:0;color:var(--muted,#8297b2);white-space:nowrap;}
 body.light .active-chat-title{color:#273047;}
 @media(max-width:800px){.active-chat-title{font-size:16px!important;margin-top:7px!important;gap:8px;}.active-chat-title-date{font-size:11px;}}
+
+/* Active chat title spans the workspace; controls remain clickable over the floating header actions. */
+.workspace-copy:has(#activeChatTitle:not([hidden])){width:100%;max-width:none!important;min-width:0}
+.active-chat-title{width:100%;max-width:none;box-sizing:border-box;gap:8px;pointer-events:auto;position:relative;z-index:5}
+.active-chat-title-text{flex:1 1 auto;min-width:0}
+.active-chat-title-rename{order:2;flex:0 0 25px!important}
+.active-chat-title-date{order:3;flex:0 0 auto;margin-left:0!important}
+.active-chat-title-edit{flex:1 1 auto!important;min-width:40px!important}
+.active-chat-title-save,.active-chat-title-cancel{flex:0 0 25px!important}
+.chat-actions button[title="Прослушать ответ голосом Светланы"]{display:inline-flex;align-items:center;gap:5px}
+.chat-actions button:disabled{opacity:.6;cursor:wait}
