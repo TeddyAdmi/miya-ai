@@ -8,6 +8,60 @@ async function handler(req, res) {
 
   try {
     const body = typeof req.body === "string" ? JSON.parse(req.body) : (req.body || {});
+
+    // Keep transcription inside the existing chat function so Hobby deployments
+    // do not need an additional Serverless Function.
+    if (body.mode === "transcribe") {
+      const token = process.env.CLOUDFLARE_API_TOKEN;
+      const accountId = process.env.CLOUDFLARE_ACCOUNT_ID;
+      if (!token || !accountId) {
+        return res.status(500).json({ ok: false, error: "CLOUDFLARE_NOT_CONFIGURED" });
+      }
+      const audioData = String(body.audio || "").trim();
+      const comma = audioData.indexOf(",");
+      if (!audioData.startsWith("data:") || comma < 0 || !audioData.slice(comma + 1)) {
+        return res.status(400).json({ ok: false, error: "INVALID_AUDIO_DATA_URL" });
+      }
+      try {
+        const upstream = await fetch(
+          `https://api.cloudflare.com/client/v4/accounts/${encodeURIComponent(accountId)}/ai/run/@cf/openai/whisper-large-v3-turbo`,
+          {
+            method: "POST",
+            headers: {
+              "Authorization": `Bearer ${token}`,
+              "Content-Type": "application/json"
+            },
+            body: JSON.stringify({
+              audio: audioData.slice(comma + 1),
+              language: String(body.language || "ru"),
+              task: "transcribe"
+            }),
+            signal: AbortSignal.timeout(55000)
+          }
+        );
+        const data = await upstream.json().catch(() => null);
+        if (!upstream.ok) {
+          console.error("Cloudflare Workers AI STT failed", upstream.status, data);
+          return res.status(upstream.status).json({
+            ok: false,
+            error: "CLOUDFLARE_STT_FAILED",
+            details: data?.errors || data?.error || null
+          });
+        }
+        const transcript = String(data?.result?.text || "").trim();
+        if (!transcript) return res.status(422).json({ ok: false, error: "TRANSCRIPT_EMPTY" });
+        return res.status(200).json({
+          ok: true,
+          mode: "transcribe",
+          text: transcript,
+          language: String(body.language || "ru"),
+          model: "@cf/openai/whisper-large-v3-turbo"
+        });
+      } catch (error) {
+        console.error("Cloudflare Workers AI STT exception", error);
+        return res.status(500).json({ ok: false, error: "CLOUDFLARE_STT_EXCEPTION" });
+      }
+    }
     const messages = Array.isArray(body.messages) ? body.messages : [];
     const cleanMessages = messages
       .filter(m => m && (m.role === "user" || m.role === "assistant") && typeof m.content === "string")

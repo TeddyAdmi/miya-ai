@@ -4281,10 +4281,10 @@ async function finishSpeechRecording(){
     // Send the canonical 16 kHz PCM WAV produced above to the known-good
     // Cloudflare Whisper endpoint used by Miya on October 5–6.
     const audio=await blobToDataUrl(wav);
-    const response=await fetch("/api/cloudflare-transcribe",{
+    const response=await fetch("/api/chat",{
       method:"POST",
       headers:{"Content-Type":"application/json"},
-      body:JSON.stringify({audio,filename:"miya-voice.wav",mime:"audio/wav",language:"ru"}),
+      body:JSON.stringify({mode:"transcribe",audio,filename:"miya-voice.wav",mime:"audio/wav",language:"ru"}),
       cache:"no-store"
     });
     const data=await response.json().catch(()=>null);
