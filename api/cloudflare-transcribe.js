@@ -9,9 +9,10 @@ export default async function handler(req,res){
     const body=typeof req.body==="string"?JSON.parse(req.body):(req.body||{});
     const audioData=String(body.audio||"").trim();
     if(!audioData)return res.status(400).json({error:"AUDIO_REQUIRED"});
-    const match=audioData.match(/^data:([^;,]+)?(?:;[^,]*)?,([\\s\\S]*)$/);
-    if(!match)return res.status(400).json({error:"INVALID_AUDIO_DATA_URL"});
-    const base64=match[2];
+    const comma=audioData.indexOf(",");
+    if(!audioData.startsWith("data:")||comma<0)return res.status(400).json({error:"INVALID_AUDIO_DATA_URL"});
+    const base64=audioData.slice(comma+1);
+    if(!base64)return res.status(400).json({error:"INVALID_AUDIO_DATA_URL"});
     const upstream=await fetch(
       `https://api.cloudflare.com/client/v4/accounts/${encodeURIComponent(accountId)}/ai/run/@cf/openai/whisper-large-v3-turbo`,
       {
