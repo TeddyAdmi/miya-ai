@@ -128,7 +128,7 @@ async function handler(req, res) {
           method:"GET",
           headers:{Accept:"application/json, text/plain, */*"},
           cache:"no-store",
-          signal:AbortSignal.timeout(90000)
+          signal:AbortSignal.timeout(12000)
         });
         const raw = await response.text();
         let data = {};
@@ -153,7 +153,7 @@ async function handler(req, res) {
             "Accept": "application/json"
           },
           body: JSON.stringify({ ...payload, model }),
-          signal: AbortSignal.timeout(visionImages.length ? 45000 : 20000)
+          signal: AbortSignal.timeout(visionImages.length ? 22000 : 12000)
         });
 
         const raw = await response.text();
@@ -221,7 +221,7 @@ async function handler(req, res) {
       // AHM7 is the second free vision fallback.
       try {
         const controller = new AbortController();
-        const timer = setTimeout(() => controller.abort(), 40000);
+        const timer = setTimeout(() => controller.abort(), 20000);
         const upstream = await fetch("https://ahm7xmakki.com/api/imgchat", {
           method: "POST",
           headers: { "Content-Type": "application/json", "Accept": "application/json" },
@@ -274,10 +274,18 @@ async function handler(req, res) {
     }
 
     const cvronPrompt = cleanMessages.slice(-12).map(m => m.role + ": " + m.content).join("\n");
+    // Keep text chat responsive: each provider gets a short timeout. If the
+    // primary fallback fails, race the remaining free models instead of
+    // waiting through several slow providers one by one.
     result = await callCvronGPT5Nano(cvronPrompt);
     if (!result.ok) result = await callBlockRun("nvidia/gpt-oss-20b");
-    if (!result.ok) result = await callBlockRun("nvidia/nemotron-3.5-lightning");
-    if (!result.ok) result = await callBlockRun("nvidia/nemotron-3-nano-omni-30b-a3b-reasoning");
+    if (!result.ok) {
+      const fallbackResults = await Promise.all([
+        callBlockRun("nvidia/nemotron-3.5-lightning"),
+        callBlockRun("nvidia/nemotron-3-nano-omni-30b-a3b-reasoning")
+      ]);
+      result = fallbackResults.find(candidate => candidate.ok) || result;
+    }
 
     if (result.ok) {
       return res.status(200).json({
