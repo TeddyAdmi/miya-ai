@@ -4490,19 +4490,30 @@ function ensureSpeechVisualizer(){
   const mic=composer.querySelector("#composerMic"),micRect=mic?.getBoundingClientRect();
   // Re-measure continuously: attached images and section-specific controls
   // can shift the usable waveform lane while recording is active.
-  const leftCandidates=[
+  // Start the waveform after the last visible control in the active
+  // bottom rail. Measuring the actual controls (rather than the whole rail)
+  // keeps it from drawing over the icons and automatically follows attachments.
+  const modeOptions=mode==="images"
+    ? composer.querySelector("#composerOptions")
+    : mode==="video"
+      ? composer.querySelector("#videoOptions")
+      : mode==="chat"
+        ? composer.querySelector("#chatOptions")
+        : composer.querySelector(".voice-options");
+  const candidates=[
     composer.querySelector(".composer-left-actions"),
     composer.querySelector("#composerAttachment"),
     composer.querySelector("#chatComposerAttachments"),
-    composer.querySelector("#chatOptions .composer-trash"),
-    composer.querySelector("#composerOptions .composer-trash"),
-    composer.querySelector("#videoOptions .composer-trash")
+    ...(modeOptions ? Array.from(modeOptions.querySelectorAll("button,select,[role='button']")) : [])
   ];
   let leftEdge=12;
-  for(const el of leftCandidates){
+  for(const el of candidates){
     if(!el)continue;
     const rect=el.getBoundingClientRect(),style=getComputedStyle(el);
-    if(style.display==="none"||style.visibility==="hidden"||rect.width<1||rect.height<1)continue;
+    if(style.display==="none"||style.visibility==="hidden"||el.hidden||rect.width<1||rect.height<1)continue;
+    // The waveform belongs only in the gap before the microphone, so ignore
+    // any control that is not fully to the left of it.
+    if(micRect && rect.right>micRect.left)continue;
     leftEdge=Math.max(leftEdge,rect.right-composerRect.left+8);
   }
   const centerY=micRect?micRect.top+micRect.height/2-composerRect.top:composerRect.height/2;
