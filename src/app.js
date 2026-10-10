@@ -5,6 +5,26 @@ const modes={
 voice:{title:"Голос",eyebrow:"ГОЛОС",subtitle:"Превращай текст в естественную речь с мужскими и женскими голосами.",placeholder:"Введите текст для озвучки...",send:"Создать голос",status:"Svetlana · Female · Russia"}
 };
 const $=s=>document.querySelector(s);
+function installAnimatedStatusDots(){
+ const status=$("#composerStatus");
+ if(!status||status.dataset.animatedDotsReady)return;
+ status.dataset.animatedDotsReady="1";
+ const animateIfNeeded=()=>{
+   if(status.querySelector(".thinking-dots"))return;
+   const value=String(status.textContent||"");
+   const match=value.match(/(?:…|\\.{3})\\s*$/);
+   if(!match)return;
+   const base=value.slice(0,match.index).trimEnd();
+   status.replaceChildren(document.createTextNode(base+" "));
+   const dots=document.createElement("span");
+   dots.className="thinking-dots";
+   dots.setAttribute("aria-label","Выполняется");
+   status.appendChild(dots);
+ };
+ new MutationObserver(animateIfNeeded).observe(status,{childList:true,characterData:true,subtree:true});
+ animateIfNeeded();
+}
+installAnimatedStatusDots();
 
 (function ensureMiyaMediaMoreStyle(){
  if(document.getElementById("miyaMediaDotsFix"))return;
@@ -4004,6 +4024,12 @@ function setMode(next,render=true){
  const leavingTools=mode==="tools"&&target!=="tools";
  if(leavingTools){const composer=$("#composer");if(composer)composer.style.display="";}
  const changedSection=target!==mode;
+ if(target==="chat"&&changedSection){
+   chatMessages=[];
+   pendingAssistantQuote="";
+   window.__miyaChatId=null;
+   renderAssistantQuoteBlock();
+ }
  if(changedSection){
    closeAllMediaMenus();
    closeMediaMenus();
