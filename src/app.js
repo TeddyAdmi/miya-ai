@@ -390,7 +390,7 @@ function showPrompt(item){
   modal.querySelector(".media-prompt-copy").onclick=async()=>{
    const value=modal.querySelector(".media-prompt-body")?.textContent||"";
    if(!value.trim())return;
-   try{await navigator.clipboard.writeText(value);toast("Промт скопирован");}
+   try{await navigator.clipboard.writeText(value);showCopySuccess(modal.querySelector(".media-prompt-copy"));toast("Промт скопирован");}
    catch{toast("Не удалось скопировать промт");}
   };
   modal.querySelector(".media-prompt-close").onclick=()=>modal.classList.remove("open");
@@ -454,7 +454,7 @@ function openImageViewer(item){
       const blob=await response.blob();
       if(!navigator.clipboard?.write||!window.ClipboardItem)throw new Error();
       await navigator.clipboard.write([new ClipboardItem({[blob.type||"image/png"]:blob})]);
-      toast("Картинка скопирована");
+      showCopySuccess(modal.querySelector(".image-viewer-copy"));toast("Картинка скопирована");
     }catch{toast("Не удалось скопировать картинку")}
   };
   modal.querySelector(".image-viewer-download").onclick=()=>{
@@ -848,7 +848,7 @@ function buildMediaCard(item,{video=false}={}){
   const promptBtn=document.createElement("button");promptBtn.type="button";promptBtn.innerHTML='<span class="action-icon action-svg"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 5h14v14H5z"/><path d="M8 9h8M8 12h6M8 15h4"/></svg></span><span>Промт</span>';promptBtn.onclick=e=>{e.stopPropagation();closeAllMediaMenus();showPrompt(item)}; const upscaleMenuBtn=document.createElement("button");upscaleMenuBtn.type="button";upscaleMenuBtn.innerHTML='<span class="action-icon action-svg"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m12 3 1.7 5.3L19 10l-5.3 1.7L12 17l-1.7-5.3L5 10l5.3-1.7L12 3Z"/><path d="m19 15 .8 2.2L22 18l-.8-2.2L19 15Z"/></svg></span><span>Upscale</span>';upscaleMenuBtn.onclick=e=>{e.stopPropagation();closeAllMediaMenus();toggleUpscalePanel(item,card)};
   const editBtn=document.createElement("button");editBtn.type="button";editBtn.innerHTML='<span class="action-icon action-svg"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m4 16.5-.8 3.3 3.3-.8L18.7 6.8a2.2 2.2 0 0 1 3.1 3.1L6.5 19l-3.3.8.8-3.3Z"/><path d="m14.2 5.8 4 4"/></svg></span><span>Изменить картинку</span>';editBtn.onclick=async e=>{e.stopPropagation();closeAllMediaMenus();const source=await mediaItemToReference(item,card,true);const preview=card?.querySelector("img")?.currentSrc||card?.querySelector("img")?.src||item?.url||"";openEditor(source||preview)};
   const videoBtn=document.createElement("button");videoBtn.type="button";videoBtn.innerHTML='<span class="action-icon action-svg"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="5" width="17" height="14" rx="2"/><path d="m10 9 5 3-5 3Z"/></svg></span><span>Сделать видео</span>';videoBtn.onclick=async e=>{e.stopPropagation();closeAllMediaMenus();openVideoFromImage(await mediaItemToReference(item))};
-  const copyBtn=document.createElement("button");copyBtn.type="button";copyBtn.innerHTML='<span class="action-icon action-svg"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M15 9V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v7a2 2 0 0 0 2 2h3"/></svg></span><span>Копировать</span>';copyBtn.onclick=async e=>{e.stopPropagation();closeAllMediaMenus();try{const response=await fetch(item.url,{headers:{Accept:"image/*"}});if(!response.ok)throw new Error();const blob=await response.blob();if(!navigator.clipboard?.write||!window.ClipboardItem)throw new Error();const bitmap=await createImageBitmap(blob);const canvas=document.createElement("canvas");canvas.width=bitmap.width;canvas.height=bitmap.height;const ctx=canvas.getContext("2d");ctx.fillStyle="#fff";ctx.fillRect(0,0,canvas.width,canvas.height);ctx.drawImage(bitmap,0,0);bitmap.close();const jpeg=await new Promise(resolve=>canvas.toBlob(resolve,"image/jpeg",.95));if(!jpeg)throw new Error();await navigator.clipboard.write([new ClipboardItem({"image/jpeg":jpeg})]);toast("JPG скопирован")}catch{toast("Не удалось скопировать картинку")}};
+  const copyBtn=document.createElement("button");copyBtn.type="button";copyBtn.innerHTML='<span class="action-icon action-svg"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M15 9V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v7a2 2 0 0 0 2 2h3"/></svg></span><span>Копировать</span>';copyBtn.onclick=async e=>{e.stopPropagation();closeAllMediaMenus();try{const response=await fetch(item.url,{headers:{Accept:"image/*"}});if(!response.ok)throw new Error();const blob=await response.blob();if(!navigator.clipboard?.write||!window.ClipboardItem)throw new Error();const bitmap=await createImageBitmap(blob);const canvas=document.createElement("canvas");canvas.width=bitmap.width;canvas.height=bitmap.height;const ctx=canvas.getContext("2d");ctx.fillStyle="#fff";ctx.fillRect(0,0,canvas.width,canvas.height);ctx.drawImage(bitmap,0,0);bitmap.close();const jpeg=await new Promise(resolve=>canvas.toBlob(resolve,"image/jpeg",.95));if(!jpeg)throw new Error();await navigator.clipboard.write([new ClipboardItem({"image/jpeg":jpeg})]);showCopySuccess(copyBtn);toast("JPG скопирован")}catch{toast("Не удалось скопировать картинку")}};
   const downloadBtn=document.createElement("button");downloadBtn.type="button";downloadBtn.innerHTML='<span class="action-icon action-svg"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4v11M8 11l4 4 4-4M5 19h14"/></svg></span><span>Скачать</span>';downloadBtn.onclick=e=>{e.stopPropagation();closeAllMediaMenus();downloadImage(item.url)};
   const deleteBtn=document.createElement("button");deleteBtn.type="button";deleteBtn.innerHTML='<span class="action-icon action-svg"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M9 7V4h6v3M7 7l1 13h8l1-13M10 11v5M14 11v5"/></svg></span><span>Удалить</span>';deleteBtn.onclick=e=>{e.stopPropagation();closeAllMediaMenus();confirmDeleteMedia(item,card)};
   menu.append(promptBtn,upscaleMenuBtn,editBtn,videoBtn,copyBtn,downloadBtn,deleteBtn);
@@ -2376,11 +2376,41 @@ async function generateImage(prompt){
   if(fakeTimer){clearInterval(fakeTimer);fakeTimer=null;}
 }
 }
-function copyChatText(text){
+const copySuccessTimers=new WeakMap();
+function showCopySuccess(button){
+ if(!button)return;
+ const icon=button.querySelector("svg,.action-mini-icon,.action-icon");
+ const originalHtml=button.innerHTML;
+ const originalTitle=button.getAttribute("title");
+ const originalLabel=button.getAttribute("aria-label");
+ const timer=copySuccessTimers.get(button);
+ if(timer)clearTimeout(timer);
+ if(icon&&icon.tagName.toLowerCase()==="svg"){
+  icon.innerHTML='<path d="m5 12 4 4L19 6"/>';
+  icon.classList.add("copy-success-check");
+ }else if(icon){
+  icon.textContent="✓";
+  icon.classList.add("copy-success-check");
+ }else{
+  button.textContent="✓ Скопировано";
+ }
+ button.classList.add("copy-success");
+ button.setAttribute("title","Скопировано");
+ if(originalLabel!==null)button.setAttribute("aria-label","Скопировано");
+ copySuccessTimers.set(button,setTimeout(()=>{
+  button.innerHTML=originalHtml;
+  button.classList.remove("copy-success");
+  button.querySelectorAll(".copy-success-check").forEach(node=>node.classList.remove("copy-success-check"));
+  if(originalTitle===null)button.removeAttribute("title");else button.setAttribute("title",originalTitle);
+  if(originalLabel===null)button.removeAttribute("aria-label");else button.setAttribute("aria-label",originalLabel);
+  copySuccessTimers.delete(button);
+ },1000));
+}
+function copyChatText(text,button){
  const value=String(text||"");
  if(!value)return;
  if(navigator.clipboard?.writeText){
-   navigator.clipboard.writeText(value).then(()=>toast("Скопировано")).catch(()=>toast("Не удалось скопировать"));
+   navigator.clipboard.writeText(value).then(()=>{showCopySuccess(button);toast("Скопировано")}).catch(()=>toast("Не удалось скопировать"));
  }else toast("Копирование недоступно");
 }
 function retryLastChat(){
@@ -2407,7 +2437,7 @@ function addChatMessage(text,isUser,image="",isError=false){
  const actions=document.createElement("div");actions.className="chat-actions";
  if(isUser){
    actions.innerHTML='<button type="button" title="Копировать"><span class="action-mini-icon">⧉</span>Копировать</button><button type="button" title="Повторить"><span class="action-mini-icon">↻</span>Повторить</button>';
-   actions.querySelector('[title="Копировать"]').onclick=()=>copyChatText(text);
+   actions.querySelector('[title="Копировать"]').onclick=e=>copyChatText(text,e.currentTarget);
    actions.querySelector('[title="Повторить"]').onclick=()=>{
      const value=String(text||"").trim();
      if(!value)return;
@@ -2421,7 +2451,7 @@ function addChatMessage(text,isUser,image="",isError=false){
    };
  }else{
    actions.innerHTML='<button type="button" title="Копировать"><span class="action-mini-icon">⧉</span>Копировать</button><button type="button" title="В промпт"><span class="action-mini-icon">✦</span>В промпт</button><button type="button" title="Повторить"><span class="action-mini-icon">↻</span>Повторить</button>';
-   actions.querySelector('[title="Копировать"]').onclick=()=>copyChatText(text);
+   actions.querySelector('[title="Копировать"]').onclick=e=>copyChatText(text,e.currentTarget);
    actions.querySelector('[title="В промпт"]').onclick=()=>{$("#composerInput").value=text;syncInput();$("#composerInput").focus();toast("Ответ добавлен в промпт")};
    actions.querySelector('[title="Повторить"]').onclick=()=>retryLastChat();
  }
@@ -2444,7 +2474,7 @@ function addChatMessage(text,isUser,image="",isError=false){
    };
    selectionBar.querySelector('[data-selection-action="copy"]').onclick=()=>{
      const t=selectionBar.dataset.selectionText||"";
-     if(t)copyChatText(t);
+     if(t)copyChatText(t,selectionBar.querySelector('[data-selection-action="copy"]'));
      selectionBar.hidden=true;
    };
    bubble.addEventListener("mouseup",()=>{
@@ -3885,7 +3915,7 @@ $("#composerAttach").onclick=()=>$("#referenceInput").click();
 function copyComposerPrompt(){
  const value=$("#composerInput")?.value||"";
  if(!value.trim()){toast("Промт пуст");return}
- if(navigator.clipboard?.writeText) navigator.clipboard.writeText(value).then(()=>toast("Промт скопирован")).catch(()=>toast("Не удалось скопировать промт"));
+ if(navigator.clipboard?.writeText) navigator.clipboard.writeText(value).then(()=>{showCopySuccess($("#voiceCopyPrompt"));toast("Промт скопирован")}).catch(()=>toast("Не удалось скопировать промт"));
  else toast("Копирование недоступно в этом браузере");
 }
 function improveComposerPrompt(){
