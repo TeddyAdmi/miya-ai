@@ -4102,9 +4102,18 @@ function ensureSpeechVisualizer(){
     row.appendChild(canvas);
   }
   row.style.position="relative";
+  const rowRect=row.getBoundingClientRect();
+  const mic=document.querySelector("#composerMic");
+  const micRect=mic?.getBoundingClientRect();
+  const leftInset=52;
+  // Stop the waveform just before the microphone button, with a small visual gap.
+  const rightInset=micRect
+    ? Math.max(8,rowRect.right-micRect.left+12)
+    : 90;
+  const canvasWidth=Math.max(0,rowRect.width-leftInset-rightInset);
   Object.assign(canvas.style,{
-    position:"absolute",left:"52px",right:"58px",top:"50%",
-    width:"calc(100% - 110px)",height:"30px",
+    position:"absolute",left:leftInset+"px",right:"auto",top:"50%",
+    width:canvasWidth+"px",height:"30px",
     transform:"translateY(-50%)",
     pointerEvents:"none",zIndex:"1004",opacity:"1",
     mixBlendMode:"screen"
