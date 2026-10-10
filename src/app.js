@@ -4073,6 +4073,9 @@ let speechVisualizerFrame=0;
 let speechProcessor=null;
 let speechSamples=[];
 let speechSampleRate=16000;
+let speechRecorder=null;
+let speechChunks=[];
+let speechMimeType="";
 
 function setSpeechMicIdle(){
   const mic=$("#composerMic");
@@ -4217,43 +4220,35 @@ async function finishSpeechRecording(){
   const stream=speechStream;
   const context=speechAudioContext;
   const source=speechSource;
-  const processor=speechProcessor;
-  const samples=speechSamples;
-  const inputRate=context?.sampleRate||48000;
+  const analyser=speechAnalyser;
+  const recorder=speechRecorder;
+  const chunks=speechChunks.slice();
+  const mime=speechMimeType||recorder?.mimeType||"audio/webm";
 
-  speechStream=null;speechAudioContext=null;speechSource=null;speechProcessor=null;speechSamples=[];
-  try{processor?.disconnect()}catch{}
+  speechStream=null;speechAudioContext=null;speechSource=null;speechAnalyser=null;
+  speechRecorder=null;speechChunks=[];speechMimeType="";
+  try{
+    if(recorder&&recorder.state!=="inactive"){
+      await new Promise(resolve=>{
+        recorder.addEventListener("stop",resolve,{once:true});
+        recorder.stop();
+      });
+    }
+  }catch(error){console.warn("Miya microphone recorder stop failed",error)}
   try{source?.disconnect()}catch{}
+  try{analyser?.disconnect()}catch{}
   try{stream?.getTracks().forEach(track=>track.stop())}catch{}
   try{await context?.close()}catch{}
 
-  if(!samples.length){
+  if(!chunks.length){
     speechSetIdle();
     toast("Не удалось записать голос");
     return;
   }
-
-  // ScriptProcessor stores each audio callback as a Float32Array chunk.
-  // Flatten the chunks before resampling; passing the chunk array directly
-  // produced a silent/invalid WAV and therefore an empty transcription.
-  const totalSamples=samples.reduce((total,chunk)=>total+(chunk?.length||0),0);
-  if(!totalSamples){
+  const blob=new Blob(chunks,{type:mime});
+  if(blob.size<1000){
     speechSetIdle();
-    toast("Микрофон не записал звук — проверь выбранный микрофон");
-    return;
-  }
-  const joined=new Float32Array(totalSamples);
-  let sampleOffset=0;
-  for(const chunk of samples){
-    if(!chunk?.length)continue;
-    joined.set(chunk,sampleOffset);
-    sampleOffset+=chunk.length;
-  }
-  const mono=downsampleSpeech(joined,inputRate,speechSampleRate);
-  const wav=encodeWav(mono,speechSampleRate);
-  if(wav.size<1000){
-    speechSetIdle();
-    toast("Запись слишком короткая");
+    toast("Запись слишком короткая — говори чуть дольше");
     return;
   }
 
@@ -4267,43 +4262,82 @@ async function finishSpeechRecording(){
   if(status)status.textContent="Распознаю голос…";
 
   try{
-    // Restore the previously used CleverUtils speech-to-text route. This was
-    // the working chat transcription path before the AHM7 endpoint was added.
+    async function parseJson(response){return await response.json().catch(()=>null)}
+    async function waitForCleverJob(jobId){
+      for(let attempt=0;attempt<90;attempt++){
+        if(attempt)await new Promise(resolve=>setTimeout(resolve,1500));
+        const poll=await fetch("https://cleverutils.com/api/v1/jobs/"+encodeURIComponent(jobId),{cache:"no-store"});
+        const status=await parseJson(poll);
+        if(!poll.ok)throw new Error("TRANSCRIBE_JOB_"+poll.status);
+        const info=status?.data||status||{};
+        const state=String(info.status||"").toLowerCase();
+        const value=String(info.text||info.transcript||"").trim();
+        if(value)return value;
+        if(state==="done"||state==="failed"||state==="error"){
+          if(state!=="done")throw new Error("TRANSCRIBE_JOB_FAILED");
+          if(info.output?.url){
+            const out=await fetch(info.output.url,{cache:"no-store"});
+            if(out.ok)return (await out.text()).trim();
+          }
+          return "";
+        }
+      }
+      throw new Error("TRANSCRIBE_TIMEOUT");
+    }
+    async function cleverConvertToWav(inputBlob,inputName){
+      const form=new FormData();
+      form.append("file",inputBlob,inputName);
+      form.append("to_format","wav");
+      form.append("wav_rate","16000");
+      form.append("wav_channels","1");
+      const response=await fetch("https://cleverutils.com/api/v1/convert",{method:"POST",body:form,cache:"no-store"});
+      const data=await parseJson(response);
+      if(!response.ok)throw new Error("AUDIO_CONVERT_"+response.status);
+      const info=data?.data||data||{};
+      if(info.output?.url){
+        const out=await fetch(info.output.url,{cache:"no-store"});
+        if(!out.ok)throw new Error("AUDIO_OUTPUT_"+out.status);
+        return await out.blob();
+      }
+      if(info.job_id){
+        for(let attempt=0;attempt<90;attempt++){
+          if(attempt)await new Promise(resolve=>setTimeout(resolve,1200));
+          const poll=await fetch("https://cleverutils.com/api/v1/jobs/"+encodeURIComponent(info.job_id),{cache:"no-store"});
+          const status=await parseJson(poll);
+          if(!poll.ok)throw new Error("AUDIO_JOB_"+poll.status);
+          const job=status?.data||status||{};
+          if(String(job.status||"").toLowerCase()==="done"&&job.output?.url){
+            const out=await fetch(job.output.url,{cache:"no-store"});
+            if(!out.ok)throw new Error("AUDIO_OUTPUT_"+out.status);
+            return await out.blob();
+          }
+          if(["failed","error"].includes(String(job.status||"").toLowerCase()))throw new Error("AUDIO_CONVERT_FAILED");
+        }
+      }
+      throw new Error("AUDIO_CONVERT_EMPTY");
+    }
+
+    let transcriptionBlob=blob;
+    let transcriptionName=/ogg/i.test(mime)?"miya-voice.ogg":"miya-voice.webm";
+    if(/ogg|webm/i.test(mime)){
+      transcriptionBlob=await cleverConvertToWav(blob,transcriptionName);
+      transcriptionName="miya-voice.wav";
+    }
+    if(!transcriptionBlob?.size||transcriptionBlob.size<1000)throw new Error("AUDIO_CONVERTED_EMPTY");
+
     const form=new FormData();
-    form.append("file",wav,"miya-voice.wav");
+    form.append("file",transcriptionBlob,transcriptionName);
     form.append("format","txt");
     form.append("quality","fast");
     form.append("language","ru");
     const response=await fetch("https://cleverutils.com/api/v1/tools/speech-to-text",{
-      method:"POST",
-      body:form,
-      headers:{Accept:"application/json"},
-      cache:"no-store"
+      method:"POST",body:form,headers:{Accept:"application/json"},cache:"no-store"
     });
-    const data=await response.json().catch(()=>null);
+    const data=await parseJson(response);
     if(!response.ok)throw new Error("TRANSCRIBE_"+response.status);
     let text=String(data?.text||data?.transcript||data?.data?.text||data?.data?.transcript||"").trim();
     const job=data?.job_id||data?.data?.job_id||null;
-    if(!text&&job){
-      for(let attempt=0;attempt<90;attempt++){
-        if(attempt)await new Promise(resolve=>setTimeout(resolve,1500));
-        const poll=await fetch("https://cleverutils.com/api/v1/jobs/"+encodeURIComponent(job),{cache:"no-store"});
-        const status=await poll.json().catch(()=>null);
-        if(!poll.ok)throw new Error("TRANSCRIBE_JOB_"+poll.status);
-        const info=status?.data||status||{};
-        text=String(info.text||info.transcript||"").trim();
-        if(text)break;
-        const state=String(info.status||"").toLowerCase();
-        if(state==="failed"||state==="error")throw new Error("TRANSCRIBE_JOB_FAILED");
-        if(state==="done"){
-          if(info.output?.url){
-            const output=await fetch(info.output.url);
-            if(output.ok)text=(await output.text()).trim();
-          }
-          break;
-        }
-      }
-    }
+    if(!text&&job)text=await waitForCleverJob(job);
     if(!text)throw new Error("TRANSCRIPT_EMPTY");
 
     const input=$("#composerInput");
@@ -4340,18 +4374,26 @@ async function startSpeechRecording(){
     toast("Браузер не поддерживает доступ к микрофону");
     return;
   }
+  if(typeof MediaRecorder==="undefined"){
+    toast("Этот браузер не поддерживает запись аудио");
+    return;
+  }
   try{
     const stream=await navigator.mediaDevices.getUserMedia({
-      audio:{
-        channelCount:1,
-        echoCancellation:true,
-        noiseSuppression:true,
-        autoGainControl:true
-      }
+      audio:{channelCount:1,echoCancellation:true,noiseSuppression:true,autoGainControl:true}
     });
+    const supported=[
+      "audio/ogg;codecs=opus",
+      "audio/webm;codecs=opus",
+      "audio/ogg",
+      "audio/webm"
+    ];
+    const preferred=supported.find(type=>MediaRecorder.isTypeSupported(type))||"";
+    const recorder=preferred
+      ? new MediaRecorder(stream,{mimeType:preferred,audioBitsPerSecond:64000})
+      : new MediaRecorder(stream);
     const AudioContextClass=window.AudioContext||window.webkitAudioContext;
     if(!AudioContextClass)throw new Error("AUDIO_CONTEXT_UNSUPPORTED");
-
     const context=new AudioContextClass();
     await context.resume();
     const source=context.createMediaStreamSource(stream);
@@ -4359,30 +4401,20 @@ async function startSpeechRecording(){
     analyser.fftSize=256;
     analyser.smoothingTimeConstant=.78;
     source.connect(analyser);
-    const processor=context.createScriptProcessor(4096,1,1);
+
     speechStream=stream;
     speechAudioContext=context;
     speechSource=source;
     speechAnalyser=analyser;
-    speechProcessor=processor;
-    speechSamples=[];
+    speechRecorder=recorder;
+    speechChunks=[];
+    speechMimeType=recorder.mimeType||preferred||"audio/webm";
+    recorder.addEventListener("dataavailable",event=>{
+      if(event.data?.size)speechChunks.push(event.data);
+    });
+    recorder.start(250);
 
-    processor.onaudioprocess=e=>{
-      if(!speechAudioContext)return;
-      const input=e.inputBuffer.getChannelData(0);
-      const copy=new Float32Array(input.length);
-      copy.set(input);
-      speechSamples.push(copy);
-      const output=e.outputBuffer.getChannelData(0);
-      output.fill(0);
-    };
-
-    // Feed the analyser and recorder processor from separate branches.
-    // The analyser paints the live waveform; the processor captures the original mic signal.
-    source.connect(processor);
-    processor.connect(context.destination);
-
-    const mic=$("#composerMic"),input=$("#composerInput");
+    const input=$("#composerInput");
     speechBaseText=input.value.trim();
     if(input){
       input.value="";
@@ -4398,8 +4430,11 @@ async function startSpeechRecording(){
     if(status)status.textContent="Слушаю… говори спокойно";
   }catch(error){
     console.error("Miya microphone start failed",error);
+    try{speechRecorder?.stop()}catch{}
     try{speechStream?.getTracks().forEach(track=>track.stop())}catch{}
-    speechStream=null;speechAudioContext=null;speechSource=null;speechAnalyser=null;speechProcessor=null;speechSamples=[];
+    try{speechAudioContext?.close()}catch{}
+    speechStream=null;speechAudioContext=null;speechSource=null;speechAnalyser=null;speechProcessor=null;
+    speechRecorder=null;speechChunks=[];speechMimeType="";speechSamples=[];
     const input=$("#composerInput");
     if(input){input.value=speechBaseText;syncInput();}
     speechSetIdle();
