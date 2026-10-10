@@ -4552,18 +4552,30 @@ if(composerMicButton){
 
 document.querySelector('.mobile-tabs [data-mode="voice"]')?.remove();
 function syncVoiceEditorTheme(){const backdrop=document.querySelector(".voice-editor-backdrop");if(!backdrop)return;const light=document.body.classList.contains("light");backdrop.classList.toggle("ve2-light",light);backdrop.dataset.theme=light?"light":"dark"}
-
+function syncFloatingWallClearIcon(){
+ const btn=$("#clearImageWall"),svg=btn?.querySelector("svg");if(!btn||!svg)return;
+ const light=document.body.classList.contains("light");
+ const color=light?"#51417f":"#9db0c7";
+ btn.style.setProperty("color",color,"important");
+ svg.style.setProperty("stroke",color,"important");
+ svg.style.setProperty("color",color,"important");
+ svg.querySelectorAll("*").forEach(part=>{
+   part.style.setProperty("stroke",color,"important");
+   part.style.setProperty("color",color,"important");
+ });
+}
+syncFloatingWallClearIcon();
 function syncThemeToggleIcon(){
   const btn=$("#themeToggle");
   if(!btn)return;
   const light=document.body.classList.contains("light");
   btn.innerHTML=light
-    ? '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20.5 15.2A8.7 8.7 0 0 1 8.8 3.5 8.8 8.8 0 1 0 20.5 15.2Z" fill="currentColor" stroke="currentColor" stroke-width="1.2"/></svg>'
+    ? '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20.5 15.2A8.7 8.7 0 0 1 8.8 3.5 8.8 8.8 0 1 0 20.5 15.2Z"/></svg>'
     : '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/></svg>';
   btn.title=light?"Тёмная тема":"Светлая тема";
   btn.setAttribute("aria-label",light?"Включить тёмную тему":"Включить светлую тему");
 }
-$("#themeToggle").onclick=()=>{document.body.classList.toggle("light");syncThemeToggleIcon();syncVoiceEditorTheme()};
+$("#themeToggle").onclick=()=>{document.body.classList.toggle("light");syncThemeToggleIcon();syncFloatingWallClearIcon();syncVoiceEditorTheme()};
 $("#profileButton").onclick=()=>toast("Профиль Miya User · 0 PKOIN");
 document.querySelectorAll("[data-tool]").forEach(b=>b.onclick=()=>{
  const tool=b.dataset.tool;
@@ -4591,7 +4603,7 @@ document.querySelectorAll("[data-tool]").forEach(b=>b.onclick=()=>{
 renderChatHistoryMini();
 setMode("chat");
 syncThemeToggleIcon();
-
+syncFloatingWallClearIcon();
 
 
 const chatNavWrap=$("#chatNavWrap")||$(".chat-nav-wrap");

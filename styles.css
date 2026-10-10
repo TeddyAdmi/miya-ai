@@ -2687,3 +2687,7 @@ body.light .video-options .composer-paste:hover{background:#edf3f9!important;col
   margin:0!important;
 }
 
+/* Keep the two floating controls visually matched in light mode. */
+body.light button.floating-theme,body.light button.floating-wall-clear{background:#fff;color:#51417f;border-color:#d9d1f0;box-shadow:0 5px 16px rgba(81,65,127,.13)}
+body.light button.floating-theme:hover,body.light button.floating-wall-clear:hover{background:#f1edff;color:#44336f;border-color:#c5b7e9}
+body.light button.floating-theme svg,body.light button.floating-wall-clear svg{stroke:currentColor}
