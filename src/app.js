@@ -62,7 +62,7 @@ function jpegImageUrl(url){
   }
   return value;
 }
-let mode="chat",referenceImage=null,chatAttachmentFile=null,chatAttachmentImages=[],chatMessages=[];
+let mode="chat",referenceImage=null,chatAttachmentFile=null,chatAttachmentImages=[],chatMessages=[],pendingAssistantQuote="",restoringSavedChat=false;
 let videoGenerationBusy=false;
 const CHAT_KEY="miyaChats";
 let chatMenuSuppressed=false;
@@ -88,9 +88,12 @@ function cleanAutoChatTitle(value,maxLength=140){
  }
  return title||"Новый чат";
 }
-let activeChatSpeechAudio=null,activeChatSpeechUrl=null,activeChatSpeechController=null,activeChatSpeechButton=null,activeChatSpeechStopButton=null;
+let activeChatSpeechAudio=null,activeChatSpeechUrl=null,activeChatSpeechController=null,activeChatSpeechButton=null,activeChatSpeechStopButton=null,activeChatSpeechStatus=null;
 function stopChatSpeech(){
   try{activeChatSpeechController?.abort()}catch{}
+  const status=$("#composerStatus");
+  if(status&&activeChatSpeechStatus&&/^(Подготовка озвучивания|Воспроизведение текста|Воспроизведение сообщения)/.test(status.textContent))status.textContent=activeChatSpeechStatus;
+  activeChatSpeechStatus=null;
   activeChatSpeechController=null;
   if(activeChatSpeechAudio){try{activeChatSpeechAudio.pause();activeChatSpeechAudio.removeAttribute("src");activeChatSpeechAudio.load()}catch{}}
   activeChatSpeechAudio=null;
@@ -110,6 +113,8 @@ async function speakChatResponse(text,button){
  if(activeChatSpeechAudio||activeChatSpeechController){stopChatSpeech();return}
  const controller=new AbortController();
  activeChatSpeechController=controller;activeChatSpeechButton=button;
+ activeChatSpeechStatus=$("#composerStatus")?.textContent||"AI Chat готов";
+ const status=$("#composerStatus");if(status)status.textContent=button.closest(".chat-selection-actions")?"Подготовка озвучивания выделенного текста…":"Подготовка озвучивания сообщения…";
  activeChatSpeechStopButton=button.closest(".chat-actions")?.querySelector(".chat-stop-speech")||null;
  const isSelectionListen=!!button.closest(".chat-selection-actions");
  button.dataset.originalHtml=button.innerHTML;button.dataset.originalTitle=button.title;button.dataset.originalAriaLabel=button.getAttribute("aria-label")||button.title;
@@ -148,6 +153,7 @@ async function speakChatResponse(text,button){
     if(activeChatSpeechStopButton)activeChatSpeechStopButton.hidden=false;
   }
   activeChatSpeechController=null;
+  if(status)status.textContent=isSelectionListen?"Воспроизведение текста — можно остановить":"Воспроизведение сообщения — можно остановить";
   await activeChatSpeechAudio.play();
  }catch(error){
   if(error?.name!=="AbortError"){console.error("Chat TTS failed",error);toast(error.message||"Не удалось озвучить текст")}
@@ -344,14 +350,13 @@ function resetChatFlyoutScroll(){const el=$("#chatSubmenu");if(el)requestAnimati
 function openSavedChat(id){
  const chat=getChats().find(x=>x.id===id);if(!chat)return;
  chatMenuSuppressed=true;$("#chatSubmenu")?.classList.add("suppressed");resetChatMenus();resetChatFlyoutScroll();$("#chatMenuToggle")?.setAttribute("aria-expanded","false");
- mode="chat";chatMessages=chat.messages.map(m=>({...m}));window.__miyaChatId=chat.id;
- restoreReferenceImage();setMode("chat",false);
+ mode="chat";pendingAssistantQuote="";chatMessages=chat.messages.map(m=>({...m}));window.__miyaChatId=chat.id;
+ setMode("chat",false);
  const c=$("#canvas");c.classList.add("chat-canvas");c.innerHTML='<div class="chat-stream"></div>';
- chatMessages.forEach(m=>addChatMessage(m.content,m.role==="user",m.image||""));
- renderChatHistoryMini();
- syncActiveChatTitle();
+ restoringSavedChat=true;
+ try{chatMessages.forEach(m=>addChatMessage(m.content,m.role==="user",m.image||""))}finally{restoringSavedChat=false}
+ renderChatHistoryMini();syncActiveChatTitle();
  scrollChatToLatest("auto");
-   $("#composerInput")?.focus();
 }
 
 const LIB_KEY="miyaLibrary";
@@ -2222,6 +2227,17 @@ function toast(message){
  window.__toast=setTimeout(()=>t.classList.remove("show"),2600)
 }
 function syncInput(){const i=$("#composerInput");if(!i)return;i.style.height="auto";const h=Math.min(120,Math.max(42,i.scrollHeight));i.style.height=h+"px";i.style.overflowY=i.scrollHeight>h?"auto":"hidden";const row=i.closest(".composer-input-row");if(row)row.style.height=""}
+function renderAssistantQuoteBlock(){
+ const composer=$("#composer");if(!composer)return;
+ let block=composer.querySelector(".composer-quote-block");
+ if(!pendingAssistantQuote){block?.remove();return}
+ if(!block){block=document.createElement("div");block.className="composer-quote-block";const row=composer.querySelector(".composer-input-row");composer.insertBefore(block,row||composer.firstChild)}
+ block.replaceChildren();
+ const label=document.createElement("div");label.className="composer-quote-label";label.textContent="ЦИТАТА ИЗ ОТВЕТА MIYA";
+ const text=document.createElement("div");text.className="composer-quote-text";text.textContent=pendingAssistantQuote;
+ const remove=document.createElement("button");remove.type="button";remove.className="composer-quote-remove";remove.title="Убрать цитату";remove.setAttribute("aria-label","Убрать цитату");remove.textContent="×";remove.onclick=()=>{pendingAssistantQuote="";renderAssistantQuoteBlock();const status=$("#composerStatus");if(status)status.textContent="AI Chat готов"};
+ block.append(label,text,remove);
+}
 function modeHero(){
  if(mode==="chat") return `<div class="studio-room clean-canvas chat-room">
    <div class="chat-welcome section-welcome">
@@ -2256,7 +2272,7 @@ function bindChatUI(){
  if(newChat)newChat.onclick=(e)=>{
    e.preventDefault();e.stopPropagation();
    resetChatMenus();
-   mode="chat";chatMessages=[];window.__miyaChatId=null;
+   mode="chat";chatMessages=[];pendingAssistantQuote="";renderAssistantQuoteBlock();window.__miyaChatId=null;
    clearComposerAttachment();
    $("#composerInput").value="";
    $("#canvas").innerHTML=modeHero();
@@ -2697,9 +2713,10 @@ function addChatMessage(text,isUser,image="",isError=false){
      selectionBar.querySelector('[data-selection-action="answer"]').onclick=()=>{
        const t=selectionBar.dataset.selectionText||"";
        if(!t)return;
-       const quoted="Цитата из ответа Miya:\n"+t.split("\n").map(line=>"> "+line).join("\n")+"\n\nОтветь на эту цитату:";
-       const input=$("#composerInput");input.value=quoted;syncInput();input.focus();input.selectionStart=input.selectionEnd=input.value.length;
-       selectionBar.hidden=true;toast("Цитата из ответа Miya добавлена в промпт");
+       pendingAssistantQuote=t;renderAssistantQuoteBlock();
+       const input=$("#composerInput");input.focus();
+       const status=$("#composerStatus");if(status)status.textContent="Цитата из ответа Miya добавлена — напиши вопрос";
+       selectionBar.hidden=true;toast("Цитата из ответа Miya добавлена в блок промпта");
      };
    }
    selectionBar.querySelector('[data-selection-action="listen"]').onclick=e=>{
@@ -2723,7 +2740,7 @@ function addChatMessage(text,isUser,image="",isError=false){
  }
  row.append(av,content);
  stream.appendChild(row);
- scrollChatToLatest("smooth");
+ if(!restoringSavedChat)scrollChatToLatest("smooth");
 }
 async function prepareChatVisionImage(dataUrl){
   if(!/^data:image\//i.test(String(dataUrl||""))) return "";
@@ -2764,7 +2781,7 @@ async function requestChat(){
    const response=await fetch("/api/chat",{
      method:"POST",
      headers:{"Content-Type":"application/json","Accept":"application/json"},
-     body:JSON.stringify({messages:chatMessages,imageBase64:chatImages[0]||"",imageBase64s:chatImages}),
+     body:JSON.stringify({messages:chatMessages.map(m=>m.role==="user"&&m.quote?{...m,content:"Цитата из ответа Miya, которую нужно проанализировать:\n"+m.quote+"\n\nСообщение пользователя:\n"+m.content}:m),imageBase64:chatImages[0]||"",imageBase64s:chatImages}),
      signal:AbortSignal.timeout(90000)
    });
    const data=await response.json().catch(()=>({}));
@@ -4149,7 +4166,7 @@ $("#composerSend").addEventListener("click",async()=>{
  if(mode==="images"){await generateImage(value);return}
  if(mode==="video"){await generateVideo(value);return}
  if(mode==="voice"){await generateVoice(value);return}
- if(mode==="chat"){const attachedImages=[...chatAttachmentImages];const attachedImage=attachedImages[0]||referenceImage;chatMessages.push({role:"user",content:value,image:attachedImage||"",images:attachedImages});addChatMessage(value,true,attachedImage||"");$("#composerInput").value="";syncInput();saveCurrentChat();await requestChat();chatAttachmentFile=null;clearComposerAttachment();return}
+ if(mode==="chat"){const attachedImages=[...chatAttachmentImages];const attachedImage=attachedImages[0]||referenceImage;chatMessages.push({role:"user",content:value,quote:pendingAssistantQuote||"",image:attachedImage||"",images:attachedImages});addChatMessage(value,true,attachedImage||"");$("#composerInput").value="";pendingAssistantQuote="";renderAssistantQuoteBlock();syncInput();saveCurrentChat();await requestChat();chatAttachmentFile=null;clearComposerAttachment();return}
  showLoading();await generateVideo(value)
 });
 $("#composerAttach").onclick=()=>$("#referenceInput").click();
