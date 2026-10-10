@@ -4553,13 +4553,16 @@ if(composerMicButton){
 document.querySelector('.mobile-tabs [data-mode="voice"]')?.remove();
 function syncVoiceEditorTheme(){const backdrop=document.querySelector(".voice-editor-backdrop");if(!backdrop)return;const light=document.body.classList.contains("light");backdrop.classList.toggle("ve2-light",light);backdrop.dataset.theme=light?"light":"dark"}
 function syncFloatingWallClearIcon(){
- const btn=$("#clearImageWall"),svg=btn?.querySelector("svg");if(!svg)return;
+ const btn=$("#clearImageWall"),svg=btn?.querySelector("svg");if(!btn||!svg)return;
  const light=document.body.classList.contains("light");
- const color=light?"#fff":"#9db0c7";
+ const color=light?"#51417f":"#9db0c7";
  btn.style.setProperty("color",color,"important");
  svg.style.setProperty("stroke",color,"important");
  svg.style.setProperty("color",color,"important");
- svg.querySelectorAll("*").forEach(part=>part.style.setProperty("stroke",color,"important"));
+ svg.querySelectorAll("*").forEach(part=>{
+   part.style.setProperty("stroke",color,"important");
+   part.style.setProperty("color",color,"important");
+ });
 }
 syncFloatingWallClearIcon();
 function syncThemeToggleIcon(){

@@ -2201,7 +2201,25 @@ body.light .image-viewer-created-date{background:rgba(255,255,255,.86)!important
 .nav-icon.icon-sliders::before{display:none!important}
 .nav-icon.icon-sliders{display:inline-grid!important;place-items:center!important}
 
-body.light #clearImageWall svg{stroke:#fff!important;color:#fff!important}
+/* Definitive light-theme treatment for the floating clear-wall control.
+   Use the ID selector so this beats the earlier generic dark floating-button rules. */
+body.light #clearImageWall{
+  background:#fff!important;
+  color:#51417f!important;
+  border-color:#d9d1f0!important;
+  box-shadow:0 5px 16px rgba(81,65,127,.13)!important;
+}
+body.light #clearImageWall:hover{
+  background:#f1edff!important;
+  color:#44336f!important;
+  border-color:#c5b7e9!important;
+}
+body.light #clearImageWall svg,
+body.light #clearImageWall svg *{
+  stroke:#51417f!important;
+  color:#51417f!important;
+  fill:none!important;
+}
 
 
 /* Image model labels, visible source-image thumbnail and compact generation progress */
@@ -2686,3 +2704,9 @@ body.light .video-options .composer-paste:hover{background:#edf3f9!important;col
   align-self:center!important;
   margin:0!important;
 }
+
+
+/* Final theme override: the clear-wall control must be light in light mode. */
+body.light button#clearImageWall{background:#fff!important;color:#51417f!important;border-color:#d9d1f0!important;box-shadow:0 5px 16px rgba(81,65,127,.13)!important}
+body.light button#clearImageWall:hover{background:#f1edff!important;color:#44336f!important;border-color:#c5b7e9!important}
+body.light button#clearImageWall svg,body.light button#clearImageWall svg *{stroke:#51417f!important;color:#51417f!important;fill:none!important}
