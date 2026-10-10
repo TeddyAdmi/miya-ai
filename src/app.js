@@ -4325,16 +4325,30 @@ async function finishSpeechRecording(){
     }
     if(!transcriptionBlob?.size||transcriptionBlob.size<1000)throw new Error("AUDIO_CONVERTED_EMPTY");
 
-    const form=new FormData();
-    form.append("file",transcriptionBlob,transcriptionName);
-    form.append("format","txt");
-    form.append("quality","fast");
-    form.append("language","ru");
-    const response=await fetch("https://cleverutils.com/api/v1/tools/speech-to-text",{
-      method:"POST",body:form,headers:{Accept:"application/json"},cache:"no-store"
-    });
-    const data=await parseJson(response);
-    if(!response.ok)throw new Error("TRANSCRIBE_"+response.status);
+    async function requestTranscription(audioBlob,fileName){
+      const form=new FormData();
+      form.append("file",audioBlob,fileName);
+      form.append("format","txt");
+      form.append("quality","fast");
+      form.append("language","ru");
+      const response=await fetch("https://cleverutils.com/api/v1/tools/speech-to-text",{
+        method:"POST",body:form,headers:{Accept:"application/json"},cache:"no-store"
+      });
+      const data=await parseJson(response);
+      return {response,data};
+    }
+
+    let result=await requestTranscription(transcriptionBlob,transcriptionName);
+    // If CleverUtils rejects the converted WAV as containing no speech,
+    // retry the original recorder container once instead of losing the dictation.
+    if(!result.response.ok&&result.response.status===400&&transcriptionBlob!==blob){
+      console.warn("Miya WAV transcription rejected; retrying original microphone recording",{
+        originalType:blob.type,originalSize:blob.size,wavSize:transcriptionBlob.size
+      });
+      result=await requestTranscription(blob,mime.includes("ogg")?"miya-voice.ogg":"miya-voice.webm");
+    }
+    if(!result.response.ok)throw new Error("TRANSCRIBE_"+result.response.status);
+    const data=result.data;
     let text=String(data?.text||data?.transcript||data?.data?.text||data?.data?.transcript||"").trim();
     const job=data?.job_id||data?.data?.job_id||null;
     if(!text&&job)text=await waitForCleverJob(job);
