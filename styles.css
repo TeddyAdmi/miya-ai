@@ -2929,17 +2929,17 @@ body.light .chat-row.user .chat-bubble{
 }
 .composer.mode-images .composer-left-actions .attach,
 .composer.mode-video .composer-left-actions .attach{
-  width:34px!important;
-  height:34px!important;
-  min-width:34px!important;
-  min-height:34px!important;
-  flex:0 0 34px!important;
-  font-size:27px!important;
+  width:27px!important;
+  height:27px!important;
+  min-width:27px!important;
+  min-height:27px!important;
+  flex:0 0 27px!important;
+  font-size:22px!important;
   line-height:1!important;
   display:grid!important;
   place-items:center!important;
   border:0!important;
-  border-radius:8px!important;
+  border-radius:7px!important;
   background:transparent!important;
   color:var(--muted)!important;
   transform:none!important;
@@ -3030,10 +3030,10 @@ body.light .chat-row.user .chat-bubble{
 .composer.mode-images .select-pill,
 .composer.mode-video .select-pill{
   flex:0 0 auto!important;
-  min-width:78px!important;
+  min-width:105px!important;
   max-width:170px!important;
-  font-size:8px!important;
-  padding:6px 20px 6px 7px!important;
+  font-size:12px!important;
+  padding:6px 24px 6px 8px!important;
 }
 @media(max-width:800px){
   .composer.mode-images,.composer.mode-video{
@@ -3041,7 +3041,7 @@ body.light .chat-row.user .chat-bubble{
     column-gap:4px!important;
   }
   .composer.mode-images .select-pill,.composer.mode-video .select-pill{
-    min-width:70px!important;max-width:130px!important;
+    min-width:105px!important;max-width:130px!important;font-size:12px!important;
   }
 }
 
