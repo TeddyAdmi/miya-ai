@@ -3767,7 +3767,7 @@ function toolsEditorRender(){
  }
 }
 async function toolsEditorSave(){const st=toolsEditorState;if(!st.file||!st.url)return;const status=$("#toolsStatus");if(status)status.textContent="Сохраняю…";try{let url=st.url;if(st.kind==="image"){const im=$("#toolsPreviewImage");const blob=await new Promise((resolve,reject)=>{const img=new Image();img.onload=()=>{const angle=Number(im.dataset.rot||0),rad=angle*Math.PI/180,swap=angle%180!==0,cv=document.createElement("canvas");cv.width=swap?img.naturalHeight:img.naturalWidth;cv.height=swap?img.naturalWidth:img.naturalHeight;const ctx=cv.getContext("2d");ctx.translate(cv.width/2,cv.height/2);ctx.rotate(rad);ctx.filter=im.style.filter||"none";ctx.drawImage(img,-img.naturalWidth/2,-img.naturalHeight/2);cv.toBlob(b=>b?resolve(b):reject(new Error("IMAGE_SAVE_FAILED")),"image/jpeg",.95)};img.onerror=()=>reject(new Error("IMAGE_READ_FAILED"));img.src=st.url});url=URL.createObjectURL(blob)}const item=saveMedia(st.kind==="audio"?"audio":st.kind,url,st.file.name,st.kind==="image"?"Tools Image":st.kind==="video"?"Tools Video":"Tools Voice",st.file.type);if(!item)throw new Error("SAVE_FAILED");if(st.kind==="image")renderImageLibrary();else if(st.kind==="video")renderVideoLibrary();else renderVoiceLibrary();toast("Файл сохранён в стену и в «Мои файлы»");toolsEditorReset();toolsEditorRender()}catch(e){console.error("Miya Tools editor save failed",e);if(status)status.textContent="Не удалось сохранить файл"}}
-function openToolsEditor(){closeAllMediaMenus();closeMediaMenus();resetChatMenus();mode="tools";const composer=$("#composer");if(composer)composer.style.display="none";ensureToolsEditorStyles();document.querySelectorAll("[data-mode]").forEach(x=>x.classList.remove("active"));document.querySelectorAll("[data-tool]").forEach(x=>x.classList.toggle("active",x.dataset.tool==="editor"));$("#workspaceEyebrow").textContent="MIYA TOOLS · EDITOR";$("#workspaceTitle").textContent="Инструменты";$("#workspaceSubtitle").textContent="Редактор картинок, видео и голоса. Файл появляется в библиотеке только после сохранения.";$(".image-settings").style.display="none";$("#videoOptions").classList.remove("show");$("#voiceOptions").classList.remove("show");$("#canvas").classList.remove("chat-canvas");toolsEditorRender();requestAnimationFrame(()=>$("#workspace")?.scrollTo({top:0,behavior:"auto"}))}
+function openToolsEditor(){closeAllMediaMenus();closeMediaMenus();resetChatMenus();chatAttachmentImages=[];chatAttachmentFile=null;renderChatAttachmentImages();mode="tools";const composer=$("#composer");if(composer)composer.style.display="none";ensureToolsEditorStyles();document.querySelectorAll("[data-mode]").forEach(x=>x.classList.remove("active"));document.querySelectorAll("[data-tool]").forEach(x=>x.classList.toggle("active",x.dataset.tool==="editor"));$("#workspaceEyebrow").textContent="MIYA TOOLS · EDITOR";$("#workspaceTitle").textContent="Инструменты";$("#workspaceSubtitle").textContent="Редактор картинок, видео и голоса. Файл появляется в библиотеке только после сохранения.";$(".image-settings").style.display="none";$("#videoOptions").classList.remove("show");$("#voiceOptions").classList.remove("show");$("#canvas").classList.remove("chat-canvas");toolsEditorRender();requestAnimationFrame(()=>$("#workspace")?.scrollTo({top:0,behavior:"auto"}))}
 
 function setMode(next,render=true){
  const target=String(next||"chat");
@@ -3783,6 +3783,9 @@ function setMode(next,render=true){
    resetVideoProgress();
  }
  if(changedSection){
+   chatAttachmentImages=[];
+   chatAttachmentFile=null;
+   renderChatAttachmentImages();
    referenceImage=null;
    try{sessionStorage.removeItem("miyaReferenceImage")}catch{}
    setComposerAttachment("");
