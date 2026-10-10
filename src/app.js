@@ -4346,7 +4346,8 @@ async function startSpeechRecording(){
       output.fill(0);
     };
 
-    source.connect(processor);
+    // Keep the analyser in the live audio graph so Firefox updates its FFT data.
+    analyser.connect(processor);
     processor.connect(context.destination);
 
     const mic=$("#composerMic"),input=$("#composerInput");
