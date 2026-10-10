@@ -4267,21 +4267,43 @@ async function finishSpeechRecording(){
   if(status)status.textContent="Распознаю голос…";
 
   try{
-    const audio=await blobToDataUrl(wav);
-    const response=await fetch("https://ahm7xmakki.com/api/transcribe",{
+    // Restore the previously used CleverUtils speech-to-text route. This was
+    // the working chat transcription path before the AHM7 endpoint was added.
+    const form=new FormData();
+    form.append("file",wav,"miya-voice.wav");
+    form.append("format","txt");
+    form.append("quality","fast");
+    form.append("language","ru");
+    const response=await fetch("https://cleverutils.com/api/v1/tools/speech-to-text",{
       method:"POST",
-      headers:{"Content-Type":"application/json"},
-      body:JSON.stringify({
-        audio,
-        filename:"miya-voice.wav",
-        mime:"audio/wav",
-        language:"ru",
-        model:"turbo"
-      })
+      body:form,
+      headers:{Accept:"application/json"},
+      cache:"no-store"
     });
     const data=await response.json().catch(()=>null);
     if(!response.ok)throw new Error("TRANSCRIBE_"+response.status);
-    const text=String(data?.text||data?.transcript||"").trim();
+    let text=String(data?.text||data?.transcript||data?.data?.text||data?.data?.transcript||"").trim();
+    const job=data?.job_id||data?.data?.job_id||null;
+    if(!text&&job){
+      for(let attempt=0;attempt<90;attempt++){
+        if(attempt)await new Promise(resolve=>setTimeout(resolve,1500));
+        const poll=await fetch("https://cleverutils.com/api/v1/jobs/"+encodeURIComponent(job),{cache:"no-store"});
+        const status=await poll.json().catch(()=>null);
+        if(!poll.ok)throw new Error("TRANSCRIBE_JOB_"+poll.status);
+        const info=status?.data||status||{};
+        text=String(info.text||info.transcript||"").trim();
+        if(text)break;
+        const state=String(info.status||"").toLowerCase();
+        if(state==="failed"||state==="error")throw new Error("TRANSCRIBE_JOB_FAILED");
+        if(state==="done"){
+          if(info.output?.url){
+            const output=await fetch(info.output.url);
+            if(output.ok)text=(await output.text()).trim();
+          }
+          break;
+        }
+      }
+    }
     if(!text)throw new Error("TRANSCRIPT_EMPTY");
 
     const input=$("#composerInput");
