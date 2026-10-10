@@ -3053,3 +3053,45 @@ body.light .chat-row.user .chat-bubble{
 .composer.mode-chat .chat-attachment-list{
   left:43px!important;bottom:23px!important;
 }
+
+
+
+/* One consistent composer control rhythm in every section. */
+#composerMic{
+  box-sizing:border-box!important;
+  width:34px!important;min-width:34px!important;max-width:34px!important;
+  height:34px!important;min-height:34px!important;max-height:34px!important;
+  flex:0 0 34px!important;
+  align-self:center!important;
+  justify-self:center!important;
+  display:grid!important;place-items:center!important;
+  margin:0!important;padding:0!important;
+}
+#composerMic svg{width:18px!important;height:18px!important;display:block!important}
+#composerSend{
+  box-sizing:border-box!important;
+  height:34px!important;min-height:34px!important;max-height:34px!important;
+  align-self:center!important;
+  margin-top:0!important;margin-bottom:0!important;
+}
+#composerSend svg{width:18px!important;height:18px!important;flex:0 0 18px!important}
+.composer #composerVoiceVisualizer{
+  position:absolute!important;
+  z-index:1004!important;
+  display:block;
+  pointer-events:none!important;
+  max-width:none!important;
+  min-width:0!important;
+  box-sizing:border-box!important;
+  clip-path:inset(0)!important;
+  overflow:hidden!important;
+}
+.composer #composerMic,.composer #composerSend{
+  position:relative!important;z-index:1006!important;
+}
+.composer.mode-chat #composerMic,.composer.mode-chat #composerSend,
+.composer.mode-images #composerMic,.composer.mode-images #composerSend,
+.composer.mode-video #composerMic,.composer.mode-video #composerSend,
+.composer.mode-voice #composerMic,.composer.mode-voice #composerSend{
+  align-self:center!important;
+}
