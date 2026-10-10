@@ -54,6 +54,13 @@ function getChats(){
 function persistChats(chats){
  try{localStorage.setItem(CHAT_KEY,JSON.stringify(chats.slice(0,50)))}catch{}
 }
+function syncActiveChatTitle(){
+ const el=$("#activeChatTitle");if(!el)return;
+ const chat=mode==="chat"&&window.__miyaChatId?getChats().find(x=>x.id===window.__miyaChatId):null;
+ const title=String(chat?.title||"").trim();
+ el.textContent=title;
+ el.hidden=!title;
+}
 function saveCurrentChat(){
  if(!chatMessages.length)return;
  const chats=getChats();
@@ -126,6 +133,7 @@ function renderChatHistoryMini(){
        const all=getChats(),item=all.find(x=>x.id===chat.id);
        if(item){item.title=name.slice(0,60);persistChats(all)}
        renderChatHistoryMini();
+       syncActiveChatTitle();
      };
      save.onclick=e=>{e.stopPropagation();commit()};
      cancel.onclick=e=>{e.stopPropagation();renderChatHistoryMini()};
@@ -308,7 +316,7 @@ function renderChatAttachmentImages(){
    chatAttachmentFile=chatAttachmentImages.length>0;
    renderChatAttachmentImages();
    if(!chatAttachmentFile)clearComposerAttachment();
-   else $("#composerStatus").textContent="Прикреплено фото: "+chatAttachmentImages.length+" · можно спросить Miya";
+   else $("#composerStatus").textContent="Картинка прикреплена — можно спросить меня о ней.";
   });
   item.append(image,remove);
   list.append(item);
@@ -4109,7 +4117,7 @@ async function attachReferenceFile(file){
       chatAttachmentFile=true;
       renderChatAttachmentImages();
       try{sessionStorage.setItem("miyaReferenceImage",referenceImage||"")}catch{}
-      $("#composerStatus").textContent="Прикреплено фото: "+chatAttachmentImages.length+" · можно спросить Miya";
+      $("#composerStatus").textContent="Картинка прикреплена — можно спросить меня о ней.";
       toast("Фото добавлено");
       $("#composerInput").focus();
       return;
@@ -4126,7 +4134,7 @@ async function attachReferenceFile(file){
     }else if(mode==="video"){
       $("#composerStatus").textContent=String($("#videoModel")?.value||"LTX-2.3 Distilled")+" · изображение готово";
     }else{
-      $("#composerStatus").textContent="Изображение прикреплено · можно спросить Miya о фото";
+      $("#composerStatus").textContent="Картинка прикреплена — можно спросить меня о ней.";
     }
     toast(mode==="chat"?"Изображение прикреплено к чату":"Изображение добавлено");
     $("#composerInput").focus();

@@ -2691,3 +2691,10 @@ body.light .video-options .composer-paste:hover{background:#edf3f9!important;col
 body.light button.floating-theme,body.light button.floating-wall-clear{background:#fff;color:#51417f;border-color:#d9d1f0;box-shadow:0 5px 16px rgba(81,65,127,.13)}
 body.light button.floating-theme:hover,body.light button.floating-wall-clear:hover{background:#f1edff;color:#44336f;border-color:#c5b7e9}
 body.light button.floating-theme svg,body.light button.floating-wall-clear svg{stroke:currentColor}
+
+
+/* Selected saved-chat title, nested below the workspace description. */
+.active-chat-title{margin:8px 0 0!important;font-size:18px!important;line-height:1.3!important;font-weight:750!important;letter-spacing:-.025em;color:var(--text,#eaf1ff);overflow-wrap:anywhere;}
+.active-chat-title[hidden]{display:none!important;}
+body.light .active-chat-title{color:#273047;}
+@media(max-width:800px){.active-chat-title{font-size:16px!important;margin-top:7px!important;}}
