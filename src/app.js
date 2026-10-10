@@ -4473,39 +4473,40 @@ function setSpeechMicRecording(){
 }
 function ensureSpeechVisualizer(){
   let canvas=$("#composerVoiceVisualizer");
-  const row=document.querySelector(".composer-input-row");
-  if(!row)return null;
-  if(canvas&&canvas.parentElement!==row)canvas.remove();
+  const composer=$("#composer");
+  const row=composer?.querySelector(".composer-input-row");
+  if(!composer||!row)return null;
+  // Images/Video turn the input row into display:contents, so it cannot be
+  // the positioning parent. Keep the canvas on the stable composer instead.
+  if(canvas&&canvas.parentElement!==composer)canvas.remove();
   if(!canvas){
     canvas=document.createElement("canvas");
     canvas.id="composerVoiceVisualizer";
     canvas.setAttribute("aria-hidden","true");
-    row.appendChild(canvas);
+    composer.appendChild(canvas);
   }
-  // CSS has a legacy !important rule setting this grid row to position:static.
-  // Override it explicitly so the canvas coordinates are measured from this row.
-  row.style.setProperty("position","relative","important");
-  const rowRect=row.getBoundingClientRect();
-  const mic=row.querySelector("#composerMic"),micRect=mic?.getBoundingClientRect();
-  // Re-measure every animation frame so adding/removing a picture moves the
-  // waveform immediately instead of leaving it underneath composer controls.
+  composer.style.setProperty("position","relative","important");
+  const composerRect=composer.getBoundingClientRect();
+  const mic=composer.querySelector("#composerMic"),micRect=mic?.getBoundingClientRect();
+  // Re-measure continuously: attached images and section-specific controls
+  // can shift the usable waveform lane while recording is active.
   const leftCandidates=[
-    row.querySelector(".composer-left-actions"),
-    row.querySelector("#composerAttachment"),
-    row.querySelector("#chatComposerAttachments"),
-    row.querySelector("#chatOptions")
+    composer.querySelector(".composer-left-actions"),
+    composer.querySelector("#composerAttachment"),
+    composer.querySelector("#chatComposerAttachments"),
+    composer.querySelector("#chatOptions .composer-trash"),
+    composer.querySelector("#composerOptions .composer-trash"),
+    composer.querySelector("#videoOptions .composer-trash")
   ];
   let leftEdge=12;
   for(const el of leftCandidates){
     if(!el)continue;
     const rect=el.getBoundingClientRect(),style=getComputedStyle(el);
     if(style.display==="none"||style.visibility==="hidden"||rect.width<1||rect.height<1)continue;
-    leftEdge=Math.max(leftEdge,rect.right-rowRect.left+10);
+    leftEdge=Math.max(leftEdge,rect.right-composerRect.left+8);
   }
-  // In Voice there may be no attachment/actions: keep the waveform inset
-  // from the left edge, and always stop before the mic/send controls.
-  const centerY=micRect?micRect.top+micRect.height/2-rowRect.top:rowRect.height/2;
-  const rightEdge=micRect?micRect.left-rowRect.left-10:rowRect.width-12;
+  const centerY=micRect?micRect.top+micRect.height/2-composerRect.top:composerRect.height/2;
+  const rightEdge=micRect?micRect.left-composerRect.left-8:composerRect.width-12;
   leftEdge=Math.min(leftEdge,Math.max(12,rightEdge-24));
   const canvasWidth=Math.max(0,rightEdge-leftEdge);
   Object.assign(canvas.style,{
