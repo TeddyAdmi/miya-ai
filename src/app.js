@@ -4105,7 +4105,7 @@ function ensureSpeechVisualizer(){
   Object.assign(canvas.style,{
     position:"absolute",left:"52px",right:"58px",top:"50%",
     width:"calc(100% - 110px)",height:"30px",
-    transform:"translateY(-50%)",display:"none",
+    transform:"translateY(-50%)",
     pointerEvents:"none",zIndex:"1004",opacity:"1",
     mixBlendMode:"screen"
   });
@@ -4346,8 +4346,9 @@ async function startSpeechRecording(){
       output.fill(0);
     };
 
-    // Keep the analyser in the live audio graph so Firefox updates its FFT data.
-    analyser.connect(processor);
+    // Feed the analyser and recorder processor from separate branches.
+    // The analyser paints the live waveform; the processor captures the original mic signal.
+    source.connect(processor);
     processor.connect(context.destination);
 
     const mic=$("#composerMic"),input=$("#composerInput");
