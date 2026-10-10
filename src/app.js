@@ -55,13 +55,14 @@ function persistChats(chats){
  try{localStorage.setItem(CHAT_KEY,JSON.stringify(chats.slice(0,50)))}catch{}
 }
 function cleanAutoChatTitle(value,maxLength=140){
- let title=String(value||"").replace(/\s+/g," ").trim();
- title=title.replace(/[\s,;:]+$/g,"").trim();
+ let title=String(value||"").replace(/[\r\n\t]+/g," ").replace(/\s+/g," ").trim();
+ const trimEnding=()=>{title=title.replace(/[\s,;:—–-]+$/gu,"").trim()};
+ trimEnding();
  if(title.length>maxLength){
   const clipped=title.slice(0,maxLength+1);
   const boundary=clipped.lastIndexOf(" ");
-  title=(boundary>0?clipped.slice(0,boundary):title.split(/\s+/)[0]).trim();
-  title=title.replace(/[\s,;:]+$/g,"").trim();
+  title=(boundary>0?clipped.slice(0,boundary):clipped.slice(0,maxLength)).trim();
+  trimEnding();
  }
  return title||"Новый чат";
 }
@@ -81,18 +82,19 @@ function fitActiveChatTitle(){
  const available=Math.max(0,el.clientWidth-dateEl.getBoundingClientRect().width-renameEl.getBoundingClientRect().width-24);
  const canvas=document.createElement("canvas");
  const ctx=canvas.getContext("2d");
+ titleEl.title=title;
  if(!ctx){titleEl.textContent=title;return}
  const style=getComputedStyle(titleEl);
  ctx.font=style.font||("750 18px "+getComputedStyle(el).fontFamily);
- const words=title.split(/\s+/).filter(Boolean);
- let fitted="";
- for(const word of words){
-  const candidate=fitted?fitted+" "+word:word;
-  if(ctx.measureText(candidate).width>available)break;
-  fitted=candidate;
+ if(ctx.measureText(title).width<=available){titleEl.textContent=title;return}
+ const suffix="…";
+ let low=0,high=title.length,best="";
+ while(low<=high){
+  const mid=Math.floor((low+high)/2);
+  const candidate=title.slice(0,mid).trimEnd().replace(/[\s,;:—–-]+$/gu,"")+suffix;
+  if(ctx.measureText(candidate).width<=available){best=candidate;low=mid+1}else high=mid-1;
  }
- titleEl.textContent=fitted;
- titleEl.title=title;
+ titleEl.textContent=best;
 }
 function startInlineChatRename(){
  const el=$("#activeChatTitle");if(!el||el.hidden||el.querySelector(".active-chat-title-edit"))return;
