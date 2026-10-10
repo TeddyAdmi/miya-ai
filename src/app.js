@@ -4287,7 +4287,22 @@ async function finishSpeechRecording(){
     async function fetchCleverAudioOutput(url){
       for(let attempt=0;attempt<5;attempt++){
         const out=await fetch(url,{cache:"no-store"});
-        if(out.ok)return await out.blob();
+        if(out.ok){
+          const buffer=await out.arrayBuffer();
+          const bytes=new Uint8Array(buffer);
+          // CleverUtils may return the converted WAV as base64 text rather than
+          // binary audio. Treating that text as a Blob creates an invalid WAV,
+          // which makes speech-to-text report "corrupted/no speech" (400).
+          const head=new TextDecoder().decode(bytes.slice(0,Math.min(bytes.length,96))).trim();
+          const encoded=head.startsWith("data:audio/")?head.slice(head.indexOf(",")+1):head;
+          if(encoded.startsWith("UklGR")&&/^[A-Za-z0-9+/=\\s]+$/.test(encoded)){
+            const binary=atob(encoded.replace(/\\s/g,""));
+            const decoded=new Uint8Array(binary.length);
+            for(let i=0;i<binary.length;i++)decoded[i]=binary.charCodeAt(i);
+            return new Blob([decoded],{type:"audio/wav"});
+          }
+          return new Blob([buffer],{type:out.headers.get("content-type")||"audio/wav"});
+        }
         if(out.status===429&&attempt<4){
           let retryAfter=Number(out.headers.get("Retry-After"))||1;
           try{
