@@ -1978,7 +1978,7 @@ async function generateVoice(text){
    const objectUrl=URL.createObjectURL(new Blob(voiceAudioParts,{type:"audio/mpeg"}));
    const finalLabel=$(".voice-generating-name")?.textContent||label;
    voiceAudioItem=saveMedia("audio",objectUrl,text,finalLabel);
-   const wall=$("#canvas");wall.innerHTML="";wall.appendChild(buildVoiceCard(voiceAudioParts,voiceAudioItem));
+   renderVoiceLibrary();
    $("#composerStatus").textContent="Голос готов";
    toast("Готово · "+((performance.now()-start)/1000).toFixed(1)+" сек");
  }catch(e){
