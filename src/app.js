@@ -4222,7 +4222,7 @@ async function finishSpeechRecording(){
   const source=speechSource;
   const analyser=speechAnalyser;
   const recorder=speechRecorder;
-  const chunks=speechChunks.slice();
+  const chunks=speechChunks;
   const mime=speechMimeType||recorder?.mimeType||"audio/webm";
 
   speechStream=null;speechAudioContext=null;speechSource=null;speechAnalyser=null;
@@ -4408,9 +4408,10 @@ async function startSpeechRecording(){
     speechAnalyser=analyser;
     speechRecorder=recorder;
     speechChunks=[];
+    const recordingChunks=speechChunks;
     speechMimeType=recorder.mimeType||preferred||"audio/webm";
     recorder.addEventListener("dataavailable",event=>{
-      if(event.data?.size)speechChunks.push(event.data);
+      if(event.data?.size)recordingChunks.push(event.data);
     });
     recorder.start(250);
 
