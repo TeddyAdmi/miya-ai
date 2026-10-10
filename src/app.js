@@ -4278,60 +4278,27 @@ async function finishSpeechRecording(){
   if(status)status.textContent="Распознаю голос…";
 
   try{
-    // Restore the previously used CleverUtils speech-to-text route. This was
-    // the working chat transcription path before the AHM7 endpoint was added.
-    const form=new FormData();
-    // Send all tool options before the file field so multipart parsers that
-    // process streamed uploads receive the transcription settings first.
-    form.append("format","txt");
-    form.append("quality","fast");
-    form.append("language","ru");
-    form.append("file",wav,"miya-voice.wav");
-    // CleverUtils' Speech-to-Text developer quickstart documents this
-    // operation through /api/v1/convert using format/language fields.
-    const response=await fetch("https://cleverutils.com/api/v1/convert",{
+    // Send the canonical 16 kHz PCM WAV produced above to the known-good
+    // Cloudflare Whisper endpoint used by Miya on October 5–6.
+    const audio=await blobToDataUrl(wav);
+    const response=await fetch("/api/cloudflare-transcribe",{
       method:"POST",
-      body:form,
-      headers:{Accept:"application/json"},
+      headers:{"Content-Type":"application/json"},
+      body:JSON.stringify({audio,filename:"miya-voice.wav",mime:"audio/wav",language:"ru"}),
       cache:"no-store"
     });
     const data=await response.json().catch(()=>null);
     if(!response.ok){
-      console.error("CleverUtils speech-to-text rejected audio",{
-        status:response.status,
-        response:data,
+      console.error("Miya Cloudflare speech-to-text rejected audio",{
+        status:response.status,response:data,
         sampleRate:speechSampleRate,
         durationSeconds:Number((mono.length/speechSampleRate).toFixed(2)),
-        samples:mono.length,
-        peak:Number(peak.toFixed(6)),
-        rms:Number(rms.toFixed(6)),
-        gain:Number(gain.toFixed(2)),
-        wavBytes:wav.size
+        samples:mono.length,peak:Number(peak.toFixed(6)),
+        rms:Number(rms.toFixed(6)),gain:Number(gain.toFixed(2)),wavBytes:wav.size
       });
-      throw new Error("TRANSCRIBE_"+response.status);
+      throw new Error("TRANSCRIBE_"+response.status+(data?.error?":"+data.error:""));
     }
-    let text=String(data?.text||data?.transcript||data?.data?.text||data?.data?.transcript||"").trim();
-    const job=data?.job_id||data?.data?.job_id||null;
-    if(!text&&job){
-      for(let attempt=0;attempt<90;attempt++){
-        if(attempt)await new Promise(resolve=>setTimeout(resolve,1500));
-        const poll=await fetch("https://cleverutils.com/api/v1/jobs/"+encodeURIComponent(job),{cache:"no-store"});
-        const status=await poll.json().catch(()=>null);
-        if(!poll.ok)throw new Error("TRANSCRIBE_JOB_"+poll.status);
-        const info=status?.data||status||{};
-        text=String(info.text||info.transcript||"").trim();
-        if(text)break;
-        const state=String(info.status||"").toLowerCase();
-        if(state==="failed"||state==="error")throw new Error("TRANSCRIBE_JOB_FAILED");
-        if(state==="done"){
-          if(info.output?.url){
-            const output=await fetch(info.output.url);
-            if(output.ok)text=(await output.text()).trim();
-          }
-          break;
-        }
-      }
-    }
+    const text=String(data?.text||data?.transcript||"").trim();
     if(!text)throw new Error("TRANSCRIPT_EMPTY");
 
     const input=$("#composerInput");
