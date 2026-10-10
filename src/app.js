@@ -66,6 +66,33 @@ function cleanAutoChatTitle(value,maxLength=140){
  }
  return title||"Новый чат";
 }
+async function speakChatResponse(text,button){
+ const value=String(text||"").trim();if(!value)return;
+ const original=button.innerHTML;button.disabled=true;button.textContent="Готовлю речь…";
+ try{
+  if(!Array.isArray(voiceCatalog)||!voiceCatalog.length)await loadVoiceCatalog();
+  const voice=voiceCatalog.find(v=>/svetlana|светлана/i.test(String(v.name||"")));
+  if(!voice)throw new Error("Голос Светлана не найден в каталоге");
+  const chunks=[];let rest=value;
+  while(rest.length>1800){
+   let cut=Math.max(rest.lastIndexOf(". ",1800),rest.lastIndexOf("! ",1800),rest.lastIndexOf("? ",1800),rest.lastIndexOf("\n",1800),rest.lastIndexOf(" ",1800));
+   if(cut<700)cut=1800;
+   chunks.push(rest.slice(0,cut+1).trim());rest=rest.slice(cut+1).trim();
+  }
+  if(rest)chunks.push(rest);
+  const blobs=[];
+  for(const part of chunks){
+   const response=await fetch("https://ahm7xmakki.com/api/tts",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({voiceIndex:voice.index,text:part,pitch:0,rate:1})});
+   if(!response.ok)throw new Error("TTS_"+response.status);
+   blobs.push(await response.blob());
+  }
+  const url=URL.createObjectURL(new Blob(blobs,{type:"audio/mpeg"}));
+  const audio=new Audio(url);
+  audio.onended=()=>URL.revokeObjectURL(url);
+  await audio.play();
+ }catch(error){console.error("Chat TTS failed",error);toast(error.message||"Не удалось озвучить ответ")}
+ finally{button.disabled=false;button.innerHTML=original}
+}
 function styleActiveChatAction(button){
  Object.assign(button.style,{appearance:"none",display:"grid",placeItems:"center",flex:"0 0 25px",width:"25px",height:"25px",padding:"0",border:"1px solid transparent",borderRadius:"7px",background:"transparent",color:"var(--muted)",cursor:"pointer"});
  button.querySelector("svg")?.setAttribute("style","width:15px;height:15px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round");
@@ -2572,8 +2599,9 @@ function addChatMessage(text,isUser,image="",isError=false){
      }
    };
  }else{
-   actions.innerHTML='<button type="button" title="Копировать"><span class="action-mini-icon">⧉</span>Копировать</button><button type="button" title="В промпт"><span class="action-mini-icon">✦</span>В промпт</button><button type="button" title="Повторить"><span class="action-mini-icon">↻</span>Повторить</button>';
+   actions.innerHTML='<button type="button" title="Копировать"><span class="action-mini-icon">⧉</span>Копировать</button><button type="button" title="Прослушать ответ голосом Светланы"><span class="action-mini-icon">♫</span>Прослушать</button><button type="button" title="В промпт"><span class="action-mini-icon">✦</span>В промпт</button><button type="button" title="Повторить"><span class="action-mini-icon">↻</span>Повторить</button>';
    actions.querySelector('[title="Копировать"]').onclick=e=>copyChatText(text,e.currentTarget);
+   actions.querySelector('[title="Прослушать ответ голосом Светланы"]').onclick=e=>speakChatResponse(text,e.currentTarget);
    actions.querySelector('[title="В промпт"]').onclick=()=>{$("#composerInput").value=text;syncInput();$("#composerInput").focus();toast("Ответ добавлен в промпт")};
    actions.querySelector('[title="Повторить"]').onclick=()=>retryLastChat();
  }
