@@ -4281,10 +4281,12 @@ async function finishSpeechRecording(){
     // Restore the previously used CleverUtils speech-to-text route. This was
     // the working chat transcription path before the AHM7 endpoint was added.
     const form=new FormData();
-    form.append("file",wav,"miya-voice.wav");
+    // Send all tool options before the file field so multipart parsers that
+    // process streamed uploads receive the transcription settings first.
     form.append("format","txt");
     form.append("quality","fast");
     form.append("language","ru");
+    form.append("file",wav,"miya-voice.wav");
     const response=await fetch("https://cleverutils.com/api/v1/tools/speech-to-text",{
       method:"POST",
       body:form,
@@ -4292,7 +4294,20 @@ async function finishSpeechRecording(){
       cache:"no-store"
     });
     const data=await response.json().catch(()=>null);
-    if(!response.ok)throw new Error("TRANSCRIBE_"+response.status);
+    if(!response.ok){
+      console.error("CleverUtils speech-to-text rejected audio",{
+        status:response.status,
+        response:data,
+        sampleRate:speechSampleRate,
+        durationSeconds:Number((mono.length/speechSampleRate).toFixed(2)),
+        samples:mono.length,
+        peak:Number(peak.toFixed(6)),
+        rms:Number(rms.toFixed(6)),
+        gain:Number(gain.toFixed(2)),
+        wavBytes:wav.size
+      });
+      throw new Error("TRANSCRIBE_"+response.status);
+    }
     let text=String(data?.text||data?.transcript||data?.data?.text||data?.data?.transcript||"").trim();
     const job=data?.job_id||data?.data?.job_id||null;
     if(!text&&job){
