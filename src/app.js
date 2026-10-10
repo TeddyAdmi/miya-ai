@@ -4287,7 +4287,9 @@ async function finishSpeechRecording(){
     form.append("quality","fast");
     form.append("language","ru");
     form.append("file",wav,"miya-voice.wav");
-    const response=await fetch("https://cleverutils.com/api/v1/tools/speech-to-text",{
+    // CleverUtils' Speech-to-Text developer quickstart documents this
+    // operation through /api/v1/convert using format/language fields.
+    const response=await fetch("https://cleverutils.com/api/v1/convert",{
       method:"POST",
       body:form,
       headers:{Accept:"application/json"},
