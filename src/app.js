@@ -4225,17 +4225,18 @@ function ensureSpeechVisualizer(){
   const rowRect=row.getBoundingClientRect();
   const mic=row.querySelector("#composerMic");
   const micRect=mic?.getBoundingClientRect();
-  const attach=row.querySelector("#composerAttach");
-  const attachRect=attach?.getBoundingClientRect();
-  const actions=row.querySelector(".chat-options");
-  const actionsRect=actions?.getBoundingClientRect();
-  // Align the waveform with the center of the lower control row (mic and photo).
+  const clearButton=row.querySelector("#chatTrash");
+  const clearRect=clearButton?.getBoundingClientRect();
+  // Keep the waveform strictly in the gap between Clear text and the microphone.
   const centerY=micRect
     ? micRect.top+micRect.height/2-rowRect.top
-    : rowRect.height*.75;
-  // Start just after +, then stop before copy/paste/clear so the wave never crosses them.
-  const leftEdge=attachRect ? attachRect.right-rowRect.left+7 : 52;
-  const rightEdge=actionsRect ? actionsRect.left-rowRect.left-7 : (micRect ? micRect.left-rowRect.left-10 : rowRect.width-90);
+    : (clearRect ? clearRect.top+clearRect.height/2-rowRect.top : rowRect.height*.75);
+  const leftEdge=clearRect
+    ? clearRect.right-rowRect.left+6
+    : (micRect ? micRect.left-rowRect.left-80 : rowRect.width*.55);
+  const rightEdge=micRect
+    ? micRect.left-rowRect.left-6
+    : rowRect.width-10;
   const canvasWidth=Math.max(0,rightEdge-leftEdge);
   Object.assign(canvas.style,{
     position:"absolute",left:leftEdge+"px",right:"auto",top:centerY+"px",
