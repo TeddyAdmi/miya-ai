@@ -34,7 +34,7 @@ body.light .image-viewer-created-info .image-viewer-created-date{color:#64748b!i
  st.textContent=`#composerMic.transcribing svg{animation:miyaSpeechSpin .8s linear infinite;transform-origin:50% 50%}
 #composerMic.transcribing svg circle{fill:none!important;stroke:currentColor!important;stroke-width:2.2!important;stroke-linecap:round!important}
 @keyframes miyaSpeechSpin{to{transform:rotate(360deg)}}
-.chat-selection-actions{position:fixed!important;z-index:2147482000!important;display:flex!important;align-items:center!important;justify-content:center!important;gap:8px!important;flex-wrap:nowrap!important;max-width:calc(100vw - 16px)!important;padding:2px!important;border:0!important;border-radius:0!important;background:transparent!important;box-shadow:none!important}
+.chat-selection-actions{position:fixed!important;z-index:2147482000!important;display:flex!important;align-items:center!important;justify-content:center!important;gap:8px!important;flex-wrap:nowrap!important;max-width:calc(100vw - 16px)!important;padding:5px!important;border:1px solid #34384b!important;border-radius:12px!important;background:#191c2b!important;box-shadow:0 10px 30px rgba(0,0,0,.38)!important;isolation:isolate!important;backdrop-filter:none!important;-webkit-backdrop-filter:none!important}
 .chat-selection-actions[hidden]{display:none!important}
 .chat-selection-actions button{appearance:none!important;display:grid!important;place-items:center!important;width:30px!important;height:30px!important;flex:0 0 30px!important;padding:5px!important;border:1px solid transparent!important;border-radius:8px!important;background:transparent!important;color:var(--text,#e5e7eb)!important;cursor:pointer!important;transition:background .15s,border-color .15s,color .15s!important}
 .chat-selection-actions button svg{width:18px!important;height:18px!important;fill:none!important;stroke:currentColor!important;stroke-width:1.8!important;stroke-linecap:round!important;stroke-linejoin:round!important;pointer-events:none!important}
@@ -2699,7 +2699,7 @@ function addChatMessage(text,isUser,image="",isError=false){
      selectionBar.dataset.selectionText=selected;
      const rect=sel.getRangeAt(0).getBoundingClientRect();
      selectionBar.style.position="fixed";selectionBar.style.zIndex="2147482000";selectionBar.style.marginTop="0";
-     selectionBar.style.left=Math.max(8,Math.min(window.innerWidth-210,rect.left+rect.width/2-105))+"px";
+     selectionBar.style.left=Math.max(8,Math.min(window.innerWidth-200,rect.right))+"px";
      selectionBar.style.top=Math.max(8,Math.min(window.innerHeight-48,rect.bottom+8))+"px";
      selectionBar.hidden=false;
    });
