@@ -46,6 +46,7 @@ body.light .chat-selection-actions button:hover,body.light .chat-selection-actio
 .chat-actions button[title="Остановить голос"][hidden]{display:none!important}
 .chat-actions button[title="Остановить голос"]{color:#e87979!important}
 body.light .chat-selection-actions{background:#fff!important;border-color:#dbe2ec!important;box-shadow:0 8px 28px rgba(30,45,70,.18)!important}
+body.light .chat-row.user .chat-bubble{background:#fff!important;border-color:#dbe4ee!important;color:#182436!important;box-shadow:0 2px 5px rgba(36,57,83,.045)!important}
 `;
  document.head.appendChild(st);
 })();
@@ -2643,6 +2644,7 @@ function retryLastChat(){
    toast("Нет сообщения для повтора");
    return;
  }
+ document.querySelectorAll("#canvas .chat-error-row").forEach(row=>row.remove());
  requestChat();
 }
 function addChatMessage(text,isUser,image="",isError=false){
@@ -2662,7 +2664,7 @@ function addChatMessage(text,isUser,image="",isError=false){
  const actions=document.createElement("div");actions.className="chat-actions";
  if(isUser){
    actions.innerHTML='<button type="button" title="Прослушать сообщение" aria-label="Прослушать сообщение"><span class="action-mini-icon">♫</span>Прослушать</button><button type="button" class="chat-stop-speech" title="Остановить голос" hidden><span class="action-mini-icon">■</span>Стоп</button><button type="button" title="Копировать"><span class="action-mini-icon">⧉</span>Копировать</button><button type="button" title="Повторить"><span class="action-mini-icon">↻</span>Повторить</button>';
-   actions.querySelector('[title="Прослушать сообщение"]').onclick=e=>speakChatResponse(text,e.currentTarget);
+   actions.querySelector('[title="Прослушать сообщение"]').onclick=e=>{document.querySelectorAll(".chat-selection-actions").forEach(el=>el.hidden=true);window.getSelection?.()?.removeAllRanges();speakChatResponse(text,e.currentTarget)};
    actions.querySelector('[title="Остановить голос"]').onclick=stopChatSpeech;
    actions.querySelector('[title="Копировать"]').onclick=e=>copyChatText(text,e.currentTarget);
    actions.querySelector('[title="Повторить"]').onclick=()=>{
@@ -2679,7 +2681,7 @@ function addChatMessage(text,isUser,image="",isError=false){
  }else{
    actions.innerHTML='<button type="button" title="Копировать"><span class="action-mini-icon">⧉</span>Копировать</button><button type="button" title="Прослушать ответ"><span class="action-mini-icon">♫</span>Прослушать</button><button type="button" class="chat-stop-speech" title="Остановить голос" hidden><span class="action-mini-icon">■</span>Стоп</button><button type="button" title="В промпт"><span class="action-mini-icon">✦</span>В промпт</button><button type="button" title="Повторить"><span class="action-mini-icon">↻</span>Повторить</button>';
    actions.querySelector('[title="Копировать"]').onclick=e=>copyChatText(text,e.currentTarget);
-   actions.querySelector('[title="Прослушать ответ"]').onclick=e=>speakChatResponse(text,e.currentTarget);
+   actions.querySelector('[title="Прослушать ответ"]').onclick=e=>{document.querySelectorAll(".chat-selection-actions").forEach(el=>el.hidden=true);window.getSelection?.()?.removeAllRanges();speakChatResponse(text,e.currentTarget)};
    actions.querySelector('[title="Остановить голос"]').onclick=stopChatSpeech;
    actions.querySelector('[title="В промпт"]').onclick=()=>{$("#composerInput").value=text;syncInput();$("#composerInput").focus();toast("Ответ добавлен в промпт")};
    actions.querySelector('[title="Повторить"]').onclick=()=>retryLastChat();
@@ -2782,7 +2784,7 @@ async function requestChat(){
      method:"POST",
      headers:{"Content-Type":"application/json","Accept":"application/json"},
      body:JSON.stringify({messages:chatMessages.map(m=>m.role==="user"&&m.quote?{...m,content:"Цитата из ответа Miya, которую нужно проанализировать:\n"+m.quote+"\n\nСообщение пользователя:\n"+m.content}:m),imageBase64:chatImages[0]||"",imageBase64s:chatImages}),
-     signal:AbortSignal.timeout(90000)
+     signal:AbortSignal.timeout(hasVisionImage?70000:40000)
    });
    const data=await response.json().catch(()=>({}));
    status.textContent="Miya · ответ получен, обновляю чат…";
@@ -2794,7 +2796,10 @@ async function requestChat(){
    saveCurrentChat();
    status.textContent=hasVisionImage?"Miya · "+String(data?.model||data?.provider||"Vision")+" · готово":(data.model==="VisionSter"?"Miya · VisionChat":"Miya · Free Text");
  }catch(e){
-   const message=String(e?.message||"Не удалось получить ответ Miya");
+   const timedOut=e?.name==="TimeoutError"||e?.name==="AbortError"||/timed out|timeout/i.test(String(e?.message||""));
+   const message=timedOut
+     ?(hasVisionImage?"Анализ фото занял слишком много времени. Можно повторить запрос.":"Ответ не пришёл за 40 секунд. Можно повторить запрос.")
+     :String(e?.message||"Не удалось получить ответ Miya");
    addChatMessage(message,false,"",true);
    status.textContent="AI Chat · ошибка · можно повторить";
  }finally{$("#composerSend").disabled=false;}
