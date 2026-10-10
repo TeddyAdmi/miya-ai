@@ -314,6 +314,7 @@ function renderChatAttachmentImages(){
   list.append(item);
  });
  list.hidden=chatAttachmentImages.length===0;
+ $("#composer")?.classList.toggle("has-chat-attachments",chatAttachmentImages.length>0);
 }
 function clearComposerAttachment(){
  referenceImage=null;

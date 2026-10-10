@@ -2534,3 +2534,9 @@ body.light .video-options .composer-paste:hover{background:#edf3f9!important;col
  .composer.mode-chat .chat-attachment-list{max-width:calc(100% - 130px)!important;bottom:21px!important}
  .chat-attachment-thumb{flex-basis:34px!important;width:34px!important;min-width:34px!important;height:34px!important}
 }
+
+
+/* Keep typed/pasted chat text clear of the attached image thumbnails. */
+.composer.mode-chat.has-chat-attachments #composerInput{
+  padding-bottom:58px!important;
+}
