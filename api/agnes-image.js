@@ -11,7 +11,7 @@ module.exports = async function handler(req, res) {
     const prompt=typeof body.prompt==="string"?body.prompt.trim():"";
     if(!prompt) return res.status(400).json({ok:false,error:"PROMPT_REQUIRED"});
     const ratio=["1:1","3:4","4:3","16:9","9:16","2:3","3:2","21:9"].includes(String(body.ratio))?String(body.ratio):"16:9";
-    const quality=["1K","2K","4K"].includes(String(body.quality))?String(body.quality):"2K";
+    const requestedQuality=["1K","2K","4K"].includes(String(body.quality))?String(body.quality):"2K";
     let sourceInput=String(body.imageBase64||body.imageUrl||"").trim();
     let source="";
     if(sourceInput) {
@@ -67,12 +67,28 @@ module.exports = async function handler(req, res) {
       if(!sourceBytes?.length) return res.status(400).json({ok:false,error:"SOURCE_IMAGE_EMPTY"});
       if(sourceBytes.length>30*1024*1024) return res.status(413).json({ok:false,error:"SOURCE_IMAGE_TOO_LARGE"});
       try {
-        source=await sharp(sourceBytes)
-          .rotate()
-          .resize({width:2048,height:2048,fit:"inside",withoutEnlargement:true})
-          .jpeg({quality:86,mozjpeg:true})
-          .toBuffer()
-          .then(buffer=>buffer.toString("base64"));
+        // Preserve the source's native geometry and fine texture for edits.
+        // The previous 2048px / JPEG-86 conversion softened waves and other fine detail.
+        let normalized=sharp(sourceBytes).rotate();
+        const metadata=await normalized.metadata();
+        if(!metadata.width||!metadata.height) {
+          return res.status(415).json({ok:false,error:"SOURCE_IMAGE_DIMENSIONS_MISSING"});
+        }
+        // Only downscale oversized originals; never enlarge and never crop.
+        if(metadata.width>4096||metadata.height>4096) {
+          normalized=normalized.resize({width:4096,height:4096,fit:"inside",withoutEnlargement:true});
+        }
+        let outputBuffer=await normalized.jpeg({quality:94,mozjpeg:true}).toBuffer();
+        if(outputBuffer.length>5*1024*1024) {
+          outputBuffer=await sharp(outputBuffer).jpeg({quality:89,mozjpeg:true}).toBuffer();
+        }
+        if(outputBuffer.length>5*1024*1024) {
+          outputBuffer=await sharp(outputBuffer).resize({width:3072,height:3072,fit:"inside",withoutEnlargement:true}).jpeg({quality:90,mozjpeg:true}).toBuffer();
+        }
+        if(outputBuffer.length>5*1024*1024) {
+          outputBuffer=await sharp(outputBuffer).resize({width:2560,height:2560,fit:"inside",withoutEnlargement:true}).jpeg({quality:86,mozjpeg:true}).toBuffer();
+        }
+        source="data:image/jpeg;base64,"+outputBuffer.toString("base64");
       } catch(error) {
         return res.status(415).json({ok:false,error:"SOURCE_IMAGE_NORMALIZE_FAILED",message:String(error?.message||error)});
       }
@@ -93,13 +109,14 @@ module.exports = async function handler(req, res) {
       "USER PROMPT:\\n"+prompt
     ].join("\\n");
     const editPrompt=[
-      "Edit the supplied source photograph rather than creating a new scene.",
-      "PRESERVE THE SOURCE IMAGE GEOMETRY EXACTLY: keep the same framing, crop, camera viewpoint, perspective, zoom, subject positions, background layout, and all original spatial relationships.",
-      "If the source contains a horizon, shoreline, wall edge, or other strong horizontal line, keep it at exactly the same relative vertical position in the frame. Do not shift it up or down, and do not recenter, pan, tilt, zoom, expand the canvas, crop, or recompose the image.",
-      "Keep all pixels and visual content outside the requested change as close to the source as possible. Apply only the explicitly requested edit; do not reinterpret or redesign the scene.",
-      "Apply only the change explicitly requested by the user.",
-      "When removing an object, reconstruct only the area behind it from the surrounding background. Do not introduce a new person, animal, object or decoration into that area.",
-      "The output should look like the same photograph after a precise local edit.",
+      "STRICT LOCAL PHOTO EDIT. This is not a remake, variation, or re-imagination. The input image is the immutable reference plate.",
+      "Change only the exact body part or object explicitly named in the user instruction. Keep every other visible pixel and detail unchanged wherever possible.",
+      "For a pose edit, preserve the person's identity, face, expression, gaze, head angle, neck, shoulders, torso, hips, legs, feet, stance, body scale, and every unmentioned limb in exactly the same position. Do not move the person or camera. If only one arm/hand is mentioned, edit only that arm/hand and the tiny area needed to blend it naturally.",
+      "LOCK THE SCENE GEOMETRY: horizon height, shoreline, sea level, wave shapes and count, foam lines, clouds, architecture, trees, shadows, reflections, and all background edges must remain in the exact same locations and shapes. Do not smooth, round, simplify, merge, straighten, redraw, or stylize natural textures such as waves, hair, fabric, grass, or foliage.",
+      "Do not crop, zoom, pan, tilt, recenter, shift, resize the canvas, change perspective, alter the aspect ratio, or change composition. Preserve the source framing and spatial relationships.",
+      "Do not improve, beautify, regenerate, or otherwise modify anything that the user did not explicitly ask to change. Do not change lighting, color grading, sharpness, texture, or detail in untouched areas.",
+      "If the requested change cannot be made without altering unrelated parts of the image, prioritize preserving the original image and make the smallest possible localized change.",
+      "Return the same photograph with only the requested local edit, not a similar new photograph.",
       "USER EDIT INSTRUCTION:\\n"+prompt
     ].join("\\n");
     const qualityPrompt=source ? editPrompt : generationPrompt;
@@ -110,6 +127,8 @@ module.exports = async function handler(req, res) {
       "2K":{"16:9":"2624x1472","9:16":"1472x2624","1:1":"2048x2048","3:4":"1728x2304","4:3":"2304x1728","2:3":"1664x2496","3:2":"2496x1664","21:9":"3136x1344"},
       "4K":{"16:9":"5248x2944","9:16":"2944x5248","1:1":"4096x4096","3:4":"3456x4608","4:3":"4608x3456","2:3":"3328x4992","3:2":"4992x3328","21:9":"6272x2688"}
     };
+    // Use 4K for edits to retain detail in fine textures; keep the user's selected quality for new images.
+    const quality=source?"4K":requestedQuality;
     const outputSize=qualitySizes[quality]?.[ratio]||qualitySizes["1K"]["16:9"];
     const payload={model:"agnes-image-2.5-flash",prompt:qualityPrompt,n,size:outputSize,ratio,extra_body:{response_format:"url"}};
     const images=[];
