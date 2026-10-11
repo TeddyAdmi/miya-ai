@@ -110,19 +110,13 @@ module.exports = async function handler(req, res) {
       "FINAL ETHNICITY RULE: Unless the user explicitly names another ethnicity, every newly generated human must have unmistakably natural Slavic / Eastern European appearance. Do not generate East Asian or other Asian facial features by default."
     ].join("\n");
     const editPrompt=[
-      "STRICT LOCAL PHOTO EDIT. This is not a remake, variation, or re-imagination. The input image is the immutable reference plate.",
-      "Change only the exact body part or object explicitly named in the user instruction. Keep every other visible pixel and detail unchanged wherever possible.",
-      "IDENTITY LOCK: Preserve the exact person in the source photo, including face shape, eye shape, nose, lips, facial proportions, skin tone, hairline, apparent ethnicity, expression, and gaze. Do not reinterpret the face or change the ethnicity represented in the source. Never replace or beautify the person.",
-      "For a pose edit, preserve the person's identity, face, expression, gaze, head angle, neck, shoulders, torso, hips, legs, feet, stance, body scale, and every unmentioned limb in exactly the same position. Do not move the person or camera. If only one arm/hand is mentioned, edit only that arm/hand and the tiny area needed to blend it naturally.",
-      "LOCK THE SCENE GEOMETRY: horizon height, sun center and apparent size, shoreline, sea level, each visible wave crest and trough, wave spacing, foam lines, clouds, shadows, reflections, and all background edges must remain in the exact same locations and shapes. The sun must not move down or sideways; the sea and waves must not move, bend, merge, smooth, round, simplify, or be redrawn. Treat the source as a fixed photograph, not a scene to regenerate.",
-      "LOCK SUBJECT PLACEMENT: keep the woman at the exact same x/y position, scale, distance from camera, silhouette, torso angle, hips, legs, feet, and head position. Do not shift her left or right or make her appear farther away. Change only the explicitly requested limb and only the minimum pixels around its joint needed for a natural edit.",
-      "Do not crop, zoom, pan, tilt, recenter, shift, resize the canvas, change perspective, alter the aspect ratio, or change composition. Preserve the source framing and spatial relationships.",
-      "Do not improve, beautify, regenerate, or otherwise modify anything that the user did not explicitly ask to change. Do not change lighting, color grading, sharpness, texture, or detail in untouched areas.",
-      "If the requested change cannot be made without altering unrelated parts of the image, prioritize preserving the original image and make the smallest possible localized change.",
-      "Return the same photograph with only the requested local edit, not a similar new photograph.",
-      "USER EDIT INSTRUCTION:\n"+prompt,
-      "FINAL EDIT RULE: Treat the source photo as locked. If the user asks to lower one arm, change only that arm and the minimum neighboring pixels needed for a natural seam. The face, body scale, position of the woman, horizon, waves, sea, shoreline, and every unrelated detail must remain unchanged."
-    ].join("\n");
+      "Edit the supplied source photograph rather than creating a new scene.",
+      "Keep the original framing, camera viewpoint, composition, background, lighting, colors, textures and all unrelated subjects unchanged.",
+      "Apply only the change explicitly requested by the user.",
+      "When removing an object, reconstruct only the area behind it from the surrounding background. Do not introduce a new person, animal, object or decoration into that area.",
+      "The output should look like the same photograph after a precise local edit.",
+      "USER EDIT INSTRUCTION:\\n"+prompt
+    ].join("\\n");
     const qualityPrompt=source ? editPrompt : generationPrompt;
     // Use the maximum native output size supported by Agnes Image 2.5 Flash (4K).
     // Use Agnes' documented native dimensions so the requested aspect ratio is not subtly distorted.
@@ -131,8 +125,8 @@ module.exports = async function handler(req, res) {
       "2K":{"16:9":"2624x1472","9:16":"1472x2624","1:1":"2048x2048","3:4":"1728x2304","4:3":"2304x1728","2:3":"1664x2496","3:2":"2496x1664","21:9":"3136x1344"},
       "4K":{"16:9":"4096x2304","9:16":"2304x4096","1:1":"4096x4096","3:4":"3072x4096","4:3":"4096x3072","2:3":"2730x4096","3:2":"4096x2730","21:9":"4096x1755"}
     };
-    // Use 4K for edits to retain detail in fine textures; keep the user's selected quality for new images.
-    const quality=source?"4K":requestedQuality;
+    // Respect the quality selected in the UI for both generation and editing.
+    const quality=requestedQuality;
     const outputSize=qualitySizes[quality]?.[ratio]||qualitySizes["1K"]["16:9"];
     const payload={model:"agnes-image-2.5-flash",prompt:qualityPrompt,n,size:outputSize,ratio,extra_body:{response_format:"url"}};
     const images=[];
