@@ -70,7 +70,7 @@ body.light .side-logo svg path{stroke:none!important}
 body.light #composerInput{max-height:none!important}
 body.light .chat-welcome.section-welcome .hero-mark.image{box-shadow:inset 0 1px 0 rgba(255,255,255,.55),0 8px 18px rgba(68,61,160,.24),0 0 32px rgba(125,85,255,.18)!important}
 body.light .chat-welcome.section-welcome .hero-mark.image .icon-image{filter:drop-shadow(0 1px 0 rgba(255,255,255,.65)) drop-shadow(0 2px 2px rgba(24,20,75,.25))}
-/* Final layout correction: keep the welcome icon immediately below its description without shifting the whole section upward. */
+/* Welcome headings keep their original order; place the icon about 1 cm below the description in every room. */
 .chat-room .chat-welcome.section-welcome,
 .studio-room .chat-welcome.section-welcome{
   display:flex!important;flex-direction:column!important;align-items:center!important;
@@ -83,13 +83,13 @@ body.light .chat-welcome.section-welcome .hero-mark.image .icon-image{filter:dro
 .chat-room .chat-welcome.section-welcome h2,
 .studio-room .chat-welcome.section-welcome h2{order:1!important;margin:0 0 6px!important}
 .chat-room .chat-welcome.section-welcome p,
-.studio-room .chat-welcome.section-welcome p{order:2!important;margin:0 auto 10px!important;line-height:1.5!important}
+.studio-room .chat-welcome.section-welcome p{order:2!important;margin:0 auto 38px!important;line-height:1.5!important}
 .chat-room .chat-welcome.section-welcome .hero-mark,
 .studio-room .chat-welcome.section-welcome .hero-mark{
   order:3!important;flex:0 0 58px!important;width:58px!important;height:58px!important;
   margin:0 auto!important;position:relative!important;top:auto!important;transform:none!important;
 }
-/* Uploaded previews are 43×43 in all three composer modes. Chat's grid row must be tall enough to show the whole image. */
+/* Image/video preview: exactly 43×43. */
 .composer.mode-images .composer-attachment.has-image,
 .composer.mode-video .composer-attachment.has-image{
   width:43px!important;height:43px!important;min-width:43px!important;max-width:43px!important;
@@ -100,13 +100,17 @@ body.light .chat-welcome.section-welcome .hero-mark.image .icon-image{filter:dro
   display:block!important;width:43px!important;height:43px!important;min-width:43px!important;max-width:43px!important;
   min-height:43px!important;max-height:43px!important;object-fit:cover!important;object-position:center!important;
 }
-.composer.mode-chat.has-chat-attachments{grid-template-rows:minmax(34px,auto) 47px auto!important}
+/* Chat preview is a grid item inside composer-input-row, so size that row itself (not the outer composer). */
+.composer.mode-chat.has-chat-attachments .composer-input-row{
+  grid-template-rows:minmax(34px,auto) 47px!important;
+  row-gap:4px!important;align-items:center!important;
+}
 .composer.mode-chat .chat-attachment-list:not([hidden]){
   grid-column:2!important;grid-row:2!important;position:relative!important;left:auto!important;right:auto!important;top:auto!important;bottom:auto!important;
   display:flex!important;flex-direction:row!important;align-items:center!important;align-self:center!important;justify-self:start!important;
   width:max-content!important;min-width:0!important;max-width:calc(100% - 150px)!important;
   height:43px!important;min-height:43px!important;max-height:43px!important;
-  margin:0!important;padding:0 2px!important;gap:7px!important;overflow-x:auto!important;overflow-y:visible!important;
+  margin:0!important;padding:0 2px!important;gap:7px!important;overflow-x:auto!important;overflow-y:hidden!important;
   box-sizing:border-box!important;z-index:30!important;
 }
 .composer.mode-chat .chat-attachment-list .chat-attachment-thumb{
@@ -121,36 +125,9 @@ body.light .chat-welcome.section-welcome .hero-mark.image .icon-image{filter:dro
   border-radius:7px!important;
 }
 @media(max-width:800px){
-  .composer.mode-chat.has-chat-attachments{grid-template-rows:minmax(34px,auto) 47px auto!important}
+  .composer.mode-chat.has-chat-attachments .composer-input-row{grid-template-rows:minmax(34px,auto) 47px!important}
   .composer.mode-chat .chat-attachment-list:not([hidden]){max-width:calc(100% - 120px)!important}
-}
-body.light .composer-attachment button{background:#123b70!important;color:#fff!important;border-color:#123b70!important;font-weight:800!important;font-size:14px!important;line-height:13px!important}
-body.light .composer-attachment button:hover{background:#7048b8!important;color:#fff!important;border-color:#7048b8!important}
-body.light .generation-loading .progress-circle .progress-percent{color:#111!important}
-body.light .generation-loading .progress-copy b,body.light .generation-loading .progress-model{color:#111!important}\nbody.light .generation-loading .progress-percent{color:#111!important;background:transparent!important;text-shadow:none!important}\nbody.light .chat-attachment-thumb .chat-attachment-remove,body.light .composer-attachment button{display:grid!important;place-items:center!important;background:#123b70!important;color:#fff!important;border:1px solid #123b70!important;opacity:1!important;text-shadow:none!important}\nbody.light .chat-attachment-thumb .chat-attachment-remove svg,body.light .composer-attachment button svg{stroke:#fff!important;fill:none!important}\nbody.light .side-logo svg,body.light .side-logo svg path{stroke:none!important}
-/* Chat composer: override legacy fixed 76px textarea and 152px shell rules. */
-.composer.mode-chat,.composer.mode-images,.composer.mode-video{height:auto!important;min-height:0!important;max-height:none!important;flex:0 0 auto!important;flex-basis:auto!important;grid-template-rows:auto 34px auto!important;row-gap:5px!important;align-content:start!important;overflow:visible!important}
-.composer.mode-chat #composerInput,.composer.mode-images #composerInput,.composer.mode-video #composerInput{height:34px!important;min-height:34px!important;max-height:none!important;overflow-y:hidden!important;align-self:stretch!important;box-sizing:border-box!important;padding:9px 3px 10px!important;line-height:15px!important}
-.composer-wrap{overflow:visible!important}
-.composer.mode-chat .composer-input-row,.composer.mode-images .composer-input-row,.composer.mode-video .composer-input-row{display:contents!important}
-/* Uniform, larger image previews and centered red remove controls in every section. */
-.composer.mode-images .composer-attachment,.composer.mode-video .composer-attachment{width:58px!important;height:58px!important;min-width:58px!important;min-height:58px!important;max-width:58px!important;max-height:58px!important;flex:0 0 58px!important;border-radius:9px!important;overflow:visible!important;position:relative!important;box-sizing:border-box!important}
-.composer.mode-images .composer-attachment img,.composer.mode-video .composer-attachment img{width:100%!important;height:100%!important;object-fit:cover!important;object-position:center!important;border-radius:8px!important;border:1px solid #c5d3e4!important;box-sizing:border-box!important}
-.composer.mode-images .composer-attachment button,.composer.mode-video .composer-attachment button{position:absolute!important;right:-7px!important;top:-7px!important;z-index:20!important;width:23px!important;height:23px!important;min-width:23px!important;min-height:23px!important;padding:0!important;display:flex!important;align-items:center!important;justify-content:center!important;box-sizing:border-box!important;border:2px solid #fff!important;border-radius:50%!important;background:#d62839!important;color:#fff!important;font-family:Arial,sans-serif!important;font-size:18px!important;font-weight:800!important;line-height:1!important;text-align:center!important;box-shadow:0 1px 5px rgba(0,0,0,.38)!important;opacity:1!important;cursor:pointer!important;transform:none!important}
-body.light .composer.mode-images .composer-attachment button,body.light .composer.mode-video .composer-attachment button{background:#d62839!important;color:#fff!important;border:2px solid #fff!important;box-shadow:0 1px 5px rgba(0,0,0,.4),0 0 0 1px #b91c2c!important}
-.composer.mode-images .composer-attachment button:hover,.composer.mode-video .composer-attachment button:hover,body.light .composer.mode-images .composer-attachment button:hover,body.light .composer.mode-video .composer-attachment button:hover{background:#b91c2c!important;border-color:#fff!important}
-/* Chat previews use the same 58px size as Images and Video. */
-.composer.mode-chat .chat-attachment-list{max-height:64px!important;max-width:calc(100% - 170px)!important;overflow-x:auto!important;overflow-y:hidden!important;align-items:center!important;gap:7px!important}
-.composer.mode-chat .chat-attachment-thumb{flex:0 0 58px!important;width:58px!important;min-width:58px!important;height:58px!important;min-height:58px!important;aspect-ratio:1/1!important;border-radius:8px!important;overflow:visible!important;position:relative!important;box-sizing:border-box!important}
-.composer.mode-chat .chat-attachment-thumb img{width:100%!important;height:100%!important;display:block!important;object-fit:cover!important;border-radius:7px!important}
-.composer.mode-chat .chat-attachment-remove{position:absolute!important;top:-6px!important;right:-6px!important;width:23px!important;height:23px!important;min-width:23px!important;min-height:23px!important;padding:0!important;display:flex!important;align-items:center!important;justify-content:center!important;box-sizing:border-box!important;border:2px solid #fff!important;border-radius:50%!important;background:#d62839!important;color:#fff!important;font-family:Arial,sans-serif!important;font-size:18px!important;font-weight:800!important;line-height:1!important;text-align:center!important;box-shadow:0 1px 5px rgba(0,0,0,.38)!important;overflow:visible!important}
-body.light .composer.mode-chat .chat-attachment-remove{background:#d62839!important;color:#fff!important;border-color:#fff!important;box-shadow:0 1px 5px rgba(0,0,0,.4),0 0 0 1px #b91c2c!important}
-.composer.mode-chat .chat-attachment-list[hidden]{display:none!important}
-.composer.mode-chat .chat-attachment-list:not([hidden]){grid-column:2!important;grid-row:2!important;max-width:calc(100% - 150px)!important;width:max-content!important;min-width:0!important}
-@media(max-width:800px){.composer.mode-chat .chat-attachment-list{max-width:calc(100% - 130px)!important}.composer.mode-chat .chat-attachment-thumb{flex-basis:50px!important;width:50px!important;min-width:50px!important;height:50px!important;min-height:50px!important}}
-/* Give the Images hero icon the same layered, dimensional finish as Chat. */
-.chat-welcome.section-welcome .hero-mark.image{box-shadow:inset 0 1px 0 rgba(255,255,255,.55),0 8px 18px rgba(68,61,160,.24),0 0 32px rgba(125,85,255,.18)!important}
-.chat-welcome.section-welcome .hero-mark.image .icon-image{filter:drop-shadow(0 1px 0 rgba(255,255,255,.65)) drop-shadow(0 2px 2px rgba(24,20,75,.25))}`;
+};
  document.head.appendChild(st);
 })();
 (function ensureChatSpeechAndSelectionStyles(){
