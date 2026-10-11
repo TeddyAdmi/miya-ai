@@ -2511,8 +2511,8 @@ async function generateImage(prompt){
  const percent=ring?.querySelector(".progress-percent");
  const modelName=selectedModel||"FLUX Dev";
  const displayModel=imageModelLabel(modelName);
- const timeoutMs=modelName==="Nano Banana 2"?45000:modelName==="GPT Image 2.5"?75000:modelName==="FLUX Dev"?30000:modelName==="FLUX Kontext Dev"?45000:60000;
- const progressDurationMs=Math.max(10000,timeoutMs-5000);
+ const timeoutMs=modelName==="Nano Banana 2"?90000:120000;
+ const progressDurationMs=40000;
  const usesReferenceImage=Boolean(referenceImage);
  const hasFileUpload=Boolean(referenceImage);
  const composerProgress=$("#composerProgress");
