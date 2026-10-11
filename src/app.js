@@ -55,6 +55,14 @@ body.light .generation-loading:not(.video-generation-loading) .progress-circle::
 @media(max-width:800px){.generation-loading:not(.video-generation-loading){left:50%!important;padding:6px 8px!important}.generation-loading:not(.video-generation-loading) .progress-circle{width:38px!important;height:38px!important;flex-basis:38px!important}.generation-loading:not(.video-generation-loading) .progress-copy b,.generation-loading:not(.video-generation-loading) .progress-model{font-size:12px!important}}`;
  document.head.appendChild(st);
 })();
+(function ensureLightThemeTextContrast(){
+ if(document.getElementById("miyaLightThemeTextContrast"))return;
+ const st=document.createElement("style");st.id="miyaLightThemeTextContrast";
+ st.textContent=`body.light :is(h1,h2,h3,h4,h5,h6,p,label,small,strong,b,li,dt,dd,legend,summary,button,input,textarea,select,option,a,.composer-status,.composer-progress,.progress-model,.section-title,.section-subtitle,.subtitle,.muted,.text-muted,.form-label,.field-label){color:#111!important}
+body.light #composerStatus,body.light #composerProgress{color:#111!important}
+body.light .generation-loading:not(.video-generation-loading) .progress-copy b,body.light .generation-loading:not(.video-generation-loading) .progress-model{color:#111!important}`;
+ document.head.appendChild(st);
+})();
 (function ensureChatSpeechAndSelectionStyles(){
  if(document.getElementById("miyaChatSpeechSelectionStyles"))return;
  document.addEventListener("selectionchange",()=>{const selected=String(window.getSelection?.()?.toString()||"").trim();if(!selected)document.querySelectorAll(".chat-selection-actions").forEach(el=>{el.hidden=true})});
@@ -472,11 +480,12 @@ async function resolveMediaUrl(item){
 }
 function imageModelLabel(model){
  const name=String(model||"").trim();
- if(name==="Nano Banana 2")return "Nano Banana 2 · T2I";
- if(name==="GPT Image 2.5")return "GPT Image 2.5 · T2I";
- if(name==="Agnes Image"||name==="Agnes Image 2.5 Flash")return "Agnes Image · T2I / I2I";
- if(name==="FLUX Dev")return "FLUX Dev · T2I";
- if(name==="FLUX Kontext Dev")return "FLUX Kontext Dev · I2I";
+ if(/^Nano Banana 2$/i.test(name))return "Nano Banana 2 · T2I";
+ if(/^GPT Image 2\.5$/i.test(name))return "GPT Image 2.5 · T2I";
+ if(/^Agnes Image(?: 2\.5 Flash)?$/i.test(name))return "Agnes Image · T2I / I2I";
+ if(/^FLUX Dev$/i.test(name))return "FLUX Dev · T2I";
+ if(/^FLUX Kontext Dev$/i.test(name))return "FLUX Kontext Dev · I2I";
+ if(/^FLUX Content Dev$/i.test(name))return "FLUX Content Dev · I2I";
  return name;
 }
 function setComposerAttachment(url){
@@ -535,7 +544,7 @@ function clearComposerAttachment(){
  setComposerAttachment("");
  if(mode==="images"&&$("#composerModel")) $("#composerModel").value="Nano Banana 2";
 }
-function openEditor(url){referenceImage=url;try{sessionStorage.setItem("miyaReferenceImage",referenceImage)}catch{};setComposerAttachment(url);mode="images";$("#composerModel").value="Agnes Image 2.5 Flash";$("#composerRatio").value="auto";const m=modes.images;$("#workspaceEyebrow").textContent=m.eyebrow;$("#workspaceTitle").textContent=m.title;$("#workspaceSubtitle").textContent=m.subtitle;const promptInput=$("#composerInput"); if(promptInput){ promptInput.placeholder=m.placeholder; promptInput.setAttribute("aria-label",m.placeholder); promptInput.classList.remove("prompt-chat","prompt-images","prompt-video","prompt-voice"); promptInput.classList.add("prompt-images"); }$("#composerSendText").textContent=m.send;$("#composerStatus").textContent="Agnes Image · исходное изображение готово к редактированию";$(".image-settings").style.display="flex";$("#voiceOptions").style.display="none";$("#voiceOptions").classList.remove("show");$("#videoOptions").style.display="none";$("#videoOptions").classList.remove("show");document.querySelectorAll("[data-mode]").forEach(x=>x.classList.toggle("active",x.dataset.mode==="images"));if(!$("#canvas .result-grid")) renderImageLibrary();$("#composerInput").focus();syncInput()}
+function openEditor(url){referenceImage=url;try{sessionStorage.setItem("miyaReferenceImage",referenceImage)}catch{};setComposerAttachment(url);mode="images";$("#composerModel").value="Agnes Image 2.5 Flash";$("#composerRatio").value="auto";const m=modes.images;$("#workspaceEyebrow").textContent=m.eyebrow;$("#workspaceTitle").textContent=m.title;$("#workspaceSubtitle").textContent=m.subtitle;const promptInput=$("#composerInput"); if(promptInput){ promptInput.placeholder=m.placeholder; promptInput.setAttribute("aria-label",m.placeholder); promptInput.classList.remove("prompt-chat","prompt-images","prompt-video","prompt-voice"); promptInput.classList.add("prompt-images"); }$("#composerSendText").textContent=m.send;$("#composerStatus").textContent=imageModelLabel("Agnes Image 2.5 Flash")+" · исходное изображение готово к редактированию";$(".image-settings").style.display="flex";$("#voiceOptions").style.display="none";$("#voiceOptions").classList.remove("show");$("#videoOptions").style.display="none";$("#videoOptions").classList.remove("show");document.querySelectorAll("[data-mode]").forEach(x=>x.classList.toggle("active",x.dataset.mode==="images"));if(!$("#canvas .result-grid")) renderImageLibrary();$("#composerInput").focus();syncInput()}
 async function downloadImage(url){
  try{
   const response=await fetch(jpegImageUrl(url),{mode:"cors"});if(!response.ok)throw new Error("DOWNLOAD_HTTP_"+response.status);
@@ -2408,6 +2417,8 @@ async function generateAgnesImage(prompt){
  showLoading();if($("#composerSend"))$("#composerSend").disabled=true;
  const model="Agnes Image 2.5 Flash";
  const displayModel=imageModelLabel(model);
+ const asianRequested=/(asian|east asian|south asian|japanese|chinese|korean|mongolian|азиат|япон|кита|корей|монгол)/i.test(String(prompt||""));
+ const agnesPrompt=referenceImage||asianRequested?prompt:String(prompt||"").trim()+"\n\nUnless Asian ethnicity is explicitly requested, depict any woman or girl as Slavic/Eastern European."
  const loader=$("#canvas .generation-loading");
  const ring=loader?.querySelector(".progress-circle");
  const percent=ring?.querySelector(".progress-percent");
@@ -2420,7 +2431,7 @@ async function generateAgnesImage(prompt){
    const bar=loader?.querySelector(".generation-progress-bar span");if(bar)bar.style.width=v+"%";
    if(percent)percent.textContent=v+"%";
    if(composerProgress)composerProgress.textContent=v+"%";
-   const status=$("#composerStatus");if(status)status.textContent=displayModel+" · "+v+"%";
+   const status=$("#composerStatus");if(status)status.textContent="Создание изображения · "+displayModel+" · "+v+"%";
  };
  const updateProgress=()=>{
    const elapsed=Math.max(0,Date.now()-progressStartedAt);
@@ -2429,7 +2440,7 @@ async function generateAgnesImage(prompt){
  setProgress(1);
  progressTimer=setInterval(updateProgress,1000);
  try{
-   $("#composerStatus").textContent=displayModel+" · 1%";
+   $("#composerStatus").textContent="Создание изображения · "+displayModel+" · 1%";
    const ratioChoice=String($("#composerRatio")?.value||"auto");
    let selectedRatio=["1:1","3:4","4:3","16:9","9:16","2:3","3:2","21:9"].includes(ratioChoice)?ratioChoice:"16:9";
    if(ratioChoice==="auto"&&referenceImage){
@@ -2454,11 +2465,11 @@ async function generateAgnesImage(prompt){
    const response=await fetch("/api/agnes-image",{
      method:"POST",
      headers:{"Content-Type":"application/json","Accept":"application/json"},
-     body:JSON.stringify({prompt,ratio,quality,n:requestedCount,imageBase64:referenceImage||""}),
+     body:JSON.stringify({prompt:agnesPrompt,ratio,quality,n:requestedCount,imageBase64:referenceImage||""}),
      signal:AbortSignal.timeout(60000)
    });
    const raw=await response.text();let data={};try{data=raw?JSON.parse(raw):{}}catch{}
-   if(!response.ok||!data.imageUrl)throw new Error(String(data.message||data.error||raw||"Agnes Image не вернул изображение").slice(0,500));
+   if(!response.ok||!data.imageUrl){const error=new Error(String(data.message||data.error||raw||"Agnes Image не вернул изображение").slice(0,500));error.code=data.error||"";error.status=response.status;throw error;}
    if(progressTimer){clearInterval(progressTimer);progressTimer=null;}
    if(ring){ring.classList.remove("is-active");ring.style.setProperty("--progress","100%");}
    if(percent)percent.textContent="100%";
@@ -2483,8 +2494,9 @@ async function generateAgnesImage(prompt){
    if(progressTimer){clearInterval(progressTimer);progressTimer=null;}
    $("#canvas .generation-loading")?.remove();
    if(composerProgress)composerProgress.textContent="";
-   if($("#composerStatus"))$("#composerStatus").textContent=displayModel+" · ошибка";
-   toast("Agnes Image: "+(e?.message||"не удалось создать изображение"));
+   const moderationBlocked=e?.code==="PROMPT_MODERATION_BLOCKED"||e?.status===403||/PROMPT_MODERATION_BLOCKED|промпт отклон[её]н модерацией/i.test(String(e?.message||""));
+   if(moderationBlocked){const notice="Промпт отклонён модерацией. Измените формулировку запроса и попробуйте снова.";if($("#composerStatus"))$("#composerStatus").textContent=notice;toast(notice);}
+   else{if($("#composerStatus"))$("#composerStatus").textContent=displayModel+" · ошибка";toast("Agnes Image: "+(e?.message||"не удалось создать изображение"));}
  }finally{
    if(progressTimer){clearInterval(progressTimer);progressTimer=null;}
    $("#composerSend").disabled=false;
@@ -2524,7 +2536,7 @@ async function generateImage(prompt){
   const bar=loader?.querySelector(".generation-progress-bar span");if(bar)bar.style.width=value+"%";
   if(percent)percent.textContent=value+"%";
   if(composerProgress)composerProgress.textContent=value+"%";
-  const status=$("#composerStatus");if(status)status.textContent=displayModel+" · "+value+"%";
+  const status=$("#composerStatus");if(status)status.textContent="Создание изображения · "+displayModel+" · "+value+"%";
  };
  const updateProgress=()=>{
   const elapsed=Math.max(0,Date.now()-progressStartedAt);
@@ -2532,7 +2544,7 @@ async function generateImage(prompt){
  };
  setProgress(1);
  fakeTimer=setInterval(updateProgress,1000);
- $("#composerStatus").textContent=hasFileUpload?displayModel+" · загрузка файла…":displayModel+" · 1%";
+ $("#composerStatus").textContent=hasFileUpload?displayModel+" · загрузка файла…":"Создание изображения · "+displayModel+" · 1%";
  try{
   const payload={
    prompt,
@@ -2595,7 +2607,7 @@ async function generateImage(prompt){
        const rawUpstream=String(result.upstreamBody).replace(/\\s+/g," ").trim();
        if(rawUpstream) detail += " · "+rawUpstream.slice(0,220);
       }
-      reject(new Error(detail));
+      const requestError=new Error(detail);requestError.code=result.error||"";requestError.status=xhr.status;reject(requestError);
     }
    };
    xhr.timeout=timeoutMs;
@@ -2636,6 +2648,8 @@ async function generateImage(prompt){
   if(fakeTimer){clearInterval(fakeTimer);fakeTimer=null;}
   $("#canvas .generation-loading")?.remove();
   if(composerProgress)composerProgress.textContent="";
+  const moderationBlocked=e?.code==="PROMPT_MODERATION_BLOCKED"||e?.status===403||/PROMPT_MODERATION_BLOCKED|промпт отклон[её]н модерацией/i.test(String(e?.message||""));
+  if(moderationBlocked){const notice="Промпт отклонён модерацией. Измените формулировку запроса и попробуйте снова.";$("#composerStatus").textContent=notice;toast(notice);return;}
   const timedOut=e?.message==="Сервер генерации не ответил вовремя";
   if(timedOut){
    const seconds=modelName==="Nano Banana 2"?90:120;
@@ -4308,30 +4322,31 @@ $("#composerTrash")?.addEventListener("click",()=>{
   if(!$("#composerSend")?.disabled){
     const model=String($("#composerModel")?.value||"").trim();
     const status=$("#composerStatus");
-    if(status)status.textContent=model ? model+" · готов к созданию" : (modes[mode]?.status||"Готово");
+    if(status)status.textContent=model ? (mode==="images"?imageModelLabel(model):model)+" · готов к созданию" : (modes[mode]?.status||"Готово");
   }
 });
 $("#composerAttachmentRemove")?.addEventListener("click",()=>clearComposerAttachment());
 
 $("#composerModel")?.addEventListener("change",()=>{
   const model=$("#composerModel").value;
+  const modelLabel=imageModelLabel(model);
   /* Keep an existing edit image visible while switching models. The selected
      model decides whether that image is actually sent for generation. */
   if(model==="FLUX Kontext Dev"){
     $("#composerRatio").value="auto";
     $("#composerStatus").textContent=referenceImage
-      ?"FLUX Kontext Dev · изображение готово к редактированию"
-      :"FLUX Kontext Dev · готов к созданию";
+      ?modelLabel+" · изображение готово к редактированию"
+      :modelLabel+" · готов к созданию";
   }else if(model==="Agnes Image 2.5 Flash"){
     $("#composerRatio").value="16:9";
     $("#composerStatus").textContent=referenceImage
-      ?"Agnes Image · изображение прикреплено · готово к редактированию"
-      :"Agnes Image · готов к созданию";
+      ?modelLabel+" · изображение прикреплено · готово к редактированию"
+      :modelLabel+" · готов к созданию";
   }else{
     $("#composerRatio").value="16:9";
     $("#composerStatus").textContent=referenceImage
-      ?model+" · изображение прикреплено"
-      :model+" · готов к созданию";
+      ?modelLabel+" · изображение прикреплено"
+      :modelLabel+" · готов к созданию";
   }
 });
 $("#improve")?.addEventListener("click",improveComposerPrompt);
