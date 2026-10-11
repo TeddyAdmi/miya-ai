@@ -3556,3 +3556,73 @@ body.light .generation-loading:not(.video-generation-loading){
   overflow:hidden!important;
   text-overflow:ellipsis!important;
 }
+
+
+/* Final polish for the compact image progress card. */
+.generation-loading:not(.video-generation-loading){
+  width:max-content!important;
+  max-width:calc(100vw - 24px)!important;
+  min-width:0!important;
+  min-height:0!important;
+  height:auto!important;
+  padding:12px 14px!important;
+  box-sizing:border-box!important;
+  align-items:center!important;
+  justify-self:start!important;
+  overflow:visible!important;
+}
+.generation-loading:not(.video-generation-loading) .generation-progress{
+  width:max-content!important;
+  max-width:100%!important;
+  min-width:0!important;
+  align-items:center!important;
+  justify-content:flex-start!important;
+  gap:14px!important;
+}
+.generation-loading:not(.video-generation-loading) .progress-circle{
+  width:54px!important;
+  height:54px!important;
+  flex:0 0 54px!important;
+}
+.generation-loading:not(.video-generation-loading) .progress-circle::before{
+  background:linear-gradient(135deg,rgba(8,27,47,.96),rgba(13,35,59,.88))!important;
+}
+body.light .generation-loading:not(.video-generation-loading) .progress-circle::before{
+  background:var(--panel,#fff)!important;
+}
+.generation-loading:not(.video-generation-loading) .progress-copy{
+  display:flex!important;
+  flex:0 0 auto!important;
+  width:max-content!important;
+  max-width:calc(100vw - 112px)!important;
+  min-width:0!important;
+  align-items:center!important;
+  justify-content:center!important;
+  text-align:center!important;
+  gap:5px!important;
+  overflow:visible!important;
+}
+.generation-loading:not(.video-generation-loading) .progress-copy b{
+  display:block!important;
+  width:max-content!important;
+  max-width:100%!important;
+  text-align:center!important;
+  white-space:nowrap!important;
+}
+.generation-loading:not(.video-generation-loading) .progress-model{
+  display:block!important;
+  width:max-content!important;
+  max-width:100%!important;
+  font-size:14px!important;
+  line-height:1.2!important;
+  text-align:center!important;
+  white-space:nowrap!important;
+  overflow:hidden!important;
+  text-overflow:ellipsis!important;
+}
+@media(max-width:800px){
+  .generation-loading:not(.video-generation-loading){padding:12px!important}
+  .generation-loading:not(.video-generation-loading) .progress-circle{width:50px!important;height:50px!important;flex-basis:50px!important}
+  .generation-loading:not(.video-generation-loading) .progress-copy b,
+  .generation-loading:not(.video-generation-loading) .progress-model{font-size:12px!important}
+}
