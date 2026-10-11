@@ -45,14 +45,14 @@ body.light .image-viewer-created-info{background:rgba(255,255,255,.9)!important;
 body.light .image-viewer-created-info .image-viewer-created-model{color:#273047!important}
 body.light .image-viewer-created-info .image-viewer-created-date{color:#64748b!important}
 @media(max-width:800px){.image-viewer-created-info{right:12px!important;bottom:12px!important;max-width:calc(100vw - 24px)!important}}
-/* Compact image progress: keep the percentage legible while shrinking the ring and aligning both labels in one row. */
-.generation-loading:not(.video-generation-loading){padding:6px 8px!important;min-height:0!important;height:auto!important;width:max-content!important;max-width:calc(100vw - 16px)!important;box-sizing:border-box!important;overflow:visible!important}
-.generation-loading:not(.video-generation-loading) .generation-progress{width:max-content!important;max-width:100%!important;gap:8px!important;justify-content:flex-start!important}
+/* Compact progress popup centered over the workspace, with title and model on two lines. */
+.generation-loading:not(.video-generation-loading){position:fixed!important;left:calc(50% + 102.5px)!important;top:50%!important;transform:translate(-50%,-50%)!important;z-index:1200!important;padding:6px 8px!important;min-width:0!important;min-height:0!important;height:auto!important;width:max-content!important;max-width:calc(100vw - 24px)!important;box-sizing:border-box!important;overflow:visible!important;margin:0!important}
+.generation-loading:not(.video-generation-loading) .generation-progress{width:max-content!important;max-width:100%!important;gap:8px!important;justify-content:flex-start!important;align-items:center!important}
 .generation-loading:not(.video-generation-loading) .progress-circle{width:40px!important;height:40px!important;flex:0 0 40px!important}
-.generation-loading:not(.video-generation-loading) .progress-copy{display:flex!important;flex-direction:row!important;align-items:center!important;justify-content:flex-start!important;gap:8px!important;width:max-content!important;max-width:calc(100vw - 72px)!important;flex:0 1 auto!important;overflow:hidden!important}
-.generation-loading:not(.video-generation-loading) .progress-copy b,.generation-loading:not(.video-generation-loading) .progress-model{display:block!important;flex:0 0 auto!important;width:max-content!important;max-width:100%!important;white-space:nowrap!important;font-size:14px!important;line-height:1.2!important;text-align:left!important;overflow:hidden!important;text-overflow:ellipsis!important}
+.generation-loading:not(.video-generation-loading) .progress-copy{display:flex!important;flex-direction:column!important;align-items:flex-start!important;justify-content:center!important;gap:3px!important;width:max-content!important;max-width:calc(100vw - 80px)!important;flex:0 1 auto!important;overflow:hidden!important;text-align:left!important}
+.generation-loading:not(.video-generation-loading) .progress-copy b,.generation-loading:not(.video-generation-loading) .progress-model{display:block!important;flex:0 0 auto!important;width:max-content!important;max-width:100%!important;white-space:nowrap!important;font-size:14px!important;line-height:1.15!important;text-align:left!important;overflow:hidden!important;text-overflow:ellipsis!important}
 body.light .generation-loading:not(.video-generation-loading) .progress-circle::before{background:rgba(255,255,255,.86)!important}
-@media(max-width:800px){.generation-loading:not(.video-generation-loading){padding:6px 8px!important}.generation-loading:not(.video-generation-loading) .progress-circle{width:38px!important;height:38px!important;flex-basis:38px!important}.generation-loading:not(.video-generation-loading) .progress-copy b,.generation-loading:not(.video-generation-loading) .progress-model{font-size:12px!important}}`;
+@media(max-width:800px){.generation-loading:not(.video-generation-loading){left:50%!important;padding:6px 8px!important}.generation-loading:not(.video-generation-loading) .progress-circle{width:38px!important;height:38px!important;flex-basis:38px!important}.generation-loading:not(.video-generation-loading) .progress-copy b,.generation-loading:not(.video-generation-loading) .progress-model{font-size:12px!important}};
  document.head.appendChild(st);
 })();
 (function ensureChatSpeechAndSelectionStyles(){
@@ -2424,7 +2424,7 @@ async function generateAgnesImage(prompt){
  };
  const updateProgress=()=>{
    const elapsed=Math.max(0,Date.now()-progressStartedAt);
-   setProgress(1+Math.min(98,elapsed/40000*98));
+   setProgress(1+Math.min(98,elapsed/55000*98));
  };
  setProgress(1);
  progressTimer=setInterval(updateProgress,1000);
@@ -2464,14 +2464,14 @@ async function generateAgnesImage(prompt){
    if(percent)percent.textContent="100%";
    const progressBar=loader?.querySelector(".generation-progress-bar span");if(progressBar)progressBar.style.width="100%";
    if(composerProgress)composerProgress.textContent="100%";
-   const completedModel=loader?.querySelector(".progress-model");if(completedModel)completedModel.textContent=model;
+   const completedModel=loader?.querySelector(".progress-model");if(completedModel)completedModel.textContent=displayModel;
    const urls=Array.isArray(data.imageUrls)&&data.imageUrls.length?data.imageUrls:[data.imageUrl];
    urls.forEach(url=>showImage(url,prompt,displayModel));
    scrollImagesToTop();
    $("#composerInput").value="";syncInput();
    $("#composerModel").value="Agnes Image 2.5 Flash";
    $("#composerRatio").value=ratio;
-   $("#composerStatus").textContent=model+" · готово";
+   $("#composerStatus").textContent=displayModel+" · готово";
    referenceImage=null;
    chatAttachmentFile=null;
    try{sessionStorage.removeItem("miyaReferenceImage")}catch{}
@@ -2483,7 +2483,7 @@ async function generateAgnesImage(prompt){
    if(progressTimer){clearInterval(progressTimer);progressTimer=null;}
    $("#canvas .generation-loading")?.remove();
    if(composerProgress)composerProgress.textContent="";
-   if($("#composerStatus"))$("#composerStatus").textContent=model+" · ошибка";
+   if($("#composerStatus"))$("#composerStatus").textContent=displayModel+" · ошибка";
    toast("Agnes Image: "+(e?.message||"не удалось создать изображение"));
  }finally{
    if(progressTimer){clearInterval(progressTimer);progressTimer=null;}
@@ -2511,6 +2511,8 @@ async function generateImage(prompt){
  const percent=ring?.querySelector(".progress-percent");
  const modelName=selectedModel||"FLUX Dev";
  const displayModel=imageModelLabel(modelName);
+ const timeoutMs=modelName==="Nano Banana 2"?45000:modelName==="GPT Image 2.5"?75000:modelName==="FLUX Dev"?30000:modelName==="FLUX Kontext Dev"?45000:60000;
+ const progressDurationMs=Math.max(10000,timeoutMs-5000);
  const usesReferenceImage=Boolean(referenceImage);
  const hasFileUpload=Boolean(referenceImage);
  const composerProgress=$("#composerProgress");
@@ -2526,7 +2528,7 @@ async function generateImage(prompt){
  };
  const updateProgress=()=>{
   const elapsed=Math.max(0,Date.now()-progressStartedAt);
-  setProgress(1+Math.min(98,elapsed/40000*98));
+  setProgress(1+Math.min(98,elapsed/progressDurationMs*98));
  };
  setProgress(1);
  fakeTimer=setInterval(updateProgress,1000);
@@ -2596,7 +2598,7 @@ async function generateImage(prompt){
       reject(new Error(detail));
     }
    };
-   xhr.timeout=modelName==="Nano Banana 2"?90000:120000;
+   xhr.timeout=timeoutMs;
    xhr.send(body);
   });
 ;
