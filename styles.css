@@ -3398,12 +3398,6 @@ body.light .chat-row.user .chat-bubble{
   border-radius:inherit;
   transition:width .8s linear;
 }
-body.light .generation-loading:not(.video-generation-loading){
-  background:#111827!important;
-  color:#f3f4f6!important;
-}
-body.light .generation-loading:not(.video-generation-loading) .progress-copy b{color:#f3f4f6!important}
-body.light .generation-loading:not(.video-generation-loading) .progress-model{color:#aab6c7!important}
 @media(max-width:800px){
   .generation-loading:not(.video-generation-loading){min-height:124px;padding:16px}
   .generation-loading:not(.video-generation-loading) .generation-progress{gap:12px}
