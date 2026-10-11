@@ -59,8 +59,20 @@ body.light .generation-loading:not(.video-generation-loading) .progress-circle::
  if(document.getElementById("miyaLightThemeTextContrast"))return;
  const st=document.createElement("style");st.id="miyaLightThemeTextContrast";
  st.textContent=`body.light :is(h1,h2,h3,h4,h5,h6,p,label,small,strong,b,li,dt,dd,legend,summary,button,input,textarea,select,option,a,.composer-status,.composer-progress,.progress-model,.section-title,.section-subtitle,.subtitle,.muted,.text-muted,.form-label,.field-label){color:#111!important}
-body.light #composerStatus,body.light #composerProgress{color:#111!important}
-body.light .generation-loading:not(.video-generation-loading) .progress-copy b,body.light .generation-loading:not(.video-generation-loading) .progress-model{color:#111!important}`;
+body.light #composerStatus,body.light #composerProgress,body.light .generation-loading .progress-circle .progress-percent{color:#111!important;text-shadow:none!important}
+body.light .generation-loading:not(.video-generation-loading) .progress-copy b,body.light .generation-loading:not(.video-generation-loading) .progress-model{color:#111!important}
+body.light :is(.ico,.nav-icon,.profile-icon,.icon-more,.media-action,.floating-theme,.floating-wall-clear,.composer-copy,.composer-paste,.composer-trash,.mic,.attach,.send-icon,.chat-attachment-remove,.image-viewer-controls button,.image-viewer-nav){color:#123b70!important}
+body.light button svg,body.light .composer svg,body.light .media-action svg,body.light .floating-theme svg,body.light .floating-wall-clear svg{stroke:#123b70!important}
+body.light button svg [fill="currentColor"],body.light button svg [stroke="currentColor"]{fill:#123b70!important;stroke:#123b70!important}
+body.light .side-brand b{color:#123b70!important}
+body.light .side-logo{filter:none!important}
+body.light .side-logo svg path{fill:#123b70!important;stroke:#123b70!important}
+body.light .side-logo svg path:nth-of-type(2){fill:#fff!important;stroke:none!important}
+body.light .side-logo svg path:nth-of-type(3){fill:#123b70!important;stroke:none!important}
+body.light .composer-attachment button{background:#123b70!important;color:#fff!important;border-color:#123b70!important;font-weight:800!important;font-size:14px!important;line-height:13px!important}
+body.light .composer-attachment button:hover{background:#7048b8!important;color:#fff!important;border-color:#7048b8!important}
+body.light .generation-loading .progress-circle .progress-percent{color:#111!important}
+body.light .generation-loading .progress-copy b,body.light .generation-loading .progress-model{color:#111!important}`;
  document.head.appendChild(st);
 })();
 (function ensureChatSpeechAndSelectionStyles(){
@@ -1075,22 +1087,16 @@ function buildMediaCard(item,{video=false}={}){
    media.loading="eager";
    media.fetchPriority="high";
    const initialImageUrl=proxyUrl||directUrl;
-   // Check IndexedDB before starting a remote request. Cached images from every
-   // model are painted from their local Blob immediately, without first showing
-   // a slow/progressive provider download underneath.
+   // Start loading the wall thumbnail immediately. IndexedDB can be slow or
+   // blocked for large images; it must never delay the visible image itself.
+   if(!isDeadVheer&&initialImageUrl){
+     media.addEventListener("load",()=>{cacheMedia(item.id,initialImageUrl,"image")},{once:true});
+     setImageSource(initialImageUrl);
+   }
    resolveMediaUrl(item).then(url=>{
      if(!url||mediaFailed||!media.isConnected)return;
-     if(url.startsWith("blob:")){
-       setImageSource(url);
-       return;
-     }
-     if(!isDeadVheer&&initialImageUrl){
-       media.addEventListener("load",()=>{cacheMedia(item.id,initialImageUrl,"image")},{once:true});
-       setImageSource(initialImageUrl||url);
-     }
-   }).catch(()=>{
-     if(!mediaFailed&&media.isConnected&&!isDeadVheer&&initialImageUrl)setImageSource(initialImageUrl);
-   });
+     if(url.startsWith("blob:"))setImageSource(url);
+   }).catch(()=>{});
    if(isDeadVheer&&!proxyUrl)media.alt="Старая копия изображения";
    media.addEventListener("click",e=>{e.stopPropagation();openImageViewer(item)});
    card.appendChild(media);
@@ -2382,7 +2388,7 @@ function showLoading(){
   const selectedModel=referenceImage?($("#composerModel")?.value||"Nano Banana 2"):($("#composerModel")?.value||"FLUX Dev");
   const card=document.createElement("div");card.className="generation-loading"+(referenceImage?" has-upload":" no-upload");
   card.dataset.model=selectedModel;
-  card.innerHTML='<div class="generation-progress"><div class="progress-circle is-active"><span class="progress-percent">1%</span></div><div class="progress-copy"><b>Создание изображения</b><span class="progress-model"></span></div></div>';
+  card.innerHTML='<div class="generation-progress"><div class="progress-circle is-active"><span class="progress-percent">1%</span></div><div class="progress-copy"><span class="progress-model"></span><b>Создание изображения</b></div></div>';
   card.querySelector(".progress-model").textContent=imageModelLabel(selectedModel);
   grid.prepend(card);scrollImagesToTop();return;
  }
@@ -2412,6 +2418,25 @@ function showImage(url,prompt="",model="FLUX Dev",ratio=""){
  applyFirstSixMediaPriority(grid);
  $("#composerStatus").textContent=imageModelLabel(model)+" · готово";
 }
+async function compressAgnesReferenceImage(source){
+ const value=String(source||"");
+ if(!/^data:image\//i.test(value))return value;
+ try{
+  const image=new Image();
+  await new Promise((resolve,reject)=>{image.onload=resolve;image.onerror=()=>reject(new Error("Не удалось прочитать прикреплённое изображение"));image.src=value});
+  const scale=Math.min(1,2048/Math.max(image.naturalWidth||1,image.naturalHeight||1));
+  const canvas=document.createElement("canvas");
+  canvas.width=Math.max(1,Math.round(image.naturalWidth*scale));
+  canvas.height=Math.max(1,Math.round(image.naturalHeight*scale));
+  const context=canvas.getContext("2d");
+  if(!context)return value;
+  context.fillStyle="#fff";context.fillRect(0,0,canvas.width,canvas.height);
+  context.drawImage(image,0,0,canvas.width,canvas.height);
+  let output=canvas.toDataURL("image/jpeg",.82);
+  if(output.length>3_200_000)output=canvas.toDataURL("image/jpeg",.68);
+  return output;
+ }catch{return value}
+}
 async function generateAgnesImage(prompt){
  if(videoGenerationBusy){}
  showLoading();if($("#composerSend"))$("#composerSend").disabled=true;
@@ -2431,7 +2456,7 @@ async function generateAgnesImage(prompt){
    const bar=loader?.querySelector(".generation-progress-bar span");if(bar)bar.style.width=v+"%";
    if(percent)percent.textContent=v+"%";
    if(composerProgress)composerProgress.textContent=v+"%";
-   const status=$("#composerStatus");if(status)status.textContent="Создание изображения · "+displayModel+" · "+v+"%";
+   const status=$("#composerStatus");if(status)status.textContent=displayModel+" · Создание изображения · "+v+"%";
  };
  const updateProgress=()=>{
    const elapsed=Math.max(0,Date.now()-progressStartedAt);
@@ -2440,7 +2465,7 @@ async function generateAgnesImage(prompt){
  setProgress(1);
  progressTimer=setInterval(updateProgress,1000);
  try{
-   $("#composerStatus").textContent="Создание изображения · "+displayModel+" · 1%";
+   $("#composerStatus").textContent=displayModel+" · Создание изображения · 1%";
    const ratioChoice=String($("#composerRatio")?.value||"auto");
    let selectedRatio=["1:1","3:4","4:3","16:9","9:16","2:3","3:2","21:9"].includes(ratioChoice)?ratioChoice:"16:9";
    if(ratioChoice==="auto"&&referenceImage){
@@ -2465,7 +2490,7 @@ async function generateAgnesImage(prompt){
    const response=await fetch("/api/agnes-image",{
      method:"POST",
      headers:{"Content-Type":"application/json","Accept":"application/json"},
-     body:JSON.stringify({prompt:agnesPrompt,ratio,quality,n:requestedCount,imageBase64:referenceImage||""}),
+     body:JSON.stringify({prompt:agnesPrompt,ratio,quality,n:requestedCount,imageBase64:await compressAgnesReferenceImage(referenceImage||"")}),
      signal:AbortSignal.timeout(60000)
    });
    const raw=await response.text();let data={};try{data=raw?JSON.parse(raw):{}}catch{}
@@ -2536,7 +2561,7 @@ async function generateImage(prompt){
   const bar=loader?.querySelector(".generation-progress-bar span");if(bar)bar.style.width=value+"%";
   if(percent)percent.textContent=value+"%";
   if(composerProgress)composerProgress.textContent=value+"%";
-  const status=$("#composerStatus");if(status)status.textContent="Создание изображения · "+displayModel+" · "+value+"%";
+  const status=$("#composerStatus");if(status)status.textContent=displayModel+" · Создание изображения · "+value+"%";
  };
  const updateProgress=()=>{
   const elapsed=Math.max(0,Date.now()-progressStartedAt);
@@ -2544,7 +2569,7 @@ async function generateImage(prompt){
  };
  setProgress(1);
  fakeTimer=setInterval(updateProgress,1000);
- $("#composerStatus").textContent=hasFileUpload?displayModel+" · загрузка файла…":"Создание изображения · "+displayModel+" · 1%";
+ $("#composerStatus").textContent=hasFileUpload?displayModel+" · загрузка файла…":displayModel+" · Создание изображения · 1%";
  try{
   const payload={
    prompt,
