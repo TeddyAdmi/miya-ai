@@ -2593,15 +2593,15 @@ async function generateImage(prompt){
   data=await requestThroughMiyaApi();
   const actualModel=data.model||modelName;
   if(fakeTimer){clearInterval(fakeTimer);fakeTimer=null;}
+  const generatedUrls=Array.isArray(data.imageUrls)&&data.imageUrls.length
+   ? data.imageUrls
+   : data.imageUrl?[data.imageUrl]:[];
+  if(!generatedUrls.length)throw new Error("Сервер не вернул готовое изображение");
   if(loader){
    setProgress(100);
    const modelLabel=loader.querySelector(".progress-model");
    if(modelLabel)modelLabel.textContent=actualModel;
   }
-  const generatedUrls=Array.isArray(data.imageUrls)&&data.imageUrls.length
-   ? data.imageUrls
-   : data.imageUrl?[data.imageUrl]:[];
-  if(!generatedUrls.length)throw new Error("Сервер не вернул готовое изображение");
   generatedUrls.forEach((url)=>showImage(url,prompt,imageModelLabel(actualModel),useCvronImage?selectedRatio:""));
   scrollImagesToTop();
   if(modelName === "Nano Banana 2"){
