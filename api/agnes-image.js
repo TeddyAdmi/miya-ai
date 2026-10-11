@@ -88,13 +88,15 @@ module.exports = async function handler(req, res) {
       "Prioritize tack-sharp focus, high micro-contrast, fine texture detail and clean edges at pixel level.",
       "For close-ups, preserve extremely fine facial, hair, fur, fabric and surface detail; do not blur, smear, soften or watercolor the subject.",
       "Keep the requested composition, subject identity and scene faithful to the user prompt. Do not add decorative elements that were not requested.",
-      "Whenever the prompt includes a person, people, a woman, a man, a girl, a boy, or any human subject without a specifically requested ethnicity, depict them with natural Slavic / Eastern European appearance. Use realistic Slavic facial features, proportions, hair and skin characteristics. Do not default to East Asian, Southeast Asian, or other regional facial features unless the user explicitly requests them.",
+      "HARD REQUIREMENT FOR HUMAN SUBJECTS: If the user asks for a girl, woman, boy, man, person, or people and does not explicitly request another ethnicity, depict the subject as clearly Slavic / Eastern European. Use believable Slavic / Eastern European facial structure and natural regional features. Do NOT default to East Asian, Southeast Asian, or other Asian facial features. This requirement applies even when the user writes only \"girl\" or \"woman\". Only use another ethnicity when the user explicitly asks for it.",
       "Use the same practical output quality as FLUX Dev, prioritizing fast-loading preview size without sacrificing useful detail.",
       "USER PROMPT:\\n"+prompt
     ].join("\\n");
     const editPrompt=[
       "Edit the supplied source photograph rather than creating a new scene.",
-      "Keep the original framing, camera viewpoint, composition, background, lighting, colors, textures and all unrelated subjects unchanged.",
+      "PRESERVE THE SOURCE IMAGE GEOMETRY EXACTLY: keep the same framing, crop, camera viewpoint, perspective, zoom, subject positions, background layout, and all original spatial relationships.",
+      "If the source contains a horizon, shoreline, wall edge, or other strong horizontal line, keep it at exactly the same relative vertical position in the frame. Do not shift it up or down, and do not recenter, pan, tilt, zoom, expand the canvas, crop, or recompose the image.",
+      "Keep all pixels and visual content outside the requested change as close to the source as possible. Apply only the explicitly requested edit; do not reinterpret or redesign the scene.",
       "Apply only the change explicitly requested by the user.",
       "When removing an object, reconstruct only the area behind it from the surrounding background. Do not introduce a new person, animal, object or decoration into that area.",
       "The output should look like the same photograph after a precise local edit.",
@@ -102,10 +104,11 @@ module.exports = async function handler(req, res) {
     ].join("\\n");
     const qualityPrompt=source ? editPrompt : generationPrompt;
     // Use the maximum native output size supported by Agnes Image 2.5 Flash (4K).
+    // Use Agnes' documented native dimensions so the requested aspect ratio is not subtly distorted.
     const qualitySizes={
-      "1K":{"16:9":"1376x768","9:16":"768x1376","1:1":"1024x1024","3:4":"896x1200","4:3":"1200x896","2:3":"848x1264","3:2":"1264x848","21:9":"1584x672"},
-      "2K":{"16:9":"2752x1536","9:16":"1536x2752","1:1":"2048x2048","3:4":"1792x2400","4:3":"2400x1792","2:3":"1696x2528","3:2":"2528x1696","21:9":"3168x1344"},
-      "4K":{"16:9":"2048x1152","9:16":"1152x2048","1:1":"2048x2048","3:4":"1536x2048","4:3":"2048x1536","2:3":"1365x2048","3:2":"2048x1365","21:9":"2048x878"}
+      "1K":{"16:9":"1312x736","9:16":"736x1312","1:1":"1024x1024","3:4":"864x1152","4:3":"1152x864","2:3":"832x1248","3:2":"1248x832","21:9":"1568x672"},
+      "2K":{"16:9":"2624x1472","9:16":"1472x2624","1:1":"2048x2048","3:4":"1728x2304","4:3":"2304x1728","2:3":"1664x2496","3:2":"2496x1664","21:9":"3136x1344"},
+      "4K":{"16:9":"5248x2944","9:16":"2944x5248","1:1":"4096x4096","3:4":"3456x4608","4:3":"4608x3456","2:3":"3328x4992","3:2":"4992x3328","21:9":"6272x2688"}
     };
     const outputSize=qualitySizes[quality]?.[ratio]||qualitySizes["1K"]["16:9"];
     const payload={model:"agnes-image-2.5-flash",prompt:qualityPrompt,n,size:outputSize,ratio,extra_body:{response_format:"url"}};
