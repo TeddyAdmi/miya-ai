@@ -72,7 +72,7 @@ body.light .side-logo svg path:nth-of-type(3){fill:#123b70!important;stroke:none
 body.light .composer-attachment button{background:#123b70!important;color:#fff!important;border-color:#123b70!important;font-weight:800!important;font-size:14px!important;line-height:13px!important}
 body.light .composer-attachment button:hover{background:#7048b8!important;color:#fff!important;border-color:#7048b8!important}
 body.light .generation-loading .progress-circle .progress-percent{color:#111!important}
-body.light .generation-loading .progress-copy b,body.light .generation-loading .progress-model{color:#111!important}`;
+body.light .generation-loading .progress-copy b,body.light .generation-loading .progress-model{color:#111!important}\nbody.light .generation-loading .progress-percent{color:#111!important;background:transparent!important;text-shadow:none!important}\nbody.light .chat-attachment-thumb .chat-attachment-remove,body.light .composer-attachment button{display:grid!important;place-items:center!important;background:#123b70!important;color:#fff!important;border:1px solid #123b70!important;opacity:1!important;text-shadow:none!important}\nbody.light .chat-attachment-thumb .chat-attachment-remove svg,body.light .composer-attachment button svg{stroke:#fff!important;fill:none!important}\nbody.light .side-logo svg,body.light .side-logo svg path{stroke:#123b70!important}\nbody.light .side-logo svg path{fill:#123b70!important}\nbody.light .side-logo svg path:nth-of-type(2){fill:#fff!important;stroke:none!important}`;
  document.head.appendChild(st);
 })();
 (function ensureChatSpeechAndSelectionStyles(){
@@ -2424,7 +2424,7 @@ async function compressAgnesReferenceImage(source){
  try{
   const image=new Image();
   await new Promise((resolve,reject)=>{image.onload=resolve;image.onerror=()=>reject(new Error("Не удалось прочитать прикреплённое изображение"));image.src=value});
-  const scale=Math.min(1,2048/Math.max(image.naturalWidth||1,image.naturalHeight||1));
+  const scale=Math.min(1,1536/Math.max(image.naturalWidth||1,image.naturalHeight||1));
   const canvas=document.createElement("canvas");
   canvas.width=Math.max(1,Math.round(image.naturalWidth*scale));
   canvas.height=Math.max(1,Math.round(image.naturalHeight*scale));
@@ -2432,8 +2432,8 @@ async function compressAgnesReferenceImage(source){
   if(!context)return value;
   context.fillStyle="#fff";context.fillRect(0,0,canvas.width,canvas.height);
   context.drawImage(image,0,0,canvas.width,canvas.height);
-  let output=canvas.toDataURL("image/jpeg",.82);
-  if(output.length>3_200_000)output=canvas.toDataURL("image/jpeg",.68);
+  let output=canvas.toDataURL("image/jpeg",.72);
+  if(output.length>2_400_000)output=canvas.toDataURL("image/jpeg",.58);
   return output;
  }catch{return value}
 }
