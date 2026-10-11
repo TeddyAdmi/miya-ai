@@ -106,19 +106,22 @@ module.exports = async function handler(req, res) {
       "Keep the requested composition, subject identity and scene faithful to the user prompt. Do not add decorative elements that were not requested.",
       "HARD REQUIREMENT FOR HUMAN SUBJECTS: If the user asks for a girl, woman, boy, man, person, or people and does not explicitly request another ethnicity, depict the subject as clearly Slavic / Eastern European. Use believable Slavic / Eastern European facial structure and natural regional features. Do NOT default to East Asian, Southeast Asian, or other Asian facial features. This requirement applies even when the user writes only \"girl\" or \"woman\". Only use another ethnicity when the user explicitly asks for it.",
       "Use the same practical output quality as FLUX Dev, prioritizing fast-loading preview size without sacrificing useful detail.",
-      "USER PROMPT:\\n"+prompt
-    ].join("\\n");
+      "USER PROMPT:\n"+prompt,
+      "FINAL ETHNICITY RULE: Unless the user explicitly names another ethnicity, every newly generated human must have unmistakably natural Slavic / Eastern European appearance. Do not generate East Asian or other Asian facial features by default."
+    ].join("\n");
     const editPrompt=[
       "STRICT LOCAL PHOTO EDIT. This is not a remake, variation, or re-imagination. The input image is the immutable reference plate.",
       "Change only the exact body part or object explicitly named in the user instruction. Keep every other visible pixel and detail unchanged wherever possible.",
+      "IDENTITY LOCK: Preserve the exact person in the source photo, including face shape, eye shape, nose, lips, facial proportions, skin tone, hairline, apparent ethnicity, expression, and gaze. Do not reinterpret the face or change the ethnicity represented in the source. Never replace or beautify the person.",
       "For a pose edit, preserve the person's identity, face, expression, gaze, head angle, neck, shoulders, torso, hips, legs, feet, stance, body scale, and every unmentioned limb in exactly the same position. Do not move the person or camera. If only one arm/hand is mentioned, edit only that arm/hand and the tiny area needed to blend it naturally.",
       "LOCK THE SCENE GEOMETRY: horizon height, shoreline, sea level, wave shapes and count, foam lines, clouds, architecture, trees, shadows, reflections, and all background edges must remain in the exact same locations and shapes. Do not smooth, round, simplify, merge, straighten, redraw, or stylize natural textures such as waves, hair, fabric, grass, or foliage.",
       "Do not crop, zoom, pan, tilt, recenter, shift, resize the canvas, change perspective, alter the aspect ratio, or change composition. Preserve the source framing and spatial relationships.",
       "Do not improve, beautify, regenerate, or otherwise modify anything that the user did not explicitly ask to change. Do not change lighting, color grading, sharpness, texture, or detail in untouched areas.",
       "If the requested change cannot be made without altering unrelated parts of the image, prioritize preserving the original image and make the smallest possible localized change.",
       "Return the same photograph with only the requested local edit, not a similar new photograph.",
-      "USER EDIT INSTRUCTION:\\n"+prompt
-    ].join("\\n");
+      "USER EDIT INSTRUCTION:\n"+prompt,
+      "FINAL EDIT RULE: Treat the source photo as locked. If the user asks to lower one arm, change only that arm and the minimum neighboring pixels needed for a natural seam. The face, body scale, position of the woman, horizon, waves, sea, shoreline, and every unrelated detail must remain unchanged."
+    ].join("\n");
     const qualityPrompt=source ? editPrompt : generationPrompt;
     // Use the maximum native output size supported by Agnes Image 2.5 Flash (4K).
     // Use Agnes' documented native dimensions so the requested aspect ratio is not subtly distorted.
