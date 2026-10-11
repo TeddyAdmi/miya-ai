@@ -2888,7 +2888,8 @@ body.light .chat-row.user .chat-bubble{
 .composer.mode-video{
   display:grid!important;
   grid-template-columns:34px auto minmax(0,1fr) 34px 34px!important;
-  grid-template-rows:minmax(76px,auto) auto auto!important;
+  /* Use the same fixed control rail as AI Chat to prevent vertical jumps. */
+  grid-template-rows:minmax(76px,auto) 34px auto!important;
   align-items:center!important;
   column-gap:8px!important;
   row-gap:5px!important;
