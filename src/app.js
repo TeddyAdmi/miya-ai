@@ -4516,6 +4516,9 @@ function ensureSpeechVisualizer(){
     if(micRect && rect.right>micRect.left)continue;
     leftEdge=Math.max(leftEdge,rect.right-composerRect.left+8);
   }
+  // In Voice mode the waveform is the main content of the prompt: anchor it
+  // to the prompt's left inset instead of starting after the option controls.
+  if(mode==="voice")leftEdge=12;
   const centerY=micRect?micRect.top+micRect.height/2-composerRect.top:composerRect.height/2;
   const rightEdge=micRect?micRect.left-composerRect.left-8:composerRect.width-12;
   leftEdge=Math.min(leftEdge,rightEdge);
