@@ -1055,12 +1055,25 @@ function buildMediaCard(item,{video=false}={}){
    }
    media.loading="eager";
    media.fetchPriority="high";
-   // Use the same-origin raw proxy for Agnes: it avoids cross-origin cache failures
-   // and skips Sharp conversion, while the CDN can cache the image for tab revisits.
-   const initialImageUrl=isAgnesPreview?(proxyUrl||directUrl):(proxyUrl||directUrl);
-   if(!isDeadVheer&&initialImageUrl)media.src=initialImageUrl;
-   // Do not start a second proxy preload for Agnes; it can delay or replace the visible image.
-   if(!isAgnesPreview){
+   if(isAgnesPreview){
+     // Check IndexedDB BEFORE assigning a network URL. Once an Agnes image has
+     // been cached, a site reload must paint the stored Blob without downloading
+     // the provider image again.
+     resolveMediaUrl(item).then(url=>{
+       if(!url||mediaFailed||!media.isConnected)return;
+       if(url.startsWith("blob:")){
+         setImageSource(url);
+         return;
+       }
+       if(!isDeadVheer){
+         const source=proxyUrl||url;
+         media.addEventListener("load",()=>{cacheMedia(item.id,source,"image")},{once:true});
+         setImageSource(source);
+       }
+     }).catch(()=>{});
+   }else{
+     const initialImageUrl=proxyUrl||directUrl;
+     if(!isDeadVheer&&initialImageUrl)media.src=initialImageUrl;
      resolveMediaUrl(item).then(url=>{
        if(!url||mediaFailed)return;
        if(url.startsWith("blob:")){setImageSource(url);return}
