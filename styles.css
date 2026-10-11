@@ -3245,3 +3245,65 @@ body.light .chat-row.user .chat-bubble{
     grid-template-rows:76px 34px 14px!important;
   }
 }
+
+
+/* Hard-pin the composer to the same viewport coordinates in Chat, Images and Video. */
+@media(min-width:801px){
+  .composer-wrap{
+    position:fixed!important;
+    left:205px!important;
+    right:0!important;
+    bottom:0!important;
+    height:169px!important;
+    padding:0 24px 17px!important;
+    display:flex!important;
+    align-items:flex-end!important;
+    justify-content:center!important;
+    transform:none!important;
+  }
+  .composer.mode-chat,
+  .composer.mode-images,
+  .composer.mode-video{
+    position:relative!important;
+    inset:auto!important;
+    flex:0 0 152px!important;
+    width:min(900px,calc(100vw - 265px))!important;
+    height:152px!important;
+    min-height:152px!important;
+    max-height:152px!important;
+    margin:0 auto!important;
+    padding:9px 10px 7px!important;
+    box-sizing:border-box!important;
+    transform:none!important;
+    grid-template-rows:76px 34px 14px!important;
+    row-gap:5px!important;
+    align-content:start!important;
+  }
+}
+.composer.mode-chat .chat-options .composer-copy,
+.composer.mode-chat .chat-options .composer-paste,
+.composer.mode-chat .chat-options .composer-trash{
+  flex:0 0 30px!important;
+  width:30px!important;
+  min-width:30px!important;
+  height:30px!important;
+  min-height:30px!important;
+  max-height:30px!important;
+  margin:0!important;
+  transform:none!important;
+}
+.composer.mode-chat .chat-options .composer-copy svg,
+.composer.mode-chat .chat-options .composer-paste svg,
+.composer.mode-chat .chat-options .composer-trash svg{
+  width:17px!important;
+  height:17px!important;
+}
+.composer.mode-chat .chat-options,
+.composer.mode-images .image-settings,
+.composer.mode-video .video-options{
+  grid-row:2!important;
+  align-self:center!important;
+  transform:none!important;
+  margin-top:0!important;
+  margin-bottom:0!important;
+}
