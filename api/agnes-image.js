@@ -116,7 +116,7 @@ module.exports = async function handler(req, res) {
       "Do not zoom in or out, change camera distance, reframe, crop, resize the subject, change perspective, or regenerate the whole scene.",
       "If the requested local change cannot be made reliably, prefer preserving the original photograph over changing unrelated details."
     ];
-    const lowerLeftArmRequest=/(?:лев\\w*\\s+рук\\w*.*(?:опуст|вниз|опуск)|(?:опуст|опуск|вниз).*лев\\w*\\s+рук\\w*)/iu.test(prompt);
+    const lowerLeftArmRequest=/(?:лев\w*\s+рук\w*.*(?:опуст|вниз|опуск)|(?:опуст|опуск|вниз).*лев\w*\s+рук\w*)/iu.test(prompt);
     if(lowerLeftArmRequest){
       editRules.push(
         "SPECIAL ONE-ARM EDIT: lower ONLY the woman's own anatomical LEFT arm naturally beside her body.",
@@ -125,7 +125,7 @@ module.exports = async function handler(req, res) {
         "Keep the football field, grass, field lines, background, lighting, shadows, camera viewpoint, and framing unchanged. Change only the left arm and the minimum pixels needed to blend it naturally."
       );
     }
-    const editPrompt=[...editRules,"USER EDIT INSTRUCTION:\\n"+prompt].join("\\n");
+    const editPrompt=[...editRules,"USER EDIT INSTRUCTION:\n"+prompt].join("\n");
     const qualityPrompt=source ? editPrompt : generationPrompt;
     // Use the maximum native output size supported by Agnes Image 2.5 Flash (4K).
     // Use Agnes' documented native dimensions so the requested aspect ratio is not subtly distorted.
