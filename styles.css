@@ -3203,3 +3203,45 @@ body.light .chat-row.user .chat-bubble{
   margin-top:0!important;
   margin-bottom:0!important;
 }
+
+
+/* Equal outer composer dimensions for Chat, Images and Video. */
+.composer.mode-chat,
+.composer.mode-images,
+.composer.mode-video{
+  box-sizing:border-box!important;
+  height:152px!important;
+  min-height:152px!important;
+  max-height:152px!important;
+  grid-template-rows:76px 34px 14px!important;
+  row-gap:5px!important;
+  align-content:start!important;
+  overflow:visible!important;
+}
+.composer.mode-chat #composerInput,
+.composer.mode-images #composerInput,
+.composer.mode-video #composerInput{
+  box-sizing:border-box!important;
+  height:76px!important;
+  min-height:76px!important;
+  max-height:76px!important;
+}
+.composer.mode-chat .composer-status,
+.composer.mode-images .composer-status,
+.composer.mode-video .composer-status{
+  grid-row:3!important;
+  height:14px!important;
+  min-height:14px!important;
+  max-height:14px!important;
+  overflow:hidden!important;
+}
+@media(max-width:800px){
+  .composer.mode-chat,
+  .composer.mode-images,
+  .composer.mode-video{
+    height:152px!important;
+    min-height:152px!important;
+    max-height:152px!important;
+    grid-template-rows:76px 34px 14px!important;
+  }
+}
