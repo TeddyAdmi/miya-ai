@@ -114,7 +114,8 @@ module.exports = async function handler(req, res) {
       "Change only the exact body part or object explicitly named in the user instruction. Keep every other visible pixel and detail unchanged wherever possible.",
       "IDENTITY LOCK: Preserve the exact person in the source photo, including face shape, eye shape, nose, lips, facial proportions, skin tone, hairline, apparent ethnicity, expression, and gaze. Do not reinterpret the face or change the ethnicity represented in the source. Never replace or beautify the person.",
       "For a pose edit, preserve the person's identity, face, expression, gaze, head angle, neck, shoulders, torso, hips, legs, feet, stance, body scale, and every unmentioned limb in exactly the same position. Do not move the person or camera. If only one arm/hand is mentioned, edit only that arm/hand and the tiny area needed to blend it naturally.",
-      "LOCK THE SCENE GEOMETRY: horizon height, shoreline, sea level, wave shapes and count, foam lines, clouds, architecture, trees, shadows, reflections, and all background edges must remain in the exact same locations and shapes. Do not smooth, round, simplify, merge, straighten, redraw, or stylize natural textures such as waves, hair, fabric, grass, or foliage.",
+      "LOCK THE SCENE GEOMETRY: horizon height, sun center and apparent size, shoreline, sea level, each visible wave crest and trough, wave spacing, foam lines, clouds, shadows, reflections, and all background edges must remain in the exact same locations and shapes. The sun must not move down or sideways; the sea and waves must not move, bend, merge, smooth, round, simplify, or be redrawn. Treat the source as a fixed photograph, not a scene to regenerate.",
+      "LOCK SUBJECT PLACEMENT: keep the woman at the exact same x/y position, scale, distance from camera, silhouette, torso angle, hips, legs, feet, and head position. Do not shift her left or right or make her appear farther away. Change only the explicitly requested limb and only the minimum pixels around its joint needed for a natural edit.",
       "Do not crop, zoom, pan, tilt, recenter, shift, resize the canvas, change perspective, alter the aspect ratio, or change composition. Preserve the source framing and spatial relationships.",
       "Do not improve, beautify, regenerate, or otherwise modify anything that the user did not explicitly ask to change. Do not change lighting, color grading, sharpness, texture, or detail in untouched areas.",
       "If the requested change cannot be made without altering unrelated parts of the image, prioritize preserving the original image and make the smallest possible localized change.",
@@ -128,7 +129,7 @@ module.exports = async function handler(req, res) {
     const qualitySizes={
       "1K":{"16:9":"1312x736","9:16":"736x1312","1:1":"1024x1024","3:4":"864x1152","4:3":"1152x864","2:3":"832x1248","3:2":"1248x832","21:9":"1568x672"},
       "2K":{"16:9":"2624x1472","9:16":"1472x2624","1:1":"2048x2048","3:4":"1728x2304","4:3":"2304x1728","2:3":"1664x2496","3:2":"2496x1664","21:9":"3136x1344"},
-      "4K":{"16:9":"5248x2944","9:16":"2944x5248","1:1":"4096x4096","3:4":"3456x4608","4:3":"4608x3456","2:3":"3328x4992","3:2":"4992x3328","21:9":"6272x2688"}
+      "4K":{"16:9":"4096x2304","9:16":"2304x4096","1:1":"4096x4096","3:4":"3072x4096","4:3":"4096x3072","2:3":"2730x4096","3:2":"4096x2730","21:9":"4096x1755"}
     };
     // Use 4K for edits to retain detail in fine textures; keep the user's selected quality for new images.
     const quality=source?"4K":requestedQuality;
@@ -145,7 +146,28 @@ module.exports = async function handler(req, res) {
     });
     const raw=await upstream.text();
     let data={};try{data=raw?JSON.parse(raw):{}}catch{}
-    if(!upstream.ok) return res.status(upstream.status>=400&&upstream.status<500?upstream.status:502).json({ok:false,error:"AGNES_IMAGE_FAILED",message:data?.error?.message||data?.message||raw||("Agnes HTTP "+upstream.status),upstreamStatus:upstream.status});
+    if(!upstream.ok) {
+      const upstreamMessage=String(data?.error?.message||data?.message||raw||("Agnes HTTP "+upstream.status));
+      if(upstream.status===429) {
+        return res.status(429).json({
+          ok:false,
+          error:"AGNES_IMAGE_RATE_LIMITED",
+          message:"Agnes временно ограничил бесплатные запросы. Это лимит сервиса, а не ошибка Miya. Подожди перед следующей генерацией и попробуй ещё раз; повторные запросы подряд могут снова получить 429.",
+          upstreamStatus:429,
+          upstreamMessage:upstreamMessage.slice(0,500)
+        });
+      }
+      if(upstream.status===400 && /exceeds maximum 4096x4096/i.test(upstreamMessage)) {
+        return res.status(502).json({
+          ok:false,
+          error:"AGNES_IMAGE_SIZE_LIMIT",
+          message:"Agnes отклонил размер изображения. Размеры 4K в Miya исправлены с учётом ограничения 4096×4096. Обнови страницу после деплоя и повтори запрос.",
+          upstreamStatus:400,
+          upstreamMessage:upstreamMessage.slice(0,300)
+        });
+      }
+      return res.status(upstream.status>=400&&upstream.status<500?upstream.status:502).json({ok:false,error:"AGNES_IMAGE_FAILED",message:upstreamMessage,upstreamStatus:upstream.status});
+    }
     const urls=Array.isArray(data?.data)?data.data.map(x=>x?.url).filter(x=>typeof x==="string"&&/^https?:\/\//i.test(x)):[];
     if(!urls.length) return res.status(502).json({ok:false,error:"AGNES_IMAGE_URL_MISSING",providerResponse:data});
     return res.status(200).json({ok:true,mode:"image",status:"completed",provider:"Agnes",model:"Agnes Image 2.5 Flash",imageUrl:urls[0],imageUrls:urls,count:urls.length,meta:{freeCandidate:true,size:outputSize,ratio,quality,edit:Boolean(source)}});
