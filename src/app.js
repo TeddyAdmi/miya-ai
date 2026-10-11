@@ -2412,15 +2412,16 @@ async function generateAgnesImage(prompt){
    const bar=loader?.querySelector(".generation-progress-bar span");if(bar)bar.style.width=v+"%";
    if(percent)percent.textContent=v+"%";
    if(composerProgress)composerProgress.textContent=v+"%";
+   const status=$("#composerStatus");if(status)status.textContent=displayModel+" · "+v+"%";
  };
  const updateProgress=()=>{
    const elapsed=Math.max(0,Date.now()-progressStartedAt);
-   setProgress(1+Math.min(98,elapsed/60000*98));
+   setProgress(1+Math.min(98,elapsed/40000*98));
  };
  setProgress(1);
  progressTimer=setInterval(updateProgress,1000);
  try{
-   $("#composerStatus").textContent=displayModel+" · создание…";
+   $("#composerStatus").textContent=displayModel+" · 1%";
    const ratioChoice=String($("#composerRatio")?.value||"auto");
    let selectedRatio=["1:1","3:4","4:3","16:9","9:16","2:3","3:2","21:9"].includes(ratioChoice)?ratioChoice:"16:9";
    if(ratioChoice==="auto"&&referenceImage){
@@ -2516,11 +2517,11 @@ async function generateImage(prompt){
  };
  const updateProgress=()=>{
   const elapsed=Math.max(0,Date.now()-progressStartedAt);
-  setProgress(1+Math.min(98,elapsed/60000*98));
+  setProgress(1+Math.min(98,elapsed/40000*98));
  };
  setProgress(1);
  fakeTimer=setInterval(updateProgress,1000);
- $("#composerStatus").textContent=hasFileUpload?displayModel+" · загрузка файла…":displayModel+" · создание…";
+ $("#composerStatus").textContent=hasFileUpload?displayModel+" · загрузка файла…":displayModel+" · 1%";
  try{
   const payload={
    prompt,

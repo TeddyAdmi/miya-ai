@@ -3512,3 +3512,47 @@ body.light .generation-loading:not(.video-generation-loading){
   .generation-loading:not(.video-generation-loading) .generation-progress{gap:12px!important}
   .generation-loading:not(.video-generation-loading) .progress-copy b{font-size:12px!important}
 }
+
+
+/* Compact image progress card: size it to the title, progress ring and model name. */
+.generation-loading:not(.video-generation-loading){
+  display:flex!important;
+  grid-column:auto!important;
+  justify-self:start!important;
+  align-self:start!important;
+  width:max-content!important;
+  max-width:calc(100vw - 24px)!important;
+  min-width:0!important;
+  min-height:0!important;
+  height:auto!important;
+  padding:12px 14px!important;
+  box-sizing:border-box!important;
+  overflow:visible!important;
+}
+.generation-loading:not(.video-generation-loading) .generation-progress{
+  display:flex!important;
+  width:max-content!important;
+  max-width:100%!important;
+  min-width:0!important;
+  gap:14px!important;
+  overflow:visible!important;
+}
+.generation-loading:not(.video-generation-loading) .progress-copy{
+  flex:0 0 auto!important;
+  width:max-content!important;
+  max-width:calc(100vw - 110px)!important;
+  min-width:0!important;
+  overflow:visible!important;
+}
+.generation-loading:not(.video-generation-loading) .progress-copy b{
+  width:max-content!important;
+  max-width:100%!important;
+  white-space:nowrap!important;
+  overflow:visible!important;
+}
+.generation-loading:not(.video-generation-loading) .progress-model{
+  max-width:100%!important;
+  white-space:nowrap!important;
+  overflow:hidden!important;
+  text-overflow:ellipsis!important;
+}
