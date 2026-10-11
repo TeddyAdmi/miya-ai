@@ -1057,36 +1057,20 @@ function buildMediaCard(item,{video=false}={}){
    }
    media.loading="eager";
    media.fetchPriority="high";
-   if(isAgnesPreview){
-     // Check IndexedDB BEFORE assigning a network URL. Once an Agnes image has
-     // been cached, a site reload must paint the stored Blob without downloading
-     // the provider image again.
-     resolveMediaUrl(item).then(url=>{
-       if(!url||mediaFailed||!media.isConnected)return;
-       if(url.startsWith("blob:")){
-         setImageSource(url);
-         return;
-       }
-       if(!isDeadVheer){
-         const source=proxyUrl||url;
-         media.addEventListener("load",()=>{cacheMedia(item.id,source,"image")},{once:true});
-         setImageSource(source);
-       }
-     }).catch(()=>{});
-   }else{
-     const initialImageUrl=proxyUrl||directUrl;
-     if(!isDeadVheer&&initialImageUrl)media.src=initialImageUrl;
-     resolveMediaUrl(item).then(url=>{
-       if(!url||mediaFailed)return;
-       if(url.startsWith("blob:")){setImageSource(url);return}
-       if(proxyUrl){
-         const optimized=new Image();optimized.decoding="async";
-         optimized.onload=()=>{if(!mediaFailed&&media.isConnected)setImageSource(proxyUrl)};
-         optimized.onerror=()=>{};
-         optimized.src=proxyUrl;
-       }else if(!media.src&&!isDeadVheer)setImageSource(url);
-     }).catch(()=>{});
+   const initialImageUrl=proxyUrl||directUrl;
+   // Use the same immediate-first-paint path for every image model. The
+   // same-origin raw proxy avoids Agnes CORS and Sharp conversion delays.
+   if(!isDeadVheer&&initialImageUrl){
+     media.addEventListener("load",()=>{cacheMedia(item.id,initialImageUrl,"image")},{once:true});
+     media.src=initialImageUrl;
    }
+   // If a local IndexedDB copy exists, swap it in as soon as it is available.
+   // This keeps repeat visits independent of provider latency for every model.
+   resolveMediaUrl(item).then(url=>{
+     if(!url||mediaFailed||!media.isConnected)return;
+     if(url.startsWith("blob:")){setImageSource(url);return}
+     if(!media.src&&!isDeadVheer)setImageSource(initialImageUrl||url);
+   }).catch(()=>{});
    if(isDeadVheer&&!proxyUrl)media.alt="Старая копия изображения";
    media.addEventListener("click",e=>{e.stopPropagation();openImageViewer(item)});
    card.appendChild(media);
@@ -1144,7 +1128,7 @@ function isVideoLibraryItem(item){
  const type=String(item.type||"").toLowerCase();
  const url=String(item.url||"");
  const model=String(item.model||"").toLowerCase();
- return type==="video"||type==="videos"||type==="mp4"||/\\.(mp4|webm|mov)(?:[?#]|$)/i.test(url)||/agnes video|ltx-2\\.3||motion synthesis|wan/i.test(model);
+ return type==="video"||type==="videos"||type==="mp4"||/\\.(mp4|webm|mov)(?:[?#]|$)/i.test(url)||/agnes video|ltx-2\\.3|motion synthesis|wan/i.test(model);
 }
 function isStoredVideo(item){
  if(!item||typeof item.url!=="string")return false;
@@ -1153,7 +1137,7 @@ function isStoredVideo(item){
  const url=String(item.url||"");
  const model=String(item.model||"").toLowerCase();
  if(/miya voice|voice|tts|text[- ]to[- ]speech/i.test(model))return false;
- return type==="video"||type==="videos"||/\.(mp4|webm|mov)(?:[?#]|$)/i.test(url)||/ltx-2[.-]3||motion synthesis|agnes video/i.test(model);
+ return type==="video"||type==="videos"||/\.(mp4|webm|mov)(?:[?#]|$)/i.test(url)||/ltx-2[.-]3|motion synthesis|agnes video/i.test(model);
 }
 function renderVideoLibrary(){
  const c=$("#canvas"),hidden=getHiddenWallIds("video"),items=getLibrary().filter(x=>isStoredVideo(x)&&!hidden.has(String(x.id)));
@@ -2378,7 +2362,7 @@ function showLoading(){
   const selectedModel=referenceImage?($("#composerModel")?.value||"Nano Banana 2"):($("#composerModel")?.value||"FLUX Dev");
   const card=document.createElement("div");card.className="generation-loading"+(referenceImage?" has-upload":" no-upload");
   card.dataset.model=selectedModel;
-  card.innerHTML='<div class="generation-progress"><div class="progress-circle is-active"><span class="progress-percent">0%</span></div><div class="progress-copy"><b>Создание изображения</b><span class="progress-model"></span></div></div><div class="generation-progress-bar"><span></span></div>';
+  card.innerHTML='<div class="generation-progress"><div class="progress-circle is-active"><span class="progress-percent">1%</span></div><div class="progress-copy"><b>Создание изображения</b><span class="progress-model"></span></div></div>';
   card.querySelector(".progress-model").textContent=selectedModel;
   grid.prepend(card);scrollImagesToTop();return;
  }
@@ -2428,7 +2412,7 @@ async function generateAgnesImage(prompt){
  };
  const updateProgress=()=>{
    const elapsed=Math.max(0,Date.now()-progressStartedAt);
-   setProgress(1+Math.min(98,elapsed/100000*98));
+   setProgress(1+Math.min(98,elapsed/60000*98));
  };
  setProgress(1);
  progressTimer=setInterval(updateProgress,1000);
@@ -2529,7 +2513,7 @@ async function generateImage(prompt){
  };
  const updateProgress=()=>{
   const elapsed=Math.max(0,Date.now()-progressStartedAt);
-  setProgress(1+Math.min(98,elapsed/100000*98));
+  setProgress(1+Math.min(98,elapsed/60000*98));
  };
  setProgress(1);
  fakeTimer=setInterval(updateProgress,1000);
