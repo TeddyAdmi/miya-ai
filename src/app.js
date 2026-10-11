@@ -61,18 +61,19 @@ body.light .generation-loading:not(.video-generation-loading) .progress-circle::
  st.textContent=`body.light :is(h1,h2,h3,h4,h5,h6,p,label,small,strong,b,li,dt,dd,legend,summary,button,input,textarea,select,option,a,.composer-status,.composer-progress,.progress-model,.section-title,.section-subtitle,.subtitle,.muted,.text-muted,.form-label,.field-label){color:#111!important}
 body.light #composerStatus,body.light #composerProgress,body.light .generation-loading .progress-circle .progress-percent{color:#111!important;text-shadow:none!important}
 body.light .generation-loading:not(.video-generation-loading) .progress-copy b,body.light .generation-loading:not(.video-generation-loading) .progress-model{color:#111!important}
-body.light :is(.ico,.nav-icon,.profile-icon,.icon-more,.media-action,.floating-theme,.floating-wall-clear,.composer-copy,.composer-paste,.composer-trash,.mic,.attach,.send-icon,.chat-attachment-remove,.image-viewer-controls button,.image-viewer-nav){color:#123b70!important}
-body.light button svg,body.light .composer svg,body.light .media-action svg,body.light .floating-theme svg,body.light .floating-wall-clear svg{stroke:#123b70!important}
-body.light button svg [fill="currentColor"],body.light button svg [stroke="currentColor"]{fill:#123b70!important;stroke:#123b70!important}
-body.light .side-brand b{color:#123b70!important}
-body.light .side-logo{filter:none!important}
-body.light .side-logo svg path{fill:#123b70!important;stroke:#123b70!important}
-body.light .side-logo svg path:nth-of-type(2){fill:#fff!important;stroke:none!important}
-body.light .side-logo svg path:nth-of-type(3){fill:#123b70!important;stroke:none!important}
+body.light :is(.ico,.nav-icon,.profile-icon,.icon-more,.media-action,.floating-theme,.floating-wall-clear,.composer-copy,.composer-paste,.composer-trash,.mic,.attach,.send-icon,.chat-attachment-remove,.image-viewer-controls button,.image-viewer-nav){color:#000!important}
+body.light button svg:not(.side-logo svg),body.light .composer svg,body.light .media-action svg,body.light .floating-theme svg,body.light .floating-wall-clear svg{stroke:#000!important}
+body.light button svg [fill="currentColor"],body.light button svg [stroke="currentColor"]{fill:#000!important;stroke:#000!important}
+body.light .side-brand b{color:#000!important}
+body.light .side-logo{filter:drop-shadow(0 0 16px rgba(158,94,255,.42))!important}
+body.light .side-logo svg path{stroke:none!important}
+body.light #composerInput{max-height:none!important}
+body.light .chat-welcome.section-welcome .hero-mark.image{box-shadow:inset 0 1px 0 rgba(255,255,255,.55),0 8px 18px rgba(68,61,160,.24),0 0 32px rgba(125,85,255,.18)!important}
+body.light .chat-welcome.section-welcome .hero-mark.image .icon-image{filter:drop-shadow(0 1px 0 rgba(255,255,255,.65)) drop-shadow(0 2px 2px rgba(24,20,75,.25))}
 body.light .composer-attachment button{background:#123b70!important;color:#fff!important;border-color:#123b70!important;font-weight:800!important;font-size:14px!important;line-height:13px!important}
 body.light .composer-attachment button:hover{background:#7048b8!important;color:#fff!important;border-color:#7048b8!important}
 body.light .generation-loading .progress-circle .progress-percent{color:#111!important}
-body.light .generation-loading .progress-copy b,body.light .generation-loading .progress-model{color:#111!important}\nbody.light .generation-loading .progress-percent{color:#111!important;background:transparent!important;text-shadow:none!important}\nbody.light .chat-attachment-thumb .chat-attachment-remove,body.light .composer-attachment button{display:grid!important;place-items:center!important;background:#123b70!important;color:#fff!important;border:1px solid #123b70!important;opacity:1!important;text-shadow:none!important}\nbody.light .chat-attachment-thumb .chat-attachment-remove svg,body.light .composer-attachment button svg{stroke:#fff!important;fill:none!important}\nbody.light .side-logo svg,body.light .side-logo svg path{stroke:#123b70!important}\nbody.light .side-logo svg path{fill:#123b70!important}\nbody.light .side-logo svg path:nth-of-type(2){fill:#fff!important;stroke:none!important}`;
+body.light .generation-loading .progress-copy b,body.light .generation-loading .progress-model{color:#111!important}\nbody.light .generation-loading .progress-percent{color:#111!important;background:transparent!important;text-shadow:none!important}\nbody.light .chat-attachment-thumb .chat-attachment-remove,body.light .composer-attachment button{display:grid!important;place-items:center!important;background:#123b70!important;color:#fff!important;border:1px solid #123b70!important;opacity:1!important;text-shadow:none!important}\nbody.light .chat-attachment-thumb .chat-attachment-remove svg,body.light .composer-attachment button svg{stroke:#fff!important;fill:none!important}\nbody.light .side-logo svg,body.light .side-logo svg path{stroke:none!important}`;
  document.head.appendChild(st);
 })();
 (function ensureChatSpeechAndSelectionStyles(){
@@ -2277,7 +2278,7 @@ function toast(message){
  t.textContent=message;t.classList.add("show");clearTimeout(window.__toast);
  window.__toast=setTimeout(()=>t.classList.remove("show"),2600)
 }
-function syncInput(){const i=$("#composerInput");if(!i)return;const minHeight=42;const lineHeight=Number.parseFloat(getComputedStyle(i).lineHeight)||20;const maxHeight=Math.round(minHeight+(lineHeight*9));i.style.height="auto";i.style.overflowY="hidden";const contentHeight=Math.max(minHeight,i.scrollHeight);const h=Math.min(maxHeight,contentHeight);i.style.height=h+"px";i.style.overflowY=contentHeight>maxHeight?"auto":"hidden";const row=i.closest(".composer-input-row");if(row)row.style.height=""}
+function syncInput(){const i=$("#composerInput");if(!i)return;const cs=getComputedStyle(i);const minHeight=42;const lineHeight=Number.parseFloat(cs.lineHeight)||14.5;const padding=(Number.parseFloat(cs.paddingTop)||0)+(Number.parseFloat(cs.paddingBottom)||0);const maxHeight=Math.ceil(lineHeight*10+padding);i.style.maxHeight="none";i.style.height="auto";i.style.overflowY="hidden";const contentHeight=Math.max(minHeight,i.scrollHeight);const h=Math.min(maxHeight,contentHeight);i.style.height=h+"px";i.style.overflowY=contentHeight>maxHeight?"auto":"hidden";const row=i.closest(".composer-input-row");if(row)row.style.height=""}
 function renderAssistantQuoteBlock(){
  const composer=$("#composer");if(!composer)return;
  let block=composer.querySelector(".composer-quote-block");
