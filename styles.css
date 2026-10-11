@@ -3666,3 +3666,14 @@ body.light .generation-loading:not(.video-generation-loading) .progress-circle::
 .chat-welcome.section-welcome{margin-bottom:0!important;padding-bottom:0!important}
 .chat-welcome.section-welcome p{margin-bottom:12px!important}
 .chat-welcome.section-welcome .hero-mark{margin-bottom:12px!important}
+
+
+/* Ensure the final chat preview dimensions outrank the runtime legacy override. */
+.composer.mode-chat .chat-attachment-list .chat-attachment-thumb{
+  flex:0 0 48px!important;width:48px!important;min-width:48px!important;
+  height:48px!important;min-height:48px!important;max-height:48px!important;
+}
+.composer.mode-chat .chat-attachment-list .chat-attachment-thumb img{
+  width:48px!important;height:48px!important;min-width:48px!important;min-height:48px!important;
+  max-width:48px!important;max-height:48px!important;object-fit:cover!important;
+}
