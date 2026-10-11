@@ -3677,3 +3677,34 @@ body.light .generation-loading:not(.video-generation-loading) .progress-circle::
   width:48px!important;height:48px!important;min-width:48px!important;min-height:48px!important;
   max-width:48px!important;max-height:48px!important;object-fit:cover!important;
 }
+
+
+/* Final consistent welcome stack: heading and description first, icon directly beneath. */
+.chat-welcome.section-welcome{
+  display:flex!important;flex-direction:column!important;align-items:center!important;
+  justify-content:flex-start!important;gap:0!important;
+  padding:0!important;margin:0 auto!important;
+  transform:translateY(-24px)!important;
+}
+.chat-welcome.section-welcome .mini-badge{order:0!important;margin:0 0 5px!important}
+.chat-welcome.section-welcome h2{order:1!important;margin:0 0 6px!important}
+.chat-welcome.section-welcome p{order:2!important;margin:0 auto 10px!important;line-height:1.5!important}
+.chat-welcome.section-welcome .hero-mark{
+  order:3!important;margin:0!important;flex:0 0 58px!important;
+}
+.chat-main .chat-welcome.section-welcome{padding:0!important;transform:translateY(-24px)!important}
+@media(max-width:800px){
+  .chat-welcome.section-welcome{transform:translateY(-14px)!important}
+  .chat-main .chat-welcome.section-welcome{transform:translateY(-14px)!important}
+}
+/* Compact the attached image preview slightly in Images and Video. */
+.composer.mode-images .composer-attachment.has-image,
+.composer.mode-video .composer-attachment.has-image{
+  width:45px!important;height:45px!important;min-width:45px!important;max-width:45px!important;
+  min-height:45px!important;max-height:45px!important;flex:0 0 45px!important;
+}
+.composer.mode-images .composer-attachment.has-image img,
+.composer.mode-video .composer-attachment.has-image img{
+  width:45px!important;height:45px!important;min-width:45px!important;max-width:45px!important;
+  min-height:45px!important;max-height:45px!important;object-fit:cover!important;
+}
