@@ -3307,3 +3307,28 @@ body.light .chat-row.user .chat-bubble{
   margin-top:0!important;
   margin-bottom:0!important;
 }
+
+
+/* Fix: composer-wrap is a horizontal flex row; its flex-basis must not be 152px wide. */
+@media(min-width:801px){
+  .composer.mode-chat,
+  .composer.mode-images,
+  .composer.mode-video{
+    flex:0 1 auto!important;
+    flex-basis:auto!important;
+    width:min(900px,calc(100vw - 265px))!important;
+    min-width:0!important;
+    height:152px!important;
+    min-height:152px!important;
+    max-height:152px!important;
+  }
+  .composer.mode-chat #composerInput,
+  .composer.mode-images #composerInput,
+  .composer.mode-video #composerInput{
+    width:100%!important;
+    min-width:0!important;
+    height:76px!important;
+    min-height:76px!important;
+    max-height:76px!important;
+  }
+}
