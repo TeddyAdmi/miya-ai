@@ -109,16 +109,23 @@ module.exports = async function handler(req, res) {
       "USER PROMPT:\n"+prompt,
       "FINAL ETHNICITY RULE: Unless the user explicitly names another ethnicity, every newly generated human must have unmistakably natural Slavic / Eastern European appearance. Do not generate East Asian or other Asian facial features by default."
     ].join("\n");
-    const editPrompt=[
+    const editRules=[
       "STRICT LOCAL PHOTO EDIT: modify the supplied source photograph; do not recreate the scene.",
-      "Change only the exact body part or object explicitly named in the user's instruction. All other pixels and scene details must remain as close to the source as possible.",
-      "For a request to lower the woman's LEFT arm: lower ONLY the woman's own anatomical left arm naturally beside her body. Keep her RIGHT arm raised in exactly its original position. Do not lower, move, or alter the right arm.",
-      "Keep the woman's apparent size, distance from camera, height and position in the frame, body proportions, stance, torso, head, face, hair, clothing, legs, and body orientation unchanged.",
-      "Do not zoom out or in, change camera distance, reframe, crop, resize the subject, change perspective, or regenerate the whole scene.",
-      "Keep the football field, grass, lines, background, lighting, shadows, colors, camera viewpoint, and framing unchanged. Do not add, remove, or alter anything else.",
-      "If the requested one-part change cannot be made reliably, prefer preserving the original photograph over changing unrelated details.",
-      "USER EDIT INSTRUCTION:\\n"+prompt
-    ].join("\\n");
+      "Change only the exact body part or object explicitly named in the user's instruction. Keep every unrelated detail as close to the source as possible.",
+      "Keep the original framing, camera viewpoint, composition, subject identity, apparent subject size, distance from camera, position in frame, proportions, pose, lighting, colors, textures, and background unchanged unless the user explicitly asks to change one of them.",
+      "Do not zoom in or out, change camera distance, reframe, crop, resize the subject, change perspective, or regenerate the whole scene.",
+      "If the requested local change cannot be made reliably, prefer preserving the original photograph over changing unrelated details."
+    ];
+    const lowerLeftArmRequest=/(?:лев\\w*\\s+рук\\w*.*(?:опуст|вниз|опуск)|(?:опуст|опуск|вниз).*лев\\w*\\s+рук\\w*)/iu.test(prompt);
+    if(lowerLeftArmRequest){
+      editRules.push(
+        "SPECIAL ONE-ARM EDIT: lower ONLY the woman's own anatomical LEFT arm naturally beside her body.",
+        "Keep the woman's RIGHT arm raised in exactly its original position, angle, and shape. Do not lower, move, or alter the right arm.",
+        "Keep her torso, head, face, hair, clothing, legs, stance, body orientation, and apparent size in the frame unchanged.",
+        "Keep the football field, grass, field lines, background, lighting, shadows, camera viewpoint, and framing unchanged. Change only the left arm and the minimum pixels needed to blend it naturally."
+      );
+    }
+    const editPrompt=[...editRules,"USER EDIT INSTRUCTION:\\n"+prompt].join("\\n");
     const qualityPrompt=source ? editPrompt : generationPrompt;
     // Use the maximum native output size supported by Agnes Image 2.5 Flash (4K).
     // Use Agnes' documented native dimensions so the requested aspect ratio is not subtly distorted.
