@@ -97,38 +97,8 @@ module.exports = async function handler(req, res) {
       }
     }
     const n=Math.max(1,Math.min(4,Number(body.n)||1));
-    const generationPrompt=[
-      "Create a bright, vivid, premium-quality photorealistic image with rich, lively colors.",
-      "Use luminous natural lighting, clean whites, crisp highlights, balanced contrast, deep but detailed shadows, and accurate skin/material colors.",
-      "Avoid a dull, gray, muddy, desaturated, hazy, foggy, washed-out or low-contrast look.",
-      "Prioritize tack-sharp focus, high micro-contrast, fine texture detail and clean edges at pixel level.",
-      "For close-ups, preserve extremely fine facial, hair, fur, fabric and surface detail; do not blur, smear, soften or watercolor the subject.",
-      "Keep the requested composition, subject identity and scene faithful to the user prompt. Do not add decorative elements that were not requested.",
-      "HARD REQUIREMENT FOR HUMAN SUBJECTS: If the user asks for a girl, woman, boy, man, person, or people and does not explicitly request another ethnicity, depict the subject as clearly Slavic / Eastern European. Use believable Slavic / Eastern European facial structure and natural regional features. Do NOT default to East Asian, Southeast Asian, or other Asian facial features. This requirement applies even when the user writes only \"girl\" or \"woman\". Only use another ethnicity when the user explicitly asks for it.",
-      "Use the same practical output quality as FLUX Dev, prioritizing fast-loading preview size without sacrificing useful detail.",
-      "USER PROMPT:\n"+prompt,
-      "FINAL ETHNICITY RULE: Unless the user explicitly names another ethnicity, every newly generated human must have unmistakably natural Slavic / Eastern European appearance. Do not generate East Asian or other Asian facial features by default."
-    ].join("\n");
-    const editRules=[
-      "STRICT LOCAL PHOTO EDIT: modify the supplied source photograph; do not recreate the scene.",
-      "Change only the exact body part or object explicitly named in the user's instruction. Keep every unrelated detail as close to the source as possible.",
-      "Keep the original framing, camera viewpoint, composition, subject identity, apparent subject size, distance from camera, position in frame, proportions, pose, lighting, colors, textures, and background unchanged unless the user explicitly asks to change one of them.",
-      "Do not zoom in or out, change camera distance, reframe, crop, resize the subject, change perspective, or regenerate the whole scene.",
-      "If the requested local change cannot be made reliably, prefer preserving the original photograph over changing unrelated details."
-    ];
-    const lowerLeftArmRequest=/(?:лев\w*\s+рук\w*.*(?:опуст|вниз|опуск)|(?:опуст|опуск|вниз).*лев\w*\s+рук\w*)/iu.test(prompt);
-    if(lowerLeftArmRequest){
-      editRules.push(
-        "CRITICAL: THIS IS A SINGLE-ARM EDIT, NOT A POSE CHANGE. Lower exactly ONE arm: the woman's LEFT arm. Leave the other arm completely unchanged.",
-        "Identify the woman's left arm from the source photograph before editing. Move that one arm down naturally alongside her body. Do not lower both arms, do not mirror the pose, and do not change the pose of the whole person.",
-        "The woman's other arm MUST remain raised exactly as in the source photo, with the same hand position, elbow bend, shoulder position, angle, and silhouette. If necessary, preserve that arm exactly rather than trying to improve it.",
-        "Keep the woman's face, hair, expression, torso, clothing, legs, feet, stance, body orientation, body proportions, and size and position in the frame unchanged.",
-        "Keep the football field, grass, field lines, horizon, background, lighting, shadows, camera viewpoint, and framing unchanged.",
-        "Edit only the left arm and the smallest surrounding area required to blend it into the photograph. Do not regenerate or reinterpret any other part of the image."
-      );
-    }
-    const editPrompt=[...editRules,"USER EDIT INSTRUCTION:\n"+prompt].join("\n");
-    const qualityPrompt=source ? editPrompt : generationPrompt;
+    // Send the user's prompt to Agnes unchanged, without added instructions.
+    const qualityPrompt=prompt;
     // Use the maximum native output size supported by Agnes Image 2.5 Flash (4K).
     // Use Agnes' documented native dimensions so the requested aspect ratio is not subtly distorted.
     const qualitySizes={
