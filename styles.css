@@ -3101,7 +3101,8 @@ body.light .chat-row.user .chat-bubble{
 .composer.mode-chat{
   display:grid!important;
   grid-template-columns:34px auto minmax(0,1fr) 34px 34px!important;
-  grid-template-rows:minmax(76px,auto) auto auto!important;
+  /* Match the exact input and control-rail geometry used by Images and Video. */
+  grid-template-rows:minmax(76px,auto) 34px auto!important;
   align-items:center!important;
   column-gap:8px!important;
   row-gap:5px!important;
