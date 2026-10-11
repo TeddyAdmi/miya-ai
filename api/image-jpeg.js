@@ -61,6 +61,23 @@ module.exports = async function handler(req, res) {
       return res.status(415).json({ ok: false, error: "UPSTREAM_NOT_IMAGE" });
     }
 
+    // Agnes PNGs are already valid images. Serve them unchanged when raw=1:
+    // no Sharp decode/re-encode, same-origin URL for reliable wall reloads.
+    if (String(req.query?.raw || "") === "1") {
+      const length = Number(upstream.headers.get("content-length") || 0);
+      if (length > 30 * 1024 * 1024) {
+        return res.status(413).json({ ok: false, error: "IMAGE_TOO_LARGE" });
+      }
+      const input = Buffer.from(await upstream.arrayBuffer());
+      if (!input.length || input.length > 30 * 1024 * 1024) {
+        return res.status(413).json({ ok: false, error: "IMAGE_TOO_LARGE" });
+      }
+      res.setHeader("Content-Type", type.split(";")[0]);
+      res.setHeader("Content-Length", String(input.length));
+      res.setHeader("Content-Disposition", 'inline; filename="miya-image"');
+      return res.status(200).send(input);
+    }
+
     const input = Buffer.from(await upstream.arrayBuffer());
     if (!input.length || input.length > 30 * 1024 * 1024) {
       return res.status(413).json({ ok: false, error: "IMAGE_TOO_LARGE" });
