@@ -2316,24 +2316,27 @@ function renderAssistantQuoteBlock(){
 function modeHero(){
  if(mode==="chat") return `<div class="studio-room clean-canvas chat-room">
    <div class="chat-welcome section-welcome">
-     <div class="hero-mark"><span class="nav-icon icon-spark" aria-hidden="true"></span></div><div class="mini-badge">MIYA CHAT</div>
+     <div class="mini-badge">MIYA CHAT</div>
      <h2>Общайся с Miya</h2>
      <p>Задавай вопросы, придумывай идеи, создавай промпты и работай с контентом.</p>
+     <div class="hero-mark"><span class="nav-icon icon-spark" aria-hidden="true"></span></div>
    </div>
  </div>`;
- if(mode==="voice") return `<div class="studio-room clean-canvas"><div class="chat-welcome section-welcome"><div class="hero-mark voice"><span class="nav-icon icon-voice" aria-hidden="true"></span></div><div class="mini-badge">MIYA VOICE</div><h2>Создавай голоса</h2><p>Создавай новые голоса из текста с помощью AI и сохраняй их на стене.</p></div></div>`;
+ if(mode==="voice") return `<div class="studio-room clean-canvas"><div class="chat-welcome section-welcome"><div class="mini-badge">MIYA VOICE</div><h2>Создавай голоса</h2><p>Создавай новые голоса из текста с помощью AI и сохраняй их на стене.</p><div class="hero-mark voice"><span class="nav-icon icon-voice" aria-hidden="true"></span></div></div></div>`;
  if(mode==="images") return `<div class="studio-room clean-canvas">
    <div class="chat-welcome section-welcome">
-     <div class="hero-mark image"><span class="nav-icon icon-image" aria-hidden="true"></span></div><div class="mini-badge">MIYA IMAGES</div>
+     <div class="mini-badge">MIYA IMAGES</div>
      <h2>Создавай изображения</h2>
      <p>Создавай новые изображения или редактируй исходники с помощью AI.</p>
+     <div class="hero-mark image"><span class="nav-icon icon-image" aria-hidden="true"></span></div>
    </div>
  </div>`;
  return `<div class="studio-room clean-canvas">
    <div class="chat-welcome section-welcome">
-     <div class="hero-mark video"><span class="nav-icon icon-video" aria-hidden="true"></span></div><div class="mini-badge">MIYA VIDEO</div>
+     <div class="mini-badge">MIYA VIDEO</div>
      <h2>Создавай видео</h2>
      <p>Создавай видео из текста или оживляй загруженные изображения.</p>
+     <div class="hero-mark video"><span class="nav-icon icon-video" aria-hidden="true"></span></div>
    </div>
  </div>`;
 }
