@@ -119,10 +119,12 @@ module.exports = async function handler(req, res) {
     const lowerLeftArmRequest=/(?:лев\w*\s+рук\w*.*(?:опуст|вниз|опуск)|(?:опуст|опуск|вниз).*лев\w*\s+рук\w*)/iu.test(prompt);
     if(lowerLeftArmRequest){
       editRules.push(
-        "SPECIAL ONE-ARM EDIT: lower ONLY the woman's own anatomical LEFT arm naturally beside her body.",
-        "Keep the woman's RIGHT arm raised in exactly its original position, angle, and shape. Do not lower, move, or alter the right arm.",
-        "Keep her torso, head, face, hair, clothing, legs, stance, body orientation, and apparent size in the frame unchanged.",
-        "Keep the football field, grass, field lines, background, lighting, shadows, camera viewpoint, and framing unchanged. Change only the left arm and the minimum pixels needed to blend it naturally."
+        "CRITICAL: THIS IS A SINGLE-ARM EDIT, NOT A POSE CHANGE. Lower exactly ONE arm: the woman's LEFT arm. Leave the other arm completely unchanged.",
+        "Identify the woman's left arm from the source photograph before editing. Move that one arm down naturally alongside her body. Do not lower both arms, do not mirror the pose, and do not change the pose of the whole person.",
+        "The woman's other arm MUST remain raised exactly as in the source photo, with the same hand position, elbow bend, shoulder position, angle, and silhouette. If necessary, preserve that arm exactly rather than trying to improve it.",
+        "Keep the woman's face, hair, expression, torso, clothing, legs, feet, stance, body orientation, body proportions, and size and position in the frame unchanged.",
+        "Keep the football field, grass, field lines, horizon, background, lighting, shadows, camera viewpoint, and framing unchanged.",
+        "Edit only the left arm and the smallest surrounding area required to blend it into the photograph. Do not regenerate or reinterpret any other part of the image."
       );
     }
     const editPrompt=[...editRules,"USER EDIT INSTRUCTION:\n"+prompt].join("\n");
