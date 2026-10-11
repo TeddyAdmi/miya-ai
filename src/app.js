@@ -443,7 +443,8 @@ function saveMedia(type,url,prompt="",model="",format=""){
  const rawUrl=String(url||"").trim();
  if(type==="image"&&isInvalidImageToolSource(rawUrl))return;
  const id=type+"-"+Date.now()+"-"+Math.random().toString(36).slice(2);
- const normalizedUrl=type==="image"?jpegImageUrl(rawUrl):rawUrl;
+ const isAgnesImage=type==="image"&&/^Agnes Image/i.test(String(model||""));
+ const normalizedUrl=type==="image"&&!isAgnesImage?jpegImageUrl(rawUrl):rawUrl;
  const item={id,type,url:normalizedUrl,prompt:String(prompt||""),model:String(model||((type==="image")?"FLUX Dev":"LTX")),format:String(format||""),createdAt:Date.now()};
  const items=getLibrary();items.unshift(item);
  try{localStorage.setItem(LIB_KEY,JSON.stringify(items.slice(0,500)))}catch{
@@ -1049,22 +1050,25 @@ function buildMediaCard(item,{video=false}={}){
      media.alt=isDeadVheer?"Старая копия изображения":"Изображение временно недоступно";
    });
    const isAgnesPreview=/^Agnes Image/i.test(String(item.model||""));
-   media.loading=isAgnesPreview?"lazy":"eager";
-   media.fetchPriority=isAgnesPreview?"low":"high";
-   if(isAgnesPreview){media.style.maxHeight="280px";media.style.objectFit="contain";media.style.objectPosition="center"}
-   // Load the normalized proxy first to avoid browser decode warnings from malformed provider files.
-   // If the proxy fails, the error handler below still falls back to the original provider URL.
-   if(!isDeadVheer&&(proxyUrl||directUrl))media.src=proxyUrl||directUrl;
-   resolveMediaUrl(item).then(url=>{
-     if(!url||mediaFailed)return;
-     if(url.startsWith("blob:")){setImageSource(url);return}
-     if(proxyUrl){
-       const optimized=new Image();optimized.decoding="async";
-       optimized.onload=()=>{if(!mediaFailed&&media.isConnected)setImageSource(proxyUrl)};
-       optimized.onerror=()=>{};
-       optimized.src=proxyUrl;
-     }else if(!media.src&&!isDeadVheer)setImageSource(url);
-   }).catch(()=>{});
+   media.loading="eager";
+   media.fetchPriority="high";
+   // Agnes outputs are already usable provider images. Show the original URL immediately
+   // instead of waiting for the JPEG proxy to download and transcode a large 4K PNG.
+   const initialImageUrl=isAgnesPreview?(directUrl||storedUrl):(proxyUrl||directUrl);
+   if(!isDeadVheer&&initialImageUrl)media.src=initialImageUrl;
+   // Do not start a second proxy preload for Agnes; it can delay or replace the visible image.
+   if(!isAgnesPreview){
+     resolveMediaUrl(item).then(url=>{
+       if(!url||mediaFailed)return;
+       if(url.startsWith("blob:")){setImageSource(url);return}
+       if(proxyUrl){
+         const optimized=new Image();optimized.decoding="async";
+         optimized.onload=()=>{if(!mediaFailed&&media.isConnected)setImageSource(proxyUrl)};
+         optimized.onerror=()=>{};
+         optimized.src=proxyUrl;
+       }else if(!media.src&&!isDeadVheer)setImageSource(url);
+     }).catch(()=>{});
+   }
    if(isDeadVheer&&!proxyUrl)media.alt="Старая копия изображения";
    media.addEventListener("click",e=>{e.stopPropagation();openImageViewer(item)});
    card.appendChild(media);
