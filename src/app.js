@@ -1,6 +1,6 @@
 const modes={
  chat:{title:"Твоя AI-комната",eyebrow:"AI CHAT",subtitle:"Общайся с Miya, придумывай идеи и управляй созданием контента.",placeholder:"Напишите сообщение или задайте вопрос Miya…",send:"Отправить",status:"AI Chat готов"},
- images:{title:"Картинки",eyebrow:"КАРТИНКИ",subtitle:"Создавай изображения с нуля или загружай исходник и описывай изменения.",placeholder:"Опиши картинку или что изменить в загруженном изображении...",send:"Создать",status:"Nano Banana 2 · создание изображения"},
+ images:{title:"Картинки",eyebrow:"КАРТИНКИ",subtitle:"Создавай изображения с нуля или загружай исходник и описывай изменения.",placeholder:"Опиши картинку или что изменить в загруженном изображении...",send:"Создать",status:"Nano Banana 2 · T2I · создание изображения"},
  video:{title:"Видео",eyebrow:"ВИДЕО",subtitle:"Создавай короткие видео по сцене, действиям и движению — со звуком.",placeholder:"Опиши сцену, действия персонажей, движение камеры и атмосферу...",send:"Создать видео",status:"OmegaTech T2V · 16:9 · 5 сек"},
 voice:{title:"Голос",eyebrow:"ГОЛОС",subtitle:"Превращай текст в естественную речь с мужскими и женскими голосами.",placeholder:"Введите текст для озвучки...",send:"Создать голос",status:"Svetlana · Female · Russia"}
 };
@@ -44,7 +44,15 @@ body.light .media-action.media-more:hover{background:rgba(0,0,0,.10)!important;b
 body.light .image-viewer-created-info{background:rgba(255,255,255,.9)!important;color:#52627a!important;border-color:rgba(40,30,60,.14)!important;box-shadow:0 4px 18px rgba(0,0,0,.12)!important}
 body.light .image-viewer-created-info .image-viewer-created-model{color:#273047!important}
 body.light .image-viewer-created-info .image-viewer-created-date{color:#64748b!important}
-@media(max-width:800px){.image-viewer-created-info{right:12px!important;bottom:12px!important;max-width:calc(100vw - 24px)!important}}`;
+@media(max-width:800px){.image-viewer-created-info{right:12px!important;bottom:12px!important;max-width:calc(100vw - 24px)!important}}
+/* Compact image progress: keep the percentage legible while shrinking the ring and aligning both labels in one row. */
+.generation-loading:not(.video-generation-loading){padding:6px 8px!important;min-height:0!important;height:auto!important;width:max-content!important;max-width:calc(100vw - 16px)!important;box-sizing:border-box!important;overflow:visible!important}
+.generation-loading:not(.video-generation-loading) .generation-progress{width:max-content!important;max-width:100%!important;gap:8px!important;justify-content:flex-start!important}
+.generation-loading:not(.video-generation-loading) .progress-circle{width:40px!important;height:40px!important;flex:0 0 40px!important}
+.generation-loading:not(.video-generation-loading) .progress-copy{display:flex!important;flex-direction:row!important;align-items:center!important;justify-content:flex-start!important;gap:8px!important;width:max-content!important;max-width:calc(100vw - 72px)!important;flex:0 1 auto!important;overflow:hidden!important}
+.generation-loading:not(.video-generation-loading) .progress-copy b,.generation-loading:not(.video-generation-loading) .progress-model{display:block!important;flex:0 0 auto!important;width:max-content!important;max-width:100%!important;white-space:nowrap!important;font-size:14px!important;line-height:1.2!important;text-align:left!important;overflow:hidden!important;text-overflow:ellipsis!important}
+body.light .generation-loading:not(.video-generation-loading) .progress-circle::before{background:rgba(255,255,255,.86)!important}
+@media(max-width:800px){.generation-loading:not(.video-generation-loading){padding:6px 8px!important}.generation-loading:not(.video-generation-loading) .progress-circle{width:38px!important;height:38px!important;flex-basis:38px!important}.generation-loading:not(.video-generation-loading) .progress-copy b,.generation-loading:not(.video-generation-loading) .progress-model{font-size:12px!important}}`;
  document.head.appendChild(st);
 })();
 (function ensureChatSpeechAndSelectionStyles(){
@@ -2366,7 +2374,7 @@ function showLoading(){
   const card=document.createElement("div");card.className="generation-loading"+(referenceImage?" has-upload":" no-upload");
   card.dataset.model=selectedModel;
   card.innerHTML='<div class="generation-progress"><div class="progress-circle is-active"><span class="progress-percent">1%</span></div><div class="progress-copy"><b>Создание изображения</b><span class="progress-model"></span></div></div>';
-  card.querySelector(".progress-model").textContent=selectedModel;
+  card.querySelector(".progress-model").textContent=imageModelLabel(selectedModel);
   grid.prepend(card);scrollImagesToTop();return;
  }
  const selectedVideoModel=$("#videoModel")?.value||"LTX-2.3 Distilled";
@@ -2514,6 +2522,7 @@ async function generateImage(prompt){
   const bar=loader?.querySelector(".generation-progress-bar span");if(bar)bar.style.width=value+"%";
   if(percent)percent.textContent=value+"%";
   if(composerProgress)composerProgress.textContent=value+"%";
+  const status=$("#composerStatus");if(status)status.textContent=displayModel+" · "+value+"%";
  };
  const updateProgress=()=>{
   const elapsed=Math.max(0,Date.now()-progressStartedAt);
@@ -2587,7 +2596,7 @@ async function generateImage(prompt){
       reject(new Error(detail));
     }
    };
-   xhr.timeout=240000;
+   xhr.timeout=modelName==="Nano Banana 2"?90000:120000;
    xhr.send(body);
   });
 ;
@@ -2617,7 +2626,7 @@ async function generateImage(prompt){
   $("#composerInput").value="";syncInput();
   $("#composerModel").value=modelName;
   $("#composerRatio").value=referenceImage?selectedRatio:$("#composerRatio").value;
-  $("#composerStatus").textContent=actualModel+" · готово";
+  $("#composerStatus").textContent=imageModelLabel(actualModel)+" · готово";
   if(composerProgress)composerProgress.textContent="100%";
   requestAnimationFrame(()=>$("#workspace")?.scrollTo({top:0,behavior:"smooth"}));
   setTimeout(()=>$("#canvas .generation-loading")?.remove(),350);
@@ -2625,8 +2634,15 @@ async function generateImage(prompt){
   if(fakeTimer){clearInterval(fakeTimer);fakeTimer=null;}
   $("#canvas .generation-loading")?.remove();
   if(composerProgress)composerProgress.textContent="";
-  toast(e.message||"Ошибка генерации");
-  $("#composerStatus").textContent=modelName+" · ошибка";
+  const timedOut=e?.message==="Сервер генерации не ответил вовремя";
+  if(timedOut){
+   const seconds=modelName==="Nano Banana 2"?90:120;
+   toast("Изображение не появилось за "+seconds+" секунд. Попробуй ещё раз или выбери другую модель.");
+   $("#composerStatus").textContent=displayModel+" · время вышло";
+  }else{
+   toast(e.message||"Ошибка генерации");
+   $("#composerStatus").textContent=displayModel+" · ошибка";
+  }
  }finally{
   $("#composerSend").disabled=false;
   if(fakeTimer){clearInterval(fakeTimer);fakeTimer=null;}
@@ -3126,7 +3142,7 @@ async function generateAgnesVideo(prompt){
      :"Agnes: видео создано");
  }catch(e){
    stopProgress(99,"ошибка");paintVideoProgress(99);removeGenerationLoading();if($("#composerProgress"))$("#composerProgress").textContent="99%";
-   $("#composerStatus").textContent=model+" · ошибка";
+   $("#composerStatus").textContent=displayModel+" · ошибка";
    toast("Agnes: "+(e?.message||"не удалось создать видео"));
  }finally{
    videoGenerationBusy=false;if($("#composerSend"))$("#composerSend").disabled=false;
