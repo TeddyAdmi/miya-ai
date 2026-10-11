@@ -3170,3 +3170,36 @@ body.light .chat-row.user .chat-bubble{
   }
   .composer.mode-chat .chat-options{gap:2px!important}
 }
+
+
+/* Stable composer geometry across Chat, Images and Video: keep the prompt and bottom rail from reflowing between modes. */
+.composer.mode-chat,
+.composer.mode-images,
+.composer.mode-video{
+  grid-template-rows:76px 34px auto!important;
+  align-items:center!important;
+}
+.composer.mode-chat #composerInput,
+.composer.mode-images #composerInput,
+.composer.mode-video #composerInput{
+  height:76px!important;
+  min-height:76px!important;
+  max-height:76px!important;
+  align-self:stretch!important;
+  overflow-y:auto!important;
+}
+.composer.mode-chat .composer-left-actions,
+.composer.mode-images .composer-left-actions,
+.composer.mode-video .composer-left-actions,
+.composer.mode-chat #composerMic,
+.composer.mode-images #composerMic,
+.composer.mode-video #composerMic,
+.composer.mode-chat #composerSend,
+.composer.mode-images #composerSend,
+.composer.mode-video #composerSend{
+  grid-row:2!important;
+  align-self:center!important;
+  transform:none!important;
+  margin-top:0!important;
+  margin-bottom:0!important;
+}
