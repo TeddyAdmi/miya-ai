@@ -444,7 +444,7 @@ function saveMedia(type,url,prompt="",model="",format=""){
  if(type==="image"&&isInvalidImageToolSource(rawUrl))return;
  const id=type+"-"+Date.now()+"-"+Math.random().toString(36).slice(2);
  const isAgnesImage=type==="image"&&/^Agnes Image/i.test(String(model||""));
- const normalizedUrl=type==="image"&&!isAgnesImage?jpegImageUrl(rawUrl):rawUrl;
+ const normalizedUrl=isAgnesImage?"/api/image-jpeg?url="+encodeURIComponent(rawUrl)+"&raw=1":(type==="image"?jpegImageUrl(rawUrl):rawUrl);
  const item={id,type,url:normalizedUrl,prompt:String(prompt||""),model:String(model||((type==="image")?"FLUX Dev":"LTX")),format:String(format||""),createdAt:Date.now()};
  const items=getLibrary();items.unshift(item);
  try{localStorage.setItem(LIB_KEY,JSON.stringify(items.slice(0,500)))}catch{
@@ -1045,16 +1045,19 @@ function buildMediaCard(item,{video=false}={}){
    media.addEventListener("error",()=>{
      // A slow JPEG conversion must never hide a usable provider image.
      if(proxyUrl&&!triedProxy&&media.src!==proxyUrl){triedProxy=true;setImageSource(proxyUrl);return}
-     if(proxyUrl&&!triedDirect&&directUrl&&directUrl!==storedUrl){triedDirect=true;setImageSource(directUrl);return}
+     if(proxyUrl&&!triedDirect&&directUrl){triedDirect=true;setImageSource(directUrl);return}
      mediaFailed=true;media.removeAttribute("src");
      media.alt=isDeadVheer?"Старая копия изображения":"Изображение временно недоступно";
    });
    const isAgnesPreview=/^Agnes Image/i.test(String(item.model||""));
+   if(isAgnesPreview&&!proxyUrl&&/^https:\/\/platform-outputs\.agnes-ai\.space\//i.test(directUrl)){
+     proxyUrl="/api/image-jpeg?url="+encodeURIComponent(directUrl)+"&raw=1";
+   }
    media.loading="eager";
    media.fetchPriority="high";
-   // Agnes outputs are already usable provider images. Show the original URL immediately
-   // instead of waiting for the JPEG proxy to download and transcode a large 4K PNG.
-   const initialImageUrl=isAgnesPreview?(directUrl||storedUrl):(proxyUrl||directUrl);
+   // Use the same-origin raw proxy for Agnes: it avoids cross-origin cache failures
+   // and skips Sharp conversion, while the CDN can cache the image for tab revisits.
+   const initialImageUrl=isAgnesPreview?(proxyUrl||directUrl):(proxyUrl||directUrl);
    if(!isDeadVheer&&initialImageUrl)media.src=initialImageUrl;
    // Do not start a second proxy preload for Agnes; it can delay or replace the visible image.
    if(!isAgnesPreview){
