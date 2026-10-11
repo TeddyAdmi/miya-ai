@@ -110,11 +110,13 @@ module.exports = async function handler(req, res) {
       "FINAL ETHNICITY RULE: Unless the user explicitly names another ethnicity, every newly generated human must have unmistakably natural Slavic / Eastern European appearance. Do not generate East Asian or other Asian facial features by default."
     ].join("\n");
     const editPrompt=[
-      "Edit the supplied source photograph rather than creating a new scene.",
-      "Keep the original framing, camera viewpoint, composition, background, lighting, colors, textures and all unrelated subjects unchanged.",
-      "Apply only the change explicitly requested by the user.",
-      "When removing an object, reconstruct only the area behind it from the surrounding background. Do not introduce a new person, animal, object or decoration into that area.",
-      "The output should look like the same photograph after a precise local edit.",
+      "STRICT LOCAL PHOTO EDIT: modify the supplied source photograph; do not recreate the scene.",
+      "Change only the exact body part or object explicitly named in the user's instruction. All other pixels and scene details must remain as close to the source as possible.",
+      "For a request to lower the woman's LEFT arm: lower ONLY the woman's own anatomical left arm naturally beside her body. Keep her RIGHT arm raised in exactly its original position. Do not lower, move, or alter the right arm.",
+      "Keep the woman's apparent size, distance from camera, height and position in the frame, body proportions, stance, torso, head, face, hair, clothing, legs, and body orientation unchanged.",
+      "Do not zoom out or in, change camera distance, reframe, crop, resize the subject, change perspective, or regenerate the whole scene.",
+      "Keep the football field, grass, lines, background, lighting, shadows, colors, camera viewpoint, and framing unchanged. Do not add, remove, or alter anything else.",
+      "If the requested one-part change cannot be made reliably, prefer preserving the original photograph over changing unrelated details.",
       "USER EDIT INSTRUCTION:\\n"+prompt
     ].join("\\n");
     const qualityPrompt=source ? editPrompt : generationPrompt;
