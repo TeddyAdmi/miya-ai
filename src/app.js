@@ -2277,7 +2277,7 @@ function toast(message){
  t.textContent=message;t.classList.add("show");clearTimeout(window.__toast);
  window.__toast=setTimeout(()=>t.classList.remove("show"),2600)
 }
-function syncInput(){const i=$("#composerInput");if(!i)return;i.style.height="auto";const h=Math.min(120,Math.max(42,i.scrollHeight));i.style.height=h+"px";i.style.overflowY=i.scrollHeight>h?"auto":"hidden";const row=i.closest(".composer-input-row");if(row)row.style.height=""}
+function syncInput(){const i=$("#composerInput");if(!i)return;const minHeight=42;const lineHeight=Number.parseFloat(getComputedStyle(i).lineHeight)||20;const maxHeight=Math.round(minHeight+(lineHeight*9));i.style.height="auto";i.style.overflowY="hidden";const contentHeight=Math.max(minHeight,i.scrollHeight);const h=Math.min(maxHeight,contentHeight);i.style.height=h+"px";i.style.overflowY=contentHeight>maxHeight?"auto":"hidden";const row=i.closest(".composer-input-row");if(row)row.style.height=""}
 function renderAssistantQuoteBlock(){
  const composer=$("#composer");if(!composer)return;
  let block=composer.querySelector(".composer-quote-block");
