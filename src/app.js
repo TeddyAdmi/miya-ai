@@ -127,7 +127,7 @@ body.light .chat-welcome.section-welcome .hero-mark.image .icon-image{filter:dro
 @media(max-width:800px){
   .composer.mode-chat.has-chat-attachments .composer-input-row{grid-template-rows:minmax(34px,auto) 47px!important}
   .composer.mode-chat .chat-attachment-list:not([hidden]){max-width:calc(100% - 120px)!important}
-};
+}`;
  document.head.appendChild(st);
 })();
 (function ensureChatSpeechAndSelectionStyles(){
