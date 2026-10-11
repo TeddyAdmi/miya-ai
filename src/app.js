@@ -1058,19 +1058,22 @@ function buildMediaCard(item,{video=false}={}){
    media.loading="eager";
    media.fetchPriority="high";
    const initialImageUrl=proxyUrl||directUrl;
-   // Use the same immediate-first-paint path for every image model. The
-   // same-origin raw proxy avoids Agnes CORS and Sharp conversion delays.
-   if(!isDeadVheer&&initialImageUrl){
-     media.addEventListener("load",()=>{cacheMedia(item.id,initialImageUrl,"image")},{once:true});
-     media.src=initialImageUrl;
-   }
-   // If a local IndexedDB copy exists, swap it in as soon as it is available.
-   // This keeps repeat visits independent of provider latency for every model.
+   // Check IndexedDB before starting a remote request. Cached images from every
+   // model are painted from their local Blob immediately, without first showing
+   // a slow/progressive provider download underneath.
    resolveMediaUrl(item).then(url=>{
      if(!url||mediaFailed||!media.isConnected)return;
-     if(url.startsWith("blob:")){setImageSource(url);return}
-     if(!media.src&&!isDeadVheer)setImageSource(initialImageUrl||url);
-   }).catch(()=>{});
+     if(url.startsWith("blob:")){
+       setImageSource(url);
+       return;
+     }
+     if(!isDeadVheer&&initialImageUrl){
+       media.addEventListener("load",()=>{cacheMedia(item.id,initialImageUrl,"image")},{once:true});
+       setImageSource(initialImageUrl||url);
+     }
+   }).catch(()=>{
+     if(!mediaFailed&&media.isConnected&&!isDeadVheer&&initialImageUrl)setImageSource(initialImageUrl);
+   });
    if(isDeadVheer&&!proxyUrl)media.alt="Старая копия изображения";
    media.addEventListener("click",e=>{e.stopPropagation();openImageViewer(item)});
    card.appendChild(media);

@@ -3473,3 +3473,42 @@ body.light .generation-loading:not(.video-generation-loading){
   .generation-loading:not(.video-generation-loading) .progress-copy b{font-size:12px}
   .generation-loading:not(.video-generation-loading) .progress-model{font-size:10px}
 }
+
+
+/* Final override: allow the complete image-generation title to fit. */
+.generation-loading:not(.video-generation-loading){
+  width:100%!important;
+  max-width:none!important;
+  min-width:0!important;
+  height:auto!important;
+  min-height:112px!important;
+  overflow:visible!important;
+  padding:20px 28px!important;
+  box-sizing:border-box!important;
+}
+.generation-loading:not(.video-generation-loading) .generation-progress{
+  width:100%!important;
+  max-width:none!important;
+  min-width:0!important;
+  overflow:visible!important;
+  justify-content:flex-start!important;
+}
+.generation-loading:not(.video-generation-loading) .progress-copy{
+  flex:1 1 auto!important;
+  min-width:0!important;
+  overflow:visible!important;
+}
+.generation-loading:not(.video-generation-loading) .progress-copy b{
+  display:block!important;
+  width:max-content!important;
+  max-width:none!important;
+  white-space:nowrap!important;
+  overflow:visible!important;
+  text-overflow:clip!important;
+  flex-shrink:0!important;
+}
+@media(max-width:800px){
+  .generation-loading:not(.video-generation-loading){padding:16px!important;min-height:96px!important}
+  .generation-loading:not(.video-generation-loading) .generation-progress{gap:12px!important}
+  .generation-loading:not(.video-generation-loading) .progress-copy b{font-size:12px!important}
+}
