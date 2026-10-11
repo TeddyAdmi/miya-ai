@@ -3405,3 +3405,71 @@ body.light .chat-row.user .chat-bubble{
   .generation-loading:not(.video-generation-loading) .progress-copy b{font-size:12px}
   .generation-loading:not(.video-generation-loading) .progress-model{font-size:10px}
 }
+
+
+/* Compact image-generation card: no progress strip, title always stays on one line. */
+.generation-loading:not(.video-generation-loading){
+  display:flex;
+  grid-column:1 / -1;
+  width:100%;
+  min-width:0;
+  min-height:112px;
+  padding:20px 28px;
+  box-sizing:border-box;
+  align-items:center;
+  justify-content:flex-start;
+  gap:0;
+}
+.generation-loading:not(.video-generation-loading) .generation-progress{
+  display:flex;
+  flex-direction:row;
+  align-items:center;
+  justify-content:flex-start;
+  width:100%;
+  min-width:0;
+  gap:18px;
+}
+.generation-loading:not(.video-generation-loading) .progress-copy{
+  display:flex;
+  flex:1 1 auto;
+  flex-direction:column;
+  align-items:flex-start;
+  justify-content:center;
+  min-width:0;
+  overflow:visible;
+  gap:7px;
+}
+.generation-loading:not(.video-generation-loading) .progress-copy b{
+  display:block;
+  width:max-content;
+  max-width:none;
+  flex:0 0 auto;
+  white-space:nowrap!important;
+  overflow:visible!important;
+  text-overflow:clip!important;
+  font-size:14px;
+  line-height:1.2;
+}
+.generation-loading:not(.video-generation-loading) .progress-model{
+  display:block;
+  max-width:100%;
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  font-size:11px;
+  line-height:1.35;
+}
+.generation-loading:not(.video-generation-loading) .generation-progress-bar{
+  display:none!important;
+}
+body.light .generation-loading:not(.video-generation-loading){
+  background:var(--panel,#fff);
+  border-color:var(--line,rgba(80,60,120,.18));
+}
+@media(max-width:800px){
+  .generation-loading:not(.video-generation-loading){min-height:96px;padding:14px 16px}
+  .generation-loading:not(.video-generation-loading) .generation-progress{gap:12px}
+  .generation-loading:not(.video-generation-loading) .progress-circle{width:42px;height:42px;flex-basis:42px}
+  .generation-loading:not(.video-generation-loading) .progress-copy b{font-size:12px}
+  .generation-loading:not(.video-generation-loading) .progress-model{font-size:10px}
+}
