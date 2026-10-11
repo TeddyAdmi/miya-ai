@@ -2521,7 +2521,7 @@ async function generateImage(prompt){
  let fakeTimer=null;
  const progressStartedAt=Date.now();
  const setProgress=(p)=>{
-  const value=Math.max(1,Math.min(99,Math.round(p)));
+  const value=Math.max(1,Math.min(100,Math.round(p)));
   if(ring){ring.classList.remove("is-active");ring.style.setProperty("--progress",value+"%");}
   const bar=loader?.querySelector(".generation-progress-bar span");if(bar)bar.style.width=value+"%";
   if(percent)percent.textContent=value+"%";
