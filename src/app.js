@@ -834,10 +834,8 @@ function openVideoViewer(item){
 }
 async function mediaItemToReference(item,card=null,preferUrl=false){
  if(!item?.id)return "";
- if(preferUrl){
-  const direct=String(item?.url||"").trim();
-  if(direct&&!isInvalidImageToolSource(direct))return /^https?:\/\//i.test(direct)?direct:(location.origin+direct);
- }
+ // Prefer the already-cached image so the editor thumbnail appears immediately
+ // and the edit request reuses the local copy instead of starting a new download.
  try{
   const cached=await getCachedMedia(item.id);
   if(cached?.blob){
@@ -849,6 +847,10 @@ async function mediaItemToReference(item,card=null,preferUrl=false){
    });
   }
  }catch{}
+ if(preferUrl){
+  const direct=String(item?.url||"").trim();
+  if(direct&&!isInvalidImageToolSource(direct))return /^https?:\/\//i.test(direct)?direct:(location.origin+direct);
+ }
  try{
   const image=card?.querySelector?.("img");
   const src=String(image?.currentSrc||image?.src||"").trim();
@@ -2377,7 +2379,7 @@ function showLoading(){
   const card=document.createElement("div");card.className="generation-loading"+(referenceImage?" has-upload":" no-upload");
   card.dataset.model=selectedModel;
   card.innerHTML='<div class="generation-progress"><div class="progress-circle is-active"><span class="progress-percent">0%</span></div><div class="progress-copy"><b>Создание изображения</b><span class="progress-model"></span></div></div><div class="generation-progress-bar"><span></span></div>';
-  card.querySelector(".progress-model").textContent=referenceImage?imageModelLabel(selectedModel)+" · загрузка файла…":imageModelLabel(selectedModel)+" · создание…";
+  card.querySelector(".progress-model").textContent=selectedModel;
   grid.prepend(card);scrollImagesToTop();return;
  }
  const selectedVideoModel=$("#videoModel")?.value||"LTX-2.3 Distilled";
@@ -2415,15 +2417,23 @@ async function generateAgnesImage(prompt){
  const ring=loader?.querySelector(".progress-circle");
  const percent=ring?.querySelector(".progress-percent");
  const composerProgress=$("#composerProgress");
+ let progressTimer=null;
+ const progressStartedAt=Date.now();
  const setProgress=p=>{
-   const v=Math.max(0,Math.min(99,Math.round(p)));
+   const v=Math.max(1,Math.min(99,Math.round(p)));
    if(ring){ring.classList.remove("is-active");ring.style.setProperty("--progress",v+"%");}
    const bar=loader?.querySelector(".generation-progress-bar span");if(bar)bar.style.width=v+"%";
    if(percent)percent.textContent=v+"%";
    if(composerProgress)composerProgress.textContent=v+"%";
  };
+ const updateProgress=()=>{
+   const elapsed=Math.max(0,Date.now()-progressStartedAt);
+   setProgress(1+Math.min(98,elapsed/100000*98));
+ };
+ setProgress(1);
+ progressTimer=setInterval(updateProgress,1000);
  try{
-   setProgress(8);$("#composerStatus").textContent=displayModel+" · подключение…";
+   $("#composerStatus").textContent=displayModel+" · создание…";
    const ratioChoice=String($("#composerRatio")?.value||"auto");
    let selectedRatio=["1:1","3:4","4:3","16:9","9:16","2:3","3:2","21:9"].includes(ratioChoice)?ratioChoice:"16:9";
    if(ratioChoice==="auto"&&referenceImage){
@@ -2453,7 +2463,12 @@ async function generateAgnesImage(prompt){
    });
    const raw=await response.text();let data={};try{data=raw?JSON.parse(raw):{}}catch{}
    if(!response.ok||!data.imageUrl)throw new Error(String(data.message||data.error||raw||"Agnes Image не вернул изображение").slice(0,500));
-   setProgress(100);
+   if(progressTimer){clearInterval(progressTimer);progressTimer=null;}
+   if(ring){ring.classList.remove("is-active");ring.style.setProperty("--progress","100%");}
+   if(percent)percent.textContent="100%";
+   const progressBar=loader?.querySelector(".generation-progress-bar span");if(progressBar)progressBar.style.width="100%";
+   if(composerProgress)composerProgress.textContent="100%";
+   const completedModel=loader?.querySelector(".progress-model");if(completedModel)completedModel.textContent=model;
    const urls=Array.isArray(data.imageUrls)&&data.imageUrls.length?data.imageUrls:[data.imageUrl];
    urls.forEach(url=>showImage(url,prompt,displayModel));
    scrollImagesToTop();
@@ -2469,11 +2484,13 @@ async function generateAgnesImage(prompt){
    setTimeout(()=>$("#canvas .generation-loading")?.remove(),350);
    toast("Agnes Image: изображение создано");
  }catch(e){
+   if(progressTimer){clearInterval(progressTimer);progressTimer=null;}
    $("#canvas .generation-loading")?.remove();
    if(composerProgress)composerProgress.textContent="";
    if($("#composerStatus"))$("#composerStatus").textContent=model+" · ошибка";
    toast("Agnes Image: "+(e?.message||"не удалось создать изображение"));
  }finally{
+   if(progressTimer){clearInterval(progressTimer);progressTimer=null;}
    $("#composerSend").disabled=false;
  }
 }
@@ -2501,26 +2518,21 @@ async function generateImage(prompt){
  const usesReferenceImage=Boolean(referenceImage);
  const hasFileUpload=Boolean(referenceImage);
  const composerProgress=$("#composerProgress");
- let fakeProgress=0;
  let fakeTimer=null;
+ const progressStartedAt=Date.now();
  const setProgress=(p)=>{
-  const value=Math.max(0,Math.min(99,Math.round(p)));
+  const value=Math.max(1,Math.min(99,Math.round(p)));
   if(ring){ring.classList.remove("is-active");ring.style.setProperty("--progress",value+"%");}
   const bar=loader?.querySelector(".generation-progress-bar span");if(bar)bar.style.width=value+"%";
   if(percent)percent.textContent=value+"%";
   if(composerProgress)composerProgress.textContent=value+"%";
  };
- const startFakeProgress=()=>{
-  setProgress(fakeProgress);
-  fakeTimer=setInterval(()=>{
-   // Deliberately slow down near the end so the UI never pretends generation is finished.
-   const remaining=92-fakeProgress;
-   const step=remaining>45?Math.random()*7+2:remaining>18?Math.random()*3+1:Math.random()*0.8+0.2;
-   fakeProgress=Math.min(92,fakeProgress+step);
-   setProgress(fakeProgress);
-   if($("#composerStatus"))$("#composerStatus").textContent=displayModel+" · создание…";
-  },900); };
- startFakeProgress();
+ const updateProgress=()=>{
+  const elapsed=Math.max(0,Date.now()-progressStartedAt);
+  setProgress(1+Math.min(98,elapsed/100000*98));
+ };
+ setProgress(1);
+ fakeTimer=setInterval(updateProgress,1000);
  $("#composerStatus").textContent=hasFileUpload?displayModel+" · загрузка файла…":displayModel+" · создание…";
  try{
   const payload={
@@ -2565,22 +2577,12 @@ async function generateImage(prompt){
    xhr.setRequestHeader("Accept","application/json");
    xhr.upload.onprogress=e=>{
     if(!hasFileUpload||!e.lengthComputable)return;
-    const p=Math.max(0,Math.min(100,Math.round(e.loaded/e.total*100)));
-    fakeProgress=p;
-    setProgress(p);
+    const p=Math.max(0,Math.min(99,Math.round(e.loaded/e.total*100)));
     if($("#composerStatus"))$("#composerStatus").textContent=displayModel+" · загрузка файла "+p+"%";
    };
    xhr.upload.onload=()=>{
     if(!hasFileUpload)return;
-    fakeProgress=100;
-    setProgress(100);
-    const modelLabel=loader?.querySelector(".progress-model");
-    if(modelLabel)modelLabel.textContent=displayModel+" · файл загружен · создание…";
     if($("#composerStatus"))$("#composerStatus").textContent=displayModel+" · файл загружен · создание…";
-    if(fakeTimer){clearInterval(fakeTimer);fakeTimer=null;}
-    fakeProgress=Math.max(fakeProgress,72);
-    setProgress(fakeProgress);
-    requestAnimationFrame(()=>{if(ring)ring.classList.add("is-active")});
    };
    xhr.onerror=()=>reject(new Error("Не удалось соединиться с сервером генерации"));
    xhr.ontimeout=()=>reject(new Error("Сервер генерации не ответил вовремя"));
@@ -2610,7 +2612,7 @@ async function generateImage(prompt){
   if(loader){
    setProgress(100);
    const modelLabel=loader.querySelector(".progress-model");
-   if(modelLabel)modelLabel.textContent=imageModelLabel(actualModel)+" · готово";
+   if(modelLabel)modelLabel.textContent=actualModel;
   }
   const generatedUrls=Array.isArray(data.imageUrls)&&data.imageUrls.length
    ? data.imageUrls
