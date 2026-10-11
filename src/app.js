@@ -70,6 +70,60 @@ body.light .side-logo svg path{stroke:none!important}
 body.light #composerInput{max-height:none!important}
 body.light .chat-welcome.section-welcome .hero-mark.image{box-shadow:inset 0 1px 0 rgba(255,255,255,.55),0 8px 18px rgba(68,61,160,.24),0 0 32px rgba(125,85,255,.18)!important}
 body.light .chat-welcome.section-welcome .hero-mark.image .icon-image{filter:drop-shadow(0 1px 0 rgba(255,255,255,.65)) drop-shadow(0 2px 2px rgba(24,20,75,.25))}
+/* Final layout correction: keep the welcome icon immediately below its description without shifting the whole section upward. */
+.chat-room .chat-welcome.section-welcome,
+.studio-room .chat-welcome.section-welcome{
+  display:flex!important;flex-direction:column!important;align-items:center!important;
+  justify-content:flex-start!important;gap:0!important;
+  min-height:0!important;height:auto!important;padding:0!important;margin:0 auto!important;
+  transform:none!important;
+}
+.chat-room .chat-welcome.section-welcome .mini-badge,
+.studio-room .chat-welcome.section-welcome .mini-badge{order:0!important;margin:0 0 5px!important}
+.chat-room .chat-welcome.section-welcome h2,
+.studio-room .chat-welcome.section-welcome h2{order:1!important;margin:0 0 6px!important}
+.chat-room .chat-welcome.section-welcome p,
+.studio-room .chat-welcome.section-welcome p{order:2!important;margin:0 auto 10px!important;line-height:1.5!important}
+.chat-room .chat-welcome.section-welcome .hero-mark,
+.studio-room .chat-welcome.section-welcome .hero-mark{
+  order:3!important;flex:0 0 58px!important;width:58px!important;height:58px!important;
+  margin:0 auto!important;position:relative!important;top:auto!important;transform:none!important;
+}
+/* Uploaded previews are 43×43 in all three composer modes. Chat's grid row must be tall enough to show the whole image. */
+.composer.mode-images .composer-attachment.has-image,
+.composer.mode-video .composer-attachment.has-image{
+  width:43px!important;height:43px!important;min-width:43px!important;max-width:43px!important;
+  min-height:43px!important;max-height:43px!important;flex:0 0 43px!important;
+}
+.composer.mode-images .composer-attachment.has-image img,
+.composer.mode-video .composer-attachment.has-image img{
+  display:block!important;width:43px!important;height:43px!important;min-width:43px!important;max-width:43px!important;
+  min-height:43px!important;max-height:43px!important;object-fit:cover!important;object-position:center!important;
+}
+.composer.mode-chat.has-chat-attachments{grid-template-rows:minmax(34px,auto) 47px auto!important}
+.composer.mode-chat .chat-attachment-list:not([hidden]){
+  grid-column:2!important;grid-row:2!important;position:relative!important;left:auto!important;right:auto!important;top:auto!important;bottom:auto!important;
+  display:flex!important;flex-direction:row!important;align-items:center!important;align-self:center!important;justify-self:start!important;
+  width:max-content!important;min-width:0!important;max-width:calc(100% - 150px)!important;
+  height:43px!important;min-height:43px!important;max-height:43px!important;
+  margin:0!important;padding:0 2px!important;gap:7px!important;overflow-x:auto!important;overflow-y:visible!important;
+  box-sizing:border-box!important;z-index:30!important;
+}
+.composer.mode-chat .chat-attachment-list .chat-attachment-thumb{
+  display:block!important;position:relative!important;flex:0 0 43px!important;
+  width:43px!important;min-width:43px!important;max-width:43px!important;
+  height:43px!important;min-height:43px!important;max-height:43px!important;
+  aspect-ratio:1/1!important;overflow:visible!important;box-sizing:border-box!important;
+}
+.composer.mode-chat .chat-attachment-list .chat-attachment-thumb img{
+  display:block!important;width:43px!important;height:43px!important;min-width:43px!important;max-width:43px!important;
+  min-height:43px!important;max-height:43px!important;object-fit:cover!important;object-position:center!important;
+  border-radius:7px!important;
+}
+@media(max-width:800px){
+  .composer.mode-chat.has-chat-attachments{grid-template-rows:minmax(34px,auto) 47px auto!important}
+  .composer.mode-chat .chat-attachment-list:not([hidden]){max-width:calc(100% - 120px)!important}
+}
 body.light .composer-attachment button{background:#123b70!important;color:#fff!important;border-color:#123b70!important;font-weight:800!important;font-size:14px!important;line-height:13px!important}
 body.light .composer-attachment button:hover{background:#7048b8!important;color:#fff!important;border-color:#7048b8!important}
 body.light .generation-loading .progress-circle .progress-percent{color:#111!important}
