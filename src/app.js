@@ -417,8 +417,8 @@ async function speakChatResponse(text,button){
   const matches=voices.map((voice,index)=>({voice,index})).filter(x=>/^(svetlana|светлана)$/i.test(name(x.voice)));
   const selected=matches.find(x=>/russian|русск|(^|[-_])ru($|[-_])/i.test(language(x.voice)))||matches[0];
   if(!selected)throw new Error("SVETLANA_VOICE_NOT_FOUND");
-  // AHM7 requires a 1-based position in the voices array.
-  const voiceIndex=selected.index+1;
+  // Match the original working implementation: use the catalog voice index unchanged.
+  const voiceIndex=selected.voice.index;
   if(voiceIndex===undefined||voiceIndex===null||voiceIndex==="")throw new Error("SVETLANA_VOICE_INDEX_MISSING");
   const chunks=[];let rest=value;
   while(rest.length>1800){
@@ -428,13 +428,13 @@ async function speakChatResponse(text,button){
   }
   if(rest)chunks.push(rest);
   if(status)status.textContent="Подготовка русской озвучки…";
-  // Send chunks one at a time; the upstream TTS service can fail on concurrent requests.
+  // Keep the original working flow: sequential requests, voice.index unchanged, rate 1.
   const blobs=[];
   for(const part of chunks){
    if(controller.signal.aborted)throw new DOMException("Aborted","AbortError");
    const response=await fetch("https://ahm7xmakki.com/api/tts",{
-    method:"POST",headers:{"Content-Type":"application/json","Accept":"audio/mpeg"},
-    body:JSON.stringify({voiceIndex,text:part,pitch:0,rate:0}),signal:controller.signal
+    method:"POST",headers:{"Content-Type":"application/json"},
+    body:JSON.stringify({voiceIndex:voiceIndex,text:part,pitch:0,rate:1}),signal:controller.signal
    });
    if(!response.ok){let detail="";try{detail=(await response.text()).slice(0,240)}catch{}throw new Error("SVETLANA_TTS_HTTP_"+response.status+(detail?": "+detail:""))}
    const type=String(response.headers.get("content-type")||"").toLowerCase();
