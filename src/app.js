@@ -422,10 +422,10 @@ async function speakChatResponse(text,button){
   if(!Array.isArray(voiceCatalog)||!voiceCatalog.length)await loadVoiceCatalog();
   if(controller.signal.aborted)throw new DOMException("Aborted","AbortError");
   // Restore the first working implementation: select the first AHM7 catalog entry named Svetlana.
-  const voice=voiceCatalog.find(v=>/svetlana|светлана/i.test(String(v.name||"")));
-  if(!voice)throw new Error("Голос Светлана не найден в каталоге");
-  const voiceIndex=voice.index;
-  if(voiceIndex===undefined||voiceIndex===null||voiceIndex==="")throw new Error("SVETLANA_VOICE_INDEX_MISSING");
+  const voicePosition=voiceCatalog.findIndex(v=>/^(svetlana|светлана)$/i.test(String(v?.name||"").trim()));
+  if(voicePosition<0)throw new Error("Голос Светлана не найден в каталоге");
+  // В проверенном рабочем запросе AHM7 использовалась позиция голоса в /api/voices (нумерация с 1).
+  const voiceIndex=voicePosition+1;
   const chunks=[];let rest=value;
   while(rest.length>1800){
    let cut=Math.max(rest.lastIndexOf(". ",1800),rest.lastIndexOf("! ",1800),rest.lastIndexOf("? ",1800),rest.lastIndexOf("\n",1800),rest.lastIndexOf(" ",1800));
@@ -436,40 +436,16 @@ async function speakChatResponse(text,button){
   const blobs=[];
   for(const part of chunks){
    if(controller.signal.aborted)throw new DOMException("Aborted","AbortError");
-   // Keep the original proven payload first; retry only AHM7 server errors with its documented default rate.
-   const voicePosition=voiceCatalog.findIndex(v=>v===voice)+1;
-   const idNumber=String(voice.id||"").match(/(\\d+)$/)?.[1];
-   // Test the historical AHM7 payload shapes only after the original payload variants fail.
-   const payloads=[
-    {voiceIndex:voiceIndex,text:part,pitch:0,rate:1},
-    {voiceIndex:voiceIndex,text:part,pitch:0,rate:0},
-    {voiceIndex:voiceIndex,text:part,pitch:0},
-    {text:part,voice:voiceIndex,pitch:0,rate:0},
-    {text:part,voice:voiceIndex,pitch:0,rate:1},
-    ...(voicePosition>0&&voicePosition!==Number(voiceIndex)?[
-     {voiceIndex:voicePosition,text:part,pitch:0,rate:0},
-     {voiceIndex:voicePosition,text:part,pitch:0,rate:1}
-    ]:[]),
-    ...(idNumber&&Number(idNumber)!==Number(voiceIndex)?[
-     {voiceIndex:Number(idNumber),text:part,pitch:0,rate:0}
-    ]:[])
-   ];
-   let response=null,detail="";
-   for(let attempt=0;attempt<payloads.length;attempt++){
-    response=await fetch("https://ahm7xmakki.com/api/tts",{
-     method:"POST",headers:{"Content-Type":"application/json"},
-     body:JSON.stringify(payloads[attempt]),signal:controller.signal
-    });
-    if(response.ok)break;
-    detail="";try{detail=(await response.text()).slice(0,240)}catch{}
-    if((response.status!==502&&response.status!==500)||attempt===payloads.length-1){
-     throw new Error("SVETLANA_TTS_HTTP_"+response.status+(detail?": "+detail:""));
-    }
-   }
+   // Восстановлен исходный проверенный запрос AHM7: voiceIndex (позиция с 1), pitch 0, rate 0.
+   const response=await fetch("https://ahm7xmakki.com/api/tts",{
+    method:"POST",headers:{"Content-Type":"application/json","Accept":"audio/mpeg"},
+    body:JSON.stringify({voiceIndex,text:part,pitch:0,rate:0}),signal:controller.signal
+   });
+   if(!response.ok){let detail="";try{detail=(await response.text()).slice(0,240)}catch{}throw new Error("SVETLANA_TTS_HTTP_"+response.status+(detail?": "+detail:""))}
    const type=String(response.headers.get("content-type")||"").toLowerCase();
    if(type.includes("application/json"))throw new Error("SVETLANA_TTS_RETURNED_JSON");
    const blob=await response.blob();if(!blob.size)throw new Error("SVETLANA_TTS_EMPTY_AUDIO");
-   blobs.push(blob);
+
   }
   if(controller.signal.aborted)throw new DOMException("Aborted","AbortError");
   activeChatSpeechUrl=URL.createObjectURL(new Blob(blobs,{type:"audio/mpeg"}));
