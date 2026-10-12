@@ -421,11 +421,11 @@ async function speakChatResponse(text,button){
   // Original working path: use AHM7's Svetlana catalog entry and play its returned audio.
   if(!Array.isArray(voiceCatalog)||!voiceCatalog.length)await loadVoiceCatalog();
   if(controller.signal.aborted)throw new DOMException("Aborted","AbortError");
-  // Restore the first working implementation: select the first AHM7 catalog entry named Svetlana.
-  const voicePosition=voiceCatalog.findIndex(v=>/^(svetlana|светлана)$/i.test(String(v?.name||"").trim()));
-  if(voicePosition<0)throw new Error("Голос Светлана не найден в каталоге");
-  // В проверенном рабочем запросе AHM7 использовалась позиция голоса в /api/voices (нумерация с 1).
-  const voiceIndex=voicePosition+1;
+  // Восстановлен исходный рабочий выбор: используем index самого голоса из каталога AHM7.
+  const voice=voiceCatalog.find(v=>/^(svetlana|светлана)$/i.test(String(v?.name||"").trim()));
+  if(!voice)throw new Error("Голос Светлана не найден в каталоге");
+  const voiceIndex=voice.index;
+  if(voiceIndex===undefined||voiceIndex===null||voiceIndex==="")throw new Error("SVETLANA_VOICE_INDEX_MISSING");
   const chunks=[];let rest=value;
   while(rest.length>1800){
    let cut=Math.max(rest.lastIndexOf(". ",1800),rest.lastIndexOf("! ",1800),rest.lastIndexOf("? ",1800),rest.lastIndexOf("\n",1800),rest.lastIndexOf(" ",1800));
@@ -436,16 +436,16 @@ async function speakChatResponse(text,button){
   const blobs=[];
   for(const part of chunks){
    if(controller.signal.aborted)throw new DOMException("Aborted","AbortError");
-   // Восстановлен исходный проверенный запрос AHM7: voiceIndex (позиция с 1), pitch 0, rate 0.
+   // Точный формат исходного рабочего запроса AHM7: voice.index, pitch 0, rate 1.
    const response=await fetch("https://ahm7xmakki.com/api/tts",{
-    method:"POST",headers:{"Content-Type":"application/json","Accept":"audio/mpeg"},
-    body:JSON.stringify({voiceIndex,text:part,pitch:0,rate:0}),signal:controller.signal
+    method:"POST",headers:{"Content-Type":"application/json"},
+    body:JSON.stringify({voiceIndex,text:part,pitch:0,rate:1}),signal:controller.signal
    });
    if(!response.ok){let detail="";try{detail=(await response.text()).slice(0,240)}catch{}throw new Error("SVETLANA_TTS_HTTP_"+response.status+(detail?": "+detail:""))}
    const type=String(response.headers.get("content-type")||"").toLowerCase();
    if(type.includes("application/json"))throw new Error("SVETLANA_TTS_RETURNED_JSON");
    const blob=await response.blob();if(!blob.size)throw new Error("SVETLANA_TTS_EMPTY_AUDIO");
-
+   blobs.push(blob);
   }
   if(controller.signal.aborted)throw new DOMException("Aborted","AbortError");
   activeChatSpeechUrl=URL.createObjectURL(new Blob(blobs,{type:"audio/mpeg"}));
@@ -2452,7 +2452,8 @@ async function generateVoice(text){
    const response=await fetch("https://ahm7xmakki.com/api/tts",{
     method:"POST",
     headers:{"Content-Type":"application/json","Accept":"audio/mpeg"},
-    body:JSON.stringify({voiceIndex,text:parts[i],pitch,rate})
+    // При нулевом положении ползунка передаём AHM7 его рабочую скорость по умолчанию.
+    body:JSON.stringify({voiceIndex,text:parts[i],pitch,rate:rate===0?1:rate})
    });
    if(!response.ok){
     let detail="";try{detail=(await response.text()).slice(0,240)}catch{}
