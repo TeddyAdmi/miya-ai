@@ -159,8 +159,41 @@ body.light .chat-welcome.section-welcome .hero-mark.image .icon-image{filter:dro
  .composer.mode-chat #composerInput,.composer.mode-images #composerInput,.composer.mode-video #composerInput{height:34px!important;min-height:34px!important}
  .composer.mode-chat .chat-attachment-list:not([hidden]){max-width:calc(100% - 120px)!important}
 }
-/* Keep the icon above the title and leave 2 cm after the description before the wall. */
-.chat-room .chat-welcome.section-welcome p,.studio-room .chat-welcome.section-welcome p{margin-bottom:2cm!important}
+/* Leave 2 cm between the workspace description and the section wall heading. */
+.workspace-head{padding-bottom:2cm!important}
+.canvas{padding-top:0!important}
+/* Do not add another gap after the wall heading's own description. */
+.chat-room .chat-welcome.section-welcome p,.studio-room .chat-welcome.section-welcome p{margin-bottom:0!important}
+
+/* Match the clear-wall and theme controls in light mode. */
+.floating-wall-clear,.floating-theme{
+  width:34px!important;height:34px!important;min-width:34px!important;min-height:34px!important;
+  display:grid!important;place-items:center!important;
+}
+.floating-wall-clear svg,.floating-theme svg{
+  width:16px!important;height:16px!important;min-width:16px!important;min-height:16px!important;
+  stroke:currentColor!important;stroke-width:1.8!important;fill:none!important;
+}
+body.light .floating-wall-clear,body.light .floating-theme{
+  color:#fff!important;background:rgba(8,24,44,.78)!important;border-color:rgba(255,255,255,.24)!important;
+}
+body.light .floating-wall-clear svg,body.light .floating-theme svg{stroke:#fff!important}
+
+/* The remove control is always purple with a visible white X, without hover animation. */
+.composer-attachment button#composerAttachmentRemove{
+  right:-2px!important;top:-2px!important;width:16px!important;height:16px!important;
+  min-width:16px!important;min-height:16px!important;padding:0!important;
+  border:1px solid #a78bfa!important;border-radius:50%!important;
+  background:#8b5cf6!important;color:#fff!important;font-size:13px!important;font-weight:700!important;
+  line-height:14px!important;display:grid!important;place-items:center!important;
+  box-shadow:none!important;transition:none!important;transform:none!important;
+}
+.composer-attachment button#composerAttachmentRemove:hover,
+.composer-attachment button#composerAttachmentRemove:focus,
+.composer-attachment button#composerAttachmentRemove:active{
+  background:#8b5cf6!important;color:#fff!important;border-color:#a78bfa!important;
+  transition:none!important;transform:none!important;
+}
 .chat-room .chat-welcome.section-welcome .hero-mark,.studio-room .chat-welcome.section-welcome .hero-mark{margin-top:0!important;transform:none!important;position:relative!important;top:auto!important}
 `;
  document.head.appendChild(st);
