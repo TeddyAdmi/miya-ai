@@ -210,10 +210,11 @@ body.light .floating-wall-clear svg *,body.light .floating-theme svg *{
  document.addEventListener("pointerdown",event=>{if(event.target?.closest?.(".chat-selection-actions"))return;document.querySelectorAll(".chat-selection-actions").forEach(el=>{el.hidden=true})},true);
  const st=document.createElement("style");st.id="miyaChatSpeechSelectionStyles";
  st.textContent=`/* Chat rows follow the exact composer rectangle; user is right/2⁄3 width, assistant spans full width. */
-.chat-canvas .chat-stream{box-sizing:border-box!important;padding:0!important;overflow:visible!important}
+.chat-canvas .chat-stream{box-sizing:border-box!important;padding:18px 0 calc(var(--chat-composer-height,180px) + 12px)!important;overflow:visible!important;min-height:100dvh!important;height:auto!important;display:flex!important;flex-direction:column!important;justify-content:flex-end!important;align-items:stretch!important;gap:10px!important}
 .chat-canvas .chat-stream .chat-row{position:relative!important;display:flex!important;width:100%!important;max-width:100%!important;min-width:0!important;margin:0 0 7px!important;padding:0!important;gap:8px!important;box-sizing:border-box!important;transform:none!important}
-.chat-canvas .chat-stream .chat-row .chat-avatar{position:absolute!important;top:0!important;left:auto!important;right:-34px!important;z-index:2!important}
+.chat-canvas .chat-stream .chat-row .chat-avatar{position:absolute!important;top:0!important;left:-34px!important;right:auto!important;z-index:2!important}
 .chat-canvas .chat-stream .chat-row.user .chat-avatar{left:auto!important;right:-34px!important}
+.chat-canvas .chat-stream .chat-row.assistant .chat-avatar{left:-34px!important;right:auto!important}
 .chat-canvas .chat-stream .chat-row .chat-content{display:flex!important;flex:1 1 auto!important;flex-direction:column!important;align-items:stretch!important;width:100%!important;min-width:0!important;max-width:100%!important;margin:0!important;padding:0!important;transform:none!important;box-sizing:border-box!important}
 .chat-canvas .chat-stream .chat-row .chat-bubble{display:block!important;width:100%!important;min-width:0!important;max-width:100%!important;margin:0!important;box-sizing:border-box!important;overflow-wrap:anywhere!important}
 .chat-canvas .chat-stream .chat-row.user .chat-content{align-items:flex-end!important}
@@ -225,7 +226,7 @@ body.light .floating-wall-clear svg *,body.light .floating-theme svg *{
 .chat-prompt-tools button svg{display:block!important;width:18px!important;height:18px!important;fill:none!important;stroke:currentColor!important;stroke-width:1.8!important;stroke-linecap:round!important;stroke-linejoin:round!important;pointer-events:none!important}
 .chat-prompt-tools button:hover{border-color:#9b83e8!important;background:rgba(145,115,220,.14)!important}
 body.light .chat-prompt-tools button{background:#fff!important;color:#273047!important;border-color:#dbe2ec!important}
-@media(max-width:800px){.chat-canvas .chat-stream .chat-row .chat-avatar,.chat-canvas .chat-stream .chat-row.user .chat-avatar{right:-29px!important;left:auto!important}.chat-canvas .chat-stream .chat-row.user .chat-bubble,.chat-canvas .chat-stream .chat-row.user .chat-actions{width:66.6667%!important;max-width:66.6667%!important}}
+@media(max-width:800px){.chat-canvas .chat-stream .chat-row .chat-avatar,.chat-canvas .chat-stream .chat-row.assistant .chat-avatar{left:-29px!important;right:auto!important}.chat-canvas .chat-stream .chat-row.user .chat-avatar{left:auto!important;right:-29px!important}.chat-canvas .chat-stream .chat-row.user .chat-bubble,.chat-canvas .chat-stream .chat-row.user .chat-actions{width:66.6667%!important;max-width:66.6667%!important}}
 #composerMic.transcribing svg{animation:miyaSpeechSpin .8s linear infinite;transform-origin:50% 50%}
 #composerMic.transcribing svg circle{fill:none!important;stroke:currentColor!important;stroke-width:2.2!important;stroke-linecap:round!important}
 @keyframes miyaSpeechSpin{to{transform:rotate(360deg)}}
@@ -291,7 +292,8 @@ body.light .chat-bubble.chat-rich-text code{background:rgba(112,80,190,.1)!impor
    stream.style.setProperty("width",cr.width+"px","important");
    stream.style.setProperty("max-width","none","important");
    stream.style.setProperty("position","relative","important");
-   stream.style.setProperty("left",(cr.left-wr.left)+"px","important");
+   const canvasStyle=getComputedStyle(canvas);const canvasLeftInset=canvas.clientLeft+(parseFloat(canvasStyle.paddingLeft)||0);
+   stream.style.setProperty("left",(cr.left-wr.left-canvasLeftInset)+"px","important");
    stream.style.setProperty("margin-left","0","important");
    stream.style.setProperty("margin-right","0","important");
    stream.style.setProperty("transform","none","important");
@@ -3019,19 +3021,28 @@ function addChatMessage(text,isUser,image="",isError=false){
  const content=document.createElement("div");content.className="chat-content";
  const bubble=document.createElement("div");bubble.className="chat-bubble";if(isUser){bubble.textContent=text}else{bubble.classList.add("chat-rich-text");bubble.innerHTML=renderChatMarkdown(text);bubble.querySelectorAll(".chat-code-action").forEach(button=>{button.addEventListener("click",async()=>{const code=button.closest(".chat-code-block")?.querySelector("pre code")?.textContent||"";const action=button.dataset.codeAction;if(action==="stop-listen"){stopChatSpeech();return}if(!code.trim())return;if(action==="image"){setMode("images");$("#composerInput").value=code;syncInput();$("#composerInput").focus();toast("Промпт добавлен для создания картинки")}else if(action==="video"){setMode("video");$("#composerInput").value=code;syncInput();$("#composerInput").focus();toast("Промпт добавлен для создания видео")}else if(action==="listen"){document.querySelectorAll(".chat-selection-actions").forEach(el=>el.hidden=true);window.getSelection?.()?.removeAllRanges();speakChatResponse(code,button)}else if(action==="copy"){try{await navigator.clipboard.writeText(code);showCopySuccess(button);toast("Промпт скопирован")}catch{toast("Не удалось скопировать промпт")}}})})}
  content.appendChild(bubble);
- if(!isUser&&!isError&&/\bпромпт\b|prompt/i.test(String(text||""))){
+ if(!isUser&&!isError){
    const rawResponse=String(text||"").trim();
-   const promptMatch=rawResponse.match(/(?:^|\n)\s*(?:\*\*)?(?:промпт|prompt)(?:\*\*)?\s*[:—-]\s*([\s\S]+)$/i);
-   const promptText=(promptMatch?promptMatch[1]:rawResponse).replace(/^\s*[`*_]+|[`*_]+\s*$/g,"").trim();
-   const promptTools=document.createElement("div");promptTools.className="chat-prompt-tools";
-   promptTools.innerHTML='<button type="button" class="chat-prompt-image" title="Создать изображение по промпту" aria-label="Создать изображение по промпту"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="m21 15-5-5L5 21"/></svg></button><button type="button" class="chat-prompt-video" title="Создать видео по промпту" aria-label="Создать видео по промпту"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="13" height="14" rx="2"/><path d="m16 10 5-3v10l-5-3z"/></svg></button><button type="button" class="chat-prompt-copy" title="Копировать промпт" aria-label="Копировать промпт"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="8" y="8" width="12" height="12" rx="2"/><path d="M16 8V5a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h3"/></svg></button><button type="button" class="chat-prompt-listen" title="Прослушать промпт" aria-label="Прослушать промпт"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 10v4h4l5 4V6l-5 4H3Z"/><path d="M16 9a5 5 0 0 1 0 6M18.5 6.5a8.5 8.5 0 0 1 0 11"/></svg></button>';
-   promptTools.querySelectorAll("svg").forEach(svg=>{svg.setAttribute("fill","none");svg.setAttribute("stroke","currentColor");svg.setAttribute("stroke-width","1.8");svg.setAttribute("stroke-linecap","round");svg.setAttribute("stroke-linejoin","round")});
-   const runPromptInMode=targetMode=>{if(!promptText)return;setMode(targetMode);const input=$("#composerInput");if(input){input.value=promptText;syncInput();input.focus();requestAnimationFrame(()=>$("#composerSend")?.click())}};
-   promptTools.querySelector(".chat-prompt-image").onclick=()=>runPromptInMode("images");
-   promptTools.querySelector(".chat-prompt-video").onclick=()=>runPromptInMode("video");
-   promptTools.querySelector(".chat-prompt-copy").onclick=e=>copyChatText(promptText,e.currentTarget);
-   promptTools.querySelector(".chat-prompt-listen").onclick=e=>speakChatResponse(promptText,e.currentTarget);
-   content.appendChild(promptTools);
+   // Only expose prompt actions when the answer has an explicit prompt heading.
+   // Never treat the whole assistant answer as the prompt.
+   const promptHeading=rawResponse.match(/(?:^|\n)\s{0,3}(?:#{1,6}\s*)?(?:[-*]\s*)?([^\n]{0,100}\bпромпт\b[^\n]{0,80})(?:[:：]\s*|\s*\n)([\s\S]*)/i);
+   if(promptHeading){
+     let promptText=String(promptHeading[2]||"").trim();
+     promptText=promptText.replace(/^\s*```[^\n]*\n?/,"").replace(/\n?```\s*$/,"").trim();
+     promptText=promptText.split(/\n\s*(?:#{1,6}\s*)?(?:\*\*)?(?:негативный промпт|пояснение|вариант|настройки|примечание|negative prompt)(?:\*\*)?\s*[:：]?\s*/i)[0].trim();
+     promptText=promptText.replace(/^\s*[>*`_]+|[>*`_]+\s*$/g,"").trim();
+     if(promptText){
+       const promptTools=document.createElement("div");promptTools.className="chat-prompt-tools";
+       promptTools.innerHTML='<button type="button" class="chat-prompt-image" title="Создать изображение по промпту" aria-label="Создать изображение по промпту"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="m21 15-5-5L5 21"/></svg></button><button type="button" class="chat-prompt-video" title="Создать видео по промпту" aria-label="Создать видео по промпту"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="13" height="14" rx="2"/><path d="m16 10 5-3v10l-5-3z"/></svg></button><button type="button" class="chat-prompt-copy" title="Копировать промпт" aria-label="Копировать промпт"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="8" y="8" width="12" height="12" rx="2"/><path d="M16 8V5a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h3"/></svg></button><button type="button" class="chat-prompt-listen" title="Прослушать промпт" aria-label="Прослушать промпт"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 10v4h4l5 4V6l-5 4H3Z"/><path d="M16 9a5 5 0 0 1 0 6M18.5 6.5a8.5 8.5 0 0 1 0 11"/></svg></button>';
+       promptTools.querySelectorAll("svg").forEach(svg=>{svg.setAttribute("fill","none");svg.setAttribute("stroke","currentColor");svg.setAttribute("stroke-width","1.8");svg.setAttribute("stroke-linecap","round");svg.setAttribute("stroke-linejoin","round")});
+       const runPromptInMode=targetMode=>{if(!promptText)return;setMode(targetMode);const input=$("#composerInput");if(input){input.value=promptText;syncInput();input.focus();requestAnimationFrame(()=>$("#composerSend")?.click())}};
+       promptTools.querySelector(".chat-prompt-image").onclick=()=>runPromptInMode("images");
+       promptTools.querySelector(".chat-prompt-video").onclick=()=>runPromptInMode("video");
+       promptTools.querySelector(".chat-prompt-copy").onclick=e=>copyChatText(promptText,e.currentTarget);
+       promptTools.querySelector(".chat-prompt-listen").onclick=e=>speakChatResponse(promptText,e.currentTarget);
+       content.appendChild(promptTools);
+     }
+   }
  }
  if(image){const preview=document.createElement("img");preview.className="chat-image-attachment";preview.src=image;preview.alt="Прикреплённое изображение";content.insertBefore(preview,bubble)}
 
