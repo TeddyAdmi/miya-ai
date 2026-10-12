@@ -288,6 +288,10 @@ body.light .chat-bubble.chat-rich-text a{color:#5141b8!important}
 body.light .chat-bubble.chat-rich-text blockquote{background:rgba(112,80,190,.07)!important}
 body.light .chat-bubble.chat-rich-text pre{background:#f3f5f9!important;border-color:#dbe2ec!important;color:#182436!important}
 body.light .chat-bubble.chat-rich-text code{background:rgba(112,80,190,.1)!important}
+ /* Chat-only visual hierarchy: blue user bubbles and a subtly darker prompt card in light mode. */
+ body.light .chat-canvas .chat-stream .chat-row.user .chat-bubble{background:#dceeff!important;border-color:#b8d8f5!important;color:#173b60!important;box-shadow:0 2px 5px rgba(37,99,160,.07)!important}
+ body.light .chat-canvas .chat-stream .chat-row.assistant .chat-prompt-card{background:#e3e9f1!important;border-color:#c7d2df!important;color:#182436!important}
+ body.light .chat-canvas .chat-stream .chat-row.assistant .chat-prompt-card-heading,body.light .chat-canvas .chat-stream .chat-row.assistant .chat-prompt-card-text{color:#182436!important}
 `;
  document.head.appendChild(st);
  // Keep chat messages exactly aligned to the real composer bounds, not guessed viewport widths.
@@ -365,9 +369,11 @@ function cleanAutoChatTitle(value,maxLength=140){
  }
  return title||"Новый чат";
 }
-let activeChatSpeechAudio=null,activeChatSpeechUrl=null,activeChatSpeechController=null,activeChatSpeechButton=null,activeChatSpeechStopButton=null,activeChatSpeechStatus=null;
+let activeChatSpeechAudio=null,activeChatSpeechUrl=null,activeChatSpeechController=null,activeChatSpeechButton=null,activeChatSpeechStopButton=null,activeChatSpeechStatus=null,activeChatSpeechUtterance=null;
 function stopChatSpeech(){
   try{activeChatSpeechController?.abort()}catch{}
+  try{window.speechSynthesis?.cancel()}catch{}
+  activeChatSpeechUtterance=null;
   const status=$("#composerStatus");
   if(status&&activeChatSpeechStatus&&/^(Подготовка озвучивания|Воспроизведение текста|Воспроизведение сообщения)/.test(status.textContent))status.textContent=activeChatSpeechStatus;
   activeChatSpeechStatus=null;
@@ -387,55 +393,44 @@ function stopChatSpeech(){
 }
 async function speakChatResponse(text,button){
  const value=String(text||"").trim();if(!value)return;
- if(activeChatSpeechAudio||activeChatSpeechController){stopChatSpeech();return}
+ if(activeChatSpeechAudio||activeChatSpeechController||activeChatSpeechUtterance){stopChatSpeech();return}
+ if(!("speechSynthesis" in window)||!("SpeechSynthesisUtterance" in window)){toast("В этом браузере недоступно озвучивание текста");return}
  const controller=new AbortController();
  activeChatSpeechController=controller;activeChatSpeechButton=button;
  activeChatSpeechStatus=$("#composerStatus")?.textContent||"AI Chat готов";
- const status=$("#composerStatus");if(status)status.textContent=button.closest(".chat-selection-actions")?"Подготовка озвучивания выделенного текста…":"Подготовка озвучивания сообщения…";
+ const status=$("#composerStatus");const isSelectionListen=!!button.closest(".chat-selection-actions");
+ if(status)status.textContent=isSelectionListen?"Подготовка озвучивания выделенного текста…":"Подготовка озвучивания сообщения…";
  activeChatSpeechStopButton=button.closest(".chat-code-tools")?.querySelector('[data-code-action="stop-listen"]')||button.closest(".chat-prompt-tools")?.querySelector(".chat-prompt-stop")||button.closest(".chat-actions")?.querySelector(".chat-stop-speech")||null;
- const isSelectionListen=!!button.closest(".chat-selection-actions");
  button.dataset.originalHtml=button.innerHTML;button.dataset.originalTitle=button.title;button.dataset.originalAriaLabel=button.getAttribute("aria-label")||button.title;
  button.disabled=true;
  button.innerHTML='<svg class="chat-speech-spinner" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-dasharray="28 18" fill="none"/></svg>';
  button.title="Подготавливаю озвучивание…";button.setAttribute("aria-label","Подготавливаю озвучивание…");
  if(activeChatSpeechStopButton)activeChatSpeechStopButton.hidden=false;
  try{
-  if(!Array.isArray(voiceCatalog)||!voiceCatalog.length)await loadVoiceCatalog();
-  if(controller.signal.aborted)return;
-  const voice=voiceCatalog.find(v=>/svetlana|светлана/i.test(String(v.name||"")));
-  if(!voice)throw new Error("Не удалось подготовить озвучивание");
-  const chunks=[];let rest=value;
-  while(rest.length>1800){
-   let cut=Math.max(rest.lastIndexOf(". ",1800),rest.lastIndexOf("! ",1800),rest.lastIndexOf("? ",1800),rest.lastIndexOf("\\n",1800),rest.lastIndexOf(" ",1800));
-   if(cut<700)cut=1800;
-   chunks.push(rest.slice(0,cut+1).trim());rest=rest.slice(cut+1).trim();
-  }
-  if(rest)chunks.push(rest);
-  const blobs=[];
-  for(const part of chunks){
-   if(controller.signal.aborted)return;
-   const response=await fetch("https://ahm7xmakki.com/api/tts",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({voiceIndex:voice.index,text:part,pitch:0,rate:1}),signal:controller.signal});
-   if(!response.ok)throw new Error("TTS_"+response.status);
-   blobs.push(await response.blob());
-  }
-  if(controller.signal.aborted)return;
-  activeChatSpeechUrl=URL.createObjectURL(new Blob(blobs,{type:"audio/mpeg"}));
-  activeChatSpeechAudio=new Audio(activeChatSpeechUrl);activeChatSpeechAudio.onended=stopChatSpeech;
-  button.disabled=false;
-  if(isSelectionListen){
-    button.innerHTML='<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="6" y="6" width="12" height="12" rx="2" fill="currentColor" stroke="currentColor"/></svg>';
-    button.title="Остановить воспроизведение";button.setAttribute("aria-label","Остановить воспроизведение");
-  }else{
-    button.innerHTML=button.dataset.originalHtml;button.title=button.dataset.originalTitle;button.setAttribute("aria-label",button.dataset.originalAriaLabel);
-    if(activeChatSpeechStopButton)activeChatSpeechStopButton.hidden=false;
-  }
-  activeChatSpeechController=null;
+  window.speechSynthesis.cancel();
+  const voices=window.speechSynthesis.getVoices();
+  const cyrillic=(value.match(/[\u0400-\u04FF]/g)||[]).length;
+  const latin=(value.match(/[A-Za-z]/g)||[]).length;
+  const lang=cyrillic>0&&cyrillic>=latin*.12?"ru":"en";
+  const candidates=voices.filter(v=>String(v.lang||"").toLowerCase().startsWith(lang));
+  const voice=candidates.find(v=>v.default)||candidates.find(v=>v.localService)||candidates[0];
+  const utterance=new SpeechSynthesisUtterance(value);
+  utterance.lang=voice?.lang||(lang==="ru"?"ru-RU":"en-US");
+  if(voice)utterance.voice=voice;
+  utterance.rate=1;utterance.pitch=1;
+  activeChatSpeechUtterance=utterance;
+  utterance.onend=()=>{if(activeChatSpeechUtterance===utterance)stopChatSpeech()};
+  utterance.onerror=event=>{
+   if(activeChatSpeechUtterance!==utterance)return;
+   const aborted=event.error==="canceled"||event.error==="interrupted"||controller.signal.aborted;
+   stopChatSpeech();
+   if(!aborted)toast("Не удалось озвучить текст. Проверь доступные голоса в браузере.");
+  };
+  button.disabled=false;button.innerHTML=button.dataset.originalHtml;
+  button.title="Остановить воспроизведение";button.setAttribute("aria-label","Остановить воспроизведение");
   if(status)status.textContent=isSelectionListen?"Воспроизведение текста — можно остановить":"Воспроизведение сообщения — можно остановить";
-  await activeChatSpeechAudio.play();
- }catch(error){
-  if(error?.name!=="AbortError"){console.error("Chat TTS failed",error);toast(error.message||"Не удалось озвучить текст")}
-  if(activeChatSpeechController===controller)stopChatSpeech();
- }
+  window.speechSynthesis.speak(utterance);
+ }catch(error){console.error("Chat speech synthesis failed",error);stopChatSpeech();toast("Не удалось озвучить текст")}
 }
 function styleActiveChatAction(button){
  Object.assign(button.style,{appearance:"none",display:"grid",placeItems:"center",flex:"0 0 25px",width:"25px",height:"25px",padding:"0",border:"1px solid transparent",borderRadius:"7px",background:"transparent",color:"var(--muted)",cursor:"pointer"});
@@ -3217,7 +3212,7 @@ async function requestChat(){
    chatMessages.push({role:"assistant",content:answer});
    addChatMessage(answer,false);
    saveCurrentChat();
-   status.textContent=hasVisionImage?"Miya · "+String(data?.model||data?.provider||"Vision")+" · готово":(data.model==="VisionSter"?"Miya · VisionChat":"Miya · Free Text");
+   status.textContent=hasVisionImage?"Miya · Фото проанализировано":"Miya · Готово";
  }catch(e){
    const timedOut=e?.name==="TimeoutError"||e?.name==="AbortError"||/timed out|timeout/i.test(String(e?.message||""));
    const message=timedOut
