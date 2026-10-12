@@ -67,17 +67,65 @@ async function handler(req, res) {
       .filter(m => m && (m.role === "user" || m.role === "assistant") && typeof m.content === "string")
       .map(m => ({ role: m.role, content: m.content.slice(0, 12000) }));
 
+    // Accept both current clients (imageBase64/imageBase64s) and older chat
+    // clients that attach the data URL directly to messages[n].image.
     const suppliedImages = Array.isArray(body.imageBase64s)
       ? body.imageBase64s.filter(value => typeof value === "string" && value.trim()).slice(0, 5).map(value => value.trim())
       : [];
-    const imageBase64 = suppliedImages[0] || (typeof body.imageBase64 === "string" ? body.imageBase64.trim() : "");
-    const visionImages = suppliedImages.length ? suppliedImages : (imageBase64 ? [imageBase64] : []);
-    const imageBytesApprox = visionImages.reduce((sum, value) => sum + Math.floor((value.length * 3) / 4), 0);
-    if (visionImages.some(value => !value.startsWith("data:image/")) || imageBytesApprox > 600000) {
+    const bodyImage = typeof body.imageBase64 === "string" ? body.imageBase64.trim() : "";
+    const embeddedImages = messages
+      .filter(m => m && m.role === "user")
+      .flatMap(m => [
+        ...(typeof m.image === "string" ? [m.image] : []),
+        ...(Array.isArray(m.images) ? m.images.filter(value => typeof value === "string") : [])
+      ])
+      .map(value => value.trim())
+      .filter(Boolean)
+      .slice(0, 5);
+    let visionImages = suppliedImages.length ? suppliedImages : (bodyImage ? [bodyImage] : embeddedImages);
+    let imageBase64 = visionImages[0] || "";
+    let imageBytesApprox = visionImages.reduce((sum, value) => sum + Math.floor((value.length * 3) / 4), 0);
+
+    if (visionImages.some(value => !/^data:image\/(jpeg|jpg|png|webp|gif|avif);base64,/i.test(value))) {
+      return res.status(400).json({
+        ok: false,
+        error: "INVALID_IMAGE_DATA",
+        message: "Не удалось прочитать прикреплённую фотографию. Прикрепи изображение ещё раз."
+      });
+    }
+
+    // Keep the upstream payload small enough for free vision services. Older
+    // clients may send an uncompressed image, so downscale/re-encode it here.
+    if (visionImages.length && imageBytesApprox > 520000) {
+      try {
+        const sharp = require("sharp");
+        visionImages = await Promise.all(visionImages.map(async value => {
+          const comma = value.indexOf(",");
+          const input = Buffer.from(value.slice(comma + 1), "base64");
+          const output = await sharp(input)
+            .rotate()
+            .resize({ width: 1280, height: 1280, fit: "inside", withoutEnlargement: true })
+            .jpeg({ quality: 76, mozjpeg: true })
+            .toBuffer();
+          return "data:image/jpeg;base64," + output.toString("base64");
+        }));
+        imageBase64 = visionImages[0] || "";
+        imageBytesApprox = visionImages.reduce((sum, value) => sum + Math.floor((value.length * 3) / 4), 0);
+      } catch (error) {
+        console.error("Miya vision image normalization failed", error?.message || error);
+        return res.status(415).json({
+          ok: false,
+          error: "IMAGE_PREPROCESSING_FAILED",
+          message: "Не удалось подготовить фотографию для анализа. Попробуй загрузить её ещё раз."
+        });
+      }
+    }
+
+    if (imageBytesApprox > 600000) {
       return res.status(413).json({
         ok: false,
         error: "IMAGE_TOO_LARGE",
-        message: "Слишком большой набор фотографий для бесплатного vision-запроса. Добавь меньше фото или уменьши их размер."
+        message: "Фотография слишком большая даже после сжатия. Попробуй загрузить изображение меньшего размера."
       });
     }
 
