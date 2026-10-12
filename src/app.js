@@ -238,8 +238,11 @@ body.light .chat-row.user .chat-bubble{background:#fff!important;border-color:#d
 .chat-bubble.chat-rich-text em{font-style:italic!important}
 .chat-bubble.chat-rich-text blockquote{margin:10px 0 14px!important;padding:9px 13px!important;border-left:3px solid #9b83e8!important;border-radius:0 8px 8px 0!important;background:rgba(145,115,220,.09)!important}
 .chat-bubble.chat-rich-text blockquote p{margin:0!important}
-.chat-bubble.chat-rich-text pre{margin:10px 0 14px!important;padding:12px 14px!important;max-width:100%!important;overflow-x:auto!important;border:1px solid var(--line,#34445b)!important;border-radius:10px!important;background:rgba(10,16,30,.38)!important;white-space:pre!important}
-.chat-bubble.chat-rich-text pre code{font-family:ui-monospace,SFMono-Regular,Consolas,monospace!important;font-size:.92em!important;white-space:pre!important}
+.chat-bubble.chat-rich-text .chat-code-block{position:relative;max-width:100%;min-width:0;margin:10px 0 14px;padding-top:34px;border:1px solid var(--line,#34445b);border-radius:10px;background:rgba(10,16,30,.38);overflow:hidden}
+.chat-bubble.chat-rich-text .chat-code-copy{position:absolute;top:6px;right:7px;z-index:1;border:1px solid rgba(145,131,220,.45);border-radius:7px;padding:5px 9px;background:rgba(112,91,190,.18);color:inherit;font:inherit;font-size:12px;line-height:1.3;cursor:pointer}
+.chat-bubble.chat-rich-text .chat-code-copy:hover{background:rgba(145,131,220,.28)}
+.chat-bubble.chat-rich-text pre{margin:0!important;padding:10px 14px 13px!important;max-width:100%!important;overflow:visible!important;white-space:pre-wrap!important;overflow-wrap:anywhere!important;word-break:break-word!important}
+.chat-bubble.chat-rich-text pre code{font-family:ui-monospace,SFMono-Regular,Consolas,monospace!important;font-size:.92em!important;white-space:pre-wrap!important;overflow-wrap:anywhere!important;word-break:break-word!important}
 .chat-bubble.chat-rich-text code{padding:2px 5px!important;border-radius:5px!important;background:rgba(145,115,220,.13)!important;font-family:ui-monospace,SFMono-Regular,Consolas,monospace!important;font-size:.92em!important}
 .chat-bubble.chat-rich-text pre code{padding:0!important;background:transparent!important}
 .chat-bubble.chat-rich-text a{color:#a994ff!important;text-decoration:underline!important;text-underline-offset:2px!important}
@@ -2910,7 +2913,7 @@ function renderChatMarkdown(value){
  let paragraph=[],listType="",listItems=[],codeLines=[],inCode=false;
  const flushParagraph=()=>{if(paragraph.length){html.push("<p>"+paragraph.map(inline).join("<br>")+"</p>");paragraph=[]}};
  const flushList=()=>{if(listItems.length){html.push("<"+listType+">"+listItems.map(item=>"<li>"+inline(item)+"</li>").join("")+"</"+listType+">");listItems=[];listType=""}};
- const flushCode=()=>{if(codeLines.length){html.push("<pre><code>"+escapeHtml(codeLines.join("\n"))+"</code></pre>");codeLines=[]}};
+ const flushCode=()=>{if(codeLines.length){html.push('<div class="chat-code-block"><button type="button" class="chat-code-copy" title="Скопировать текст" aria-label="Скопировать текст">Скопировать</button><pre><code>'+escapeHtml(codeLines.join("\n"))+"</code></pre></div>");codeLines=[]}};
  for(const rawLine of lines){
   const line=rawLine.trim();
   if(line.startsWith(String.fromCharCode(96).repeat(3))){
@@ -2951,7 +2954,7 @@ function addChatMessage(text,isUser,image="",isError=false){
  const row=document.createElement("div");row.className="chat-row "+(isUser?"user":"assistant")+(isError?" chat-error-row":"");
  const av=document.createElement("div");av.className="chat-avatar";av.textContent=isUser?"U":"M";
  const content=document.createElement("div");content.className="chat-content";
- const bubble=document.createElement("div");bubble.className="chat-bubble";if(isUser){bubble.textContent=text}else{bubble.classList.add("chat-rich-text");bubble.innerHTML=renderChatMarkdown(text)}
+ const bubble=document.createElement("div");bubble.className="chat-bubble";if(isUser){bubble.textContent=text}else{bubble.classList.add("chat-rich-text");bubble.innerHTML=renderChatMarkdown(text);bubble.querySelectorAll(".chat-code-copy").forEach(button=>{button.addEventListener("click",async()=>{const code=button.closest(".chat-code-block")?.querySelector("pre code")?.textContent||"";if(!code)return;try{await navigator.clipboard.writeText(code);button.textContent="Скопировано";showCopySuccess(button);setTimeout(()=>{button.textContent="Скопировать"},1600)}catch{toast("Не удалось скопировать текст")}})})}
  content.appendChild(bubble);
  if(image){const preview=document.createElement("img");preview.className="chat-image-attachment";preview.src=image;preview.alt="Прикреплённое изображение";content.insertBefore(preview,bubble)}
 
