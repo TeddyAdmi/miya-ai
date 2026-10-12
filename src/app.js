@@ -375,7 +375,7 @@ function stopChatSpeech(){
   try{window.speechSynthesis?.cancel()}catch{}
   activeChatSpeechUtterance=null;
   const status=$("#composerStatus");
-  if(status&&activeChatSpeechStatus&&/^(Подготовка озвучивания|Воспроизведение текста|Воспроизведение сообщения)/.test(status.textContent))status.textContent=activeChatSpeechStatus;
+  if(status&&activeChatSpeechStatus&&/^(Подготовка озвучивания|Подготовка русской озвучки|Воспроизведение текста|Воспроизведение сообщения|Светлана озвучивает)/.test(status.textContent))status.textContent=activeChatSpeechStatus;
   activeChatSpeechStatus=null;
   activeChatSpeechController=null;
   if(activeChatSpeechAudio){try{activeChatSpeechAudio.pause();activeChatSpeechAudio.removeAttribute("src");activeChatSpeechAudio.load()}catch{}}
