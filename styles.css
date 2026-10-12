@@ -3717,120 +3717,74 @@ body.light .generation-loading:not(.video-generation-loading) .progress-circle::
 }
 
 
-/* Chat bubbles use the exact same horizontal bounds as the fixed composer.
-   Avatars stay in the gutters outside those bounds, so they remain visible. */
-@media(min-width:801px){
-  .chat-canvas .chat-stream{
-    position:relative!important;
-    left:50%!important;
-    transform:translateX(-50%)!important;
-    width:min(968px,calc(100vw - 197px))!important;
-    max-width:none!important;
-    box-sizing:border-box!important;
-    padding-left:34px!important;
-    padding-right:34px!important;
-    overflow-x:clip!important;
-  }
-  .chat-canvas .chat-stream .chat-row{
-    position:relative!important;
-    display:flex!important;
-    width:100%!important;
-    max-width:100%!important;
-    min-width:0!important;
-    margin:0 0 7px!important;
-    padding:0!important;
-    gap:0!important;
-    box-sizing:border-box!important;
-    transform:none!important;
-  }
-  .chat-canvas .chat-stream .chat-row .chat-avatar{
-    position:absolute!important;
-    top:0!important;
-    left:-31px!important;
-    right:auto!important;
-    z-index:2!important;
-  }
-  .chat-canvas .chat-stream .chat-row.user .chat-avatar{
-    left:auto!important;
-    right:-31px!important;
-  }
-  .chat-canvas .chat-stream .chat-row .chat-content{
-    display:flex!important;
-    flex:1 1 100%!important;
-    flex-direction:column!important;
-    align-items:stretch!important;
-    width:100%!important;
-    min-width:0!important;
-    max-width:100%!important;
-    margin:0!important;
-    padding:0!important;
-    transform:none!important;
-    box-sizing:border-box!important;
-  }
-  .chat-canvas .chat-stream .chat-row .chat-bubble{
-    display:block!important;
-    width:100%!important;
-    min-width:0!important;
-    max-width:100%!important;
-    margin:0!important;
-    box-sizing:border-box!important;
-    overflow-wrap:anywhere!important;
-  }
-  .chat-canvas .chat-stream .chat-row .chat-actions{
-    width:100%!important;
-    box-sizing:border-box!important;
-  }
+/* Chat alignment: preserve the original left/right identity and only match the composer bounds. */
+.chat-canvas .chat-stream{
+  box-sizing:border-box!important;
+  padding-left:0!important;
+  padding-right:0!important;
+  overflow-x:clip!important;
 }
-.chat-bubble.chat-rich-text .chat-code-tools [hidden]{
-  display:none!important;
+.chat-canvas .chat-stream .chat-row{
+  position:relative!important;
+  display:flex!important;
+  width:100%!important;
+  max-width:100%!important;
+  min-width:0!important;
+  margin:0 0 7px!important;
+  padding:0!important;
+  gap:8px!important;
+  box-sizing:border-box!important;
+  transform:none!important;
 }
-.chat-bubble.chat-rich-text .chat-code-tools .chat-code-action{
-  flex:0 0 28px!important;
+.chat-canvas .chat-stream .chat-row .chat-avatar{
+  position:absolute!important;
+  top:0!important;
+  left:-34px!important;
+  right:auto!important;
+  z-index:2!important;
 }
+.chat-canvas .chat-stream .chat-row.user .chat-avatar{
+  left:auto!important;
+  right:-34px!important;
+}
+.chat-canvas .chat-stream .chat-row .chat-content{
+  display:flex!important;
+  flex:1 1 auto!important;
+  flex-direction:column!important;
+  align-items:stretch!important;
+  width:100%!important;
+  min-width:0!important;
+  max-width:100%!important;
+  margin:0!important;
+  padding:0!important;
+  transform:none!important;
+  box-sizing:border-box!important;
+}
+.chat-canvas .chat-stream .chat-row .chat-bubble{
+  display:block!important;
+  width:100%!important;
+  min-width:0!important;
+  max-width:100%!important;
+  margin:0!important;
+  box-sizing:border-box!important;
+  overflow-wrap:anywhere!important;
+}
+.chat-canvas .chat-stream .chat-row.user .chat-content{
+  align-items:flex-end!important;
+}
+.chat-canvas .chat-stream .chat-row.user .chat-bubble{
+  width:auto!important;
+  min-width:0!important;
+  max-width:100%!important;
+  align-self:flex-end!important;
+}
+.chat-canvas .chat-stream .chat-row .chat-actions{
+  width:100%!important;
+  box-sizing:border-box!important;
+}
+.chat-bubble.chat-rich-text .chat-code-tools [hidden]{display:none!important}
+.chat-bubble.chat-rich-text .chat-code-tools .chat-code-action{flex:0 0 28px!important}
 @media(max-width:800px){
-  .chat-canvas .chat-stream{
-    left:auto!important;
-    transform:none!important;
-    width:100%!important;
-    max-width:100%!important;
-    box-sizing:border-box!important;
-    padding-left:30px!important;
-    padding-right:30px!important;
-    overflow-x:clip!important;
-  }
-  .chat-canvas .chat-stream .chat-row{
-    width:100%!important;
-    max-width:100%!important;
-    margin:0 0 7px!important;
-    padding:0!important;
-    gap:0!important;
-    position:relative!important;
-  }
-  .chat-canvas .chat-stream .chat-row .chat-avatar{
-    position:absolute!important;
-    top:0!important;
-    left:-27px!important;
-    right:auto!important;
-    z-index:2!important;
-  }
-  .chat-canvas .chat-stream .chat-row.user .chat-avatar{
-    left:auto!important;
-    right:-27px!important;
-  }
-  .chat-canvas .chat-stream .chat-row .chat-content{
-    width:100%!important;
-    max-width:100%!important;
-    min-width:0!important;
-    flex:1 1 100%!important;
-    margin:0!important;
-    padding:0!important;
-    transform:none!important;
-  }
-  .chat-canvas .chat-stream .chat-row .chat-bubble{
-    width:100%!important;
-    max-width:100%!important;
-    margin:0!important;
-    box-sizing:border-box!important;
-    overflow-wrap:anywhere!important;
-  }
+  .chat-canvas .chat-stream .chat-row .chat-avatar{left:-29px!important}
+  .chat-canvas .chat-stream .chat-row.user .chat-avatar{left:auto!important;right:-29px!important}
 }
