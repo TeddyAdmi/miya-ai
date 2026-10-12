@@ -238,9 +238,13 @@ body.light .chat-row.user .chat-bubble{background:#fff!important;border-color:#d
 .chat-bubble.chat-rich-text em{font-style:italic!important}
 .chat-bubble.chat-rich-text blockquote{margin:10px 0 14px!important;padding:9px 13px!important;border-left:3px solid #9b83e8!important;border-radius:0 8px 8px 0!important;background:rgba(145,115,220,.09)!important}
 .chat-bubble.chat-rich-text blockquote p{margin:0!important}
-.chat-bubble.chat-rich-text .chat-code-block{position:relative;max-width:100%;min-width:0;margin:10px 0 14px;padding-top:34px;border:1px solid var(--line,#34445b);border-radius:10px;background:rgba(10,16,30,.38);overflow:hidden}
-.chat-bubble.chat-rich-text .chat-code-copy{position:absolute;top:6px;right:7px;z-index:1;border:1px solid rgba(145,131,220,.45);border-radius:7px;padding:5px 9px;background:rgba(112,91,190,.18);color:inherit;font:inherit;font-size:12px;line-height:1.3;cursor:pointer}
-.chat-bubble.chat-rich-text .chat-code-copy:hover{background:rgba(145,131,220,.28)}
+.chat-bubble.chat-rich-text .chat-code-block{position:relative;max-width:100%;min-width:0;margin:10px 0 14px;padding-top:38px;border:1px solid var(--line,#34445b);border-radius:10px;background:rgba(10,16,30,.38);overflow:hidden}
+.chat-bubble.chat-rich-text .chat-code-tools{position:absolute;top:5px;right:7px;z-index:1;display:flex;align-items:center;gap:5px}
+.chat-bubble.chat-rich-text .chat-code-action{display:grid;place-items:center;width:28px;height:28px;padding:5px;border:1px solid rgba(145,131,220,.42);border-radius:7px;background:rgba(112,91,190,.16);color:inherit;cursor:pointer}
+.chat-bubble.chat-rich-text .chat-code-action:hover{background:rgba(145,131,220,.3);border-color:rgba(145,131,220,.8)}
+.chat-bubble.chat-rich-text .chat-code-action svg{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+body.light .chat-bubble.chat-rich-text .chat-code-action{background:#f2f5fb;border-color:#d7dfeb;color:#24364e}
+body.light .chat-bubble.chat-rich-text .chat-code-action:hover{background:#e6ecf7}
 .chat-bubble.chat-rich-text pre{margin:0!important;padding:10px 14px 13px!important;max-width:100%!important;overflow:visible!important;white-space:pre-wrap!important;overflow-wrap:anywhere!important;word-break:break-word!important}
 .chat-bubble.chat-rich-text pre code{font-family:ui-monospace,SFMono-Regular,Consolas,monospace!important;font-size:.92em!important;white-space:pre-wrap!important;overflow-wrap:anywhere!important;word-break:break-word!important}
 .chat-bubble.chat-rich-text code{padding:2px 5px!important;border-radius:5px!important;background:rgba(145,115,220,.13)!important;font-family:ui-monospace,SFMono-Regular,Consolas,monospace!important;font-size:.92em!important}
