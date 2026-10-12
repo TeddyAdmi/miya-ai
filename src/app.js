@@ -406,19 +406,11 @@ async function speakChatResponse(text,button){
  button.title="Подготавливаю озвучивание Светланой…";button.setAttribute("aria-label","Подготавливаю озвучивание Светланой…");
  if(activeChatSpeechStopButton)activeChatSpeechStopButton.hidden=false;
  try{
-  // Restore the original, verified AHM7 flow: one Russian Svetlana voice for all text.
-  const voicesResponse=await fetch("https://ahm7xmakki.com/api/voices",{method:"GET",cache:"no-store",signal:controller.signal});
-  if(!voicesResponse.ok)throw new Error("VOICE_LIST_HTTP_"+voicesResponse.status);
-  const payload=await voicesResponse.json();
-  const voices=Array.isArray(payload)?payload:(payload.voices||payload.data||payload.items||[]);
-  if(!Array.isArray(voices)||!voices.length)throw new Error("VOICE_LIST_EMPTY");
-  const name=v=>String(v?.name||v?.voiceName||v?.label||v?.title||"").trim();
-  const language=v=>String(v?.language||v?.lang||v?.locale||"").trim();
-  const matches=voices.map((voice,index)=>({voice,index})).filter(x=>/^(svetlana|светлана)$/i.test(name(x.voice)));
-  const selected=matches.find(x=>/russian|русск|(^|[-_])ru($|[-_])/i.test(language(x.voice)))||matches[0];
-  if(!selected)throw new Error("SVETLANA_VOICE_NOT_FOUND");
-  // Match the original working implementation: use the catalog voice index unchanged.
-  const voiceIndex=selected.voice.index;
+  // Use the same shared catalog loader and Svetlana matching as the original working version.
+  if(!Array.isArray(voiceCatalog)||!voiceCatalog.length)await loadVoiceCatalog();
+  const voice=voiceCatalog.find(v=>/svetlana|светлана/i.test(String(v.name||"")));
+  if(!voice)throw new Error("Голос Светлана не найден в каталоге");
+  const voiceIndex=voice.index;
   if(voiceIndex===undefined||voiceIndex===null||voiceIndex==="")throw new Error("SVETLANA_VOICE_INDEX_MISSING");
   const chunks=[];let rest=value;
   while(rest.length>1800){
