@@ -2449,16 +2449,32 @@ async function generateVoice(text){
   const results=[];
   // Только прямой AHM7 TTS. Никакого Puter, регистрации или внешнего fallback.
   for(let i=0;i<parts.length;i++){
-   const response=await fetch("https://ahm7xmakki.com/api/tts",{
-    method:"POST",
-    headers:{"Content-Type":"application/json","Accept":"audio/mpeg"},
-    // При нулевом положении ползунка передаём AHM7 его рабочую скорость по умолчанию.
-    body:JSON.stringify({voiceIndex,text:parts[i],pitch,rate:rate===0?1:rate})
-   });
-   if(!response.ok){
-    let detail="";try{detail=(await response.text()).slice(0,240)}catch{}
-    throw new Error("AHM7_TTS_HTTP_"+response.status+(detail?": "+detail:""));
+   // AHM7 может возвращать 500 для отдельных форматов запроса. Пробуем совместимые варианты
+   // последовательно, без Puter и без регистрации.
+   const voicePosition=voiceCatalog.findIndex(v=>Number(v?.index)===voiceIndex)+1;
+   const payloads=[
+    {voiceIndex,text:parts[i],pitch,rate:rate===0?1:rate},
+    {voiceIndex,text:parts[i],pitch,rate:0},
+    {voiceIndex,text:parts[i],pitch},
+    ...(voicePosition>0&&voicePosition!==voiceIndex?[
+     {voiceIndex:voicePosition,text:parts[i],pitch,rate:1},
+     {voiceIndex:voicePosition,text:parts[i],pitch,rate:0},
+     {voiceIndex:voicePosition,text:parts[i],pitch}
+    ]:[])
+   ];
+   let response=null,lastDetail="";
+   for(let attempt=0;attempt<payloads.length;attempt++){
+    response=await fetch("https://ahm7xmakki.com/api/tts",{
+     method:"POST",headers:{"Content-Type":"application/json"},
+     body:JSON.stringify(payloads[attempt])
+    });
+    if(response.ok)break;
+    lastDetail="";try{lastDetail=(await response.text()).slice(0,240)}catch{}
+    if((response.status!==500&&response.status!==502)||attempt===payloads.length-1){
+     throw new Error("AHM7_TTS_HTTP_"+response.status+(lastDetail?": "+lastDetail:""));
+    }
    }
+   if(!response?.ok)throw new Error("AHM7_TTS_HTTP_"+response?.status+(lastDetail?": "+lastDetail:""));
    const type=String(response.headers.get("content-type")||"").toLowerCase();
    if(type.includes("application/json"))throw new Error("AHM7_TTS_RETURNED_JSON");
    const blob=await response.blob();
