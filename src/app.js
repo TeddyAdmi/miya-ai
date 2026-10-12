@@ -49,6 +49,7 @@ body.light .image-viewer-created-info .image-viewer-created-date{color:#64748b!i
 .generation-loading:not(.video-generation-loading){position:fixed!important;left:calc(50% + 102.5px)!important;top:50%!important;transform:translate(-50%,-50%)!important;z-index:1200!important;padding:6px 8px!important;min-width:0!important;min-height:0!important;height:auto!important;width:max-content!important;max-width:calc(100vw - 24px)!important;box-sizing:border-box!important;overflow:visible!important;margin:0!important}
 .generation-loading:not(.video-generation-loading) .generation-progress{width:max-content!important;max-width:100%!important;gap:8px!important;justify-content:flex-start!important;align-items:center!important}
 .generation-loading:not(.video-generation-loading) .progress-circle{width:40px!important;height:40px!important;flex:0 0 40px!important}
+.generation-loading:not(.video-generation-loading) .progress-circle .progress-percent{font-size:8px!important;line-height:1!important;letter-spacing:-.02em!important;white-space:nowrap!important}
 .generation-loading:not(.video-generation-loading) .progress-copy{display:flex!important;flex-direction:column!important;align-items:flex-start!important;justify-content:center!important;gap:3px!important;width:max-content!important;max-width:calc(100vw - 80px)!important;flex:0 1 auto!important;overflow:hidden!important;text-align:left!important}
 .generation-loading:not(.video-generation-loading) .progress-copy b,.generation-loading:not(.video-generation-loading) .progress-model{display:block!important;flex:0 0 auto!important;width:max-content!important;max-width:100%!important;white-space:nowrap!important;font-size:14px!important;line-height:1.15!important;text-align:left!important;overflow:hidden!important;text-overflow:ellipsis!important}
 body.light .generation-loading:not(.video-generation-loading) .progress-circle::before{background:rgba(255,255,255,.86)!important}
@@ -160,8 +161,9 @@ body.light .chat-welcome.section-welcome .hero-mark.image .icon-image{filter:dro
  .composer.mode-chat .chat-attachment-list:not([hidden]){max-width:calc(100% - 120px)!important}
 }
 /* Keep the media wall and library tabs close to the workspace heading, as previously approved. */
-.workspace-head{padding-bottom:6px!important}
 .canvas{padding-top:0!important}
+/* Add space to actual media cards only; the empty-state text and icon keep their previous position. */
+.canvas .result-grid,.canvas .voice-wall{margin-top:6px!important}
 /* Do not add another gap after the wall heading's own description. */
 .chat-room .chat-welcome.section-welcome p,.studio-room .chat-welcome.section-welcome p{margin-bottom:0!important}
 
@@ -1314,7 +1316,7 @@ function buildMediaCard(item,{video=false}={}){
    media=document.createElement("img");media.alt="Miya Studio";media.style.cursor="zoom-in";media.title="Открыть изображение";
    media.decoding="async";
    const storedUrl=String(item.url||"");
-   let proxyUrl="",directUrl=storedUrl,triedProxy=false,triedDirect=false,retryCount=0;
+   let proxyUrl="",directUrl=storedUrl,triedProxy=false,triedDirect=false,retryCount=0,preferredPreviewUrl=String(item.previewUrl||"");
    try{
      const parsed=new URL(storedUrl,window.location.origin);
      if(parsed.pathname.endsWith("/api/image-jpeg")){
@@ -1348,8 +1350,8 @@ function buildMediaCard(item,{video=false}={}){
    });
    media.loading="eager";
    media.fetchPriority="high";
-   const initialImageUrl=isDeadVheer?(proxyUrl||directUrl):(directUrl||proxyUrl);
-   if(proxyUrl&&initialImageUrl===proxyUrl)triedProxy=true;
+   const initialImageUrl=preferredPreviewUrl||(isDeadVheer?(proxyUrl||directUrl):(directUrl||proxyUrl));
+   if(proxyUrl&&(initialImageUrl===proxyUrl||String(initialImageUrl).startsWith("/api/image-jpeg?")))triedProxy=true;
    else if(initialImageUrl===directUrl)triedDirect=true;
    // Start loading the wall thumbnail immediately. IndexedDB can be slow or
    // blocked for large images; it must never delay the visible image itself.
@@ -2675,7 +2677,7 @@ function showLoading(){
   const selectedModel=referenceImage?($("#composerModel")?.value||"Nano Banana 2"):($("#composerModel")?.value||"FLUX Dev");
   const card=document.createElement("div");card.className="generation-loading"+(referenceImage?" has-upload":" no-upload");
   card.dataset.model=selectedModel;
-  card.innerHTML='<div class="generation-progress"><div class="progress-circle is-active"><span class="progress-percent">1%</span></div><div class="progress-copy"><span class="progress-model"></span><b>Создание изображения</b></div></div>';
+  card.innerHTML='<div class="generation-progress"><div class="progress-circle is-active"><span class="progress-percent">1%</span></div><div class="progress-copy"><b>Создание изображения</b><span class="progress-model"></span></div></div>';
   card.querySelector(".progress-model").textContent=imageModelLabel(selectedModel);
   grid.prepend(card);scrollImagesToTop();return;
  }
@@ -2690,7 +2692,7 @@ function showLoading(){
  card.querySelector(".progress-model").textContent=selectedVideoModel;
  grid.appendChild(card);scrollImagesToTop();
 }
-function showImage(url,prompt="",model="FLUX Dev",ratio=""){
+async function showImage(url,prompt="",model="FLUX Dev",ratio=""){
  const rawUrl=String(url||"").trim();
  const displayUrl=rawUrl.startsWith("/api/image-jpeg?")
    ? rawUrl
@@ -2698,12 +2700,35 @@ function showImage(url,prompt="",model="FLUX Dev",ratio=""){
       ? "/api/image-jpeg?url="+encodeURIComponent(rawUrl)+"&ratio="+encodeURIComponent(String(ratio))
         + (/^Nano Banana 2$/i.test(String(model||"")) ? "&sourceModel=Nano%20Banana%202" : "")
       : rawUrl);
+ const candidates=[rawUrl,displayUrl,jpegImageUrl(rawUrl)].filter((candidate,index,list)=>candidate&&list.indexOf(candidate)===index);
+ let loadedUrl="";
+ for(const candidate of candidates){
+   for(let attempt=0;attempt<3;attempt++){
+     const loaded=await new Promise(resolve=>{
+       const probe=new Image();let settled=false;
+       const finish=ok=>{if(settled)return;settled=true;clearTimeout(timer);probe.onload=null;probe.onerror=null;resolve(Boolean(ok))};
+       const timer=window.setTimeout(()=>finish(false),10000);
+       probe.onload=()=>finish((probe.naturalWidth||0)>0&&(probe.naturalHeight||0)>0);
+       probe.onerror=()=>finish(false);
+       probe.decoding="async";probe.src=candidate;
+       if(probe.complete&&(probe.naturalWidth||0)>0)finish(true);
+     });
+     if(loaded){loadedUrl=candidate;break;}
+     if(attempt<2)await new Promise(resolve=>window.setTimeout(resolve,attempt===0?900:1800));
+   }
+   if(loadedUrl)break;
+ }
+ if(!loadedUrl)throw new Error("Изображение создано, но пока не загрузилось. Попробуй ещё раз.");
  const item=saveMedia("image",displayUrl,prompt,model);
+ if(!item)throw new Error("Не удалось сохранить готовое изображение.");
+ item.previewUrl=loadedUrl;
+ try{localStorage.setItem(LIB_KEY,JSON.stringify(getLibrary().slice(0,500)))}catch{}
  const c=$("#canvas");let grid=c.querySelector(".result-grid");
  if(!grid){c.innerHTML='<div class="result-grid"></div>';grid=c.querySelector(".result-grid")}
  const card=buildMediaCard(item);grid.prepend(card);
  applyFirstSixMediaPriority(grid);
  $("#composerStatus").textContent=imageModelLabel(model)+" · готово";
+ return item;
 }
 async function compressAgnesReferenceImage(source){
  const value=String(source||"");
@@ -2789,7 +2814,7 @@ async function generateAgnesImage(prompt){
    if(composerProgress)composerProgress.textContent="100%";
    const completedModel=loader?.querySelector(".progress-model");if(completedModel)completedModel.textContent=displayModel;
    const urls=Array.isArray(data.imageUrls)&&data.imageUrls.length?data.imageUrls:[data.imageUrl];
-   urls.forEach(url=>showImage(url,prompt,displayModel));
+   await Promise.all(urls.map(url=>showImage(url,prompt,displayModel)));
    scrollImagesToTop();
    $("#composerInput").value="";syncInput();
    $("#composerModel").value="Agnes Image 2.5 Flash";
@@ -2941,7 +2966,7 @@ async function generateImage(prompt){
    const modelLabel=loader.querySelector(".progress-model");
    if(modelLabel)modelLabel.textContent=actualModel;
   }
-  generatedUrls.forEach((url)=>showImage(url,prompt,imageModelLabel(actualModel),useCvronImage?selectedRatio:""));
+  await Promise.all(generatedUrls.map(url=>showImage(url,prompt,imageModelLabel(actualModel),useCvronImage?selectedRatio:"")));
   scrollImagesToTop();
   if(modelName === "Nano Banana 2"){
    referenceImage=null;
