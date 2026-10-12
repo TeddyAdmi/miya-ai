@@ -1324,20 +1324,24 @@ function buildMediaCard(item,{video=false}={}){
    }catch{}
    const isDeadVheer=/^https?:\/\/access\.vheer\.com\/results\//i.test(directUrl);
    const setImageSource=url=>{if(url&&!mediaFailed)media.src=url};
-   media.addEventListener("error",()=>{
-     // A slow JPEG conversion must never hide a usable provider image.
-     if(proxyUrl&&!triedProxy&&media.src!==proxyUrl){triedProxy=true;setImageSource(proxyUrl);return}
-     if(proxyUrl&&!triedDirect&&directUrl){triedDirect=true;setImageSource(directUrl);return}
-     mediaFailed=true;media.removeAttribute("src");
-     media.alt=isDeadVheer?"Старая копия изображения":"Изображение временно недоступно";
-   });
    const isAgnesPreview=/^Agnes Image/i.test(String(item.model||""));
    if(isAgnesPreview&&!proxyUrl&&/^https:\/\/platform-outputs\.agnes-ai\.space\//i.test(directUrl)){
      proxyUrl="/api/image-jpeg?url="+encodeURIComponent(directUrl)+"&raw=1";
    }
+   const preferDirectPreview=/^FLUX Dev$/i.test(String(item.model||""));
+   media.addEventListener("error",()=>{
+     // Track attempts explicitly: media.src is absolute even when proxyUrl is relative.
+     // This prevents retrying the same failing proxy forever and allows a direct-source fallback.
+     if(proxyUrl&&!triedProxy){triedProxy=true;setImageSource(proxyUrl);return}
+     if(!triedDirect&&directUrl){triedDirect=true;setImageSource(directUrl);return}
+     mediaFailed=true;media.removeAttribute("src");
+     media.alt=isDeadVheer?"Старая копия изображения":"Изображение временно недоступно";
+   });
    media.loading="eager";
    media.fetchPriority="high";
-   const initialImageUrl=proxyUrl||directUrl;
+   const initialImageUrl=preferDirectPreview?directUrl:(proxyUrl||directUrl);
+   if(proxyUrl&&initialImageUrl===proxyUrl)triedProxy=true;
+   else if(initialImageUrl===directUrl)triedDirect=true;
    // Start loading the wall thumbnail immediately. IndexedDB can be slow or
    // blocked for large images; it must never delay the visible image itself.
    if(!isDeadVheer&&initialImageUrl){
