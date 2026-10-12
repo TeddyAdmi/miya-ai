@@ -177,7 +177,8 @@ body.light .chat-welcome.section-welcome .hero-mark.image .icon-image{filter:dro
 body.light .floating-wall-clear,body.light .floating-theme{
   color:#fff!important;background:rgba(8,24,44,.78)!important;border-color:rgba(255,255,255,.24)!important;
 }
-body.light .floating-wall-clear svg,body.light .floating-theme svg{stroke:#fff!important}
+body.light button.floating-wall-clear svg,body.light button.floating-theme svg,body.light button.floating-wall-clear svg *,body.light button.floating-theme svg *{stroke:#fff!important;color:#fff!important}
+body.light button.floating-wall-clear,body.light button.floating-theme{color:#fff!important}
 
 /* The remove control is always purple with a visible white X, without hover animation. */
 .composer-attachment button#composerAttachmentRemove{
@@ -5037,7 +5038,7 @@ function syncVoiceEditorTheme(){const backdrop=document.querySelector(".voice-ed
 function syncFloatingWallClearIcon(){
  const btn=$("#clearImageWall"),svg=btn?.querySelector("svg");if(!btn||!svg)return;
  const light=document.body.classList.contains("light");
- const color=light?"#51417f":"#9db0c7";
+ const color=light?"#ffffff":"#9db0c7";
  btn.style.setProperty("color",color,"important");
  svg.style.setProperty("stroke",color,"important");
  svg.style.setProperty("color",color,"important");
