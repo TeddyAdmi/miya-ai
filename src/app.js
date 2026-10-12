@@ -423,9 +423,8 @@ async function speakChatResponse(text,button){
   if(controller.signal.aborted)throw new DOMException("Aborted","AbortError");
   const voice=voiceCatalog.find(v=>/svetlana|светлана/i.test(String(v?.name||"")));
   if(!voice)throw new Error("Голос Светлана не найден в каталоге AHM7");
-  const voicePosition=voiceCatalog.indexOf(voice);
-  if(voicePosition<0)throw new Error("SVETLANA_VOICE_POSITION_MISSING");
-  const voiceIndex=voicePosition+1; // AHM7 /api/tts expects a 1-based position in /api/voices.
+  // Match the last known working AHM7 payload exactly: use the catalog's own index.
+  const voiceIndex=voice.index;
   if(voiceIndex===undefined||voiceIndex===null||voiceIndex==="")throw new Error("SVETLANA_VOICE_INDEX_MISSING");
   const chunks=[];let rest=value;
   while(rest.length>1800){
