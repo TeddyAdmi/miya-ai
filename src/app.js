@@ -165,7 +165,7 @@ body.light .chat-welcome.section-welcome .hero-mark.image .icon-image{filter:dro
 /* Do not add another gap after the wall heading's own description. */
 .chat-room .chat-welcome.section-welcome p,.studio-room .chat-welcome.section-welcome p{margin-bottom:0!important}
 
-/* Match the clear-wall and theme controls in light mode. */
+/* In light theme, these two circular controls have a light surface and dark icons. */
 .floating-wall-clear,.floating-theme{
   width:34px!important;height:34px!important;min-width:34px!important;min-height:34px!important;
   display:grid!important;place-items:center!important;
@@ -175,24 +175,30 @@ body.light .chat-welcome.section-welcome .hero-mark.image .icon-image{filter:dro
   stroke:currentColor!important;stroke-width:1.8!important;fill:none!important;
 }
 body.light .floating-wall-clear,body.light .floating-theme{
-  color:#fff!important;background:rgba(8,24,44,.78)!important;border-color:rgba(255,255,255,.24)!important;
+  color:#273047!important;background:rgba(255,255,255,.94)!important;border:1px solid rgba(39,48,71,.18)!important;
+  box-shadow:0 3px 10px rgba(15,23,42,.12)!important;
 }
-body.light button.floating-wall-clear svg,body.light button.floating-theme svg,body.light button.floating-wall-clear svg *,body.light button.floating-theme svg *{stroke:#fff!important;color:#fff!important}
-body.light button.floating-wall-clear,body.light button.floating-theme{color:#fff!important}
+body.light .floating-wall-clear svg,body.light .floating-theme svg,
+body.light .floating-wall-clear svg *,body.light .floating-theme svg *{
+  stroke:#273047!important;color:#273047!important;
+}
 
-/* The remove control is always purple with a visible white X, without hover animation. */
+/* Put the attachment remove button at the thumbnail's top-right corner; red circle, centered white X. */
+.composer-attachment{position:relative!important}
 .composer-attachment button#composerAttachmentRemove{
-  right:-2px!important;top:-2px!important;width:16px!important;height:16px!important;
-  min-width:16px!important;min-height:16px!important;padding:0!important;
-  border:1px solid #a78bfa!important;border-radius:50%!important;
-  background:#8b5cf6!important;color:#fff!important;font-size:13px!important;font-weight:700!important;
-  line-height:14px!important;display:grid!important;place-items:center!important;
-  box-shadow:none!important;transition:none!important;transform:none!important;
+  position:absolute!important;right:-5px!important;top:-5px!important;left:auto!important;bottom:auto!important;
+  width:18px!important;height:18px!important;min-width:18px!important;min-height:18px!important;
+  margin:0!important;padding:0!important;box-sizing:border-box!important;
+  border:1px solid #ffffff!important;border-radius:50%!important;
+  background:#ef4444!important;color:#ffffff!important;font-size:13px!important;font-weight:700!important;
+  line-height:1!important;display:flex!important;align-items:center!important;justify-content:center!important;
+  text-align:center!important;box-shadow:0 1px 4px rgba(0,0,0,.25)!important;
+  transition:none!important;transform:none!important;
 }
 .composer-attachment button#composerAttachmentRemove:hover,
 .composer-attachment button#composerAttachmentRemove:focus,
 .composer-attachment button#composerAttachmentRemove:active{
-  background:#8b5cf6!important;color:#fff!important;border-color:#a78bfa!important;
+  background:#dc2626!important;color:#ffffff!important;border-color:#ffffff!important;
   transition:none!important;transform:none!important;
 }
 .chat-room .chat-welcome.section-welcome .hero-mark,.studio-room .chat-welcome.section-welcome .hero-mark{margin-top:0!important;transform:none!important;position:relative!important;top:auto!important}
@@ -5038,7 +5044,7 @@ function syncVoiceEditorTheme(){const backdrop=document.querySelector(".voice-ed
 function syncFloatingWallClearIcon(){
  const btn=$("#clearImageWall"),svg=btn?.querySelector("svg");if(!btn||!svg)return;
  const light=document.body.classList.contains("light");
- const color=light?"#ffffff":"#9db0c7";
+ const color=light?"#273047":"#9db0c7";
  btn.style.setProperty("color",color,"important");
  svg.style.setProperty("stroke",color,"important");
  svg.style.setProperty("color",color,"important");
