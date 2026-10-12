@@ -225,7 +225,28 @@ body.light .chat-selection-actions button:hover,body.light .chat-selection-actio
 .chat-actions button[title="Остановить голос"]{color:#e87979!important}
 body.light .chat-selection-actions{background:#fff!important;border-color:#dbe2ec!important;box-shadow:0 8px 28px rgba(30,45,70,.18)!important}
 body.light .chat-row.user .chat-bubble{background:#fff!important;border-color:#dbe4ee!important;color:#182436!important;box-shadow:0 2px 5px rgba(36,57,83,.045)!important}
-`;
+.chat-bubble.chat-rich-text{line-height:1.72!important;overflow-wrap:anywhere!important}
+.chat-bubble.chat-rich-text p{margin:0 0 12px!important}
+.chat-bubble.chat-rich-text p:last-child{margin-bottom:0!important}
+.chat-bubble.chat-rich-text h2,.chat-bubble.chat-rich-text h3,.chat-bubble.chat-rich-text h4,.chat-bubble.chat-rich-text h5{font-size:1.04em!important;font-weight:750!important;line-height:1.4!important;margin:18px 0 8px!important;letter-spacing:-.01em!important}
+.chat-bubble.chat-rich-text h2:first-child,.chat-bubble.chat-rich-text h3:first-child,.chat-bubble.chat-rich-text h4:first-child,.chat-bubble.chat-rich-text h5:first-child{margin-top:0!important}
+.chat-bubble.chat-rich-text ul,.chat-bubble.chat-rich-text ol{margin:6px 0 14px!important;padding-left:24px!important}
+.chat-bubble.chat-rich-text li{padding-left:3px!important;margin:4px 0!important}
+.chat-bubble.chat-rich-text li::marker{color:#9b83e8!important}
+.chat-bubble.chat-rich-text strong{font-weight:750!important;color:inherit!important}
+.chat-bubble.chat-rich-text em{font-style:italic!important}
+.chat-bubble.chat-rich-text blockquote{margin:10px 0 14px!important;padding:9px 13px!important;border-left:3px solid #9b83e8!important;border-radius:0 8px 8px 0!important;background:rgba(145,115,220,.09)!important}
+.chat-bubble.chat-rich-text blockquote p{margin:0!important}
+.chat-bubble.chat-rich-text pre{margin:10px 0 14px!important;padding:12px 14px!important;max-width:100%!important;overflow-x:auto!important;border:1px solid var(--line,#34445b)!important;border-radius:10px!important;background:rgba(10,16,30,.38)!important;white-space:pre!important}
+.chat-bubble.chat-rich-text pre code{font-family:ui-monospace,SFMono-Regular,Consolas,monospace!important;font-size:.92em!important;white-space:pre!important}
+.chat-bubble.chat-rich-text code{padding:2px 5px!important;border-radius:5px!important;background:rgba(145,115,220,.13)!important;font-family:ui-monospace,SFMono-Regular,Consolas,monospace!important;font-size:.92em!important}
+.chat-bubble.chat-rich-text pre code{padding:0!important;background:transparent!important}
+.chat-bubble.chat-rich-text a{color:#a994ff!important;text-decoration:underline!important;text-underline-offset:2px!important}
+body.light .chat-bubble.chat-rich-text a{color:#5141b8!important}
+body.light .chat-bubble.chat-rich-text blockquote{background:rgba(112,80,190,.07)!important}
+body.light .chat-bubble.chat-rich-text pre{background:#f3f5f9!important;border-color:#dbe2ec!important;color:#182436!important}
+body.light .chat-bubble.chat-rich-text code{background:rgba(112,80,190,.1)!important}
+
  document.head.appendChild(st);
 })();
 function jpegImageUrl(url){
@@ -2867,6 +2888,58 @@ function retryLastChat(){
  document.querySelectorAll("#canvas .chat-error-row").forEach(row=>row.remove());
  requestChat();
 }
+function renderChatMarkdown(value){
+ const source=String(value??"").replace(/\r\n?/g,"\n").trim();
+ if(!source)return "";
+ const escapeHtml=value=>String(value).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;").replace(/'/g,"&#39;");
+ const inline=value=>{
+  let out=escapeHtml(value);
+  const tick=String.fromCharCode(96);
+  out=out.replace(new RegExp(tick+"([^"+tick+"\n]+)"+tick,"g"),"<code>$1</code>");
+  out=out.replace(/\*\*([^*\n]+)\*\*/g,"<strong>$1</strong>").replace(/__([^_\n]+)__/g,"<strong>$1</strong>");
+  out=out.replace(/(^|[^*])\*([^*\n]+)\*(?!\*)/g,"$1<em>$2</em>").replace(/(^|[^_])_([^_\n]+)_(?!_)/g,"$1<em>$2</em>");
+  out=out.replace(/~~([^~\n]+)~~/g,"<del>$1</del>");
+  out=out.replace(/(^|[\s(])((?:https?:\/\/)[^\s<]+)/g,(match,prefix,url)=>{
+   const clean=url.replace(/[.,!?;:)\]]+$/g,""),tail=url.slice(clean.length);
+   return prefix+'<a href="'+clean+'" target="_blank" rel="noopener noreferrer">'+clean+"</a>"+tail;
+  });
+  return out;
+ };
+ const lines=source.split("\n"),html=[];
+ let paragraph=[],listType="",listItems=[],codeLines=[],inCode=false;
+ const flushParagraph=()=>{if(paragraph.length){html.push("<p>"+paragraph.map(inline).join("<br>")+"</p>");paragraph=[]}};
+ const flushList=()=>{if(listItems.length){html.push("<"+listType+">"+listItems.map(item=>"<li>"+inline(item)+"</li>").join("")+"</"+listType+">");listItems=[];listType=""}};
+ const flushCode=()=>{if(codeLines.length){html.push("<pre><code>"+escapeHtml(codeLines.join("\n"))+"</code></pre>");codeLines=[]}};
+ for(const rawLine of lines){
+  const line=rawLine.trim();
+  if(line.startsWith(String.fromCharCode(96).repeat(3))){
+   flushParagraph();flushList();
+   if(inCode){flushCode();inCode=false}else{inCode=true}
+   continue;
+  }
+  if(inCode){codeLines.push(rawLine);continue}
+  if(!line){flushParagraph();flushList();continue}
+  if(/^([-*_])(?:\s*\1){2,}\s*$/.test(line)){flushParagraph();flushList();html.push("<hr>");continue}
+  const heading=line.match(/^(#{1,4})\s+(.+)$/);
+  if(heading){flushParagraph();flushList();const level=Math.min(heading[1].length+1,5);html.push("<h"+level+">"+inline(heading[2])+"</h"+level+">");continue}
+  const boldHeading=line.match(/^\*\*(.{2,90}?)\*\*\s*:?\s*$/);
+  if(boldHeading){flushParagraph();flushList();html.push("<h3>"+inline(boldHeading[1].replace(/:\s*$/,""))+"</h3>");continue}
+  const bullet=line.match(/^[-*+]\s+(.+)$/);
+  const numbered=line.match(/^\d+[.)]\s+(.+)$/);
+  if(bullet||numbered){
+   flushParagraph();
+   const nextType=bullet?"ul":"ol";
+   if(listType&&listType!==nextType)flushList();
+   listType=nextType;listItems.push((bullet||numbered)[1]);continue;
+  }
+  const quote=line.match(/^>\s?(.*)$/);
+  if(quote){flushParagraph();flushList();html.push("<blockquote><p>"+inline(quote[1])+"</p></blockquote>");continue}
+  flushList();paragraph.push(line);
+ }
+ flushParagraph();flushList();
+ if(inCode)flushCode();
+ return html.join("");
+}
 function addChatMessage(text,isUser,image="",isError=false){
  let stream=$("#canvas .chat-stream");
  if(!stream){
@@ -2877,7 +2950,7 @@ function addChatMessage(text,isUser,image="",isError=false){
  const row=document.createElement("div");row.className="chat-row "+(isUser?"user":"assistant")+(isError?" chat-error-row":"");
  const av=document.createElement("div");av.className="chat-avatar";av.textContent=isUser?"U":"M";
  const content=document.createElement("div");content.className="chat-content";
- const bubble=document.createElement("div");bubble.className="chat-bubble";bubble.textContent=text;
+ const bubble=document.createElement("div");bubble.className="chat-bubble";if(isUser){bubble.textContent=text}else{bubble.classList.add("chat-rich-text");bubble.innerHTML=renderChatMarkdown(text)}
  content.appendChild(bubble);
  if(image){const preview=document.createElement("img");preview.className="chat-image-attachment";preview.src=image;preview.alt="Прикреплённое изображение";content.insertBefore(preview,bubble)}
 
