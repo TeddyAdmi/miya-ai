@@ -90,12 +90,17 @@ body.light .chat-welcome.section-welcome .hero-mark.image .icon-image{filter:dro
 .studio-room .chat-welcome.section-welcome h2{order:2!important;margin:0 0 6px!important}
 .chat-room .chat-welcome.section-welcome p,
 .studio-room .chat-welcome.section-welcome p{order:3!important;margin:0 auto!important;line-height:1.5!important}
-/* Image/video preview: exactly 43×43. */
+/* All three sections use the same 43×43 attachment preview. */
+.composer.mode-chat .composer-attachment.has-image,
 .composer.mode-images .composer-attachment.has-image,
 .composer.mode-video .composer-attachment.has-image{
+  grid-column:2!important;grid-row:2!important;position:relative!important;
+  left:auto!important;right:auto!important;top:auto!important;bottom:auto!important;
   width:43px!important;height:43px!important;min-width:43px!important;max-width:43px!important;
   min-height:43px!important;max-height:43px!important;flex:0 0 43px!important;
+  align-self:center!important;justify-self:center!important;box-sizing:border-box!important;
 }
+.composer.mode-chat .composer-attachment.has-image img,
 .composer.mode-images .composer-attachment.has-image img,
 .composer.mode-video .composer-attachment.has-image img{
   display:block!important;width:43px!important;height:43px!important;min-width:43px!important;max-width:43px!important;
@@ -154,8 +159,8 @@ body.light .chat-welcome.section-welcome .hero-mark.image .icon-image{filter:dro
  .composer.mode-chat #composerInput,.composer.mode-images #composerInput,.composer.mode-video #composerInput{height:34px!important;min-height:34px!important}
  .composer.mode-chat .chat-attachment-list:not([hidden]){max-width:calc(100% - 120px)!important}
 }
-/* Preserve title -> description -> icon order and leave about 1 cm after the description. */
-.chat-room .chat-welcome.section-welcome p,.studio-room .chat-welcome.section-welcome p{margin-bottom:38px!important}
+/* Keep the icon above the title and leave 2 cm after the description before the wall. */
+.chat-room .chat-welcome.section-welcome p,.studio-room .chat-welcome.section-welcome p{margin-bottom:2cm!important}
 .chat-room .chat-welcome.section-welcome .hero-mark,.studio-room .chat-welcome.section-welcome .hero-mark{margin-top:0!important;transform:none!important;position:relative!important;top:auto!important}
 `;
  document.head.appendChild(st);
@@ -4514,7 +4519,12 @@ async function attachReferenceFile(file){
       chatAttachmentImages.push(dataUrl);
       referenceImage=chatAttachmentImages[0]||null;
       chatAttachmentFile=true;
-      renderChatAttachmentImages();
+      // Chat uses the same attachment preview as Images and Video.
+      // Keep the legacy list empty so it cannot create an extra grid row or shift controls.
+      const legacyList=$("#chatComposerAttachments");
+      if(legacyList){legacyList.replaceChildren();legacyList.hidden=true}
+      $("#composer")?.classList.remove("has-chat-attachments");
+      setComposerAttachment(dataUrl);
       try{sessionStorage.setItem("miyaReferenceImage",referenceImage||"")}catch{}
       $("#composerStatus").textContent="Картинка прикреплена — можно спросить меня о ней.";
       toast("Фото добавлено");
