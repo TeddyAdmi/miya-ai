@@ -160,7 +160,7 @@ body.light .chat-welcome.section-welcome .hero-mark.image .icon-image{filter:dro
  .composer.mode-chat .chat-attachment-list:not([hidden]){max-width:calc(100% - 120px)!important}
 }
 /* Keep the media wall and library tabs close to the workspace heading, as previously approved. */
-.workspace-head{padding-bottom:4px!important}
+.workspace-head{padding-bottom:6px!important}
 .canvas{padding-top:0!important}
 /* Do not add another gap after the wall heading's own description. */
 .chat-room .chat-welcome.section-welcome p,.studio-room .chat-welcome.section-welcome p{margin-bottom:0!important}
@@ -1314,7 +1314,7 @@ function buildMediaCard(item,{video=false}={}){
    media=document.createElement("img");media.alt="Miya Studio";media.style.cursor="zoom-in";media.title="Открыть изображение";
    media.decoding="async";
    const storedUrl=String(item.url||"");
-   let proxyUrl="",directUrl=storedUrl,triedProxy=false,triedDirect=false;
+   let proxyUrl="",directUrl=storedUrl,triedProxy=false,triedDirect=false,retryCount=0;
    try{
      const parsed=new URL(storedUrl,window.location.origin);
      if(parsed.pathname.endsWith("/api/image-jpeg")){
@@ -1329,10 +1329,20 @@ function buildMediaCard(item,{video=false}={}){
      proxyUrl="/api/image-jpeg?url="+encodeURIComponent(directUrl)+"&raw=1";
    }
    media.addEventListener("error",()=>{
-     // Every model gets the original image URL first, matching the fast Nano Banana/GPT Image preview.
-     // If a provider URL fails, try the same-origin JPEG/raw proxy once; never loop between sources.
+     // Provider image URLs can become available a moment after the generation card is created.
+     // Try the same-origin proxy once, then retry the original URL twice before showing an error.
      if(proxyUrl&&!triedProxy){triedProxy=true;setImageSource(proxyUrl);return}
      if(!triedDirect&&directUrl){triedDirect=true;setImageSource(directUrl);return}
+     if(!isDeadVheer&&directUrl&&retryCount<2){
+       retryCount++;
+       const retryDelay=retryCount===1?900:1800;
+       window.setTimeout(()=>{
+         if(!media.isConnected||mediaFailed)return;
+         media.removeAttribute("src");
+         media.src=directUrl;
+       },retryDelay);
+       return;
+     }
      mediaFailed=true;media.removeAttribute("src");
      media.alt=isDeadVheer?"Старая копия изображения":"Изображение временно недоступно";
    });
