@@ -398,7 +398,7 @@ async function speakChatResponse(text,button){
  activeChatSpeechController=controller;activeChatSpeechButton=button;
  activeChatSpeechStatus=$("#composerStatus")?.textContent||"AI Chat готов";
  const status=$("#composerStatus");const isSelectionListen=!!button.closest(".chat-selection-actions");
- if(status)status.textContent=isSelectionListen?"Подготовка русской озвучки выделенного текста…":"Подготовка русской озвучки сообщения…";
+ if(status)status.textContent=isSelectionListen?"Подготовка озвучивания Светланой…":"Подготовка озвучивания Светланой…";
  activeChatSpeechStopButton=button.closest(".chat-code-tools")?.querySelector('[data-code-action="stop-listen"]')||button.closest(".chat-prompt-tools")?.querySelector(".chat-prompt-stop")||button.closest(".chat-actions")?.querySelector(".chat-stop-speech")||null;
  button.dataset.originalHtml=button.innerHTML;button.dataset.originalTitle=button.title;button.dataset.originalAriaLabel=button.getAttribute("aria-label")||button.title;
  button.disabled=true;
@@ -406,39 +406,77 @@ async function speakChatResponse(text,button){
  button.title="Подготавливаю озвучивание Светланой…";button.setAttribute("aria-label","Подготавливаю озвучивание Светланой…");
  if(activeChatSpeechStopButton)activeChatSpeechStopButton.hidden=false;
  try{
-  // Always use the verified AHM7 Russian voice. Never fall back to browser voices or English TTS.
   const voicesResponse=await fetch("https://ahm7xmakki.com/api/voices",{method:"GET",cache:"no-store",signal:controller.signal});
   if(!voicesResponse.ok)throw new Error("VOICE_LIST_HTTP_"+voicesResponse.status);
   const voicesPayload=await voicesResponse.json();
   const voices=Array.isArray(voicesPayload)?voicesPayload:(voicesPayload.voices||voicesPayload.data||voicesPayload.items||[]);
-  const svetlana=voices.find(v=>String(v?.name||v?.voiceName||v?.label||"").trim().toLowerCase()==="svetlana");
-  if(!svetlana)throw new Error("SVETLANA_VOICE_NOT_FOUND");
-  const voiceIndex=svetlana.index??svetlana.voiceIndex??svetlana.id;
-  if(voiceIndex===undefined||voiceIndex===null)throw new Error("SVETLANA_VOICE_INDEX_MISSING");
-  const ttsResponse=await fetch("https://ahm7xmakki.com/api/tts",{
-   method:"POST",headers:{"Content-Type":"application/json","Accept":"audio/mpeg"},
-   body:JSON.stringify({text:value,voice:voiceIndex,pitch:0,rate:0}),signal:controller.signal
-  });
-  if(!ttsResponse.ok){
-   let detail="";try{detail=(await ttsResponse.text()).slice(0,240)}catch{}
-   throw new Error("SVETLANA_TTS_HTTP_"+ttsResponse.status+(detail?": "+detail:""));
+  if(!Array.isArray(voices)||!voices.length)throw new Error("VOICE_LIST_EMPTY");
+  const voiceName=v=>String(v?.name||v?.voiceName||v?.label||v?.title||"").trim().toLowerCase();
+  const voiceLang=v=>String(v?.lang||v?.language||v?.locale||v?.languageCode||v?.language_code||"").trim().toLowerCase();
+  const findSvetlana=kind=>{
+   const nameMatches=voices.map((v,i)=>({v,i})).filter(({v})=>voiceName(v).includes("svetlana"));
+   const languageMatches=nameMatches.filter(({v})=>{
+    const lang=voiceLang(v),description=[voiceName(v),String(v?.description||""),String(v?.gender||"")].join(" ").toLowerCase();
+    if(kind==="ru")return /(^|[-_ ])ru([-_ ]|$)|russian|русск/.test(lang+" "+description);
+    return /(^|[-_ ])en([-_ ]|$)|english|англ/.test(lang+" "+description);
+   });
+   return languageMatches[0]||null;
+  };
+  const russian=findSvetlana("ru");
+  const english=findSvetlana("en");
+  if(!russian)throw new Error("SVETLANA_RUSSIAN_VOICE_NOT_FOUND");
+  const voiceIndex=entry=>entry.i+1; // AHM7 requires the 1-based position in /api/voices.
+  const segments=[];
+  const tokens=value.match(/[\\u0400-\\u04FF]+|[A-Za-z]+(?:['’][A-Za-z]+)*|\\s+|[^A-Za-z\\u0400-\\u04FF\\s]+/gu)||[value];
+  let current=null,pending="";
+  for(const token of tokens){
+   const hasRu=/[\\u0400-\\u04FF]/u.test(token),hasEn=/[A-Za-z]/u.test(token);
+   if(hasRu||hasEn){
+    const lang=hasRu?"ru":"en";
+    if(current&&current.lang===lang)current.text+=pending+token;
+    else{if(current)segments.push(current);current={lang,text:pending+token};}
+    pending="";
+   }else if(current)current.text+=token;
+   else pending+=token;
   }
-  const contentType=String(ttsResponse.headers.get("content-type")||"").toLowerCase();
-  if(contentType.includes("application/json"))throw new Error("SVETLANA_TTS_RETURNED_JSON");
-  const audioBlob=await ttsResponse.blob();
-  if(!audioBlob.size)throw new Error("SVETLANA_TTS_EMPTY_AUDIO");
-  activeChatSpeechUrl=URL.createObjectURL(audioBlob);
-  const audio=new Audio(activeChatSpeechUrl);
-  activeChatSpeechAudio=audio;
-  audio.onended=()=>{if(activeChatSpeechAudio===audio)stopChatSpeech()};
-  audio.onerror=()=>{if(activeChatSpeechAudio===audio){stopChatSpeech();toast("Не удалось воспроизвести озвучку Светланы.")}};
+  if(current){current.text+=pending;segments.push(current)}
+  else if(pending)segments.push({lang:"ru",text:pending});
+  const playableSegments=segments.filter(s=>s.text.trim());
+  if(playableSegments.some(s=>s.lang==="en")&&!english)throw new Error("SVETLANA_ENGLISH_VOICE_NOT_FOUND");
+  const blobs=[];
+  for(let i=0;i<playableSegments.length;i++){
+   if(controller.signal.aborted)throw new DOMException("Aborted","AbortError");
+   const segment=playableSegments[i],selected=segment.lang==="ru"?russian:english;
+   if(status)status.textContent=segment.lang==="ru"?"Светлана озвучивает русский текст…":"Svetlana is speaking the English text…";
+   const response=await fetch("https://ahm7xmakki.com/api/tts",{
+    method:"POST",headers:{"Content-Type":"application/json","Accept":"audio/mpeg"},
+    body:JSON.stringify({text:segment.text,voiceIndex:voiceIndex(selected),pitch:0,rate:0}),signal:controller.signal
+   });
+   if(!response.ok){let detail="";try{detail=(await response.text()).slice(0,240)}catch{}throw new Error("SVETLANA_TTS_HTTP_"+response.status+(detail?": "+detail:""))}
+   const type=String(response.headers.get("content-type")||"").toLowerCase();
+   if(type.includes("application/json"))throw new Error("SVETLANA_TTS_RETURNED_JSON");
+   const blob=await response.blob();if(!blob.size)throw new Error("SVETLANA_TTS_EMPTY_AUDIO");
+   blobs.push(blob);
+  }
+  if(controller.signal.aborted)throw new DOMException("Aborted","AbortError");
+  // Play language chunks in their original order, using only AHM7's Svetlana voices.
+  const playNext=async index=>{
+   if(controller.signal.aborted)return;
+   if(index>=blobs.length){stopChatSpeech();return}
+   if(activeChatSpeechUrl){try{URL.revokeObjectURL(activeChatSpeechUrl)}catch{}}
+   activeChatSpeechUrl=URL.createObjectURL(blobs[index]);
+   const audio=new Audio(activeChatSpeechUrl);activeChatSpeechAudio=audio;
+   audio.onended=()=>{if(activeChatSpeechAudio===audio)playNext(index+1)};
+   audio.onerror=()=>{if(activeChatSpeechAudio===audio){stopChatSpeech();toast("Не удалось воспроизвести озвучку Светланы.")}};
+   await audio.play();
+  };
   button.disabled=false;button.innerHTML=button.dataset.originalHtml;
   button.title="Остановить воспроизведение";button.setAttribute("aria-label","Остановить воспроизведение");
-  if(status)status.textContent=isSelectionListen?"Светлана озвучивает выделенный текст":"Светлана озвучивает сообщение";
-  await audio.play();
+  if(status)status.textContent="Озвучивание Светланой — нажми ещё раз, чтобы остановить";
+  await playNext(0);
  }catch(error){
   const aborted=controller.signal.aborted||error?.name==="AbortError";
-  if(!aborted){console.error("Chat Svetlana TTS failed",error);stopChatSpeech();toast("Не удалось получить русскую озвучку Светланы. Попробуй ещё раз.");}
+  if(!aborted){console.error("Chat Svetlana TTS failed",error);stopChatSpeech();toast("Не удалось получить озвучку Светланы. Проверь список голосов AHM7 и попробуй ещё раз.");}
   else stopChatSpeech();
  }
 }
