@@ -225,6 +225,7 @@ body.light .chat-selection-actions button:hover,body.light .chat-selection-actio
 .chat-actions button[title="Остановить голос"]{color:#e87979!important}
 body.light .chat-selection-actions{background:#fff!important;border-color:#dbe2ec!important;box-shadow:0 8px 28px rgba(30,45,70,.18)!important}
 body.light .chat-row.user .chat-bubble{background:#fff!important;border-color:#dbe4ee!important;color:#182436!important;box-shadow:0 2px 5px rgba(36,57,83,.045)!important}
+/* Rich assistant response formatting */
 .chat-bubble.chat-rich-text{line-height:1.72!important;overflow-wrap:anywhere!important}
 .chat-bubble.chat-rich-text p{margin:0 0 12px!important}
 .chat-bubble.chat-rich-text p:last-child{margin-bottom:0!important}
