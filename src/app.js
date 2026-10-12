@@ -3067,7 +3067,7 @@ function addChatMessage(text,isUser,image="",isError=false){
    promptTools.querySelector(".chat-prompt-video").onclick=()=>runPromptInMode("video");
    promptTools.querySelector(".chat-prompt-copy").onclick=e=>copyChatText(detectedPrompt.text,e.currentTarget);
    promptTools.querySelector(".chat-prompt-listen").onclick=e=>speakChatResponse(detectedPrompt.text,e.currentTarget);
-   promptCard.appendChild(promptTools);content.appendChild(promptCard);
+   promptCard.appendChild(promptTools);bubble.appendChild(promptCard);
  }
  if(image){const preview=document.createElement("img");preview.className="chat-image-attachment";preview.src=image;preview.alt="Прикреплённое изображение";content.insertBefore(preview,bubble)}
 
