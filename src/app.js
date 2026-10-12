@@ -159,8 +159,8 @@ body.light .chat-welcome.section-welcome .hero-mark.image .icon-image{filter:dro
  .composer.mode-chat #composerInput,.composer.mode-images #composerInput,.composer.mode-video #composerInput{height:34px!important;min-height:34px!important}
  .composer.mode-chat .chat-attachment-list:not([hidden]){max-width:calc(100% - 120px)!important}
 }
-/* Leave 2 cm between the workspace description and the section wall heading. */
-.workspace-head{padding-bottom:2cm!important}
+/* Keep the media wall and library tabs close to the workspace heading, as previously approved. */
+.workspace-head{padding-bottom:4px!important}
 .canvas{padding-top:0!important}
 /* Do not add another gap after the wall heading's own description. */
 .chat-room .chat-welcome.section-welcome p,.studio-room .chat-welcome.section-welcome p{margin-bottom:0!important}
@@ -1328,10 +1328,9 @@ function buildMediaCard(item,{video=false}={}){
    if(isAgnesPreview&&!proxyUrl&&/^https:\/\/platform-outputs\.agnes-ai\.space\//i.test(directUrl)){
      proxyUrl="/api/image-jpeg?url="+encodeURIComponent(directUrl)+"&raw=1";
    }
-   const preferDirectPreview=/^FLUX Dev$/i.test(String(item.model||""));
    media.addEventListener("error",()=>{
-     // Track attempts explicitly: media.src is absolute even when proxyUrl is relative.
-     // This prevents retrying the same failing proxy forever and allows a direct-source fallback.
+     // Every model gets the original image URL first, matching the fast Nano Banana/GPT Image preview.
+     // If a provider URL fails, try the same-origin JPEG/raw proxy once; never loop between sources.
      if(proxyUrl&&!triedProxy){triedProxy=true;setImageSource(proxyUrl);return}
      if(!triedDirect&&directUrl){triedDirect=true;setImageSource(directUrl);return}
      mediaFailed=true;media.removeAttribute("src");
@@ -1339,7 +1338,7 @@ function buildMediaCard(item,{video=false}={}){
    });
    media.loading="eager";
    media.fetchPriority="high";
-   const initialImageUrl=preferDirectPreview?directUrl:(proxyUrl||directUrl);
+   const initialImageUrl=isDeadVheer?(proxyUrl||directUrl):(directUrl||proxyUrl);
    if(proxyUrl&&initialImageUrl===proxyUrl)triedProxy=true;
    else if(initialImageUrl===directUrl)triedDirect=true;
    // Start loading the wall thumbnail immediately. IndexedDB can be slow or
