@@ -207,13 +207,20 @@ body.light .floating-wall-clear svg *,body.light .floating-theme svg *{
 })();
 (function ensureChatSpeechAndSelectionStyles(){
  if(document.getElementById("miyaChatSpeechSelectionStyles"))return;
- document.addEventListener("selectionchange",()=>{const selected=String(window.getSelection?.()?.toString()||"").trim();if(!selected)document.querySelectorAll(".chat-selection-actions").forEach(el=>{el.hidden=true})});
+ document.addEventListener("pointerdown",event=>{if(event.target?.closest?.(".chat-selection-actions"))return;document.querySelectorAll(".chat-selection-actions").forEach(el=>{el.hidden=true})},true);
  const st=document.createElement("style");st.id="miyaChatSpeechSelectionStyles";
  st.textContent=`#composerMic.transcribing svg{animation:miyaSpeechSpin .8s linear infinite;transform-origin:50% 50%}
 #composerMic.transcribing svg circle{fill:none!important;stroke:currentColor!important;stroke-width:2.2!important;stroke-linecap:round!important}
 @keyframes miyaSpeechSpin{to{transform:rotate(360deg)}}
 .chat-selection-actions{position:fixed!important;z-index:2147482000!important;display:flex!important;align-items:center!important;justify-content:center!important;gap:8px!important;flex-wrap:nowrap!important;max-width:calc(100vw - 16px)!important;padding:5px!important;border:1px solid #34384b!important;border-radius:12px!important;background:var(--surface,#0b1d34)!important;border-color:var(--line,#154d83)!important;box-shadow:0 10px 30px rgba(0,0,0,.28)!important;isolation:isolate!important;backdrop-filter:none!important;-webkit-backdrop-filter:none!important}
 .chat-selection-actions[hidden]{display:none!important}
+.chat-prompt-tools{display:flex!important;align-items:center!important;flex-wrap:wrap!important;gap:7px!important;margin:8px 0 12px!important}
+.chat-prompt-tools button{display:inline-flex!important;align-items:center!important;justify-content:center!important;min-height:30px!important;padding:5px 10px!important;border:1px solid var(--line,#31506e)!important;border-radius:8px!important;background:var(--surface,#0b1d34)!important;color:var(--text,#e5e7eb)!important;font:inherit!important;font-size:12px!important;cursor:pointer!important}
+.chat-prompt-tools button:hover{border-color:#9b83e8!important;background:rgba(145,115,220,.14)!important}
+.chat-prompt-tools .chat-prompt-stop{color:#e87979!important}
+.chat-prompt-tools .chat-prompt-stop[hidden]{display:none!important}
+body.light .chat-prompt-tools button{background:#fff!important;color:#182436!important;border-color:#dbe2ec!important}
+
 .chat-selection-actions button{appearance:none!important;display:grid!important;place-items:center!important;width:30px!important;height:30px!important;flex:0 0 30px!important;padding:5px!important;border:1px solid transparent!important;border-radius:8px!important;background:transparent!important;color:var(--text,#e5e7eb)!important;cursor:pointer!important;transition:background .15s,border-color .15s,color .15s!important}
 .chat-selection-actions button svg{width:18px!important;height:18px!important;fill:none!important;stroke:currentColor!important;stroke-width:1.8!important;stroke-linecap:round!important;stroke-linejoin:round!important;pointer-events:none!important}
 .chat-selection-actions button:hover,.chat-selection-actions button:focus-visible{border-color:rgba(157,112,255,.42)!important;background:rgba(157,112,255,.13)!important;color:#b99aff!important;outline:none!important}
@@ -256,6 +263,41 @@ body.light .chat-bubble.chat-rich-text pre{background:#f3f5f9!important;border-c
 body.light .chat-bubble.chat-rich-text code{background:rgba(112,80,190,.1)!important}
 `;
  document.head.appendChild(st);
+ // Keep chat messages exactly aligned to the real composer bounds, not guessed viewport widths.
+ const syncChatStreamBounds=()=>{
+   const stream=document.querySelector(".chat-canvas .chat-stream");
+   const composer=document.querySelector(".composer.mode-chat")||document.querySelector(".composer");
+   const canvas=stream?.closest(".chat-canvas");
+   if(!stream||!composer||!canvas)return;
+   const cr=composer.getBoundingClientRect(),wr=canvas.getBoundingClientRect();
+   if(!cr.width||!wr.width)return;
+   stream.style.setProperty("width",cr.width+"px","important");
+   stream.style.setProperty("max-width","none","important");
+   stream.style.setProperty("position","relative","important");
+   stream.style.setProperty("left",(cr.left-wr.left)+"px","important");
+   stream.style.setProperty("margin-left","0","important");
+   stream.style.setProperty("margin-right","0","important");
+   stream.style.setProperty("transform","none","important");
+   stream.style.setProperty("padding-left","0","important");
+   stream.style.setProperty("padding-right","0","important");
+ };
+ const scheduleChatBounds=()=>requestAnimationFrame(syncChatStreamBounds);
+ window.addEventListener("resize",scheduleChatBounds,{passive:true});
+ window.addEventListener("scroll",scheduleChatBounds,{passive:true,capture:true});
+ if(typeof ResizeObserver!=="undefined"){
+   const chatBoundsObserver=new ResizeObserver(scheduleChatBounds);
+   const observeChatBounds=()=>{
+     const composer=document.querySelector(".composer.mode-chat")||document.querySelector(".composer");
+     const canvas=document.querySelector(".chat-canvas");
+     if(composer)chatBoundsObserver.observe(composer);
+     if(canvas)chatBoundsObserver.observe(canvas);
+     scheduleChatBounds();
+   };
+   observeChatBounds();
+   document.addEventListener("click",event=>{if(event.target?.closest?.(".composer")||event.target?.closest?.("[data-mode]"))scheduleChatBounds()},true);
+   const boundsMountObserver=new MutationObserver(observeChatBounds);
+   boundsMountObserver.observe(document.body,{childList:true,subtree:true});
+ }
 })();
 function jpegImageUrl(url){
   const value=String(url||"").trim();
@@ -322,7 +364,7 @@ async function speakChatResponse(text,button){
  activeChatSpeechController=controller;activeChatSpeechButton=button;
  activeChatSpeechStatus=$("#composerStatus")?.textContent||"AI Chat готов";
  const status=$("#composerStatus");if(status)status.textContent=button.closest(".chat-selection-actions")?"Подготовка озвучивания выделенного текста…":"Подготовка озвучивания сообщения…";
- activeChatSpeechStopButton=button.closest(".chat-code-tools")?.querySelector('[data-code-action="stop-listen"]')||button.closest(".chat-actions")?.querySelector(".chat-stop-speech")||null;
+ activeChatSpeechStopButton=button.closest(".chat-code-tools")?.querySelector('[data-code-action="stop-listen"]')||button.closest(".chat-prompt-tools")?.querySelector(".chat-prompt-stop")||button.closest(".chat-actions")?.querySelector(".chat-stop-speech")||null;
  const isSelectionListen=!!button.closest(".chat-selection-actions");
  button.dataset.originalHtml=button.innerHTML;button.dataset.originalTitle=button.title;button.dataset.originalAriaLabel=button.getAttribute("aria-label")||button.title;
  button.disabled=true;
@@ -2960,6 +3002,15 @@ function addChatMessage(text,isUser,image="",isError=false){
  const content=document.createElement("div");content.className="chat-content";
  const bubble=document.createElement("div");bubble.className="chat-bubble";if(isUser){bubble.textContent=text}else{bubble.classList.add("chat-rich-text");bubble.innerHTML=renderChatMarkdown(text);bubble.querySelectorAll(".chat-code-action").forEach(button=>{button.addEventListener("click",async()=>{const code=button.closest(".chat-code-block")?.querySelector("pre code")?.textContent||"";const action=button.dataset.codeAction;if(action==="stop-listen"){stopChatSpeech();return}if(!code.trim())return;if(action==="image"){setMode("images");$("#composerInput").value=code;syncInput();$("#composerInput").focus();toast("Промпт добавлен для создания картинки")}else if(action==="video"){setMode("video");$("#composerInput").value=code;syncInput();$("#composerInput").focus();toast("Промпт добавлен для создания видео")}else if(action==="listen"){document.querySelectorAll(".chat-selection-actions").forEach(el=>el.hidden=true);window.getSelection?.()?.removeAllRanges();speakChatResponse(code,button)}else if(action==="copy"){try{await navigator.clipboard.writeText(code);showCopySuccess(button);toast("Промпт скопирован")}catch{toast("Не удалось скопировать промпт")}}})})}
  content.appendChild(bubble);
+ if(!isUser&&!isError&&/\\bпромпт\\b|prompt/i.test(String(text||""))){
+   const promptTools=document.createElement("div");promptTools.className="chat-prompt-tools";
+   promptTools.innerHTML='<button type="button" class="chat-prompt-copy" title="Копировать промпт">Копировать</button><button type="button" class="chat-prompt-listen" title="Прослушать промпт">Прослушать</button><button type="button" class="chat-prompt-stop" title="Остановить озвучивание" hidden>Стоп</button><button type="button" class="chat-prompt-use" title="В промпт">В промпт</button>';
+   promptTools.querySelector(".chat-prompt-copy").onclick=e=>copyChatText(String(text||""),e.currentTarget);
+   promptTools.querySelector(".chat-prompt-listen").onclick=e=>speakChatResponse(String(text||""),e.currentTarget);
+   promptTools.querySelector(".chat-prompt-stop").onclick=stopChatSpeech;
+   promptTools.querySelector(".chat-prompt-use").onclick=()=>{$("#composerInput").value=String(text||"");syncInput();$("#composerInput").focus();toast("Промпт добавлен в поле ввода")};
+   content.appendChild(promptTools);
+ }
  if(image){const preview=document.createElement("img");preview.className="chat-image-attachment";preview.src=image;preview.alt="Прикреплённое изображение";content.insertBefore(preview,bubble)}
 
  const actions=document.createElement("div");actions.className="chat-actions";
