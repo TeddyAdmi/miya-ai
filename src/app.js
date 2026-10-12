@@ -2727,7 +2727,6 @@ async function showImage(url,prompt="",model="FLUX Dev",ratio=""){
  if(!grid){c.innerHTML='<div class="result-grid"></div>';grid=c.querySelector(".result-grid")}
  const card=buildMediaCard(item);grid.prepend(card);
  applyFirstSixMediaPriority(grid);
- $("#composerStatus").textContent=imageModelLabel(model)+" · готово";
  return item;
 }
 async function compressAgnesReferenceImage(source){
@@ -2808,13 +2807,13 @@ async function generateAgnesImage(prompt){
    const raw=await response.text();let data={};try{data=raw?JSON.parse(raw):{}}catch{}
    if(!response.ok||!data.imageUrl){const error=new Error(String(data.message||data.error||raw||"Agnes Image не вернул изображение").slice(0,500));error.code=data.error||"";error.status=response.status;throw error;}
    if(progressTimer){clearInterval(progressTimer);progressTimer=null;}
-   if(ring){ring.classList.remove("is-active");ring.style.setProperty("--progress","100%");}
-   if(percent)percent.textContent="100%";
-   const progressBar=loader?.querySelector(".generation-progress-bar span");if(progressBar)progressBar.style.width="100%";
-   if(composerProgress)composerProgress.textContent="100%";
-   const completedModel=loader?.querySelector(".progress-model");if(completedModel)completedModel.textContent=displayModel;
    const urls=Array.isArray(data.imageUrls)&&data.imageUrls.length?data.imageUrls:[data.imageUrl];
-   await Promise.all(urls.map(url=>showImage(url,prompt,displayModel)));
+    await Promise.all(urls.map(url=>showImage(url,prompt,displayModel)));
+    if(ring){ring.classList.remove("is-active");ring.style.setProperty("--progress","100%");}
+    if(percent)percent.textContent="100%";
+    const progressBar=loader?.querySelector(".generation-progress-bar span");if(progressBar)progressBar.style.width="100%";
+    if(composerProgress)composerProgress.textContent="100%";
+    const completedModel=loader?.querySelector(".progress-model");if(completedModel)completedModel.textContent=displayModel;
    scrollImagesToTop();
    $("#composerInput").value="";syncInput();
    $("#composerModel").value="Agnes Image 2.5 Flash";
@@ -2961,12 +2960,12 @@ async function generateImage(prompt){
    ? data.imageUrls
    : data.imageUrl?[data.imageUrl]:[];
   if(!generatedUrls.length)throw new Error("Сервер не вернул готовое изображение");
-  if(loader){
-   setProgress(100);
-   const modelLabel=loader.querySelector(".progress-model");
-   if(modelLabel)modelLabel.textContent=actualModel;
-  }
   await Promise.all(generatedUrls.map(url=>showImage(url,prompt,imageModelLabel(actualModel),useCvronImage?selectedRatio:"")));
+   if(loader){
+    setProgress(100);
+    const modelLabel=loader.querySelector(".progress-model");
+    if(modelLabel)modelLabel.textContent=actualModel;
+   }
   scrollImagesToTop();
   if(modelName === "Nano Banana 2"){
    referenceImage=null;
