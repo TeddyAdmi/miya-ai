@@ -421,13 +421,9 @@ async function speakChatResponse(text,button){
   // Original working path: use AHM7's Svetlana catalog entry and play its returned audio.
   if(!Array.isArray(voiceCatalog)||!voiceCatalog.length)await loadVoiceCatalog();
   if(controller.signal.aborted)throw new DOMException("Aborted","AbortError");
-  const name=v=>String(v?.name||v?.voiceName||v?.label||v?.title||"").trim();
-  const language=v=>String(v?.language||v?.lang||v?.locale||"").trim();
-  const matches=voiceCatalog.map((voice,index)=>({voice,index})).filter(x=>/^(svetlana|светлана)$/i.test(name(x.voice)));
-  const selected=matches.find(x=>/russian|русск|(^|[-_])ru($|[-_])/i.test(language(x.voice)))||matches[0];
-  const voice=selected?.voice;
-  if(!voice)throw new Error("Голос Светлана не найден в каталоге AHM7");
-  // Restore the exact selection logic from the previously working AHM7 version.
+  // Restore the first working implementation: select the first AHM7 catalog entry named Svetlana.
+  const voice=voiceCatalog.find(v=>/svetlana|светлана/i.test(String(v.name||"")));
+  if(!voice)throw new Error("Голос Светлана не найден в каталоге");
   const voiceIndex=voice.index;
   if(voiceIndex===undefined||voiceIndex===null||voiceIndex==="")throw new Error("SVETLANA_VOICE_INDEX_MISSING");
   const chunks=[];let rest=value;
