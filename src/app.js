@@ -2500,7 +2500,8 @@ async function generateVoice(text){
   for(let i=0;i<parts.length;i++){
    const response=await fetch("https://ahm7xmakki.com/api/tts",{
     method:"POST",headers:{"Content-Type":"application/json","Accept":"audio/mpeg"},
-    body:JSON.stringify({voiceIndex,text:parts[i],pitch,rate})
+    // AHM7 принимает rate=1 как рабочую скорость по умолчанию; ползунок 0 преобразуем в 1.
+    body:JSON.stringify({voiceIndex,text:parts[i],pitch,rate:rate===0?1:rate})
    });
    if(!response.ok){let detail="";try{detail=(await response.text()).slice(0,240)}catch{}throw new Error("AHM7_TTS_HTTP_"+response.status+(detail?": "+detail:""))}
    const type=String(response.headers.get("content-type")||"").toLowerCase();
