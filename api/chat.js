@@ -161,7 +161,7 @@ async function handler(req, res) {
             "Accept": "application/json"
           },
           body: JSON.stringify({ ...payload, model }),
-          signal: AbortSignal.timeout(visionImages.length ? 22000 : 12000)
+          signal: AbortSignal.timeout(visionImages.length ? 16000 : 12000)
         });
 
         const raw = await response.text();
@@ -207,81 +207,65 @@ async function handler(req, res) {
     let result;
 
     if (visionImages.length) {
-      // Primary free vision model: NVIDIA Nemotron 3 Nano Omni via BlockRun.
-      // It accepts native OpenAI-style image_url content and is free without
-      // an API key or wallet. AHM7 remains the next fallback.
-      const visionCandidates = [
-        "nvidia/nemotron-3-nano-omni-30b-a3b-reasoning"
+      // Race independent free vision providers so one unavailable endpoint
+      // does not make the user wait through several sequential timeouts.
+      const visionAttempts = [
+        callBlockRun("nvidia/nemotron-3-nano-omni-30b-a3b-reasoning"),
+        callBlockRun("nvidia/llama-3.2-11b-vision"),
+        (async () => {
+          const started = Date.now();
+          const controller = new AbortController();
+          const timer = setTimeout(() => controller.abort(), 16000);
+          try {
+            const upstream = await fetch("https://ahm7xmakki.com/api/imgchat", {
+              method: "POST",
+              headers: { "Content-Type": "application/json", "Accept": "application/json" },
+              body: JSON.stringify({
+                image: imageBase64,
+                userPrompt:
+                  "Ты Miya. Всегда отвечай по-русски. Внимательно проанализируй изображение: опиши только действительно видимые детали, композицию, людей, предметы, фон, освещение и стиль; не выдумывай невидимое. Сначала ответь на запрос пользователя. Если просят промпт для изображения или видео, напиши его по-русски под заголовком «Промпт для изображения:» или «Промпт для видео:» и помести только текст промпта в отдельный блок кода. Запрос пользователя: " + lastUserText,
+                messages: cleanMessages.slice(-12).map(m => ({
+                  type: m.role === "assistant" ? "ai" : "user", content: m.content
+                }))
+              }),
+              signal: controller.signal
+            });
+            const raw = await upstream.text();
+            let data = {};
+            try { data = raw ? JSON.parse(raw) : {}; } catch {}
+            const answer = String(data?.response || data?.text || data?.message || "").trim();
+            if (upstream.ok && answer) return { ok: true, text: answer, model: "AHM7 imgchat", provider: "AHM7", elapsedMs: Date.now() - started };
+            return { ok: false, model: "AHM7 imgchat", provider: "AHM7", elapsedMs: Date.now() - started, upstreamError: data?.error || data?.message || ("HTTP " + upstream.status) };
+          } catch (error) {
+            return { ok: false, model: "AHM7 imgchat", provider: "AHM7", elapsedMs: Date.now() - started, upstreamError: String(error?.message || error) };
+          } finally {
+            clearTimeout(timer);
+          }
+        })()
       ];
-
-      for (const model of visionCandidates) {
-        result = await callBlockRun(model);
-
-        if (result.ok && result.model === model) {
-          return res.status(200).json({
-            ok: true,
-            mode: "chat",
-            text: result.text
-          });
-        }
-      }
-
-      // AHM7 is the second free vision fallback.
-      try {
-        const controller = new AbortController();
-        const timer = setTimeout(() => controller.abort(), 20000);
-        const upstream = await fetch("https://ahm7xmakki.com/api/imgchat", {
-          method: "POST",
-          headers: { "Content-Type": "application/json", "Accept": "application/json" },
-          body: JSON.stringify({
-            image: imageBase64,
-            userPrompt:
-              "Проанализируй это изображение максимально внимательно и точно. " +
-              "Не ограничивайся общей подписью. Опиши только то, что действительно видно: " +
-              "людей и их внешний вид, позы и действия, одежду, лицо и волосы если различимы, " +
-              "предметы и их расположение, фон, помещение или место, освещение, цвета, " +
-              "композицию, перспективу, текст и надписи если они читаются, а также заметные " +
-              "мелкие детали. Не выдумывай детали, которых невозможно уверенно увидеть. " +
-              "Если пользователь задал вопрос об изображении, сначала ответь на него точно, " +
-              "а затем добавь полезные наблюдения. Оформи ответ чистым Markdown: короткие заголовки, " +
-              "понятные абзацы, умеренные эмодзи и списки только по необходимости. " +
-              "Не перегружай ответ маркерами; готовый промпт вынеси в отдельный блок для копирования. " +
-              "Если в ответе нужен готовый промпт для генерации изображения или видео, напиши его исключительно на русском языке, если пользователь прямо не попросил другой язык. " +
-              "Пользовательский запрос: " + lastUserText,
-            messages: cleanMessages.slice(-12).map(m => ({
-              type: m.role === "assistant" ? "ai" : "user", content: m.content
-            }))
-          }),
-          signal: controller.signal
-        });
-        clearTimeout(timer);
-        const raw = await upstream.text();
-        let data = {};
-        try { data = raw ? JSON.parse(raw) : {}; } catch {}
-        const answer = String(data?.response || data?.text || data?.message || "").trim();
-        if (upstream.ok && answer) {
-          return res.status(200).json({
-            ok: true,
-            mode: "chat",
-            text: answer
-          });
-        }
-      } catch {}
-
-      // Last fallback: the older free vision model.
-      result = await callBlockRun("nvidia/llama-3.2-11b-vision");
-      if (result.ok && result.model === "nvidia/llama-3.2-11b-vision") {
+      let remaining = visionAttempts.length;
+      const firstVisionSuccess = await new Promise(resolve => {
+        visionAttempts.forEach(attempt => attempt.then(candidate => {
+          if (candidate.ok) resolve(candidate);
+          else if (--remaining === 0) resolve(null);
+        }).catch(() => {
+          if (--remaining === 0) resolve(null);
+        }));
+      });
+      if (firstVisionSuccess) {
         return res.status(200).json({
           ok: true,
           mode: "chat",
-          text: result.text
+          text: firstVisionSuccess.text,
+          provider: firstVisionSuccess.provider,
+          model: firstVisionSuccess.model
         });
       }
-
+      console.error("Miya vision providers unavailable", await Promise.all(visionAttempts));
       return res.status(502).json({
         ok: false,
         error: "VISION_UPSTREAM_FAILED",
-        message: "Бесплатные сервисы анализа изображения временно недоступны."
+        message: "Сервисы анализа изображения сейчас не ответили. Попробуй отправить фото ещё раз чуть позже."
       });
     }
 
