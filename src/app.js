@@ -372,7 +372,6 @@ function cleanAutoChatTitle(value,maxLength=140){
 let activeChatSpeechAudio=null,activeChatSpeechUrl=null,activeChatSpeechController=null,activeChatSpeechButton=null,activeChatSpeechStopButton=null,activeChatSpeechStatus=null,activeChatSpeechUtterance=null;
 function stopChatSpeech(){
   try{activeChatSpeechController?.abort()}catch{}
-  try{window.speechSynthesis?.cancel()}catch{}
   activeChatSpeechUtterance=null;
   const status=$("#composerStatus");
   if(status&&activeChatSpeechStatus&&/^(Подготовка озвучивания|Подготовка русской озвучки|Воспроизведение текста|Воспроизведение сообщения|Светлана озвучивает)/.test(status.textContent))status.textContent=activeChatSpeechStatus;
@@ -392,16 +391,16 @@ function stopChatSpeech(){
   activeChatSpeechButton=null;activeChatSpeechStopButton=null;
 }
 function chatRussianOnlyText(input){
- const text=String(input||"").replace(/\\r/g,"").trim();
+ const text=String(input||"").replace(/\r/g,"").trim();
  if(!text)return "";
  // Keep Russian sentences and skip English-only sentences in mixed selections/messages.
- const sentences=text.split(/(?<=[.!?…])\\s+|\\n+/u);
+ const sentences=text.split(/(?<=[.!?…])\s+|\n+/u);
  const russian=sentences.filter(sentence=>{
   const cyrillic=(sentence.match(/[А-Яа-яЁё]/g)||[]).length;
   const latin=(sentence.match(/[A-Za-z]/g)||[]).length;
   return cyrillic>0&&cyrillic>=latin;
  });
- return russian.join(" ").replace(/\\s+/g," ").trim();
+ return russian.join(" ").replace(/\s+/g," ").trim();
 }
 async function speakChatResponse(text,button){
  const value=chatRussianOnlyText(text);
@@ -428,7 +427,7 @@ async function speakChatResponse(text,button){
   if(voiceIndex===undefined||voiceIndex===null||voiceIndex==="")throw new Error("SVETLANA_VOICE_INDEX_MISSING");
   const chunks=[];let rest=value;
   while(rest.length>1800){
-   let cut=Math.max(rest.lastIndexOf(". ",1800),rest.lastIndexOf("! ",1800),rest.lastIndexOf("? ",1800),rest.lastIndexOf("\\n",1800),rest.lastIndexOf(" ",1800));
+   let cut=Math.max(rest.lastIndexOf(". ",1800),rest.lastIndexOf("! ",1800),rest.lastIndexOf("? ",1800),rest.lastIndexOf("\n",1800),rest.lastIndexOf(" ",1800));
    if(cut<700)cut=1800;
    chunks.push(rest.slice(0,cut+1).trim());rest=rest.slice(cut+1).trim();
   }
