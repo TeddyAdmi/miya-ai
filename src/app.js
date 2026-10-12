@@ -2722,7 +2722,7 @@ async function showImage(url,prompt="",model="FLUX Dev",ratio=""){
  const item=saveMedia("image",displayUrl,prompt,model);
  if(!item)throw new Error("Не удалось сохранить готовое изображение.");
  item.previewUrl=loadedUrl;
- try{localStorage.setItem(LIB_KEY,JSON.stringify(getLibrary().slice(0,500)))}catch{}
+ try{const storedItems=getLibrary();const storedItem=storedItems.find(entry=>entry.id===item.id);if(storedItem)storedItem.previewUrl=loadedUrl;localStorage.setItem(LIB_KEY,JSON.stringify(storedItems.slice(0,500)))}catch{}
  const c=$("#canvas");let grid=c.querySelector(".result-grid");
  if(!grid){c.innerHTML='<div class="result-grid"></div>';grid=c.querySelector(".result-grid")}
  const card=buildMediaCard(item);grid.prepend(card);
