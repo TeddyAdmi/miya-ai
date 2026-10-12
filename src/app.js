@@ -417,7 +417,8 @@ async function speakChatResponse(text,button){
   const matches=voices.map((voice,index)=>({voice,index})).filter(x=>/^(svetlana|светлана)$/i.test(name(x.voice)));
   const selected=matches.find(x=>/russian|русск|(^|[-_])ru($|[-_])/i.test(language(x.voice)))||matches[0];
   if(!selected)throw new Error("SVETLANA_VOICE_NOT_FOUND");
-  const voiceIndex=selected.voice.index??selected.voice.voiceIndex??selected.voice.id??(selected.index+1);
+  // AHM7 requires a 1-based position in the voices array.
+  const voiceIndex=selected.index+1;
   if(voiceIndex===undefined||voiceIndex===null||voiceIndex==="")throw new Error("SVETLANA_VOICE_INDEX_MISSING");
   const chunks=[];let rest=value;
   while(rest.length>1800){
@@ -427,7 +428,9 @@ async function speakChatResponse(text,button){
   }
   if(rest)chunks.push(rest);
   if(status)status.textContent="Подготовка русской озвучки…";
-  const blobs=await Promise.all(chunks.map(async part=>{
+  // Send chunks one at a time; the upstream TTS service can fail on concurrent requests.
+  const blobs=[];
+  for(const part of chunks){
    if(controller.signal.aborted)throw new DOMException("Aborted","AbortError");
    const response=await fetch("https://ahm7xmakki.com/api/tts",{
     method:"POST",headers:{"Content-Type":"application/json","Accept":"audio/mpeg"},
@@ -437,8 +440,8 @@ async function speakChatResponse(text,button){
    const type=String(response.headers.get("content-type")||"").toLowerCase();
    if(type.includes("application/json"))throw new Error("SVETLANA_TTS_RETURNED_JSON");
    const blob=await response.blob();if(!blob.size)throw new Error("SVETLANA_TTS_EMPTY_AUDIO");
-   return blob;
-  }));
+   blobs.push(blob);
+  }
   if(controller.signal.aborted)throw new DOMException("Aborted","AbortError");
   const audioBlob=new Blob(blobs,{type:"audio/mpeg"});
   activeChatSpeechUrl=URL.createObjectURL(audioBlob);
