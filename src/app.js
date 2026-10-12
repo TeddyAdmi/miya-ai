@@ -391,9 +391,22 @@ function stopChatSpeech(){
   if(activeChatSpeechStopButton)activeChatSpeechStopButton.hidden=true;
   activeChatSpeechButton=null;activeChatSpeechStopButton=null;
 }
+function chatRussianOnlyText(input){
+ const text=String(input||"").replace(/\\r/g,"").trim();
+ if(!text)return "";
+ // Keep Russian sentences and skip English-only sentences in mixed selections/messages.
+ const sentences=text.split(/(?<=[.!?…])\\s+|\\n+/u);
+ const russian=sentences.filter(sentence=>{
+  const cyrillic=(sentence.match(/[А-Яа-яЁё]/g)||[]).length;
+  const latin=(sentence.match(/[A-Za-z]/g)||[]).length;
+  return cyrillic>0&&cyrillic>=latin;
+ });
+ return russian.join(" ").replace(/\\s+/g," ").trim();
+}
 async function speakChatResponse(text,button){
- const value=String(text||"").trim();if(!value)return;
- if(activeChatSpeechAudio||activeChatSpeechController||activeChatSpeechUtterance){stopChatSpeech();return}
+ const value=chatRussianOnlyText(text);
+ if(!value){toast("В тексте нет русских фраз для озвучивания.");return}
+ if(activeChatSpeechAudio||activeChatSpeechController){stopChatSpeech();return}
  const controller=new AbortController();
  activeChatSpeechController=controller;activeChatSpeechButton=button;
  activeChatSpeechStatus=$("#composerStatus")?.textContent||"AI Chat готов";
@@ -406,7 +419,7 @@ async function speakChatResponse(text,button){
  button.title="Подготавливаю озвучивание Светланой…";button.setAttribute("aria-label","Подготавливаю озвучивание Светланой…");
  if(activeChatSpeechStopButton)activeChatSpeechStopButton.hidden=false;
  try{
-  // Restore the working AHM7 flow: shared voice catalog + voiceIndex + rate 1.
+  // Original working path: use AHM7's Svetlana catalog entry and play its returned audio.
   if(!Array.isArray(voiceCatalog)||!voiceCatalog.length)await loadVoiceCatalog();
   if(controller.signal.aborted)throw new DOMException("Aborted","AbortError");
   const voice=voiceCatalog.find(v=>/svetlana|светлана/i.test(String(v?.name||"")));
@@ -440,7 +453,7 @@ async function speakChatResponse(text,button){
   audio.onerror=()=>{if(activeChatSpeechAudio===audio){stopChatSpeech();toast("Не удалось воспроизвести озвучку Светланы.")}};
   button.disabled=false;button.innerHTML=button.dataset.originalHtml;
   button.title="Остановить воспроизведение";button.setAttribute("aria-label","Остановить воспроизведение");
-  if(status)status.textContent=isSelectionListen?"Светлана озвучивает выделенный текст":"Светлана озвучивает сообщение";
+  if(status)status.textContent=isSelectionListen?"Светлана озвучивает русский текст выделенного фрагмента":"Светлана озвучивает русскую часть сообщения";
   await audio.play();
  }catch(error){
   const aborted=controller.signal.aborted||error?.name==="AbortError";
