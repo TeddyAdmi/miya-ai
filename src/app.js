@@ -403,8 +403,8 @@ function chatRussianOnlyText(input){
  return russian.join(" ").replace(/\s+/g," ").trim();
 }
 async function speakChatResponse(text,button){
- const value=chatRussianOnlyText(text);
- if(!value){toast("В тексте нет русских фраз для озвучивания.");return}
+ const value=String(text||"").trim();
+ if(!value)return;
  if(activeChatSpeechAudio||activeChatSpeechController){stopChatSpeech();return}
  const controller=new AbortController();
  activeChatSpeechController=controller;activeChatSpeechButton=button;
@@ -421,11 +421,13 @@ async function speakChatResponse(text,button){
   // Original working path: use AHM7's Svetlana catalog entry and play its returned audio.
   if(!Array.isArray(voiceCatalog)||!voiceCatalog.length)await loadVoiceCatalog();
   if(controller.signal.aborted)throw new DOMException("Aborted","AbortError");
-  const svetlanaVoices=voiceCatalog.filter(v=>/^(svetlana|светлана)$/i.test(String(v?.name||"").trim()));
-  const isRussianVoice=v=>{const language=String(v?.language||v?.lang||v?.locale||"").toLowerCase(),country=String(v?.country||"").toLowerCase();return /russian|русск|(^|[-_])ru($|[-_])|russia/i.test(language)||/russia|росси/i.test(country)};
-  const voice=svetlanaVoices.find(isRussianVoice)||svetlanaVoices[0];
+  const name=v=>String(v?.name||v?.voiceName||v?.label||v?.title||"").trim();
+  const language=v=>String(v?.language||v?.lang||v?.locale||"").trim();
+  const matches=voiceCatalog.map((voice,index)=>({voice,index})).filter(x=>/^(svetlana|светлана)$/i.test(name(x.voice)));
+  const selected=matches.find(x=>/russian|русск|(^|[-_])ru($|[-_])/i.test(language(x.voice)))||matches[0];
+  const voice=selected?.voice;
   if(!voice)throw new Error("Голос Светлана не найден в каталоге AHM7");
-  // Keep AHM7's original catalog index; prefer the Russian Svetlana entry as in the known working version.
+  // Restore the exact selection logic from the previously working AHM7 version.
   const voiceIndex=voice.index;
   if(voiceIndex===undefined||voiceIndex===null||voiceIndex==="")throw new Error("SVETLANA_VOICE_INDEX_MISSING");
   const chunks=[];let rest=value;
