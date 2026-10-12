@@ -437,10 +437,22 @@ async function speakChatResponse(text,button){
   for(const part of chunks){
    if(controller.signal.aborted)throw new DOMException("Aborted","AbortError");
    // Keep the original proven payload first; retry only AHM7 server errors with its documented default rate.
+   const voicePosition=voiceCatalog.findIndex(v=>v===voice)+1;
+   const idNumber=String(voice.id||"").match(/(\\d+)$/)?.[1];
+   // Test the historical AHM7 payload shapes only after the original payload variants fail.
    const payloads=[
     {voiceIndex:voiceIndex,text:part,pitch:0,rate:1},
     {voiceIndex:voiceIndex,text:part,pitch:0,rate:0},
-    {voiceIndex:voiceIndex,text:part,pitch:0}
+    {voiceIndex:voiceIndex,text:part,pitch:0},
+    {text:part,voice:voiceIndex,pitch:0,rate:0},
+    {text:part,voice:voiceIndex,pitch:0,rate:1},
+    ...(voicePosition>0&&voicePosition!==Number(voiceIndex)?[
+     {voiceIndex:voicePosition,text:part,pitch:0,rate:0},
+     {voiceIndex:voicePosition,text:part,pitch:0,rate:1}
+    ]:[]),
+    ...(idNumber&&Number(idNumber)!==Number(voiceIndex)?[
+     {voiceIndex:Number(idNumber),text:part,pitch:0,rate:0}
+    ]:[])
    ];
    let response=null,detail="";
    for(let attempt=0;attempt<payloads.length;attempt++){
