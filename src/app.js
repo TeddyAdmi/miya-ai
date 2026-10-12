@@ -226,6 +226,15 @@ body.light .floating-wall-clear svg *,body.light .floating-theme svg *{
 .chat-prompt-tools button svg{display:block!important;width:18px!important;height:18px!important;fill:none!important;stroke:currentColor!important;stroke-width:1.8!important;stroke-linecap:round!important;stroke-linejoin:round!important;pointer-events:none!important}
 .chat-prompt-tools button:hover{border-color:#9b83e8!important;background:rgba(145,115,220,.14)!important}
 body.light .chat-prompt-tools button{background:#fff!important;color:#273047!important;border-color:#dbe2ec!important}
+.chat-prompt-card{display:block!important;width:100%!important;max-width:100%!important;min-width:0!important;margin:10px 0 2px!important;padding:14px 16px!important;box-sizing:border-box!important;overflow:visible!important;max-height:none!important;height:auto!important;border:1px solid var(--line,rgba(148,163,184,.28))!important;border-radius:12px!important;background:var(--surface,rgba(12,25,43,.72))!important;white-space:normal!important}
+.chat-prompt-card-heading{margin:0 0 10px!important;font-size:13px!important;font-weight:700!important;line-height:1.4!important;color:var(--text,#e5e7eb)!important}
+.chat-prompt-card-text{display:block!important;width:100%!important;max-width:100%!important;min-width:0!important;max-height:none!important;height:auto!important;overflow:visible!important;overflow-y:visible!important;white-space:pre-wrap!important;overflow-wrap:anywhere!important;word-break:normal!important;line-height:1.65!important;font-size:14px!important;color:var(--text,#e5e7eb)!important;user-select:text!important}
+.chat-prompt-card .chat-prompt-tools{margin:12px 0 0!important;padding:0!important}
+body.light .chat-prompt-card{background:#fff!important;border-color:#dbe2ec!important}
+body.light .chat-prompt-card-heading,body.light .chat-prompt-card-text{color:#111!important}
+.chat-prompt-card[hidden],.chat-prompt-card-text[hidden]{display:none!important}
+@media(max-width:800px){.chat-prompt-card{padding:12px!important}.chat-prompt-card-text{font-size:13px!important;line-height:1.6!important}}
+
 @media(max-width:800px){.chat-canvas .chat-stream .chat-row .chat-avatar,.chat-canvas .chat-stream .chat-row.assistant .chat-avatar{left:-29px!important;right:auto!important}.chat-canvas .chat-stream .chat-row.user .chat-avatar{left:auto!important;right:-29px!important}.chat-canvas .chat-stream .chat-row.user .chat-bubble,.chat-canvas .chat-stream .chat-row.user .chat-actions{width:66.6667%!important;max-width:66.6667%!important}}
 #composerMic.transcribing svg{animation:miyaSpeechSpin .8s linear infinite;transform-origin:50% 50%}
 #composerMic.transcribing svg circle{fill:none!important;stroke:currentColor!important;stroke-width:2.2!important;stroke-linecap:round!important}
@@ -3019,30 +3028,46 @@ function addChatMessage(text,isUser,image="",isError=false){
  const row=document.createElement("div");row.className="chat-row "+(isUser?"user":"assistant")+(isError?" chat-error-row":"");
  const av=document.createElement("div");av.className="chat-avatar";av.textContent=isUser?"U":"M";
  const content=document.createElement("div");content.className="chat-content";
- const bubble=document.createElement("div");bubble.className="chat-bubble";if(isUser){bubble.textContent=text}else{bubble.classList.add("chat-rich-text");bubble.innerHTML=renderChatMarkdown(text);bubble.querySelectorAll(".chat-code-action").forEach(button=>{button.addEventListener("click",async()=>{const code=button.closest(".chat-code-block")?.querySelector("pre code")?.textContent||"";const action=button.dataset.codeAction;if(action==="stop-listen"){stopChatSpeech();return}if(!code.trim())return;if(action==="image"){setMode("images");$("#composerInput").value=code;syncInput();$("#composerInput").focus();toast("Промпт добавлен для создания картинки")}else if(action==="video"){setMode("video");$("#composerInput").value=code;syncInput();$("#composerInput").focus();toast("Промпт добавлен для создания видео")}else if(action==="listen"){document.querySelectorAll(".chat-selection-actions").forEach(el=>el.hidden=true);window.getSelection?.()?.removeAllRanges();speakChatResponse(code,button)}else if(action==="copy"){try{await navigator.clipboard.writeText(code);showCopySuccess(button);toast("Промпт скопирован")}catch{toast("Не удалось скопировать промпт")}}})})}
- content.appendChild(bubble);
- if(!isUser&&!isError){
+ const bubble=document.createElement("div");bubble.className="chat-bubble";
+ let detectedPrompt=null;
+ if(isUser){bubble.textContent=text}
+ else{
+   bubble.classList.add("chat-rich-text");
    const rawResponse=String(text||"").trim();
-   // Only expose prompt actions when the answer has an explicit prompt heading.
-   // Never treat the whole assistant answer as the prompt.
-   const promptHeading=rawResponse.match(/(?:^|\n)\s{0,3}(?:#{1,6}\s*)?(?:[-*]\s*)?([^\n]{0,100}(?:промпт|prompt)[^\n]{0,80})(?:[:：]\s*|\s*\n)([\s\S]*)/i);
-   if(promptHeading){
-     let promptText=String(promptHeading[2]||"").trim();
-     promptText=promptText.replace(/^\s*```[^\n]*\n?/,"").replace(/\n?```\s*$/,"").trim();
-     promptText=promptText.split(/\n\s*(?:#{1,6}\s*)?(?:\*\*)?(?:негативный промпт|пояснение|вариант|настройки|примечание|negative prompt)(?:\*\*)?\s*[:：]?\s*/i)[0].trim();
-     promptText=promptText.replace(/^\s*[>*`_]+|[>*`_]+\s*$/g,"").trim();
-     if(promptText){
-       const promptTools=document.createElement("div");promptTools.className="chat-prompt-tools";
-       promptTools.innerHTML='<button type="button" class="chat-prompt-image" title="Создать изображение по промпту" aria-label="Создать изображение по промпту"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="m21 15-5-5L5 21"/></svg></button><button type="button" class="chat-prompt-video" title="Создать видео по промпту" aria-label="Создать видео по промпту"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="13" height="14" rx="2"/><path d="m16 10 5-3v10l-5-3z"/></svg></button><button type="button" class="chat-prompt-copy" title="Копировать промпт" aria-label="Копировать промпт"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="8" y="8" width="12" height="12" rx="2"/><path d="M16 8V5a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h3"/></svg></button><button type="button" class="chat-prompt-listen" title="Прослушать промпт" aria-label="Прослушать промпт"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 10v4h4l5 4V6l-5 4H3Z"/><path d="M16 9a5 5 0 0 1 0 6M18.5 6.5a8.5 8.5 0 0 1 0 11"/></svg></button>';
-       promptTools.querySelectorAll("svg").forEach(svg=>{svg.setAttribute("fill","none");svg.setAttribute("stroke","currentColor");svg.setAttribute("stroke-width","1.8");svg.setAttribute("stroke-linecap","round");svg.setAttribute("stroke-linejoin","round")});
-       const runPromptInMode=targetMode=>{if(!promptText)return;setMode(targetMode);const input=$("#composerInput");if(input){input.value=promptText;syncInput();input.focus();requestAnimationFrame(()=>$("#composerSend")?.click())}};
-       promptTools.querySelector(".chat-prompt-image").onclick=()=>runPromptInMode("images");
-       promptTools.querySelector(".chat-prompt-video").onclick=()=>runPromptInMode("video");
-       promptTools.querySelector(".chat-prompt-copy").onclick=e=>copyChatText(promptText,e.currentTarget);
-       promptTools.querySelector(".chat-prompt-listen").onclick=e=>speakChatResponse(promptText,e.currentTarget);
-       content.appendChild(promptTools);
-     }
-   }
+   if(!isError){
+     const lines=rawResponse.split(/\r?\n/);
+     const headingPattern=/^\s{0,3}(?:#{1,6}\s*)?(?:[-*+]\s*)?(?:\*\*)?([^\n]{0,120}?(?:промпт|prompt)[^\n]{0,100}?)(?:\*\*)?\s*[:：]?\s*$/i;
+     const headingIndex=lines.findIndex(line=>headingPattern.test(line));
+     if(headingIndex>=0){
+       const headingMatch=lines[headingIndex].match(headingPattern);
+       let promptText=lines.slice(headingIndex+1).join("\n").trim();
+       promptText=promptText.replace(/^\s*```[^\n]*\n?/,"").replace(/\n?```\s*$/,"").trim();
+       promptText=promptText.split(/\n\s*(?:#{1,6}\s*)?(?:\*\*)?(?:негативный промпт|пояснение|вариант|настройки|примечание|negative prompt|explanation|notes)(?:\*\*)?\s*[:：]?\s*/i)[0].trim();
+       promptText=promptText.replace(/^\s*[>*`_]+|[>*`_]+\s*$/g,"").trim();
+       if(promptText){
+         detectedPrompt={title:String(headingMatch?.[1]||"Промпт").replace(/\*\*/g,"").replace(/[:：]\s*$/,"").trim(),text:promptText};
+         const intro=lines.slice(0,headingIndex).join("\n").trim();
+         bubble.innerHTML=intro?renderChatMarkdown(intro):"";
+       }else bubble.innerHTML=renderChatMarkdown(rawResponse);
+     }else bubble.innerHTML=renderChatMarkdown(rawResponse);
+   }else bubble.innerHTML=renderChatMarkdown(rawResponse);
+   bubble.querySelectorAll(".chat-code-action").forEach(button=>{button.addEventListener("click",async()=>{const code=button.closest(".chat-code-block")?.querySelector("pre code")?.textContent||"";const action=button.dataset.codeAction;if(action==="stop-listen"){stopChatSpeech();return}if(!code.trim())return;if(action==="image"){setMode("images");$("#composerInput").value=code;syncInput();$("#composerInput").focus();toast("Промпт добавлен для создания картинки")}else if(action==="video"){setMode("video");$("#composerInput").value=code;syncInput();$("#composerInput").focus();toast("Промпт добавлен для создания видео")}else if(action==="listen"){document.querySelectorAll(".chat-selection-actions").forEach(el=>el.hidden=true);window.getSelection?.()?.removeAllRanges();speakChatResponse(code,button)}else if(action==="copy"){try{await navigator.clipboard.writeText(code);showCopySuccess(button);toast("Промпт скопирован")}catch{toast("Не удалось скопировать промпт")}}})});
+ }
+ content.appendChild(bubble);
+ if(!isUser&&!isError&&detectedPrompt){
+   const promptCard=document.createElement("section");promptCard.className="chat-prompt-card";
+   const promptHeading=document.createElement("div");promptHeading.className="chat-prompt-card-heading";promptHeading.textContent=detectedPrompt.title||"Промпт";
+   const promptBody=document.createElement("div");promptBody.className="chat-prompt-card-text";promptBody.textContent=detectedPrompt.text;
+   promptCard.append(promptHeading,promptBody);
+   const promptTools=document.createElement("div");promptTools.className="chat-prompt-tools";
+   promptTools.innerHTML='<button type="button" class="chat-prompt-image" title="Создать изображение по промпту" aria-label="Создать изображение по промпту"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="m21 15-5-5L5 21"/></svg></button><button type="button" class="chat-prompt-video" title="Создать видео по промпту" aria-label="Создать видео по промпту"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="13" height="14" rx="2"/><path d="m16 10 5-3v10l-5-3z"/></svg></button><button type="button" class="chat-prompt-copy" title="Копировать промпт" aria-label="Копировать промпт"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="8" y="8" width="12" height="12" rx="2"/><path d="M16 8V5a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h3"/></svg></button><button type="button" class="chat-prompt-listen" title="Прослушать промпт" aria-label="Прослушать промпт"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 10v4h4l5 4V6l-5 4H3Z"/><path d="M16 9a5 5 0 0 1 0 6M18.5 6.5a8.5 8.5 0 0 1 0 11"/></svg></button>';
+   promptTools.querySelectorAll("svg").forEach(svg=>{svg.setAttribute("fill","none");svg.setAttribute("stroke","currentColor");svg.setAttribute("stroke-width","1.8");svg.setAttribute("stroke-linecap","round");svg.setAttribute("stroke-linejoin","round")});
+   const runPromptInMode=targetMode=>{const promptText=detectedPrompt.text;if(!promptText)return;setMode(targetMode);const input=$("#composerInput");if(input){input.value=promptText;syncInput();input.focus();requestAnimationFrame(()=>$("#composerSend")?.click())}};
+   promptTools.querySelector(".chat-prompt-image").onclick=()=>runPromptInMode("images");
+   promptTools.querySelector(".chat-prompt-video").onclick=()=>runPromptInMode("video");
+   promptTools.querySelector(".chat-prompt-copy").onclick=e=>copyChatText(detectedPrompt.text,e.currentTarget);
+   promptTools.querySelector(".chat-prompt-listen").onclick=e=>speakChatResponse(detectedPrompt.text,e.currentTarget);
+   promptCard.appendChild(promptTools);content.appendChild(promptCard);
  }
  if(image){const preview=document.createElement("img");preview.className="chat-image-attachment";preview.src=image;preview.alt="Прикреплённое изображение";content.insertBefore(preview,bubble)}
 
