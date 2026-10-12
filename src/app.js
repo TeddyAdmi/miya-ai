@@ -460,12 +460,12 @@ async function speakChatResponse(text,button){
   }
   if(controller.signal.aborted)throw new DOMException("Aborted","AbortError");
   // Play language chunks in their original order, using only AHM7's Svetlana voices.
-  const playlist=blobs.map(blob=>URL.createObjectURL(blob));
-  activeChatSpeechUrl=playlist[0]||null;
   const playNext=async index=>{
    if(controller.signal.aborted)return;
-   if(index>=playlist.length){stopChatSpeech();return}
-   const audio=new Audio(playlist[index]);activeChatSpeechAudio=audio;activeChatSpeechUrl=playlist[index];
+   if(index>=blobs.length){stopChatSpeech();return}
+   if(activeChatSpeechUrl){try{URL.revokeObjectURL(activeChatSpeechUrl)}catch{}}
+   activeChatSpeechUrl=URL.createObjectURL(blobs[index]);
+   const audio=new Audio(activeChatSpeechUrl);activeChatSpeechAudio=audio;
    audio.onended=()=>{if(activeChatSpeechAudio===audio)playNext(index+1)};
    audio.onerror=()=>{if(activeChatSpeechAudio===audio){stopChatSpeech();toast("Не удалось воспроизвести озвучку Светланы.")}};
    await audio.play();
