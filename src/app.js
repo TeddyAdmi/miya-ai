@@ -127,7 +127,32 @@ body.light .chat-welcome.section-welcome .hero-mark.image .icon-image{filter:dro
 @media(max-width:800px){
   .composer.mode-chat.has-chat-attachments .composer-input-row{grid-template-rows:minmax(34px,auto) 47px!important}
   .composer.mode-chat .chat-attachment-list:not([hidden]){max-width:calc(100% - 120px)!important}
-}`;
+}
+/* Restore the compact composer layout; do not let legacy 76px textarea rules stretch every prompt. */
+.composer.mode-chat,.composer.mode-images,.composer.mode-video{
+  height:auto!important;min-height:0!important;max-height:none!important;flex:0 0 auto!important;flex-basis:auto!important;
+  grid-template-rows:auto 34px auto!important;row-gap:5px!important;align-content:start!important;overflow:visible!important;
+}
+.composer.mode-chat #composerInput,.composer.mode-images #composerInput,.composer.mode-video #composerInput{
+  height:34px!important;min-height:34px!important;max-height:none!important;overflow-y:hidden!important;
+  align-self:stretch!important;box-sizing:border-box!important;padding:9px 3px 10px!important;line-height:15px!important;
+}
+.composer-wrap{overflow:visible!important}
+.composer.mode-chat .composer-input-row,.composer.mode-images .composer-input-row,.composer.mode-video .composer-input-row{display:contents!important}
+/* Keep the requested 43px image previews without enlarging the prompt itself. */
+.composer.mode-chat.has-chat-attachments{grid-template-rows:auto 34px auto!important}
+.composer.mode-chat .chat-attachment-list:not([hidden]){max-height:47px!important;overflow-x:auto!important;overflow-y:hidden!important;align-items:center!important}
+.composer.mode-chat .chat-attachment-list[hidden]{display:none!important}
+.composer.mode-chat .chat-attachment-list:not([hidden]){grid-column:2!important;grid-row:2!important;max-width:calc(100% - 150px)!important;width:max-content!important;min-width:0!important}
+@media(max-width:800px){
+ .composer.mode-chat,.composer.mode-images,.composer.mode-video{grid-template-rows:auto 34px auto!important}
+ .composer.mode-chat #composerInput,.composer.mode-images #composerInput,.composer.mode-video #composerInput{height:34px!important;min-height:34px!important}
+ .composer.mode-chat .chat-attachment-list:not([hidden]){max-width:calc(100% - 120px)!important}
+}
+/* Preserve title -> description -> icon order and leave about 1 cm after the description. */
+.chat-room .chat-welcome.section-welcome p,.studio-room .chat-welcome.section-welcome p{margin-bottom:38px!important}
+.chat-room .chat-welcome.section-welcome .hero-mark,.studio-room .chat-welcome.section-welcome .hero-mark{margin-top:0!important;transform:none!important;position:relative!important;top:auto!important}
+`;
  document.head.appendChild(st);
 })();
 (function ensureChatSpeechAndSelectionStyles(){
