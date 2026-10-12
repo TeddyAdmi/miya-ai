@@ -1702,9 +1702,15 @@ body.light .delete-confirm-ring::before{background:#fff}
 }
 .chat-stream .chat-row{
   flex:0 0 auto!important;
-  width:96%!important;
-  max-width:96%!important;
+  width:calc(100% - 18px)!important;
+  max-width:calc(100% - 18px)!important;
+  margin-left:14px!important;
+  margin-right:4px!important;
+  box-sizing:border-box!important;
 }
+.chat-row.user{margin-left:14px!important;margin-right:4px!important}
+.chat-row .chat-content{min-width:0;max-width:100%;flex:1 1 auto}
+.chat-row .chat-bubble{max-width:100%;box-sizing:border-box}
 @media(max-width:800px){
   .canvas.chat-canvas{
     padding:0!important;
