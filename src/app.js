@@ -328,7 +328,7 @@ async function speakChatResponse(text,button){
  button.disabled=true;
  button.innerHTML='<svg class="chat-speech-spinner" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-dasharray="28 18" fill="none"/></svg>';
  button.title="Подготавливаю озвучивание…";button.setAttribute("aria-label","Подготавливаю озвучивание…");
- if(activeChatSpeechStopButton)activeChatSpeechStopButton.hidden=true;
+ if(activeChatSpeechStopButton)activeChatSpeechStopButton.hidden=false;
  try{
   if(!Array.isArray(voiceCatalog)||!voiceCatalog.length)await loadVoiceCatalog();
   if(controller.signal.aborted)return;
