@@ -394,11 +394,12 @@ function stopChatSpeech(){
 async function speakChatResponse(text,button){
  const value=String(text||"").trim();if(!value)return;
  if(activeChatSpeechAudio||activeChatSpeechController||activeChatSpeechUtterance){stopChatSpeech();return}
+ if(!("speechSynthesis" in window)||!("SpeechSynthesisUtterance" in window)){toast("В этом браузере недоступно озвучивание текста");return}
  const controller=new AbortController();
  activeChatSpeechController=controller;activeChatSpeechButton=button;
  activeChatSpeechStatus=$("#composerStatus")?.textContent||"AI Chat готов";
  const status=$("#composerStatus"),isSelectionListen=!!button.closest(".chat-selection-actions");
- if(status)status.textContent="Подготовка русской озвучки Светланой…";
+ if(status)status.textContent="Подготовка озвучивания Светланой…";
  activeChatSpeechStopButton=button.closest(".chat-code-tools")?.querySelector('[data-code-action="stop-listen"]')||button.closest(".chat-prompt-tools")?.querySelector(".chat-prompt-stop")||button.closest(".chat-actions")?.querySelector(".chat-stop-speech")||null;
  button.dataset.originalHtml=button.innerHTML;button.dataset.originalTitle=button.title;button.dataset.originalAriaLabel=button.getAttribute("aria-label")||button.title;
  button.disabled=true;
@@ -406,47 +407,38 @@ async function speakChatResponse(text,button){
  button.title="Подготавливаю озвучивание Светланой…";button.setAttribute("aria-label","Подготавливаю озвучивание Светланой…");
  if(activeChatSpeechStopButton)activeChatSpeechStopButton.hidden=false;
  try{
-  // Use the same shared catalog loader and Svetlana matching as the original working version.
-  if(!Array.isArray(voiceCatalog)||!voiceCatalog.length)await loadVoiceCatalog();
-  const voice=voiceCatalog.find(v=>/svetlana|светлана/i.test(String(v.name||"")));
-  if(!voice)throw new Error("Голос Светлана не найден в каталоге");
-  const voiceIndex=voice.index;
-  if(voiceIndex===undefined||voiceIndex===null||voiceIndex==="")throw new Error("SVETLANA_VOICE_INDEX_MISSING");
-  const chunks=[];let rest=value;
-  while(rest.length>1800){
-   let cut=Math.max(rest.lastIndexOf(". ",1800),rest.lastIndexOf("! ",1800),rest.lastIndexOf("? ",1800),rest.lastIndexOf("\n",1800),rest.lastIndexOf(" ",1800));
-   if(cut<700)cut=1800;
-   chunks.push(rest.slice(0,cut+1).trim());rest=rest.slice(cut+1).trim();
-  }
-  if(rest)chunks.push(rest);
-  if(status)status.textContent="Подготовка русской озвучки…";
-  // Keep the original working flow: sequential requests, voice.index unchanged, rate 1.
-  const blobs=[];
-  for(const part of chunks){
-   if(controller.signal.aborted)throw new DOMException("Aborted","AbortError");
-   const response=await fetch("https://ahm7xmakki.com/api/tts",{
-    method:"POST",headers:{"Content-Type":"application/json"},
-    body:JSON.stringify({voiceIndex:voiceIndex,text:part,pitch:0,rate:1}),signal:controller.signal
+  window.speechSynthesis.cancel();
+  let voices=window.speechSynthesis.getVoices();
+  if(!voices.length){
+   await new Promise(resolve=>{
+    let done=false;
+    const finish=()=>{if(done)return;done=true;window.speechSynthesis.removeEventListener?.("voiceschanged",finish);resolve()};
+    window.speechSynthesis.addEventListener?.("voiceschanged",finish,{once:true});
+    setTimeout(finish,1200);
    });
-   if(!response.ok){let detail="";try{detail=(await response.text()).slice(0,240)}catch{}throw new Error("SVETLANA_TTS_HTTP_"+response.status+(detail?": "+detail:""))}
-   const type=String(response.headers.get("content-type")||"").toLowerCase();
-   if(type.includes("application/json"))throw new Error("SVETLANA_TTS_RETURNED_JSON");
-   const blob=await response.blob();if(!blob.size)throw new Error("SVETLANA_TTS_EMPTY_AUDIO");
-   blobs.push(blob);
+   voices=window.speechSynthesis.getVoices();
   }
   if(controller.signal.aborted)throw new DOMException("Aborted","AbortError");
-  const audioBlob=new Blob(blobs,{type:"audio/mpeg"});
-  activeChatSpeechUrl=URL.createObjectURL(audioBlob);
-  const audio=new Audio(activeChatSpeechUrl);activeChatSpeechAudio=audio;
-  audio.onended=()=>{if(activeChatSpeechAudio===audio)stopChatSpeech()};
-  audio.onerror=()=>{if(activeChatSpeechAudio===audio){stopChatSpeech();toast("Не удалось воспроизвести озвучку Светланы.")}};
+  const voice=voices.find(v=>/svetlana|светлана/i.test(String(v.name||""))&&/^ru(?:[-_]|$)/i.test(String(v.lang||"")))||
+              voices.find(v=>/svetlana|светлана/i.test(String(v.name||"")));
+  if(!voice)throw new Error("В браузере не найден голос Светлана. Установи русский голос Светлана в Windows.");
+  const utterance=new SpeechSynthesisUtterance(value);
+  utterance.voice=voice;utterance.lang=voice.lang||"ru-RU";utterance.rate=1;utterance.pitch=1;
+  activeChatSpeechUtterance=utterance;
+  utterance.onend=()=>{if(activeChatSpeechUtterance===utterance)stopChatSpeech()};
+  utterance.onerror=event=>{
+   if(activeChatSpeechUtterance!==utterance)return;
+   const aborted=event.error==="canceled"||event.error==="interrupted"||controller.signal.aborted;
+   stopChatSpeech();
+   if(!aborted)toast("Не удалось озвучить текст голосом Светлана.");
+  };
   button.disabled=false;button.innerHTML=button.dataset.originalHtml;
   button.title="Остановить воспроизведение";button.setAttribute("aria-label","Остановить воспроизведение");
   if(status)status.textContent=isSelectionListen?"Светлана озвучивает выделенный текст":"Светлана озвучивает сообщение";
-  await audio.play();
+  window.speechSynthesis.speak(utterance);
  }catch(error){
   const aborted=controller.signal.aborted||error?.name==="AbortError";
-  if(!aborted){console.error("Chat Svetlana TTS failed",error);stopChatSpeech();toast("Не удалось получить русскую озвучку Светланы. Попробуй ещё раз.");}
+  if(!aborted){console.error("Chat Svetlana speech synthesis failed",error);stopChatSpeech();toast(error.message||"Не удалось озвучить текст голосом Светлана.");}
   else stopChatSpeech();
  }
 }
