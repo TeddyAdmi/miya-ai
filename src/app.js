@@ -3000,6 +3000,8 @@ function renderChatMarkdown(value){
   if(/^([-*_])(?:\s*\1){2,}\s*$/.test(line)){flushParagraph();flushList();html.push("<hr>");continue}
   const heading=line.match(/^(#{1,4})\s+(.+)$/);
   if(heading){flushParagraph();flushList();const level=Math.min(heading[1].length+1,5);html.push("<h"+level+">"+inline(heading[2])+"</h"+level+">");continue}
+  const plainHeading=line.match(/^([^:：]{2,70})[:：]$/);
+  if(plainHeading&&!/[.!?]$/.test(plainHeading[1])){flushParagraph();flushList();html.push("<h3>"+inline(plainHeading[1])+"</h3>");continue}
   const boldHeading=line.match(/^\*\*(.{2,90}?)\*\*\s*:?\s*$/);
   if(boldHeading){flushParagraph();flushList();html.push("<h3>"+inline(boldHeading[1].replace(/:\s*$/,""))+"</h3>");continue}
   const bullet=line.match(/^[-*+]\s+(.+)$/);
@@ -3044,9 +3046,20 @@ function addChatMessage(text,isUser,image="",isError=false){
        promptText=promptText.replace(/^\s*```[^\n]*\n?/,"").replace(/\n?```\s*$/,"").trim();
        promptText=promptText.split(/\n\s*(?:#{1,6}\s*)?(?:\*\*)?(?:негативный промпт|пояснение|вариант|настройки|примечание|negative prompt|explanation|notes)(?:\*\*)?\s*[:：]?\s*/i)[0].trim();
        promptText=promptText.replace(/^\s*[>*`_]+|[>*`_]+\s*$/g,"").trim();
+       const intro=lines.slice(0,headingIndex).join("\n").trim();
+       if(!promptText&&intro){
+         const description=intro
+           .replace(/^\s{0,3}#{1,6}\s*/gm,"")
+           .replace(/^\s*[-*+]\s+/gm,"")
+           .replace(/\*\*/g,"")
+           .replace(/\s+/g," ")
+           .trim();
+         if(description.length>30){
+           promptText="Создай изображение, точно передающее содержание и композицию исходной фотографии. Сохрани расположение объектов, формы, пропорции, цвета, направление линий и визуальный стиль. Не добавляй объекты, которых нет в описании. Описание изображения: "+description;
+         }
+       }
        if(promptText){
          detectedPrompt={title:String(headingMatch?.[1]||"Промпт").replace(/\*\*/g,"").replace(/[:：]\s*$/,"").trim(),text:promptText};
-         const intro=lines.slice(0,headingIndex).join("\n").trim();
          bubble.innerHTML=intro?renderChatMarkdown(intro):"";
        }else bubble.innerHTML=renderChatMarkdown(rawResponse);
      }else bubble.innerHTML=renderChatMarkdown(rawResponse);
