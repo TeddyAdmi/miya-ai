@@ -436,11 +436,24 @@ async function speakChatResponse(text,button){
   const blobs=[];
   for(const part of chunks){
    if(controller.signal.aborted)throw new DOMException("Aborted","AbortError");
-   const response=await fetch("https://ahm7xmakki.com/api/tts",{
-    method:"POST",headers:{"Content-Type":"application/json"},
-    body:JSON.stringify({voiceIndex:voiceIndex,text:part,pitch:0,rate:1}),signal:controller.signal
-   });
-   if(!response.ok){let detail="";try{detail=(await response.text()).slice(0,240)}catch{}throw new Error("SVETLANA_TTS_HTTP_"+response.status+(detail?": "+detail:""))}
+   // Keep the original proven payload first; retry only AHM7 server errors with its documented default rate.
+   const payloads=[
+    {voiceIndex:voiceIndex,text:part,pitch:0,rate:1},
+    {voiceIndex:voiceIndex,text:part,pitch:0,rate:0},
+    {voiceIndex:voiceIndex,text:part,pitch:0}
+   ];
+   let response=null,detail="";
+   for(let attempt=0;attempt<payloads.length;attempt++){
+    response=await fetch("https://ahm7xmakki.com/api/tts",{
+     method:"POST",headers:{"Content-Type":"application/json"},
+     body:JSON.stringify(payloads[attempt]),signal:controller.signal
+    });
+    if(response.ok)break;
+    detail="";try{detail=(await response.text()).slice(0,240)}catch{}
+    if((response.status!==502&&response.status!==500)||attempt===payloads.length-1){
+     throw new Error("SVETLANA_TTS_HTTP_"+response.status+(detail?": "+detail:""));
+    }
+   }
    const type=String(response.headers.get("content-type")||"").toLowerCase();
    if(type.includes("application/json"))throw new Error("SVETLANA_TTS_RETURNED_JSON");
    const blob=await response.blob();if(!blob.size)throw new Error("SVETLANA_TTS_EMPTY_AUDIO");
