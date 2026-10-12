@@ -3025,7 +3025,7 @@ function addChatMessage(text,isUser,image="",isError=false){
    const rawResponse=String(text||"").trim();
    // Only expose prompt actions when the answer has an explicit prompt heading.
    // Never treat the whole assistant answer as the prompt.
-   const promptHeading=rawResponse.match(/(?:^|\n)\s{0,3}(?:#{1,6}\s*)?(?:[-*]\s*)?([^\n]{0,100}\bпромпт\b[^\n]{0,80})(?:[:：]\s*|\s*\n)([\s\S]*)/i);
+   const promptHeading=rawResponse.match(/(?:^|\n)\s{0,3}(?:#{1,6}\s*)?(?:[-*]\s*)?([^\n]{0,100}(?:промпт|prompt)[^\n]{0,80})(?:[:：]\s*|\s*\n)([\s\S]*)/i);
    if(promptHeading){
      let promptText=String(promptHeading[2]||"").trim();
      promptText=promptText.replace(/^\s*```[^\n]*\n?/,"").replace(/\n?```\s*$/,"").trim();
