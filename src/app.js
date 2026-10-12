@@ -421,9 +421,11 @@ async function speakChatResponse(text,button){
   // Original working path: use AHM7's Svetlana catalog entry and play its returned audio.
   if(!Array.isArray(voiceCatalog)||!voiceCatalog.length)await loadVoiceCatalog();
   if(controller.signal.aborted)throw new DOMException("Aborted","AbortError");
-  const voice=voiceCatalog.find(v=>/svetlana|светлана/i.test(String(v?.name||"")));
+  const svetlanaVoices=voiceCatalog.filter(v=>/^(svetlana|светлана)$/i.test(String(v?.name||"").trim()));
+  const isRussianVoice=v=>{const language=String(v?.language||v?.lang||v?.locale||"").toLowerCase(),country=String(v?.country||"").toLowerCase();return /russian|русск|(^|[-_])ru($|[-_])|russia/i.test(language)||/russia|росси/i.test(country)};
+  const voice=svetlanaVoices.find(isRussianVoice)||svetlanaVoices[0];
   if(!voice)throw new Error("Голос Светлана не найден в каталоге AHM7");
-  // Match the last known working AHM7 payload exactly: use the catalog's own index.
+  // Keep AHM7's original catalog index; prefer the Russian Svetlana entry as in the known working version.
   const voiceIndex=voice.index;
   if(voiceIndex===undefined||voiceIndex===null||voiceIndex==="")throw new Error("SVETLANA_VOICE_INDEX_MISSING");
   const chunks=[];let rest=value;
