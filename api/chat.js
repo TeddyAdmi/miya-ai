@@ -269,7 +269,7 @@ async function handler(req, res) {
           body: JSON.stringify({
             image: imageBase64,
             userPrompt:
-              "Ты Miya. В сообщении приложено изображение в поле image. Обязательно проанализируй именно это изображение, а не только текст вопроса. Не говори, что фото не прикреплено, если запрос содержит image. Отвечай по-русски. Опиши только действительно видимые детали, композицию, людей, предметы, фон, освещение и стиль; не выдумывай невидимое. Сначала ответь на вопрос пользователя. Если просят промпт для изображения или видео, напиши его по-русски под заголовком «Промпт для изображения:» или «Промпт для видео:» и помести только текст промпта в отдельный блок кода. Вопрос пользователя: " + lastUserText,
+              "Ты Miya. В сообщении приложено изображение в поле image. Обязательно проанализируй именно это изображение, а не только текст вопроса. Не говори, что фото не прикреплено, если запрос содержит image. Отвечай по-русски. Опиши только действительно видимые детали, композицию, людей, предметы, фон, освещение и стиль; не выдумывай невидимое. Сначала ответь на вопрос пользователя. Если пользователь просит промпт для изображения или видео, обязательно напиши полноценный, подробный промпт на русском языке. После заголовка «Промпт для изображения:» или «Промпт для видео:» всегда должен идти сам текст промпта; никогда не заканчивай ответ на одном заголовке. Сам промпт не помещай в цитату, пиши его отдельным fenced code block, с переносами строк при необходимости. Вопрос пользователя: " + lastUserText,
             messages: cleanMessages.slice(-12).map(m => ({
               type: m.role === "assistant" ? "ai" : "user", content: m.content
             }))
@@ -282,8 +282,39 @@ async function handler(req, res) {
         const answer = String(data?.response || data?.text || data?.message || "").trim();
         const saysNoImage = /(?:cannot|can't|can not|unable to|don't|do not) (?:see|view|access|analy[sz]e) (?:the |any |this |that )?(?:image|photo|picture)|(?:no|not) image (?:was )?(?:attached|provided|uploaded)|please (?:upload|attach|send) (?:an? )?(?:image|photo|picture)|не вижу (?:изображени|фотографи|фото)|не прикреплен[аоы]? (?:изображени|фотографи|фото)/i.test(answer);
         if (upstream.ok && answer && data?.success !== false && !saysNoImage) {
+          let finalAnswer = answer;
+          const emptyPromptHeading = answer.match(/(?:^|\n)\s*(?:#{1,6}\s*)?(?:\*\*)?(Промпт для (изображения|видео))\s*[:：]?\s*(?:\*\*)?\s*$/i);
+          if (emptyPromptHeading) {
+            const promptTitle = /видео/i.test(emptyPromptHeading[1]) ? "Промпт для видео:" : "Промпт для изображения:";
+            const analysisText = answer.slice(0, emptyPromptHeading.index).trim();
+            try {
+              const promptResponse = await fetch("https://www.ahm7xmakki.com/api/imgchat", {
+                method: "POST",
+                headers: { "Content-Type": "application/json", "Accept": "application/json" },
+                body: JSON.stringify({
+                  image: imageBase64,
+                  userPrompt:
+                    "Ты Miya. По прикреплённому изображению и описанию ниже составь только готовый подробный промпт на русском языке для генерации изображения. Не описывай свой процесс, не отвечай на исходный вопрос, не добавляй цитату, вступление или заголовок. Верни только сам текст промпта, минимум 3 конкретных предложения. Сохрани композицию, объекты, цвета, формы, пропорции и стиль исходного изображения; не придумывай невидимые детали. Описание изображения: " + analysisText + "\nЗапрос пользователя: " + lastUserText
+                }),
+                signal: AbortSignal.timeout(9000)
+              });
+              const promptData = await promptResponse.json().catch(() => null);
+              let generatedPrompt = String(promptData?.response || promptData?.text || promptData?.message || "").trim();
+              generatedPrompt = generatedPrompt
+                .replace(/^\s*\x60{3}[^\n]*\n?/,"")
+                .replace(/\n?\x60{3}\s*$/,"")
+                .replace(/^(?:#{1,6}\s*)?(?:\*\*)?Промпт для (?:изображения|видео)\s*[:：]?\s*(?:\*\*)?\s*/i,"")
+                .trim();
+              if (promptResponse.ok && promptData?.success !== false && generatedPrompt.length >= 40 &&
+                  !/не могу|не удалось|недостаточно информации|please upload/i.test(generatedPrompt)) {
+                finalAnswer = analysisText + "\n\n" + promptTitle + "\n\n\x60\x60\x60\n" + generatedPrompt + "\n\x60\x60\x60";
+              }
+            } catch (promptError) {
+              console.warn("Miya image prompt completion failed", promptError?.message || promptError);
+            }
+          }
           return res.status(200).json({
-            ok: true, mode: "chat", text: answer,
+            ok: true, mode: "chat", text: finalAnswer,
             provider: "AHM7", model: "AHM7 VisionSter"
           });
         }
