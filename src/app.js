@@ -246,7 +246,7 @@ body.light .chat-bubble.chat-rich-text a{color:#5141b8!important}
 body.light .chat-bubble.chat-rich-text blockquote{background:rgba(112,80,190,.07)!important}
 body.light .chat-bubble.chat-rich-text pre{background:#f3f5f9!important;border-color:#dbe2ec!important;color:#182436!important}
 body.light .chat-bubble.chat-rich-text code{background:rgba(112,80,190,.1)!important}
-
+`;
  document.head.appendChild(st);
 })();
 function jpegImageUrl(url){
