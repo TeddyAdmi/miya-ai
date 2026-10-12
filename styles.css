@@ -3788,3 +3788,10 @@ body.light .generation-loading:not(.video-generation-loading) .progress-circle::
   .chat-canvas .chat-stream .chat-row .chat-avatar{left:-29px!important}
   .chat-canvas .chat-stream .chat-row.user .chat-avatar{left:auto!important;right:-29px!important}
 }
+
+
+/* Restore the compact gap between section heading and media walls/tabs. */
+#canvas > .result-grid,
+#canvas > .library-section{
+  margin-top:-6px!important;
+}
