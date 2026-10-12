@@ -1484,43 +1484,56 @@ async function loadVoiceCatalog(){
   const response=await fetch("https://ahm7xmakki.com/api/voices",{cache:"no-store"});
   if(!response.ok)throw new Error("AHM7_VOICES_HTTP_"+response.status);
   const data=await response.json();
-  const all=Array.isArray(data?.voices)?data.voices:[];
-  voiceCatalog=all.filter(v=>/^(dmitry|дмитрий|svetlana|светлана)$/i.test(String(v?.name||"").trim()));
+  // Keep the complete AHM7 catalog (all 583 entries); only the visible list is filtered by gender.
+  voiceCatalog=Array.isArray(data?.voices)?data.voices:[];
   const genderSelect=$("#voiceGender");
   if(genderSelect&&!genderSelect.dataset.miyaInitialized){genderSelect.value="male";genderSelect.dataset.miyaInitialized="1"}
   $("#voiceLanguage")?.remove();
   refreshVoiceSelects();
-  if(!voiceCatalog.some(v=>/^(dmitry|дмитрий)$/i.test(String(v?.name||"").trim()))||
-     !voiceCatalog.some(v=>/^(svetlana|светлана)$/i.test(String(v?.name||"").trim()))){
-   throw new Error("AHM7 не вернул оба русских голоса: Дмитрий и Светлана");
-  }
  }catch(error){
-  console.error("AHM7 Russian voice catalog failed",error);
+  console.error("AHM7 voice catalog failed",error);
   voiceCatalog=[];
   const sel=$("#voiceSelect");
-  if(sel)sel.innerHTML='<option value="">Не удалось загрузить Дмитрия и Светлану</option>';
+  if(sel)sel.innerHTML='<option value="">Не удалось загрузить голоса AHM7</option>';
  }
 }
 function refreshVoiceSelects(){
  const gender=$("#voiceGender")?.value||"male",sel=$("#voiceSelect");
  if(!sel)return;
- const isMale=gender==="male";
- const list=voiceCatalog.filter(v=>isMale
-  ?/^(dmitry|дмитрий)$/i.test(String(v?.name||"").trim())
-  :/^(svetlana|светлана)$/i.test(String(v?.name||"").trim()));
+ const isRussian=v=>{
+  const language=String(v?.language||v?.lang||v?.locale||"").toLowerCase();
+  const country=String(v?.country||"").toLowerCase();
+  return /russian|русск|(^|[-_])ru($|[-_])|russia/i.test(language)||/russia|росси/i.test(country);
+ };
+ const genderOk=v=>{
+  const g=String(v?.gender||"").toLowerCase();
+  return gender==="female"
+   ?(/female|woman|girl/i.test(g))
+   :((/(^|[^a-z])male([^a-z]|$)|(^|[^a-z])man([^a-z]|$)|boy/i.test(g))&&!/(female|woman|girl)/i.test(g));
+ };
+ const list=voiceCatalog.filter(genderOk).sort((a,b)=>
+  Number(isRussian(b))-Number(isRussian(a))||
+  String(a?.name||"").localeCompare(String(b?.name||""),"ru")
+ );
  sel.innerHTML="";
  list.forEach(v=>{
   const option=document.createElement("option");
   option.value=String(v.index);
-  option.textContent=isMale?"Дмитрий · Мужской · Русский":"Светлана · Женский · Русский";
+  option.textContent=String(v.name||"Voice")+" · "+(gender==="male"?"Мужской":"Женский")+" · "+String(v.country||"");
   sel.appendChild(option);
  });
  if(!list.length){
   const option=document.createElement("option");
   option.value="";
-  option.textContent=isMale?"Голос Дмитрий недоступен":"Голос Светлана недоступен";
+  option.textContent="Нет голосов для выбранного пола";
   sel.appendChild(option);
- }else sel.value=String(list[0].index);
+ }else{
+  const preferred=list.find(v=>isRussian(v)&&(
+   (gender==="male"&&/dmitry|alex|maxim|michael/i.test(String(v?.name||"")))||
+   (gender==="female"&&/svetlana/i.test(String(v?.name||"")))
+  ))||list.find(isRussian)||list[0];
+  sel.value=String(preferred.index);
+ }
 }
 function splitVoiceText(text,max=1000){const clean=String(text||"").trim();if(!clean)return[];const out=[];for(let i=0;i<clean.length;i+=max)out.push(clean.slice(i,i+max));return out}
 function ensureVoiceWallStyles(){
@@ -2469,7 +2482,8 @@ async function generateVoice(text){
  const sel=$("#voiceSelect"),voiceIndex=Number(sel?.value||0);
  const gender=$("#voiceGender")?.value==="male"?"Male":"Female";
  const v=voiceCatalog.find(x=>Number(x.index)===voiceIndex);
- const label=(String(v?.name|| (gender==="Male"?"Дмитрий":"Светлана"))+" · "+gender+" · Русский");
+ const label=(String(v?.name||"Voice")+" · "+gender+" · "+String(v?.country||"")).replace(/ · $/,"");
+ const rate=Number($("#voiceRate")?.value||0),pitch=Number($("#voicePitch")?.value||0);
  const parts=splitVoiceText(text,1000),start=performance.now();
  let canvas=$("#canvas");
  const showProgress=()=>{
@@ -2486,7 +2500,7 @@ async function generateVoice(text){
   for(let i=0;i<parts.length;i++){
    const response=await fetch("https://ahm7xmakki.com/api/tts",{
     method:"POST",headers:{"Content-Type":"application/json","Accept":"audio/mpeg"},
-    body:JSON.stringify({voiceIndex,text:parts[i],pitch:0,rate:1})
+    body:JSON.stringify({voiceIndex,text:parts[i],pitch,rate})
    });
    if(!response.ok){let detail="";try{detail=(await response.text()).slice(0,240)}catch{}throw new Error("AHM7_TTS_HTTP_"+response.status+(detail?": "+detail:""))}
    const type=String(response.headers.get("content-type")||"").toLowerCase();
