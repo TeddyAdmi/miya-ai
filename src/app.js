@@ -27,7 +27,10 @@ voice:{title:"Голос",eyebrow:"ГОЛОС",subtitle:"Превращай те
  #composerSend.send{
    position:relative!important;
    overflow:visible!important;
-   border:1px solid transparent!important;
+   border:0!important;
+   outline:none!important;
+   appearance:none!important;
+   -webkit-appearance:none!important;
    background:linear-gradient(145deg,#d29aff 0%,#ad68ff 30%,#8a58f5 63%,#6658e8 100%)!important;
    box-shadow:none!important;
    text-shadow:none!important;
@@ -50,10 +53,20 @@ voice:{title:"Голос",eyebrow:"ГОЛОС",subtitle:"Превращай те
  /* Keep only the custom tooltip below the button, not the browser title tooltip. */
  #composerSend.send{outline:0!important;}
  /* Remove welcome-tile shadows and make the icon line art white in both themes. */
- .chat-welcome.section-welcome .hero-mark,
+ .chat-room .chat-welcome.section-welcome .hero-mark,
  .studio-room .chat-welcome.section-welcome .hero-mark,
- body.light .chat-welcome.section-welcome .hero-mark,
- body.light .studio-room .chat-welcome.section-welcome .hero-mark{box-shadow:none!important;}
+ body.light .chat-room .chat-welcome.section-welcome .hero-mark,
+ body.light .studio-room .chat-welcome.section-welcome .hero-mark{
+   box-shadow:none!important;
+   filter:none!important;
+ }
+ .chat-room .chat-welcome.section-welcome .hero-mark::before,
+ .studio-room .chat-welcome.section-welcome .hero-mark::before,
+ body.light .chat-room .chat-welcome.section-welcome .hero-mark::before,
+ body.light .studio-room .chat-welcome.section-welcome .hero-mark::before{
+   box-shadow:none!important;
+   filter:none!important;
+ }
  .chat-welcome.section-welcome .hero-mark .nav-icon,
  .studio-room .chat-welcome.section-welcome .hero-mark .nav-icon{color:#fff!important;filter:none!important;text-shadow:none!important;}
  .chat-welcome.section-welcome .hero-mark .nav-icon::before,
@@ -65,11 +78,11 @@ voice:{title:"Голос",eyebrow:"ГОЛОС",subtitle:"Превращай те
    position:absolute!important;
    left:auto!important;
    right:0!important;
-   top:auto!important;
-   bottom:calc(100% + 8px)!important;
+   top:calc(100% + 8px)!important;
+   bottom:auto!important;
    z-index:12000!important;
    padding:6px 9px!important;
-   border:1px solid rgba(148,163,184,.28)!important;
+   border:0!important;
    border-radius:8px!important;
    background:rgba(9,22,40,.97)!important;
    color:#f5f8ff!important;
