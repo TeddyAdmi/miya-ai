@@ -107,7 +107,7 @@ body.light .chat-welcome.section-welcome .hero-mark.image{background:radial-grad
   margin:0 0 12px!important;position:relative!important;top:auto!important;transform:none!important;
 }
 .chat-room .chat-welcome.section-welcome h2,
-.studio-room .chat-welcome.section-welcome h2{order:2!important;margin:0 0 6px!important}
+.studio-room .chat-welcome.section-welcome h2{order:2!important;margin:0 0 7px!important}
 .chat-room .chat-welcome.section-welcome p,
 .studio-room .chat-welcome.section-welcome p{order:3!important;margin:0 auto!important;line-height:1.5!important}
 /* All three sections use the same 43×43 attachment preview. */
