@@ -293,7 +293,7 @@ body.light .floating-wall-clear svg *,body.light .floating-theme svg *{
 })();
 (function ensureChatSpeechAndSelectionStyles(){
  if(document.getElementById("miyaChatSpeechSelectionStyles"))return;
- document.addEventListener("pointerdown",event=>{if(event.target?.closest?.(".chat-selection-actions"))return;document.querySelectorAll(".chat-selection-actions").forEach(el=>{el.hidden=true})},true);
+ document.addEventListener("pointerdown",event=>{if(event.target?.closest?.(".chat-selection-actions"))return;document.querySelectorAll(".chat-selection-actions").forEach(el=>{el.hidden=true});if(activeChatSpeechButton?.closest?.(".chat-selection-actions"))stopChatSpeech()},true);
  const st=document.createElement("style");st.id="miyaChatSpeechSelectionStyles";
  st.textContent=`/* Chat rows follow the exact composer rectangle; user is right/2⁄3 width, assistant spans full width. */
 .chat-canvas .chat-stream{box-sizing:border-box!important;padding:18px 0 calc(var(--chat-composer-height,180px) + 12px)!important;overflow:visible!important;min-height:100dvh!important;height:auto!important;display:flex!important;flex-direction:column!important;justify-content:flex-end!important;align-items:stretch!important;gap:10px!important}
@@ -337,7 +337,7 @@ body.light .chat-prompt-tools button{background:#fff!important;color:#182436!imp
 .chat-selection-actions button{appearance:none!important;display:grid!important;place-items:center!important;width:30px!important;height:30px!important;flex:0 0 30px!important;padding:5px!important;border:1px solid transparent!important;border-radius:8px!important;background:transparent!important;color:var(--text,#e5e7eb)!important;cursor:pointer!important;transition:background .15s,border-color .15s,color .15s!important}
 .chat-selection-actions button svg{width:18px!important;height:18px!important;fill:none!important;stroke:currentColor!important;stroke-width:1.8!important;stroke-linecap:round!important;stroke-linejoin:round!important;pointer-events:none!important}
 .chat-selection-actions button:hover,.chat-selection-actions button:focus-visible{border-color:rgba(157,112,255,.42)!important;background:rgba(157,112,255,.13)!important;color:#b99aff!important;outline:none!important}
-.chat-selection-actions button[aria-label^="Прослушать"]{color:#b99aff!important}
+.chat-selection-actions button[aria-label^="Прослушать"]{color:#b99aff!important}.chat-selection-actions button.chat-speech-playing,.chat-prompt-tools button.chat-speech-playing,.chat-code-tools button.chat-speech-playing{color:#ef4444!important}.chat-selection-actions button.chat-speech-playing svg.chat-speech-stop-icon{fill:currentColor!important;stroke:currentColor!important}.chat-speech-stop-icon{width:17px!important;height:17px!important;display:block!important;fill:currentColor!important;stroke:currentColor!important}.chat-actions button.chat-speech-playing{color:#ef4444!important}.chat-prompt-tools button.chat-speech-playing{min-width:30px!important}
 body.light .chat-selection-actions button{color:#51417f!important}
 body.light .chat-selection-actions button:hover,body.light .chat-selection-actions button:focus-visible{background:rgba(125,83,220,.1)!important;color:#7040c9!important}
 .chat-speech-spinner{width:17px!important;height:17px!important;display:block!important;animation:miyaSpeechSpin .8s linear infinite!important;transform-origin:50% 50%!important}
@@ -455,7 +455,7 @@ function cleanAutoChatTitle(value,maxLength=140){
  }
  return title||"Новый чат";
 }
-let activeChatSpeechAudio=null,activeChatSpeechUrl=null,activeChatSpeechController=null,activeChatSpeechButton=null,activeChatSpeechStopButton=null,activeChatSpeechStatus=null,activeChatSpeechUtterance=null;
+let activeChatSpeechAudio=null,activeChatSpeechUrl=null,activeChatSpeechController=null,activeChatSpeechButton=null,activeChatSpeechStatus=null,activeChatSpeechUtterance=null;
 function stopChatSpeech(){
   try{activeChatSpeechController?.abort()}catch{}
   activeChatSpeechUtterance=null;
@@ -473,8 +473,8 @@ function stopChatSpeech(){
     if(activeChatSpeechButton.dataset.originalTitle!==undefined)activeChatSpeechButton.title=activeChatSpeechButton.dataset.originalTitle;
     if(activeChatSpeechButton.dataset.originalAriaLabel!==undefined)activeChatSpeechButton.setAttribute("aria-label",activeChatSpeechButton.dataset.originalAriaLabel);
   }
-  if(activeChatSpeechStopButton)activeChatSpeechStopButton.hidden=true;
-  activeChatSpeechButton=null;activeChatSpeechStopButton=null;
+  if(activeChatSpeechButton)activeChatSpeechButton.classList.remove("chat-speech-playing");
+  activeChatSpeechButton=null;
 }
 function chatRussianOnlyText(input){
  const text=String(input||"").replace(/\r/g,"").trim();
@@ -497,12 +497,12 @@ async function speakChatResponse(text,button){
  activeChatSpeechStatus=$("#composerStatus")?.textContent||"AI Chat готов";
  const status=$("#composerStatus"),isSelectionListen=!!button.closest(".chat-selection-actions");
  if(status)status.textContent=isSelectionListen?"Подготовка русской озвучки…":"Подготовка русской озвучки сообщения…";
- activeChatSpeechStopButton=button.closest(".chat-code-tools")?.querySelector('[data-code-action="stop-listen"]')||button.closest(".chat-prompt-tools")?.querySelector(".chat-prompt-stop")||button.closest(".chat-actions")?.querySelector(".chat-stop-speech")||null;
+ const isCompactListen=!!(button.closest(".chat-selection-actions")||button.closest(".chat-prompt-tools")||button.closest(".chat-code-tools"));
  button.dataset.originalHtml=button.innerHTML;button.dataset.originalTitle=button.title;button.dataset.originalAriaLabel=button.getAttribute("aria-label")||button.title;
  button.disabled=true;
  button.innerHTML='<svg class="chat-speech-spinner" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-dasharray="28 18" fill="none"/></svg>';
  button.title="Подготавливаю озвучивание…";button.setAttribute("aria-label","Подготавливаю озвучивание…");
- if(activeChatSpeechStopButton)activeChatSpeechStopButton.hidden=false;
+
  try{
   if(!Array.isArray(voiceCatalog)||!voiceCatalog.length)await loadVoiceCatalog();
   if(controller.signal.aborted)throw new DOMException("Aborted","AbortError");
@@ -535,8 +535,10 @@ async function speakChatResponse(text,button){
   const audio=new Audio(activeChatSpeechUrl);activeChatSpeechAudio=audio;
   audio.onended=()=>{if(activeChatSpeechAudio===audio)stopChatSpeech()};
   audio.onerror=()=>{if(activeChatSpeechAudio===audio){stopChatSpeech();toast("Не удалось воспроизвести озвучку.")}};
-  button.disabled=false;button.innerHTML=button.dataset.originalHtml;
-  button.title="Остановить воспроизведение";button.setAttribute("aria-label","Остановить воспроизведение");
+  button.disabled=false;
+  button.classList.add("chat-speech-playing");
+  button.innerHTML=isCompactListen?'<svg class="chat-speech-stop-icon" viewBox="0 0 24 24" aria-hidden="true"><rect x="6" y="6" width="12" height="12" rx="1" fill="currentColor" stroke="currentColor"/></svg>':'<span class="action-mini-icon">■</span>Стоп';
+  button.title=isCompactListen?"Остановить озвучивание":"Остановить голос";button.setAttribute("aria-label",button.title);
   if(status)status.textContent=isSelectionListen?"AHM7 · Светлана озвучивает текст":"AHM7 · Светлана озвучивает сообщение";
   await audio.play();
  }catch(error){
@@ -3121,7 +3123,7 @@ function renderChatMarkdown(value){
  let paragraph=[],listType="",listItems=[],codeLines=[],inCode=false;
  const flushParagraph=()=>{if(paragraph.length){html.push("<p>"+paragraph.map(inline).join("<br>")+"</p>");paragraph=[]}};
  const flushList=()=>{if(listItems.length){html.push("<"+listType+">"+listItems.map(item=>"<li>"+inline(item)+"</li>").join("")+"</"+listType+">");listItems=[];listType=""}};
- const flushCode=()=>{if(codeLines.length){html.push('<div class="chat-code-block"><div class="chat-code-tools"><button type="button" class="chat-code-action" data-code-action="image" title="Создать картинку" aria-label="Создать картинку"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="m21 15-5-5L5 21"/></svg></button><button type="button" class="chat-code-action" data-code-action="video" title="Создать видео" aria-label="Создать видео"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="13" height="14" rx="2"/><path d="m16 10 5-3v10l-5-3z"/></svg></button><button type="button" class="chat-code-action" data-code-action="copy" title="Скопировать промпт" aria-label="Скопировать промпт"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="8" y="8" width="12" height="12" rx="2"/><path d="M16 8V5a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h3"/></svg></button><button type="button" class="chat-code-action" data-code-action="listen" title="Прослушать промпт" aria-label="Прослушать промпт"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 10v4h4l5 4V6l-5 4H3Z"/><path d="M16 9a5 5 0 0 1 0 6M18.5 6.5a8.5 8.5 0 0 1 0 11"/></svg></button><button type="button" class="chat-code-action" data-code-action="stop-listen" title="Остановить озвучивание" aria-label="Остановить озвучивание" hidden><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="6" y="6" width="12" height="12" rx="2"/></svg></button></div><pre><code>'+escapeHtml(codeLines.join("\n"))+"</code></pre></div>");codeLines=[]}};
+ const flushCode=()=>{if(codeLines.length){html.push('<div class="chat-code-block"><div class="chat-code-tools"><button type="button" class="chat-code-action" data-code-action="image" title="Создать картинку" aria-label="Создать картинку"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="m21 15-5-5L5 21"/></svg></button><button type="button" class="chat-code-action" data-code-action="video" title="Создать видео" aria-label="Создать видео"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="13" height="14" rx="2"/><path d="m16 10 5-3v10l-5-3z"/></svg></button><button type="button" class="chat-code-action" data-code-action="copy" title="Скопировать промпт" aria-label="Скопировать промпт"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="8" y="8" width="12" height="12" rx="2"/><path d="M16 8V5a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h3"/></svg></button><button type="button" class="chat-code-action" data-code-action="listen" title="Прослушать промпт" aria-label="Прослушать промпт"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 10v4h4l5 4V6l-5 4H3Z"/><path d="M16 9a5 5 0 0 1 0 6M18.5 6.5a8.5 8.5 0 0 1 0 11"/></svg></button></div><pre><code>'+escapeHtml(codeLines.join("\n"))+"</code></pre></div>");codeLines=[]}};
  for(const rawLine of lines){
   const line=rawLine.trim();
   if(line.startsWith(String.fromCharCode(96).repeat(3))){
@@ -3220,9 +3222,8 @@ function addChatMessage(text,isUser,image="",isError=false){
 
  const actions=document.createElement("div");actions.className="chat-actions";
  if(isUser){
-   actions.innerHTML='<button type="button" title="Прослушать сообщение" aria-label="Прослушать сообщение"><span class="action-mini-icon">♫</span>Прослушать</button><button type="button" class="chat-stop-speech" title="Остановить голос" hidden><span class="action-mini-icon">■</span>Стоп</button><button type="button" title="Копировать"><span class="action-mini-icon">⧉</span>Копировать</button><button type="button" title="Повторить"><span class="action-mini-icon">↻</span>Повторить</button>';
+   actions.innerHTML='<button type="button" title="Прослушать сообщение" aria-label="Прослушать сообщение"><span class="action-mini-icon">♫</span>Прослушать</button><button type="button" title="Копировать"><span class="action-mini-icon">⧉</span>Копировать</button><button type="button" title="Повторить"><span class="action-mini-icon">↻</span>Повторить</button>';
    actions.querySelector('[title="Прослушать сообщение"]').onclick=e=>{document.querySelectorAll(".chat-selection-actions").forEach(el=>el.hidden=true);window.getSelection?.()?.removeAllRanges();speakChatResponse(text,e.currentTarget)};
-   actions.querySelector('[title="Остановить голос"]').onclick=stopChatSpeech;
    actions.querySelector('[title="Копировать"]').onclick=e=>copyChatText(text,e.currentTarget);
    actions.querySelector('[title="Повторить"]').onclick=()=>{
      const value=String(text||"").trim();
@@ -3236,10 +3237,9 @@ function addChatMessage(text,isUser,image="",isError=false){
      }
    };
  }else{
-   actions.innerHTML='<button type="button" title="Копировать"><span class="action-mini-icon">⧉</span>Копировать</button><button type="button" title="Прослушать ответ"><span class="action-mini-icon">♫</span>Прослушать</button><button type="button" class="chat-stop-speech" title="Остановить голос" hidden><span class="action-mini-icon">■</span>Стоп</button><button type="button" title="В промпт"><span class="action-mini-icon">✦</span>В промпт</button><button type="button" title="Повторить"><span class="action-mini-icon">↻</span>Повторить</button>';
+   actions.innerHTML='<button type="button" title="Копировать"><span class="action-mini-icon">⧉</span>Копировать</button><button type="button" title="Прослушать ответ"><span class="action-mini-icon">♫</span>Прослушать</button><button type="button" title="В промпт"><span class="action-mini-icon">✦</span>В промпт</button><button type="button" title="Повторить"><span class="action-mini-icon">↻</span>Повторить</button>';
    actions.querySelector('[title="Копировать"]').onclick=e=>copyChatText(text,e.currentTarget);
    actions.querySelector('[title="Прослушать ответ"]').onclick=e=>{document.querySelectorAll(".chat-selection-actions").forEach(el=>el.hidden=true);window.getSelection?.()?.removeAllRanges();speakChatResponse(text,e.currentTarget)};
-   actions.querySelector('[title="Остановить голос"]').onclick=stopChatSpeech;
    actions.querySelector('[title="В промпт"]').onclick=()=>{$("#composerInput").value=text;syncInput();$("#composerInput").focus();toast("Ответ добавлен в промпт")};
    actions.querySelector('[title="Повторить"]').onclick=()=>retryLastChat();
  }
