@@ -3897,3 +3897,49 @@ body.light .generation-loading:not(.video-generation-loading) .progress-circle::
 #canvas .studio-room.clean-canvas > .chat-welcome.section-welcome > .hero-mark .welcome-chat-symbol circle{
   fill:#fff!important;
 }
+
+
+/* Consistent light tooltip for the image-generation action. */
+#composerSend.send::after{
+  background:#fff!important;
+  color:#202a3b!important;
+  border:1px solid #ded8ed!important;
+  box-shadow:0 4px 14px rgba(24,20,38,.12)!important;
+}
+body.light #composerSend.send::after{
+  background:#fff!important;color:#202a3b!important;border-color:#ded8ed!important;
+}
+/* The image viewer stays a dark overlay in either workspace theme, so its
+   navigation arrows and action glyphs remain white and clearly visible. */
+#imageViewerModal .image-viewer-controls button,
+#imageViewerModal .image-viewer-nav{
+  color:#fff!important;
+  background:rgba(20,27,38,.88)!important;
+  border-color:rgba(255,255,255,.20)!important;
+}
+#imageViewerModal .image-viewer-controls button svg,
+#imageViewerModal .image-viewer-nav svg{
+  width:20px!important;height:20px!important;
+  fill:none!important;stroke:#fff!important;stroke-width:1.8!important;
+  stroke-linecap:round!important;stroke-linejoin:round!important;
+}
+#imageViewerModal .image-viewer-controls button svg [fill="currentColor"],
+#imageViewerModal .image-viewer-controls button svg [stroke="currentColor"],
+#imageViewerModal .image-viewer-nav svg [fill="currentColor"],
+#imageViewerModal .image-viewer-nav svg [stroke="currentColor"]{
+  fill:none!important;stroke:#fff!important;
+}
+#imageViewerModal .image-viewer-controls button:hover,
+#imageViewerModal .image-viewer-nav:hover{
+  background:rgba(40,48,62,.96)!important;color:#fff!important;
+}
+/* Keep the three-dot menu icon the same visual weight in both themes. */
+.media-action.media-more svg,
+.media-action.media-more svg circle,
+body.light .media-action.media-more svg,
+body.light .media-action.media-more svg circle{
+  width:20px!important;height:20px!important;
+  fill:currentColor!important;stroke:none!important;stroke-width:0!important;
+}
+.media-action.media-more svg circle,
+body.light .media-action.media-more svg circle{r:1.5px!important}
