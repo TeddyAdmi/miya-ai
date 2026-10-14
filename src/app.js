@@ -185,6 +185,8 @@ body.light .side-logo{filter:drop-shadow(0 0 16px rgba(158,94,255,.42))!importan
 body.light .side-logo svg path{stroke:none!important}
 body.light #composerInput{max-height:none!important}
 body.light .chat-welcome.section-welcome .hero-mark.image{background:linear-gradient(135deg,#e4cfff 0%,#c39aff 20%,#a574ff 43%,#8959f4 66%,#6842d7 84%,#5532bd 100%)!important}body.light .chat-welcome.section-welcome .hero-mark.image::before{background:linear-gradient(155deg,rgba(255,255,255,.48) 0%,rgba(255,255,255,.20) 19%,rgba(255,255,255,.04) 42%,transparent 60%)!important}
+/* Give only the Images glyph a raised, convex 3D finish in dark mode; preserve its flat appearance in light mode. */
+body:not(.light) .chat-welcome.section-welcome .hero-mark.image .nav-icon.icon-image,body:not(.light) .studio-room .chat-welcome.section-welcome .hero-mark.image .nav-icon.icon-image{filter:drop-shadow(0 -1px 0 rgba(255,255,255,.72)) drop-shadow(0 1px 0 rgba(255,255,255,.30)) drop-shadow(0 2px 0 rgba(57,24,111,.95)) drop-shadow(0 4px 2px rgba(0,0,0,.48))!important;}
 /* Welcome headings keep their original order; place the icon about 1 cm below the description in every room. */
 .chat-room .chat-welcome.section-welcome,
 .studio-room .chat-welcome.section-welcome{
