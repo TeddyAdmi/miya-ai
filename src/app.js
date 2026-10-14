@@ -164,6 +164,8 @@ body.light .image-viewer-created-info .image-viewer-created-date{color:#64748b!i
 .chat-welcome.section-welcome .hero-mark,.studio-room .chat-welcome.section-welcome .hero-mark{position:relative!important;isolation:isolate!important;border:0!important;outline:0!important;transform:perspective(180px) rotateX(4deg)!important;box-shadow:none!important;filter:none!important}
 .chat-welcome.section-welcome .hero-mark::before,.studio-room .chat-welcome.section-welcome .hero-mark::before{content:""!important;position:absolute!important;inset:0!important;border:0!important;border-radius:inherit!important;background:linear-gradient(145deg,rgba(255,255,255,.30),rgba(255,255,255,.07) 34%,transparent 58%)!important;pointer-events:none!important;z-index:0!important;box-shadow:none!important;filter:none!important}
 .chat-welcome.section-welcome .hero-mark .nav-icon,.studio-room .chat-welcome.section-welcome .hero-mark .nav-icon{position:relative!important;z-index:1!important;filter:none!important;text-shadow:none!important;transform:translateY(-1px)!important}
+.chat-welcome.section-welcome .hero-mark .nav-icon,.studio-room .chat-welcome.section-welcome .hero-mark .nav-icon{transform:translateY(-1px) scale(1.28)!important;transform-origin:center!important}
+.chat-welcome.section-welcome .hero-mark .welcome-chat-symbol,.studio-room .chat-welcome.section-welcome .hero-mark .welcome-chat-symbol{position:relative!important;z-index:1!important;display:block!important;width:66%!important;height:66%!important;color:#fff!important;overflow:visible!important;filter:none!important;transform:translateY(-1px)!important}
 body.light .chat-welcome.section-welcome .hero-mark,body.light .studio-room .chat-welcome.section-welcome .hero-mark{border:0!important;outline:0!important;box-shadow:none!important;filter:none!important}
 body.light .generation-loading:not(.video-generation-loading) .progress-circle::before{background:rgba(255,255,255,.86)!important}
 @media(max-width:800px){.generation-loading:not(.video-generation-loading){left:50%!important;padding:6px 8px!important}.generation-loading:not(.video-generation-loading) .progress-circle{width:38px!important;height:38px!important;flex-basis:38px!important}.generation-loading:not(.video-generation-loading) .progress-copy b,.generation-loading:not(.video-generation-loading) .progress-model{font-size:12px!important}}`;
@@ -2720,7 +2722,7 @@ function modeHero(){
      <div class="mini-badge">MIYA CHAT</div>
      <h2>Общайся с Miya</h2>
      <p>Задавай вопросы, придумывай идеи, создавай промпты и работай с контентом.</p>
-     <div class="hero-mark"><span class="nav-icon icon-spark" aria-hidden="true"></span></div>
+     <div class="hero-mark"><svg class="welcome-chat-symbol" viewBox="0 0 64 64" aria-hidden="true" focusable="false"><path d="M12 14.5A7.5 7.5 0 0 1 19.5 7h25A7.5 7.5 0 0 1 52 14.5v22a7.5 7.5 0 0 1-7.5 7.5H29L17 53V44a7.5 7.5 0 0 1-5-7.5z" fill="none" stroke="currentColor" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round"/><circle cx="24" cy="26" r="2.8" fill="currentColor"/><circle cx="32" cy="26" r="2.8" fill="currentColor"/><circle cx="40" cy="26" r="2.8" fill="currentColor"/></svg></div>
    </div>
  </div>`;
  if(mode==="voice") return `<div class="studio-room clean-canvas"><div class="chat-welcome section-welcome"><div class="mini-badge">MIYA VOICE</div><h2>Создавай голоса</h2><p>Создавай новые голоса из текста с помощью AI и сохраняй их на стене.</p><div class="hero-mark voice"><span class="nav-icon icon-voice" aria-hidden="true"></span></div></div></div>`;
