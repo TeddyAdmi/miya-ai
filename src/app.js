@@ -19,6 +19,72 @@ const modes={
  video:{title:"Видео",eyebrow:"ВИДЕО",subtitle:"Создавай короткие видео по сцене, действиям и движению — со звуком.",placeholder:"Опиши сцену, действия персонажей, движение камеры и атмосферу...",send:"Создать видео",status:"OmegaTech T2V · 16:9 · 5 сек"},
 voice:{title:"Голос",eyebrow:"ГОЛОС",subtitle:"Превращай текст в естественную речь с мужскими и женскими голосами.",placeholder:"Введите текст для озвучки...",send:"Создать голос",status:"Svetlana · Female · Russia"}
 };
+(function installComposerSendPolish(){
+ if(document.getElementById("miyaComposerSendPolish"))return;
+ const st=document.createElement("style");
+ st.id="miyaComposerSendPolish";
+ st.textContent=`
+ #composerSend.send{
+   position:relative!important;
+   overflow:visible!important;
+   border:1px solid rgba(255,255,255,.28)!important;
+   background:linear-gradient(145deg,#d29aff 0%,#ad68ff 30%,#8a58f5 63%,#6658e8 100%)!important;
+   box-shadow:none!important;
+   text-shadow:none!important;
+   isolation:isolate!important;
+ }
+ #composerSend.send::before{
+   content:""!important;
+   position:absolute!important;
+   inset:1px!important;
+   border-radius:inherit!important;
+   background:linear-gradient(145deg,rgba(255,255,255,.32),rgba(255,255,255,.10) 32%,transparent 66%,rgba(36,20,110,.12))!important;
+   pointer-events:none!important;
+   z-index:0!important;
+ }
+ #composerSend.send .send-icon,#composerSend.send #composerSendText{
+   position:relative!important;
+   z-index:1!important;
+ }
+ #composerSend.send::after{
+   content:attr(data-tooltip)!important;
+   position:absolute!important;
+   left:auto!important;
+   right:0!important;
+   top:auto!important;
+   bottom:calc(100% + 8px)!important;
+   z-index:12000!important;
+   padding:6px 9px!important;
+   border:1px solid rgba(148,163,184,.28)!important;
+   border-radius:8px!important;
+   background:rgba(9,22,40,.97)!important;
+   color:#f5f8ff!important;
+   font-size:11px!important;
+   font-weight:650!important;
+   line-height:1.2!important;
+   letter-spacing:0!important;
+   white-space:nowrap!important;
+   opacity:0!important;
+   visibility:hidden!important;
+   pointer-events:none!important;
+   transform:translateY(3px)!important;
+   transition:opacity .14s ease,transform .14s ease,visibility .14s ease!important;
+   box-shadow:none!important;
+ }
+ #composerSend.send:hover::after,
+ #composerSend.send:focus-visible::after{
+   opacity:1!important;
+   visibility:visible!important;
+   transform:translateY(0)!important;
+ }
+ body.light #composerSend.send::after{
+   background:rgba(255,255,255,.98)!important;
+   color:#202a3b!important;
+   border-color:#d7cfff!important;
+ }
+ `;
+ document.head.appendChild(st);
+})();
 const $=s=>document.querySelector(s);
 function installAnimatedStatusDots(){
  const status=$("#composerStatus");
@@ -4579,6 +4645,14 @@ function setMode(next,render=true){
  const workspaceSubtitle=$("#workspaceSubtitle"); if(workspaceSubtitle) workspaceSubtitle.textContent=m.subtitle;
  const composerInputEl=$("#composerInput"); if(composerInputEl){ composerInputEl.placeholder=m.placeholder; composerInputEl.setAttribute("aria-label",m.placeholder); composerInputEl.dataset.mode=target; composerInputEl.classList.remove("prompt-chat","prompt-images","prompt-video","prompt-voice"); composerInputEl.classList.add("prompt-"+target); }
  const composerSendText=$("#composerSendText"); if(composerSendText) composerSendText.textContent=m.send;
+ const composerSend=$("#composerSend");
+ if(composerSend){
+   const sendHints={chat:"Отправить сообщение",images:"Создать изображение",video:"Создать видео",voice:"Создать голос"};
+   const hint=sendHints[target]||m.send;
+   composerSend.setAttribute("data-tooltip",hint);
+   composerSend.setAttribute("title",hint);
+   composerSend.setAttribute("aria-label",hint);
+ }
  const composerStatus=$("#composerStatus"); if(composerStatus) composerStatus.textContent=m.status; const composerMic=$("#composerMic"); if(composerMic){ composerMic.style.setProperty("display","grid","important"); composerMic.style.setProperty("visibility","visible","important"); composerMic.style.setProperty("opacity","1","important"); composerMic.setAttribute("aria-label","Начать голосовой ввод"); composerMic.title="Голосовой ввод"; }
  const imageSettings=$(".image-settings"); if(imageSettings){ imageSettings.style.display=target==="images"?"flex":"none"; imageSettings.classList.toggle("show",target==="images"); }
  const voiceOptions=$("#voiceOptions"); if(voiceOptions){ voiceOptions.style.display=target==="voice"?"flex":"none"; voiceOptions.classList.toggle("show",target==="voice"); }
