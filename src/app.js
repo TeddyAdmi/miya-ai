@@ -2622,7 +2622,7 @@ function renderAssistantQuoteBlock(){
  block.append(label,text,remove);
 }
 function modeHero(){
- if(mode==="chat") return `<div class="studio-room clean-canvas chat-room">
+ if(mode==="chat") return `<div class="studio-room clean-canvas">
    <div class="chat-welcome section-welcome">
      <div class="mini-badge">MIYA CHAT</div>
      <h2>Общайся с Miya</h2>
