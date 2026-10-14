@@ -64,9 +64,13 @@ body.light .image-viewer-created-info .image-viewer-created-date{color:#64748b!i
 .generation-loading:not(.video-generation-loading){position:fixed!important;left:calc(50% + 102.5px)!important;top:50%!important;transform:translate(-50%,-50%)!important;z-index:1200!important;padding:6px 8px!important;min-width:0!important;min-height:0!important;height:auto!important;width:max-content!important;max-width:calc(100vw - 24px)!important;box-sizing:border-box!important;overflow:visible!important;margin:0!important}
 .generation-loading:not(.video-generation-loading) .generation-progress{width:max-content!important;max-width:100%!important;gap:8px!important;justify-content:flex-start!important;align-items:center!important}
 .generation-loading:not(.video-generation-loading) .progress-circle{width:40px!important;height:40px!important;flex:0 0 40px!important}
-.generation-loading:not(.video-generation-loading) .progress-circle .progress-percent{font-size:18px!important;font-weight:900!important;line-height:1!important;letter-spacing:-.04em!important;white-space:nowrap!important}
+.generation-loading:not(.video-generation-loading) .progress-circle .progress-percent{font-size:16px!important;font-weight:900!important;line-height:1!important;letter-spacing:-.04em!important;white-space:nowrap!important}
 .generation-loading:not(.video-generation-loading) .progress-copy{display:flex!important;flex-direction:column!important;align-items:flex-start!important;justify-content:center!important;gap:3px!important;width:max-content!important;max-width:calc(100vw - 80px)!important;flex:0 1 auto!important;overflow:hidden!important;text-align:left!important}
-.generation-loading:not(.video-generation-loading) .progress-copy b,.generation-loading:not(.video-generation-loading) .progress-model{display:block!important;flex:0 0 auto!important;width:max-content!important;max-width:100%!important;white-space:nowrap!important;font-size:14px!important;line-height:1.15!important;text-align:left!important;overflow:hidden!important;text-overflow:ellipsis!important}
+.generation-loading:not(.video-generation-loading) .progress-copy b,.generation-loading:not(.video-generation-loading) .progress-model{display:block!important;flex:0 0 auto!important;width:max-content!important;max-width:100%!important;white-space:nowrap!important;font-size:12px!important;line-height:1.15!important;text-align:left!important;overflow:hidden!important;text-overflow:ellipsis!important}
+.chat-welcome.section-welcome .hero-mark,.studio-room .chat-welcome.section-welcome .hero-mark{position:relative!important;isolation:isolate!important;border:1px solid rgba(255,255,255,.48)!important;transform:perspective(180px) rotateX(4deg)!important;box-shadow:inset 0 2px 1px rgba(255,255,255,.48),inset 0 -7px 12px rgba(18,12,55,.32),0 7px 0 rgba(38,29,94,.18),0 12px 22px rgba(36,25,84,.24),0 0 30px rgba(112,78,220,.22)!important}
+.chat-welcome.section-welcome .hero-mark::before,.studio-room .chat-welcome.section-welcome .hero-mark::before{content:""!important;position:absolute!important;inset:1px!important;border-radius:inherit!important;background:linear-gradient(145deg,rgba(255,255,255,.42),rgba(255,255,255,.08) 34%,transparent 62%,rgba(20,13,65,.2))!important;pointer-events:none!important;z-index:0!important}
+.chat-welcome.section-welcome .hero-mark .nav-icon,.studio-room .chat-welcome.section-welcome .hero-mark .nav-icon{position:relative!important;z-index:1!important;filter:drop-shadow(0 2px 1px rgba(18,12,45,.6)) drop-shadow(0 0 5px rgba(255,255,255,.22))!important;transform:translateY(-1px)!important}
+body.light .chat-welcome.section-welcome .hero-mark,body.light .studio-room .chat-welcome.section-welcome .hero-mark{border-color:rgba(255,255,255,.78)!important;box-shadow:inset 0 2px 1px rgba(255,255,255,.78),inset 0 -7px 12px rgba(25,28,80,.25),0 6px 0 rgba(39,48,71,.12),0 11px 20px rgba(49,54,100,.2),0 0 26px rgba(112,78,220,.18)!important}
 body.light .generation-loading:not(.video-generation-loading) .progress-circle::before{background:rgba(255,255,255,.86)!important}
 @media(max-width:800px){.generation-loading:not(.video-generation-loading){left:50%!important;padding:6px 8px!important}.generation-loading:not(.video-generation-loading) .progress-circle{width:38px!important;height:38px!important;flex-basis:38px!important}.generation-loading:not(.video-generation-loading) .progress-copy b,.generation-loading:not(.video-generation-loading) .progress-model{font-size:12px!important}}`;
  document.head.appendChild(st);
@@ -1331,7 +1335,7 @@ function buildMediaCard(item,{video=false}={}){
    media=document.createElement("img");media.alt="Miya Studio";media.style.cursor="zoom-in";media.title="Открыть изображение";
    media.decoding="async";
    const storedUrl=String(item.url||"");
-   let proxyUrl="",directUrl=storedUrl,triedProxy=false,triedDirect=false,retryCount=0,preferredPreviewUrl=String(item.previewUrl||"");
+   let proxyUrl="",directUrl=storedUrl,triedProxy=false,triedDirect=false,retryCount=0,delayedCacheAttempts=0,preferredPreviewUrl=String(item.previewUrl||"");
    try{
      const parsed=new URL(storedUrl,window.location.origin);
      if(parsed.pathname.endsWith("/api/image-jpeg")){
@@ -1358,6 +1362,32 @@ function buildMediaCard(item,{video=false}={}){
          media.removeAttribute("src");
          media.src=directUrl;
        },retryDelay);
+       return;
+     }
+     // FLUX outputs may become readable only after the async cache fetch finishes.
+     // Recheck IndexedDB before marking the card failed, so users need not switch tabs.
+     if(!isDeadVheer&&delayedCacheAttempts<4){
+       const attempt=delayedCacheAttempts++;
+       const delay=[350,900,1800,3000][attempt];
+       window.setTimeout(async()=>{
+         if(!media.isConnected)return;
+         try{
+           const cached=await getCachedMedia(item.id);
+           if(cached?.blob){
+             mediaFailed=false;
+             media.src=URL.createObjectURL(cached.blob);
+             return;
+           }
+         }catch{}
+         if(attempt<3){
+           mediaFailed=false;
+           const retrySource=attempt%2===0?(directUrl||proxyUrl):(proxyUrl||directUrl);
+           if(retrySource)media.src=retrySource;
+           return;
+         }
+         mediaFailed=true;media.removeAttribute("src");
+         media.alt="Изображение временно недоступно";
+       },delay);
        return;
      }
      mediaFailed=true;media.removeAttribute("src");
