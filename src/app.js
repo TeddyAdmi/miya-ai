@@ -84,8 +84,9 @@ voice:{title:"Голос",eyebrow:"ГОЛОС",subtitle:"Превращай те
    padding:6px 9px!important;
    border:0!important;
    border-radius:8px!important;
-   background:rgba(9,22,40,.97)!important;
-   color:#f5f8ff!important;
+   background:#fff!important;
+   color:#202a3b!important;
+   border:1px solid #ded8ed!important;
    font-size:11px!important;
    font-weight:650!important;
    line-height:1.2!important;
@@ -1501,7 +1502,19 @@ function buildMediaCard(item,{video=false}={}){
    // Start loading the wall thumbnail immediately. IndexedDB can be slow or
    // blocked for large images; it must never delay the visible image itself.
    if(!isDeadVheer&&initialImageUrl){
-     media.addEventListener("load",()=>{cacheMedia(item.id,initialImageUrl,"image")},{once:true});
+     media.addEventListener("load",()=>{
+       cacheMedia(item.id,initialImageUrl,"image");
+       // Force the newly generated preview to paint immediately on the current
+       // wall instead of waiting for a section switch/re-render.
+       requestAnimationFrame(()=>{
+         if(!media.isConnected)return;
+         media.style.visibility="visible";
+         media.style.opacity="1";
+         media.style.transform="translateZ(0)";
+         card.classList.add("media-image-loaded");
+         void card.offsetHeight;
+       });
+     },{once:true});
      // Start loading only after the card has joined the live wall. FLUX images
      // could otherwise finish against a detached element and paint only after
      // switching sections rebuilt the wall.
