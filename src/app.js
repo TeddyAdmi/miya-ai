@@ -1,3 +1,18 @@
+(function ensureImageWallAndProgressPolish(){
+ if(document.getElementById("miyaImageWallProgressPolish"))return;
+ const st=document.createElement("style");st.id="miyaImageWallProgressPolish";
+ st.textContent=`
+ /* Match the gap between the section description and its media wall. */
+ #canvas > .result-grid,
+ #canvas > .library-section{margin-top:8px!important}
+ /* Make the percentage in the circular image-generation indicator readable. */
+ .generation-loading:not(.video-generation-loading) .progress-circle .progress-percent{
+   font-size:22px!important;line-height:1!important;font-weight:900!important;
+ }
+ `;
+ document.head.appendChild(st);
+})();
+
 const modes={
  chat:{title:"Твоя AI-комната",eyebrow:"AI CHAT",subtitle:"Общайся с Miya, придумывай идеи и управляй созданием контента.",placeholder:"Напишите сообщение или задайте вопрос Miya…",send:"Отправить",status:"AI Chat готов"},
  images:{title:"Картинки",eyebrow:"КАРТИНКИ",subtitle:"Создавай изображения с нуля или загружай исходник и описывай изменения.",placeholder:"Опиши картинку или что изменить в загруженном изображении...",send:"Создать",status:"Nano Banana 2 · T2I · создание изображения"},
@@ -2693,41 +2708,32 @@ function showLoading(){
  grid.appendChild(card);scrollImagesToTop();
 }
 async function showImage(url,prompt="",model="FLUX Dev",ratio=""){
- const rawUrl=String(url||"").trim();
- const displayUrl=rawUrl.startsWith("/api/image-jpeg?")
-   ? rawUrl
-   : (ratio&&/^\\d+:\\d+$/.test(String(ratio))
-      ? "/api/image-jpeg?url="+encodeURIComponent(rawUrl)+"&ratio="+encodeURIComponent(String(ratio))
-        + (/^Nano Banana 2$/i.test(String(model||"")) ? "&sourceModel=Nano%20Banana%202" : "")
-      : rawUrl);
- const candidates=[rawUrl,displayUrl,jpegImageUrl(rawUrl)].filter((candidate,index,list)=>candidate&&list.indexOf(candidate)===index);
- let loadedUrl="";
- for(const candidate of candidates){
-   for(let attempt=0;attempt<3;attempt++){
-     const loaded=await new Promise(resolve=>{
-       const probe=new Image();let settled=false;
-       const finish=ok=>{if(settled)return;settled=true;clearTimeout(timer);probe.onload=null;probe.onerror=null;resolve(Boolean(ok))};
-       const timer=window.setTimeout(()=>finish(false),10000);
-       probe.onload=()=>finish((probe.naturalWidth||0)>0&&(probe.naturalHeight||0)>0);
-       probe.onerror=()=>finish(false);
-       probe.decoding="async";probe.src=candidate;
-       if(probe.complete&&(probe.naturalWidth||0)>0)finish(true);
-     });
-     if(loaded){loadedUrl=candidate;break;}
-     if(attempt<2)await new Promise(resolve=>window.setTimeout(resolve,attempt===0?900:1800));
-   }
-   if(loadedUrl)break;
- }
- if(!loadedUrl)throw new Error("Изображение создано, но пока не загрузилось. Попробуй ещё раз.");
- const item=saveMedia("image",displayUrl,prompt,model);
- if(!item)throw new Error("Не удалось сохранить готовое изображение.");
- item.previewUrl=loadedUrl;
- try{const storedItems=getLibrary();const storedItem=storedItems.find(entry=>entry.id===item.id);if(storedItem)storedItem.previewUrl=loadedUrl;localStorage.setItem(LIB_KEY,JSON.stringify(storedItems.slice(0,500)))}catch{}
- const c=$("#canvas");let grid=c.querySelector(".result-grid");
- if(!grid){c.innerHTML='<div class="result-grid"></div>';grid=c.querySelector(".result-grid")}
- const card=buildMediaCard(item);grid.prepend(card);
- applyFirstSixMediaPriority(grid);
- return item;
+  const rawUrl=String(url||"").trim();
+  if(!rawUrl)throw new Error("Сервер не вернул ссылку на изображение.");
+  const displayUrl=rawUrl.startsWith("/api/image-jpeg?")
+    ? rawUrl
+    : (ratio&&/^\\d+:\\d+$/.test(String(ratio))
+       ? "/api/image-jpeg?url="+encodeURIComponent(rawUrl)+"&ratio="+encodeURIComponent(String(ratio))
+         + (/^Nano Banana 2$/i.test(String(model||"")) ? "&sourceModel=Nano%20Banana%202" : "")
+       : rawUrl);
+
+  // Save and render the card immediately. Never block the wall on image probes:
+  // some providers publish the result URL before their image CDN is ready.
+  // buildMediaCard already handles proxy fallback and retries for late images.
+  const item=saveMedia("image",displayUrl,prompt,model);
+  if(!item)throw new Error("Не удалось сохранить готовое изображение.");
+  item.previewUrl=displayUrl;
+  try{
+    const storedItems=getLibrary();
+    const storedItem=storedItems.find(entry=>entry.id===item.id);
+    if(storedItem)storedItem.previewUrl=displayUrl;
+    localStorage.setItem(LIB_KEY,JSON.stringify(storedItems.slice(0,500)));
+  }catch{}
+  const c=$("#canvas");let grid=c.querySelector(".result-grid");
+  if(!grid){c.innerHTML='<div class="result-grid"></div>';grid=c.querySelector(".result-grid")}
+  const card=buildMediaCard(item);grid.prepend(card);
+  applyFirstSixMediaPriority(grid);
+  return item;
 }
 async function compressAgnesReferenceImage(source){
  const value=String(source||"");
