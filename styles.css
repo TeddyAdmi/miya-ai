@@ -3797,10 +3797,10 @@ body.light .generation-loading:not(.video-generation-loading) .progress-circle::
 }
 
 
-/* FINAL OVERRIDE: align the Chat empty-state welcome with the studio welcome blocks.
-   Keep this at the end of the stylesheet so older legacy transforms cannot win. */
+/* FINAL ALIGNMENT: Chat uses the same vertical transform as Images, Video and Voice.
+   Do not add a top offset; that would push Chat below the other studio tabs. */
 #canvas.chat-canvas > .studio-room.chat-room > .chat-welcome.section-welcome{
   position:relative!important;
-  top:24px!important;
-  transform:none!important;
+  top:0!important;
+  transform:translateY(-24px)!important;
 }
