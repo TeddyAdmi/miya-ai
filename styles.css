@@ -3806,3 +3806,55 @@ body.light .generation-loading:not(.video-generation-loading) .progress-circle::
   margin-top:-6px!important;
 }
 
+
+
+/* Shared fixed icon anchor for all four empty-state welcome screens.
+   Keep the icon at the same point; place the text relative to it so copy length
+   cannot move the icon when switching between Chat, Images, Video, and Voice. */
+#canvas .studio-room.clean-canvas > .chat-welcome.section-welcome{
+  position:relative!important;
+  display:block!important;
+  min-height:min(58vh,560px)!important;
+  height:auto!important;
+  padding:0!important;
+  margin:0 auto!important;
+  text-align:center!important;
+  transform:none!important;
+}
+#canvas .studio-room.clean-canvas > .chat-welcome.section-welcome > .mini-badge{
+  position:absolute!important;
+  top:calc(37% - 25px)!important;
+  left:0!important;
+  right:0!important;
+  width:100%!important;
+  margin:0!important;
+}
+#canvas .studio-room.clean-canvas > .chat-welcome.section-welcome > .hero-mark{
+  position:absolute!important;
+  top:37%!important;
+  left:50%!important;
+  margin:0 0 0 -29px!important;
+  width:58px!important;
+  min-width:58px!important;
+  height:58px!important;
+  min-height:58px!important;
+  transform:none!important;
+}
+#canvas .studio-room.clean-canvas > .chat-welcome.section-welcome > h2{
+  position:absolute!important;
+  top:calc(37% + 70px)!important;
+  left:0!important;
+  right:0!important;
+  width:100%!important;
+  margin:0!important;
+  text-align:center!important;
+}
+#canvas .studio-room.clean-canvas > .chat-welcome.section-welcome > p{
+  position:absolute!important;
+  top:calc(37% + 112px)!important;
+  left:0!important;
+  right:0!important;
+  width:min(540px,calc(100% - 40px))!important;
+  margin:0 auto!important;
+  text-align:center!important;
+}
