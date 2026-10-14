@@ -180,7 +180,7 @@ body.light .chat-welcome.section-welcome .hero-mark.image .icon-image{filter:dro
 /* Add space to actual media cards only; the empty-state text and icon keep their previous position. */
 .canvas .result-grid,.canvas .voice-wall{margin-top:8px!important}
 /* Do not add another gap after the wall heading's own description. */
-.chat-room .chat-welcome.section-welcome p,.studio-room .chat-welcome.section-welcome p{margin-bottom:0!important}
+.chat-room .chat-welcome.section-welcome p,.studio-room .chat-welcome.section-welcome p{margin-bottom:0!important;min-height:3em!important;display:flex!important;align-items:center!important;justify-content:center!important}
 
 /* In light theme, these two circular controls have a light surface and dark icons. */
 .floating-wall-clear,.floating-theme{
