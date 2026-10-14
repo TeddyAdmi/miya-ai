@@ -3795,3 +3795,12 @@ body.light .generation-loading:not(.video-generation-loading) .progress-circle::
 #canvas > .library-section{
   margin-top:-6px!important;
 }
+
+
+/* FINAL OVERRIDE: align the Chat empty-state welcome with the studio welcome blocks.
+   Keep this at the end of the stylesheet so older legacy transforms cannot win. */
+#canvas.chat-canvas > .studio-room.chat-room > .chat-welcome.section-welcome{
+  position:relative!important;
+  top:24px!important;
+  transform:none!important;
+}
