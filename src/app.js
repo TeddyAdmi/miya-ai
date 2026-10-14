@@ -7,7 +7,7 @@
  #canvas > .library-section{margin-top:8px!important}
  /* Make the percentage in the circular image-generation indicator readable. */
  .generation-loading:not(.video-generation-loading) .progress-circle .progress-percent{
-   font-size:22px!important;line-height:1!important;font-weight:900!important;
+   font-size:14px!important;line-height:1!important;font-weight:850!important;
  }
  `;
  document.head.appendChild(st);
@@ -157,7 +157,7 @@ body.light .image-viewer-created-info .image-viewer-created-date{color:#64748b!i
 .generation-loading:not(.video-generation-loading){position:fixed!important;left:calc(50% + 102.5px)!important;top:50%!important;transform:translate(-50%,-50%)!important;z-index:1200!important;padding:6px 8px!important;min-width:0!important;min-height:0!important;height:auto!important;width:max-content!important;max-width:calc(100vw - 24px)!important;box-sizing:border-box!important;overflow:visible!important;margin:0!important}
 .generation-loading:not(.video-generation-loading) .generation-progress{width:max-content!important;max-width:100%!important;gap:8px!important;justify-content:flex-start!important;align-items:center!important}
 .generation-loading:not(.video-generation-loading) .progress-circle{width:40px!important;height:40px!important;flex:0 0 40px!important}
-.generation-loading:not(.video-generation-loading) .progress-circle .progress-percent{font-size:17px!important;font-weight:900!important;line-height:1!important;letter-spacing:-.04em!important;white-space:nowrap!important}
+.generation-loading:not(.video-generation-loading) .progress-circle .progress-percent{font-size:14px!important;font-weight:850!important;line-height:1!important;letter-spacing:-.03em!important;white-space:nowrap!important}
 .generation-loading:not(.video-generation-loading) .progress-copy{display:flex!important;flex-direction:column!important;align-items:flex-start!important;justify-content:center!important;gap:3px!important;width:max-content!important;max-width:calc(100vw - 80px)!important;flex:0 1 auto!important;overflow:hidden!important;text-align:left!important}
 .generation-loading:not(.video-generation-loading) .progress-copy b,.generation-loading:not(.video-generation-loading) .progress-model{display:block!important;flex:0 0 auto!important;width:max-content!important;max-width:100%!important;white-space:nowrap!important;font-size:12px!important;line-height:1.15!important;text-align:left!important;overflow:hidden!important;text-overflow:ellipsis!important}
 .generation-loading:not(.video-generation-loading) .progress-copy b{font-size:13px!important}
@@ -1444,7 +1444,7 @@ function buildMediaCard(item,{video=false}={}){
      }
    }catch{}
    const isDeadVheer=/^https?:\/\/access\.vheer\.com\/results\//i.test(directUrl);
-   const setImageSource=url=>{if(url&&!mediaFailed)media.src=url};
+   const setImageSource=url=>{if(url&&!mediaFailed){if(media.isConnected){media.src=url;return}requestAnimationFrame(()=>{if(media.isConnected&&!mediaFailed)media.src=url})}};
    const isAgnesPreview=/^Agnes Image/i.test(String(item.model||""));
    if(isAgnesPreview&&!proxyUrl&&/^https:\/\/platform-outputs\.agnes-ai\.space\//i.test(directUrl)){
      proxyUrl="/api/image-jpeg?url="+encodeURIComponent(directUrl)+"&raw=1";
@@ -1502,7 +1502,12 @@ function buildMediaCard(item,{video=false}={}){
    // blocked for large images; it must never delay the visible image itself.
    if(!isDeadVheer&&initialImageUrl){
      media.addEventListener("load",()=>{cacheMedia(item.id,initialImageUrl,"image")},{once:true});
-     setImageSource(initialImageUrl);
+     // Start loading only after the card has joined the live wall. FLUX images
+     // could otherwise finish against a detached element and paint only after
+     // switching sections rebuilt the wall.
+     requestAnimationFrame(()=>{
+       if(media.isConnected&&!mediaFailed)setImageSource(initialImageUrl);
+     });
    }
    resolveMediaUrl(item).then(url=>{
      if(!url||mediaFailed||!media.isConnected)return;
