@@ -27,7 +27,7 @@ voice:{title:"Голос",eyebrow:"ГОЛОС",subtitle:"Превращай те
  #composerSend.send{
    position:relative!important;
    overflow:visible!important;
-   border:1px solid rgba(255,255,255,.28)!important;
+   border:1px solid transparent!important;
    background:linear-gradient(145deg,#d29aff 0%,#ad68ff 30%,#8a58f5 63%,#6658e8 100%)!important;
    box-shadow:none!important;
    text-shadow:none!important;
@@ -46,6 +46,20 @@ voice:{title:"Голос",eyebrow:"ГОЛОС",subtitle:"Превращай те
    position:relative!important;
    z-index:1!important;
  }
+ #composerSend.send .send-icon{color:#fff!important;filter:none!important;}
+ /* Keep only the custom tooltip below the button, not the browser title tooltip. */
+ #composerSend.send{outline:0!important;}
+ /* Remove welcome-tile shadows and make the icon line art white in both themes. */
+ .chat-welcome.section-welcome .hero-mark,
+ .studio-room .chat-welcome.section-welcome .hero-mark,
+ body.light .chat-welcome.section-welcome .hero-mark,
+ body.light .studio-room .chat-welcome.section-welcome .hero-mark{box-shadow:none!important;}
+ .chat-welcome.section-welcome .hero-mark .nav-icon,
+ .studio-room .chat-welcome.section-welcome .hero-mark .nav-icon{color:#fff!important;filter:none!important;text-shadow:none!important;}
+ .chat-welcome.section-welcome .hero-mark .nav-icon::before,
+ .chat-welcome.section-welcome .hero-mark .nav-icon::after,
+ .studio-room .chat-welcome.section-welcome .hero-mark .nav-icon::before,
+ .studio-room .chat-welcome.section-welcome .hero-mark .nav-icon::after{color:#fff!important;border-color:#fff!important;box-shadow:none!important;filter:none!important;}
  #composerSend.send::after{
    content:attr(data-tooltip)!important;
    position:absolute!important;
@@ -4650,7 +4664,7 @@ function setMode(next,render=true){
    const sendHints={chat:"Отправить сообщение",images:"Создать изображение",video:"Создать видео",voice:"Создать голос"};
    const hint=sendHints[target]||m.send;
    composerSend.setAttribute("data-tooltip",hint);
-   composerSend.setAttribute("title",hint);
+   composerSend.removeAttribute("title");
    composerSend.setAttribute("aria-label",hint);
  }
  const composerStatus=$("#composerStatus"); if(composerStatus) composerStatus.textContent=m.status; const composerMic=$("#composerMic"); if(composerMic){ composerMic.style.setProperty("display","grid","important"); composerMic.style.setProperty("visibility","visible","important"); composerMic.style.setProperty("opacity","1","important"); composerMic.setAttribute("aria-label","Начать голосовой ввод"); composerMic.title="Голосовой ввод"; }
