@@ -182,7 +182,7 @@ body.light .side-brand b{color:#000!important}
 body.light .side-logo{filter:drop-shadow(0 0 16px rgba(158,94,255,.42))!important}
 body.light .side-logo svg path{stroke:none!important}
 body.light #composerInput{max-height:none!important}
-body.light .chat-welcome.section-welcome .hero-mark.image{background:linear-gradient(145deg,#c99bff 0%,#a477ff 28%,#9564ff 58%,#8055ee 100%)!important}
+body.light .chat-welcome.section-welcome .hero-mark.image{background:linear-gradient(135deg,#e4cfff 0%,#c39aff 20%,#a574ff 43%,#8959f4 66%,#6842d7 84%,#5532bd 100%)!important}body.light .chat-welcome.section-welcome .hero-mark.image::before{background:linear-gradient(155deg,rgba(255,255,255,.48) 0%,rgba(255,255,255,.20) 19%,rgba(255,255,255,.04) 42%,transparent 60%)!important}
 /* Welcome headings keep their original order; place the icon about 1 cm below the description in every room. */
 .chat-room .chat-welcome.section-welcome,
 .studio-room .chat-welcome.section-welcome{
