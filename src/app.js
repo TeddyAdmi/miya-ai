@@ -7,7 +7,7 @@
  #canvas > .library-section{margin-top:8px!important}
  /* Make the percentage in the circular image-generation indicator readable. */
  .generation-loading:not(.video-generation-loading) .progress-circle .progress-percent{
-   font-size:14px!important;line-height:1!important;font-weight:850!important;
+   font-size:13px!important;line-height:1!important;font-weight:850!important;
  }
  `;
  document.head.appendChild(st);
@@ -73,43 +73,6 @@ voice:{title:"Голос",eyebrow:"ГОЛОС",subtitle:"Превращай те
  .chat-welcome.section-welcome .hero-mark .nav-icon::after,
  .studio-room .chat-welcome.section-welcome .hero-mark .nav-icon::before,
  .studio-room .chat-welcome.section-welcome .hero-mark .nav-icon::after{color:#fff!important;border-color:#fff!important;box-shadow:none!important;filter:none!important;}
- #composerSend.send::after{
-   content:attr(data-tooltip)!important;
-   position:absolute!important;
-   left:auto!important;
-   right:0!important;
-   top:calc(100% + 8px)!important;
-   bottom:auto!important;
-   z-index:12000!important;
-   padding:6px 9px!important;
-   border:0!important;
-   border-radius:8px!important;
-   background:#fff!important;
-   color:#202a3b!important;
-   border:1px solid #ded8ed!important;
-   font-size:11px!important;
-   font-weight:650!important;
-   line-height:1.2!important;
-   letter-spacing:0!important;
-   white-space:nowrap!important;
-   opacity:0!important;
-   visibility:hidden!important;
-   pointer-events:none!important;
-   transform:translateY(3px)!important;
-   transition:opacity .14s ease,transform .14s ease,visibility .14s ease!important;
-   box-shadow:none!important;
- }
- #composerSend.send:hover::after,
- #composerSend.send:focus-visible::after{
-   opacity:1!important;
-   visibility:visible!important;
-   transform:translateY(0)!important;
- }
- body.light #composerSend.send::after{
-   background:rgba(255,255,255,.98)!important;
-   color:#202a3b!important;
-   border-color:#d7cfff!important;
- }
  `;
  document.head.appendChild(st);
 })();
@@ -158,7 +121,7 @@ body.light .image-viewer-created-info .image-viewer-created-date{color:#64748b!i
 .generation-loading:not(.video-generation-loading){position:fixed!important;left:calc(50% + 102.5px)!important;top:50%!important;transform:translate(-50%,-50%)!important;z-index:1200!important;padding:6px 8px!important;min-width:0!important;min-height:0!important;height:auto!important;width:max-content!important;max-width:calc(100vw - 24px)!important;box-sizing:border-box!important;overflow:visible!important;margin:0!important}
 .generation-loading:not(.video-generation-loading) .generation-progress{width:max-content!important;max-width:100%!important;gap:8px!important;justify-content:flex-start!important;align-items:center!important}
 .generation-loading:not(.video-generation-loading) .progress-circle{width:40px!important;height:40px!important;flex:0 0 40px!important}
-.generation-loading:not(.video-generation-loading) .progress-circle .progress-percent{font-size:14px!important;font-weight:850!important;line-height:1!important;letter-spacing:-.03em!important;white-space:nowrap!important}
+.generation-loading:not(.video-generation-loading) .progress-circle .progress-percent{font-size:13px!important;font-weight:850!important;line-height:1!important;letter-spacing:-.03em!important;white-space:nowrap!important}
 .generation-loading:not(.video-generation-loading) .progress-copy{display:flex!important;flex-direction:column!important;align-items:flex-start!important;justify-content:center!important;gap:3px!important;width:max-content!important;max-width:calc(100vw - 80px)!important;flex:0 1 auto!important;overflow:hidden!important;text-align:left!important}
 .generation-loading:not(.video-generation-loading) .progress-copy b,.generation-loading:not(.video-generation-loading) .progress-model{display:block!important;flex:0 0 auto!important;width:max-content!important;max-width:100%!important;white-space:nowrap!important;font-size:12px!important;line-height:1.15!important;text-align:left!important;overflow:hidden!important;text-overflow:ellipsis!important}
 .generation-loading:not(.video-generation-loading) .progress-copy b{font-size:13px!important}
@@ -3056,7 +3019,7 @@ async function generateImage(prompt){
    if(loader){
     setProgress(100);
     const modelLabel=loader.querySelector(".progress-model");
-    if(modelLabel)modelLabel.textContent=actualModel;
+    if(modelLabel)modelLabel.textContent=imageModelLabel(actualModel);
    }
   scrollImagesToTop();
   if(modelName === "Nano Banana 2"){
@@ -4645,8 +4608,8 @@ function setMode(next,render=true){
  if(composerSend){
    const sendHints={chat:"Отправить сообщение",images:"Создать изображение",video:"Создать видео",voice:"Создать голос"};
    const hint=sendHints[target]||m.send;
-   composerSend.setAttribute("data-tooltip",hint);
-   composerSend.removeAttribute("title");
+   composerSend.removeAttribute("data-tooltip");
+   composerSend.title=hint;
    composerSend.setAttribute("aria-label",hint);
  }
  const composerStatus=$("#composerStatus"); if(composerStatus) composerStatus.textContent=m.status; const composerMic=$("#composerMic"); if(composerMic){ composerMic.style.setProperty("display","grid","important"); composerMic.style.setProperty("visibility","visible","important"); composerMic.style.setProperty("opacity","1","important"); composerMic.setAttribute("aria-label","Начать голосовой ввод"); composerMic.title="Голосовой ввод"; }
