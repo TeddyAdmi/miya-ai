@@ -1436,7 +1436,7 @@ function buildMediaCard(item,{video=false}={}){
    media=document.createElement("img");media.alt="Miya Studio";media.style.cursor="zoom-in";media.title="Открыть изображение";
    media.decoding="async";
    const storedUrl=String(item.url||"");
-   let proxyUrl="",directUrl=storedUrl,triedProxy=false,triedDirect=false,retryCount=0,delayedCacheAttempts=0,preferredPreviewUrl=String(item.previewUrl||"");
+   let proxyUrl="",directUrl=storedUrl,triedProxy=false,triedDirect=false;
    try{
      const parsed=new URL(storedUrl,window.location.origin);
      if(parsed.pathname.endsWith("/api/image-jpeg")){
@@ -1445,86 +1445,30 @@ function buildMediaCard(item,{video=false}={}){
      }
    }catch{}
    const isDeadVheer=/^https?:\/\/access\.vheer\.com\/results\//i.test(directUrl);
-   const setImageSource=url=>{if(url&&!mediaFailed){if(media.isConnected){media.src=url;return}requestAnimationFrame(()=>{if(media.isConnected&&!mediaFailed)media.src=url})}};
-   const isAgnesPreview=/^Agnes Image/i.test(String(item.model||""));
-   if(isAgnesPreview&&!proxyUrl&&/^https:\/\/platform-outputs\.agnes-ai\.space\//i.test(directUrl)){
-     proxyUrl="/api/image-jpeg?url="+encodeURIComponent(directUrl)+"&raw=1";
-   }
+   const setImageSource=url=>{if(url&&!mediaFailed)media.src=url};
    media.addEventListener("error",()=>{
-     // Provider image URLs can become available a moment after the generation card is created.
-     // Try the same-origin proxy once, then retry the original URL twice before showing an error.
-     if(proxyUrl&&!triedProxy){triedProxy=true;setImageSource(proxyUrl);return}
-     if(!triedDirect&&directUrl){triedDirect=true;setImageSource(directUrl);return}
-     if(!isDeadVheer&&directUrl&&retryCount<2){
-       retryCount++;
-       const retryDelay=retryCount===1?900:1800;
-       window.setTimeout(()=>{
-         if(!media.isConnected||mediaFailed)return;
-         media.removeAttribute("src");
-         media.src=directUrl;
-       },retryDelay);
-       return;
-     }
-     // FLUX outputs may become readable only after the async cache fetch finishes.
-     // Recheck IndexedDB before marking the card failed, so users need not switch tabs.
-     if(!isDeadVheer&&delayedCacheAttempts<4){
-       const attempt=delayedCacheAttempts++;
-       const delay=[350,900,1800,3000][attempt];
-       window.setTimeout(async()=>{
-         if(!media.isConnected)return;
-         try{
-           const cached=await getCachedMedia(item.id);
-           if(cached?.blob){
-             mediaFailed=false;
-             media.src=URL.createObjectURL(cached.blob);
-             return;
-           }
-         }catch{}
-         if(attempt<3){
-           mediaFailed=false;
-           const retrySource=attempt%2===0?(directUrl||proxyUrl):(proxyUrl||directUrl);
-           if(retrySource)media.src=retrySource;
-           return;
-         }
-         mediaFailed=true;media.removeAttribute("src");
-         media.alt="Изображение временно недоступно";
-       },delay);
-       return;
-     }
+     // A slow JPEG conversion must never hide a usable provider image.
+     if(proxyUrl&&!triedProxy&&media.src!==proxyUrl){triedProxy=true;setImageSource(proxyUrl);return}
+     if(proxyUrl&&!triedDirect&&directUrl&&directUrl!==storedUrl){triedDirect=true;setImageSource(directUrl);return}
      mediaFailed=true;media.removeAttribute("src");
      media.alt=isDeadVheer?"Старая копия изображения":"Изображение временно недоступно";
    });
-   media.loading="eager";
-   media.fetchPriority="high";
-   const initialImageUrl=isDeadVheer?(proxyUrl||directUrl):(proxyUrl||preferredPreviewUrl||directUrl);
-   if(proxyUrl&&(initialImageUrl===proxyUrl||String(initialImageUrl).startsWith("/api/image-jpeg?")))triedProxy=true;
-   else if(initialImageUrl===directUrl)triedDirect=true;
-   // Start loading the wall thumbnail immediately. IndexedDB can be slow or
-   // blocked for large images; it must never delay the visible image itself.
-   if(!isDeadVheer&&initialImageUrl){
-     media.addEventListener("load",()=>{
-       cacheMedia(item.id,initialImageUrl,"image");
-       // Force the newly generated preview to paint immediately on the current
-       // wall instead of waiting for a section switch/re-render.
-       requestAnimationFrame(()=>{
-         if(!media.isConnected)return;
-         media.style.visibility="visible";
-         media.style.opacity="1";
-         media.style.transform="translateZ(0)";
-         card.classList.add("media-image-loaded");
-         void card.offsetHeight;
-       });
-     },{once:true});
-     // Start loading only after the card has joined the live wall. FLUX images
-     // could otherwise finish against a detached element and paint only after
-     // switching sections rebuilt the wall.
-     requestAnimationFrame(()=>{
-       if(media.isConnected&&!mediaFailed)setImageSource(initialImageUrl);
-     });
-   }
+   const isAgnesPreview=/^Agnes Image/i.test(String(item.model||""));
+   media.loading=isAgnesPreview?"lazy":"eager";
+   media.fetchPriority=isAgnesPreview?"low":"high";
+   if(isAgnesPreview){media.style.maxHeight="280px";media.style.objectFit="contain";media.style.objectPosition="center"}
+   // Show the original provider image immediately. Convert to the requested
+   // ratio/JPEG in parallel and use it only when that optimized version is ready.
+   if(!isDeadVheer&&directUrl)media.src=directUrl;
    resolveMediaUrl(item).then(url=>{
-     if(!url||mediaFailed||!media.isConnected)return;
-     if(url.startsWith("blob:"))setImageSource(url);
+     if(!url||mediaFailed)return;
+     if(url.startsWith("blob:")){setImageSource(url);return}
+     if(proxyUrl){
+       const optimized=new Image();optimized.decoding="async";
+       optimized.onload=()=>{if(!mediaFailed&&media.isConnected)setImageSource(proxyUrl)};
+       optimized.onerror=()=>{};
+       optimized.src=proxyUrl;
+     }else if(!media.src&&!isDeadVheer)setImageSource(url);
    }).catch(()=>{});
    if(isDeadVheer&&!proxyUrl)media.alt="Старая копия изображения";
    media.addEventListener("click",e=>{e.stopPropagation();openImageViewer(item)});
@@ -5112,7 +5056,7 @@ function setSpeechMicRecording(){
   mic.classList.add("recording");
   mic.setAttribute("aria-label","Завершить запись и распознать голос");
   mic.title="Завершить запись и вставить текст";
-  mic.innerHTML='<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8.5"/><path d="m8.2 12.1 2.3 2.3 5.3-5.3"/></svg>';
+  mic.innerHTML='<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="8" y="8" width="8" height="8" rx="1"/></svg>';
 }
 function ensureSpeechVisualizer(){
   let canvas=$("#composerVoiceVisualizer");
