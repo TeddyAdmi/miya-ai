@@ -776,6 +776,15 @@ body.light .chat-history-menu button:last-child:hover{
 .canvas{position:relative}
 
 
+/* Match the empty Chat welcome canvas to the regular studio canvas.
+   Keep this scoped to the welcome state so message/composer geometry stays untouched. */
+#canvas.chat-canvas:has(> .studio-room.clean-canvas > .chat-welcome.section-welcome){
+  min-height:calc(100% - 1px)!important;
+  height:auto!important;
+  padding:0 24px 250px!important;
+  box-sizing:border-box!important;
+}
+
 /* Final chat history layout: no scrollbar, five recent chats, actions pinned to the far right. */
 .chat-history-mini{
   overflow:visible!important;
