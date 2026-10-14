@@ -185,6 +185,8 @@ body.light .chat-welcome.section-welcome .hero-mark.image{background:radial-grad
 .canvas .result-grid,.canvas .voice-wall{margin-top:8px!important}
 /* Use the same natural description height in Chat, Images, Video and Voice so the centered welcome blocks share identical vertical alignment. */
 .chat-room .chat-welcome.section-welcome p,.studio-room .chat-welcome.section-welcome p{margin:0 auto!important;min-height:0!important;height:auto!important;display:block!important;line-height:1.5!important}
+/* The chat welcome inherits legacy full-screen room geometry; lower only its empty-state welcome to align with Images, Video and Voice. */
+.chat-room .chat-welcome.section-welcome{transform:translateY(24px)!important}
 
 /* In light theme, these two circular controls have a light surface and dark icons. */
 .floating-wall-clear,.floating-theme{
