@@ -64,7 +64,7 @@ body.light .image-viewer-created-info .image-viewer-created-date{color:#64748b!i
 .generation-loading:not(.video-generation-loading){position:fixed!important;left:calc(50% + 102.5px)!important;top:50%!important;transform:translate(-50%,-50%)!important;z-index:1200!important;padding:6px 8px!important;min-width:0!important;min-height:0!important;height:auto!important;width:max-content!important;max-width:calc(100vw - 24px)!important;box-sizing:border-box!important;overflow:visible!important;margin:0!important}
 .generation-loading:not(.video-generation-loading) .generation-progress{width:max-content!important;max-width:100%!important;gap:8px!important;justify-content:flex-start!important;align-items:center!important}
 .generation-loading:not(.video-generation-loading) .progress-circle{width:40px!important;height:40px!important;flex:0 0 40px!important}
-.generation-loading:not(.video-generation-loading) .progress-circle .progress-percent{font-size:8px!important;line-height:1!important;letter-spacing:-.02em!important;white-space:nowrap!important}
+.generation-loading:not(.video-generation-loading) .progress-circle .progress-percent{font-size:18px!important;font-weight:900!important;line-height:1!important;letter-spacing:-.04em!important;white-space:nowrap!important}
 .generation-loading:not(.video-generation-loading) .progress-copy{display:flex!important;flex-direction:column!important;align-items:flex-start!important;justify-content:center!important;gap:3px!important;width:max-content!important;max-width:calc(100vw - 80px)!important;flex:0 1 auto!important;overflow:hidden!important;text-align:left!important}
 .generation-loading:not(.video-generation-loading) .progress-copy b,.generation-loading:not(.video-generation-loading) .progress-model{display:block!important;flex:0 0 auto!important;width:max-content!important;max-width:100%!important;white-space:nowrap!important;font-size:14px!important;line-height:1.15!important;text-align:left!important;overflow:hidden!important;text-overflow:ellipsis!important}
 body.light .generation-loading:not(.video-generation-loading) .progress-circle::before{background:rgba(255,255,255,.86)!important}
@@ -90,8 +90,8 @@ body.light .chat-welcome.section-welcome .hero-mark.image .icon-image{filter:dro
 .chat-room .chat-welcome.section-welcome,
 .studio-room .chat-welcome.section-welcome{
   display:flex!important;flex-direction:column!important;align-items:center!important;
-  justify-content:flex-start!important;gap:0!important;
-  min-height:0!important;height:auto!important;padding:0!important;margin:0 auto!important;
+  justify-content:center!important;gap:0!important;
+  min-height:min(58vh,560px)!important;height:auto!important;padding:24px 0!important;margin:0 auto!important;
   transform:none!important;
 }
 /* Match the same welcome order in Chat, Images, Video and Voice: badge, icon, title, description. */
@@ -178,7 +178,7 @@ body.light .chat-welcome.section-welcome .hero-mark.image .icon-image{filter:dro
 /* Keep the media wall and library tabs close to the workspace heading, as previously approved. */
 .canvas{padding-top:0!important}
 /* Add space to actual media cards only; the empty-state text and icon keep their previous position. */
-.canvas .result-grid,.canvas .voice-wall{margin-top:6px!important}
+.canvas .result-grid,.canvas .voice-wall{margin-top:8px!important}
 /* Do not add another gap after the wall heading's own description. */
 .chat-room .chat-welcome.section-welcome p,.studio-room .chat-welcome.section-welcome p{margin-bottom:0!important}
 
@@ -1365,7 +1365,7 @@ function buildMediaCard(item,{video=false}={}){
    });
    media.loading="eager";
    media.fetchPriority="high";
-   const initialImageUrl=preferredPreviewUrl||(isDeadVheer?(proxyUrl||directUrl):(directUrl||proxyUrl));
+   const initialImageUrl=isDeadVheer?(proxyUrl||directUrl):(proxyUrl||preferredPreviewUrl||directUrl);
    if(proxyUrl&&(initialImageUrl===proxyUrl||String(initialImageUrl).startsWith("/api/image-jpeg?")))triedProxy=true;
    else if(initialImageUrl===directUrl)triedDirect=true;
    // Start loading the wall thumbnail immediately. IndexedDB can be slow or
@@ -2717,18 +2717,11 @@ async function showImage(url,prompt="",model="FLUX Dev",ratio=""){
          + (/^Nano Banana 2$/i.test(String(model||"")) ? "&sourceModel=Nano%20Banana%202" : "")
        : rawUrl);
 
-  // Save and render the card immediately. Never block the wall on image probes:
-  // some providers publish the result URL before their image CDN is ready.
-  // buildMediaCard already handles proxy fallback and retries for late images.
+  // Render immediately, but let the shared card loader choose the normalized
+  // proxy/direct URL and its fallbacks. An unverified previewUrl can bypass the
+  // working same-origin proxy and leave FLUX cards blank.
   const item=saveMedia("image",displayUrl,prompt,model);
   if(!item)throw new Error("Не удалось сохранить готовое изображение.");
-  item.previewUrl=displayUrl;
-  try{
-    const storedItems=getLibrary();
-    const storedItem=storedItems.find(entry=>entry.id===item.id);
-    if(storedItem)storedItem.previewUrl=displayUrl;
-    localStorage.setItem(LIB_KEY,JSON.stringify(storedItems.slice(0,500)));
-  }catch{}
   const c=$("#canvas");let grid=c.querySelector(".result-grid");
   if(!grid){c.innerHTML='<div class="result-grid"></div>';grid=c.querySelector(".result-grid")}
   const card=buildMediaCard(item);grid.prepend(card);
