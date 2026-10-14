@@ -293,7 +293,7 @@ body.light .floating-wall-clear svg *,body.light .floating-theme svg *{
 })();
 (function ensureChatSpeechAndSelectionStyles(){
  if(document.getElementById("miyaChatSpeechSelectionStyles"))return;
- document.addEventListener("pointerdown",event=>{if(event.target?.closest?.(".chat-selection-actions"))return;document.querySelectorAll(".chat-selection-actions").forEach(el=>{el.hidden=true});if(activeChatSpeechButton?.closest?.(".chat-selection-actions"))stopChatSpeech()},true);
+ document.addEventListener("pointerdown",event=>{const target=event.target;if(activeChatSpeechButton&&target!==activeChatSpeechButton&&!activeChatSpeechButton.contains(target))stopChatSpeech();if(!target?.closest?.(".chat-selection-actions"))document.querySelectorAll(".chat-selection-actions").forEach(el=>{el.hidden=true})},true);
  const st=document.createElement("style");st.id="miyaChatSpeechSelectionStyles";
  st.textContent=`/* Chat rows follow the exact composer rectangle; user is right/2⁄3 width, assistant spans full width. */
 .chat-canvas .chat-stream{box-sizing:border-box!important;padding:18px 0 calc(var(--chat-composer-height,180px) + 12px)!important;overflow:visible!important;min-height:100dvh!important;height:auto!important;display:flex!important;flex-direction:column!important;justify-content:flex-end!important;align-items:stretch!important;gap:10px!important}
@@ -337,7 +337,7 @@ body.light .chat-prompt-tools button{background:#fff!important;color:#182436!imp
 .chat-selection-actions button{appearance:none!important;display:grid!important;place-items:center!important;width:30px!important;height:30px!important;flex:0 0 30px!important;padding:5px!important;border:1px solid transparent!important;border-radius:8px!important;background:transparent!important;color:var(--text,#e5e7eb)!important;cursor:pointer!important;transition:background .15s,border-color .15s,color .15s!important}
 .chat-selection-actions button svg{width:18px!important;height:18px!important;fill:none!important;stroke:currentColor!important;stroke-width:1.8!important;stroke-linecap:round!important;stroke-linejoin:round!important;pointer-events:none!important}
 .chat-selection-actions button:hover,.chat-selection-actions button:focus-visible{border-color:rgba(157,112,255,.42)!important;background:rgba(157,112,255,.13)!important;color:#b99aff!important;outline:none!important}
-.chat-selection-actions button[aria-label^="Прослушать"]{color:#b99aff!important}.chat-selection-actions button.chat-speech-playing,.chat-prompt-tools button.chat-speech-playing,.chat-code-tools button.chat-speech-playing{color:#ef4444!important}.chat-selection-actions button.chat-speech-playing svg.chat-speech-stop-icon{fill:currentColor!important;stroke:currentColor!important}.chat-speech-stop-icon{width:17px!important;height:17px!important;display:block!important;fill:currentColor!important;stroke:currentColor!important}.chat-actions button.chat-speech-playing{color:#ef4444!important}.chat-prompt-tools button.chat-speech-playing{min-width:30px!important}
+.chat-selection-actions button[aria-label^="Прослушать"]{color:#b99aff!important}.chat-selection-actions button.chat-speech-playing,.chat-prompt-tools button.chat-speech-playing,.chat-code-tools button.chat-speech-playing,.chat-actions button.chat-speech-playing{color:#ef4444!important}.chat-speech-loading .chat-speech-spinner{color:var(--text,#e5e7eb)!important;stroke:currentColor!important}.chat-speech-loading{color:var(--text,#e5e7eb)!important}.chat-speech-playing{color:#ef4444!important}.chat-actions button.chat-speech-playing .action-mini-icon{color:#ef4444!important}.chat-selection-actions button.chat-speech-playing svg.chat-speech-stop-icon{fill:currentColor!important;stroke:currentColor!important}.chat-speech-stop-icon{width:17px!important;height:17px!important;display:block!important;fill:currentColor!important;stroke:currentColor!important}.chat-actions button.chat-speech-playing{color:#ef4444!important}.chat-prompt-tools button.chat-speech-playing{min-width:30px!important}
 body.light .chat-selection-actions button{color:#51417f!important}
 body.light .chat-selection-actions button:hover,body.light .chat-selection-actions button:focus-visible{background:rgba(125,83,220,.1)!important;color:#7040c9!important}
 .chat-speech-spinner{width:17px!important;height:17px!important;display:block!important;animation:miyaSpeechSpin .8s linear infinite!important;transform-origin:50% 50%!important}
@@ -469,6 +469,7 @@ function stopChatSpeech(){
   activeChatSpeechUrl=null;
   if(activeChatSpeechButton){
     activeChatSpeechButton.disabled=false;
+    activeChatSpeechButton.classList.remove("chat-speech-loading","chat-speech-playing");
     activeChatSpeechButton.innerHTML=activeChatSpeechButton.dataset.originalHtml||'<span class="action-mini-icon">♫</span>Прослушать';
     if(activeChatSpeechButton.dataset.originalTitle!==undefined)activeChatSpeechButton.title=activeChatSpeechButton.dataset.originalTitle;
     if(activeChatSpeechButton.dataset.originalAriaLabel!==undefined)activeChatSpeechButton.setAttribute("aria-label",activeChatSpeechButton.dataset.originalAriaLabel);
@@ -499,7 +500,7 @@ async function speakChatResponse(text,button){
  if(status)status.textContent=isSelectionListen?"Подготовка русской озвучки…":"Подготовка русской озвучки сообщения…";
  const isCompactListen=!!(button.closest(".chat-selection-actions")||button.closest(".chat-prompt-tools")||button.closest(".chat-code-tools"));
  button.dataset.originalHtml=button.innerHTML;button.dataset.originalTitle=button.title;button.dataset.originalAriaLabel=button.getAttribute("aria-label")||button.title;
- button.disabled=true;
+ button.disabled=true;button.classList.add("chat-speech-loading");
  button.innerHTML='<svg class="chat-speech-spinner" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-dasharray="28 18" fill="none"/></svg>';
  button.title="Подготавливаю озвучивание…";button.setAttribute("aria-label","Подготавливаю озвучивание…");
 
@@ -536,10 +537,10 @@ async function speakChatResponse(text,button){
   audio.onended=()=>{if(activeChatSpeechAudio===audio)stopChatSpeech()};
   audio.onerror=()=>{if(activeChatSpeechAudio===audio){stopChatSpeech();toast("Не удалось воспроизвести озвучку.")}};
   button.disabled=false;
-  button.classList.add("chat-speech-playing");
+  button.classList.remove("chat-speech-loading");button.classList.add("chat-speech-playing");
   button.innerHTML=isCompactListen?'<svg class="chat-speech-stop-icon" viewBox="0 0 24 24" aria-hidden="true"><rect x="6" y="6" width="12" height="12" rx="1" fill="currentColor" stroke="currentColor"/></svg>':'<span class="action-mini-icon">■</span>Стоп';
   button.title=isCompactListen?"Остановить озвучивание":"Остановить голос";button.setAttribute("aria-label",button.title);
-  if(status)status.textContent=isSelectionListen?"AHM7 · Светлана озвучивает текст":"AHM7 · Светлана озвучивает сообщение";
+  if(status)status.textContent=isSelectionListen?"Светлана озвучивает текст":"Светлана озвучивает сообщение";
   await audio.play();
  }catch(error){
   const aborted=controller.signal.aborted||error?.name==="AbortError";
@@ -609,7 +610,7 @@ function syncActiveChatTitle(){
  const chat=mode==="chat"&&window.__miyaChatId?getChats().find(x=>x.id===window.__miyaChatId):null;
  const title=String(chat?.title||"").trim();
  const timestamp=Number(chat?.createdAt)||Number(chat?.updatedAt)||0;
- el.replaceChildren();el.hidden=!title;if(!title)return;
+ el.replaceChildren();el.hidden=!title;el.style.display=title?"":"none";if(!title)return;
  const titleEl=document.createElement("span");titleEl.className="active-chat-title-text";titleEl.dataset.fullTitle=title;
  const dateEl=document.createElement("span");dateEl.className="active-chat-title-date";
  dateEl.textContent=timestamp?new Date(timestamp).toLocaleDateString("ru-RU",{day:"2-digit",month:"2-digit",year:"numeric"}):"";
@@ -4564,6 +4565,7 @@ function setMode(next,render=true){
  const composerForSection=$("#composer");if(composerForSection)composerForSection.style.display="";
  const changedSection=target!==mode;
  if(target==="chat"&&changedSection){
+   stopChatSpeech();
    chatMessages=[];
    pendingAssistantQuote="";
    window.__miyaChatId=null;
@@ -4660,6 +4662,7 @@ function setMode(next,render=true){
    renderVoiceLibrary();loadVoiceCatalog();
  }else{
    showEmpty();
+   if(target==="chat")syncActiveChatTitle();
  }
  requestAnimationFrame(()=>$("#workspace")?.scrollTo({top:0,behavior:"auto"}));
  syncInput();
