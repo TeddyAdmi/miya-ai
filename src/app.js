@@ -168,7 +168,8 @@ body.light .image-viewer-created-info .image-viewer-created-date{color:#64748b!i
 .chat-welcome.section-welcome .hero-mark .nav-icon,.studio-room .chat-welcome.section-welcome .hero-mark .nav-icon{transform:translateY(-1px) scale(1.28)!important;transform-origin:center!important}
 .chat-welcome.section-welcome .hero-mark .welcome-chat-symbol,.studio-room .chat-welcome.section-welcome .hero-mark .welcome-chat-symbol{position:relative!important;z-index:1!important;display:block!important;width:64%!important;height:64%!important;margin:0 auto!important;color:#fff!important;overflow:visible!important;filter:none!important;transform:none!important;flex:none!important}
 body.light .chat-welcome.section-welcome .hero-mark,body.light .studio-room .chat-welcome.section-welcome .hero-mark{border:0!important;outline:0!important;box-shadow:none!important;filter:none!important}
-body.light .generation-loading:not(.video-generation-loading) .progress-circle::before{background:rgba(255,255,255,.86)!important}
+body.light .generation-loading:not(.video-generation-loading) .progress-circle::before{background:#fff!important}
+.generation-loading:not(.video-generation-loading) .progress-circle::before{background:#07182b!important}
 @media(max-width:800px){.generation-loading:not(.video-generation-loading){left:50%!important;padding:6px 8px!important}.generation-loading:not(.video-generation-loading) .progress-circle{width:38px!important;height:38px!important;flex-basis:38px!important}.generation-loading:not(.video-generation-loading) .progress-copy b,.generation-loading:not(.video-generation-loading) .progress-model{font-size:12px!important}}`;
  document.head.appendChild(st);
 })();
@@ -1121,7 +1122,7 @@ function openImageViewer(item){
   const showViewerItem=(nextItem)=>{
     if(!nextItem)return;
     modal.dataset.viewerItemId=nextItem.id;
-    const viewerModel=modal.querySelector(".image-viewer-created-model");if(viewerModel)viewerModel.textContent=String(nextItem.model||"Модель не указана");const viewerDate=modal.querySelector(".image-viewer-created-date");if(viewerDate)viewerDate.textContent=formatMediaCreationDate(nextItem);
+    const viewerModel=modal.querySelector(".image-viewer-created-model");if(viewerModel)viewerModel.textContent=imageModelLabel(nextItem.model||"Модель не указана");const viewerDate=modal.querySelector(".image-viewer-created-date");if(viewerDate)viewerDate.textContent=formatMediaCreationDate(nextItem);
     const viewerImg=modal.querySelector(".image-viewer-image");
     viewerImg.src=nextItem.url;
     viewerImg.dataset.zoom="1";viewerImg.dataset.panX="0";viewerImg.dataset.panY="0";
@@ -1476,7 +1477,7 @@ function buildMediaCard(item,{video=false}={}){
  }
  const modelBadge=document.createElement("div");
  modelBadge.className="media-model-badge";
- modelBadge.textContent=String(item.model||"Модель не указана");
+ modelBadge.textContent=imageModelLabel(item.model||"Модель не указана");
  modelBadge.title="Модель, которая фактически создала этот материал";
  card.appendChild(modelBadge);
  const actions=document.createElement("div");actions.className="media-actions";
@@ -5056,7 +5057,7 @@ function setSpeechMicRecording(){
   mic.classList.add("recording");
   mic.setAttribute("aria-label","Завершить запись и распознать голос");
   mic.title="Завершить запись и вставить текст";
-  mic.innerHTML='<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="8" y="8" width="8" height="8" rx="1"/></svg>';
+  mic.innerHTML='<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8.5"/><path d="m8.2 12.1 2.3 2.3 5.3-5.3"/></svg>';
 }
 function ensureSpeechVisualizer(){
   let canvas=$("#composerVoiceVisualizer");
