@@ -5645,6 +5645,15 @@ body.light #composer.mode-music #composerSend{background:linear-gradient(135deg,
  #composer.mode-music #composerSend{flex-basis:30px!important;width:30px!important;min-width:30px!important;max-width:30px!important;height:30px!important;min-height:30px!important;max-height:30px!important}
  #composer.mode-music .composer-status .status-right{font-size:8px!important;padding-left:4px!important}
 }
+
+/* Tight Music composer: compact bottom padding and only three visible rows. */
+#composer.mode-music{grid-template-rows:34px 34px 14px!important;row-gap:2px!important;padding:5px 10px 3px!important;height:auto!important;min-height:0!important;max-height:none!important;align-content:start!important}
+#composer.mode-music .composer-input-row{grid-row:1!important;height:34px!important;min-height:34px!important;max-height:34px!important;align-items:center!important}
+#composer.mode-music #composerInput{height:34px!important;min-height:34px!important;max-height:34px!important;padding:8px 2px!important;line-height:15px!important}
+#composer.mode-music #composerOptions,#composer.mode-music .image-settings,#composer.mode-music #videoOptions,#composer.mode-music .voice-options,#composer.mode-music #chatOptions{display:none!important;visibility:hidden!important;height:0!important;min-height:0!important;max-height:0!important;padding:0!important;margin:0!important;overflow:hidden!important}
+#composer.mode-music .music-options{grid-row:2!important;height:34px!important;min-height:34px!important;max-height:34px!important;margin:0!important;padding:0!important}
+#composer.mode-music .composer-status{grid-row:3!important;height:14px!important;min-height:14px!important;max-height:14px!important;margin:0!important;padding:0!important}
+@media(max-width:800px){#composer.mode-music{grid-template-rows:34px 34px 14px!important;padding:5px 8px 3px!important;row-gap:2px!important}#composer.mode-music .composer-input-row,#composer.mode-music #composerInput{height:34px!important;min-height:34px!important;max-height:34px!important}}
 `;
 document.head.appendChild(musicFinalAlignment);
 musicFinalAlignment.textContent+=`
