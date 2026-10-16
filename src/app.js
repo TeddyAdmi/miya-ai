@@ -5674,38 +5674,54 @@ musicFinalAlignment.textContent += `
 `;
 
 
-/* Use the exact shared bottom rail coordinates used by Chat, Images and Video. */
+/* Keep Music on the same bottom-anchored, content-sized composer geometry as Video. */
 musicFinalAlignment.textContent += `
 #composer.mode-music{
   position:relative!important;inset:auto!important;transform:none!important;
-  box-sizing:border-box!important;flex:0 1 auto!important;flex-basis:auto!important;
-  width:min(900px,calc(100vw - 265px))!important;max-width:900px!important;
-  height:152px!important;min-height:152px!important;max-height:152px!important;
-  margin:0 auto!important;padding:9px 10px 7px!important;
+  display:grid!important;box-sizing:border-box!important;
+  flex:0 1 auto!important;flex-basis:auto!important;
+  width:min(900px,calc(100vw - 265px))!important;max-width:900px!important;min-width:0!important;
+  height:auto!important;min-height:0!important;max-height:none!important;
+  margin:0 auto!important;padding:8px 10px 6px!important;
   grid-template-columns:minmax(0,1fr)!important;
-  grid-template-rows:76px 34px 14px!important;row-gap:5px!important;
-  align-content:start!important;align-items:center!important;overflow:visible!important;
+  grid-template-rows:auto 34px auto!important;row-gap:5px!important;
+  align-content:start!important;align-items:center!important;overflow:visible!important;contain:none!important;
 }
+#composer.mode-music .composer-input-row{display:contents!important}
 #composer.mode-music #composerInput{
-  grid-column:1/-1!important;grid-row:1!important;
-  height:76px!important;min-height:76px!important;max-height:76px!important;
-  overflow-y:auto!important;
+  grid-column:1/-1!important;grid-row:1!important;display:block!important;
+  box-sizing:border-box!important;width:100%!important;min-width:0!important;
+  height:auto!important;min-height:34px!important;max-height:210px!important;
+  margin:0!important;padding:9px 3px 10px!important;line-height:15px!important;
+  align-self:stretch!important;overflow-y:hidden!important;resize:none!important;transform:none!important;
 }
 #composer.mode-music .music-options{
-  grid-column:1!important;grid-row:2!important;
-  height:34px!important;min-height:34px!important;max-height:34px!important;
-  align-self:center!important;margin:0!important;transform:none!important;
+  grid-column:1/-1!important;grid-row:2!important;box-sizing:border-box!important;
+  display:flex!important;align-items:center!important;justify-content:flex-start!important;
+  flex-wrap:nowrap!important;gap:7px!important;width:100%!important;min-width:0!important;
+  max-width:100%!important;height:34px!important;min-height:34px!important;max-height:34px!important;
+  margin:0!important;padding:0!important;overflow:visible!important;transform:none!important;
 }
-#composer.mode-music #composerMic,
+#composer.mode-music .music-options .music-spacer{flex:1 1 auto!important;min-width:7px!important}
+#composer.mode-music .music-options #composerMic{
+  flex:0 0 30px!important;width:30px!important;min-width:30px!important;max-width:30px!important;
+  height:30px!important;min-height:30px!important;max-height:30px!important;margin:0!important;
+  align-self:center!important;transform:none!important;
+}
+#composer.mode-music .music-options #composerSend,
 #composer.mode-music #composerSend{
-  align-self:center!important;transform:none!important;margin-top:0!important;margin-bottom:0!important;
+  flex:0 0 34px!important;width:34px!important;min-width:34px!important;max-width:34px!important;
+  height:34px!important;min-height:34px!important;max-height:34px!important;
+  margin:0!important;align-self:center!important;transform:none!important;
 }
+#composer.mode-music #composerSend .send-icon svg{width:17px!important;height:17px!important}
 #composer.mode-music .composer-status{
   position:static!important;grid-column:1/-1!important;grid-row:3!important;
-  height:14px!important;min-height:14px!important;max-height:14px!important;
-  padding:2px 2px 0!important;margin:0!important;gap:5px!important;
-  display:flex!important;align-items:center!important;align-self:stretch!important;
-  line-height:1.2!important;overflow:hidden!important;transform:none!important;
+  align-self:stretch!important;display:flex!important;align-items:center!important;
+  width:100%!important;min-width:0!important;height:14px!important;min-height:14px!important;
+  max-height:14px!important;margin:0!important;padding:2px 2px 0!important;
+  box-sizing:border-box!important;line-height:1.2!important;overflow:hidden!important;
+  transform:none!important;white-space:nowrap!important;
 }
 #composer.mode-music .composer-status .status-dot{
   position:static!important;align-self:center!important;flex:0 0 6px!important;
@@ -5719,12 +5735,25 @@ musicFinalAlignment.textContent += `
   display:block!important;flex:0 0 auto!important;margin-left:auto!important;
   padding-left:10px!important;text-align:right!important;white-space:nowrap!important;
 }
+.side-menu-toggle.active{
+  background:linear-gradient(90deg,#273caa,#46349e)!important;
+  border-color:#4854d0!important;color:#fff!important;
+  box-shadow:inset 0 0 22px #6a45d51f!important;
+}
+.side-menu-toggle.active .ico{color:#fff!important}
+body.light .side-menu-toggle.active{
+  background:linear-gradient(90deg,#e8eaff,#eee8ff)!important;
+  border-color:#c7cbed!important;color:#31336f!important;box-shadow:none!important;
+}
+body.light .side-menu-toggle.active .ico{color:#4f4fb1!important}
 @media(max-width:800px){
   #composer.mode-music{
-    width:100%!important;max-width:100%!important;height:152px!important;
-    min-height:152px!important;max-height:152px!important;
-    padding:9px 8px 7px!important;grid-template-rows:76px 34px 14px!important;
+    width:100%!important;max-width:100%!important;height:auto!important;
+    min-height:0!important;max-height:none!important;padding:8px 8px 6px!important;
+    grid-template-rows:auto 34px auto!important;row-gap:5px!important;
   }
+  #composer.mode-music .music-options{gap:3px!important}
+  #composer.mode-music .music-options .music-spacer{min-width:3px!important}
 }
 `;
 
