@@ -5629,6 +5629,48 @@ body.light #composer.mode-music .composer-status{color:#53657a!important}
 body.light .mic,body.light #composerMic{border:0!important;background:transparent!important;background-color:transparent!important;box-shadow:none!important}
 @media(max-width:800px){#composer.mode-music{width:100%!important;max-width:100%!important;height:auto!important;min-height:0!important;max-height:none!important;padding:8px 8px 6px!important;grid-template-rows:auto 34px auto!important;row-gap:5px!important;align-content:start!important}#composer.mode-music .music-options{gap:3px!important}#composer.mode-music #musicOccasion{flex-basis:clamp(74px,21vw,116px)!important;width:clamp(74px,21vw,116px)!important;min-width:65px!important}#composer.mode-music #musicGenre{flex-basis:clamp(54px,15vw,78px)!important;width:clamp(54px,15vw,78px)!important;min-width:48px!important}#composer.mode-music #musicVocal{flex-basis:clamp(54px,15vw,76px)!important;width:clamp(54px,15vw,76px)!important;min-width:45px!important}#composer.mode-music .music-options #musicLyricsOpen{padding:0 5px!important;font-size:12px!important;max-width:92px!important}#composer.mode-music .music-options .music-tool,#composer.mode-music #composerMic{flex-basis:24px!important;width:24px!important;min-width:24px!important;max-width:24px!important}#composer.mode-music #composerSend{flex:0 0 34px!important;width:34px!important;min-width:34px!important;max-width:34px!important;height:34px!important;min-height:34px!important;max-height:34px!important;padding:0!important;font-size:9px!important}#composer.mode-music .composer-status .status-right{font-size:11px!important;padding-left:4px!important}}
 #composer.mode-music .composer-status{grid-column:1/-1!important;grid-row:3!important;align-self:stretch!important}\n\n\n#composer.mode-music .music-options .select-pill,#composer.mode-music .music-options #musicLyricsOpen{font-size:12px!important}\n\n`;
+
+/* Match the Video composer geometry exactly; only the controls and actions remain Music-specific. */
+#composer.mode-music{
+  box-sizing:border-box!important;display:grid!important;
+  width:min(900px,calc(100vw - 265px))!important;max-width:900px!important;min-width:0!important;
+  height:auto!important;min-height:0!important;max-height:none!important;
+  flex:0 0 auto!important;flex-basis:auto!important;margin:0 auto!important;
+  padding:8px 10px 6px!important;grid-template-columns:minmax(0,1fr)!important;
+  grid-template-rows:auto 34px auto!important;row-gap:5px!important;
+  align-content:start!important;align-items:center!important;overflow:visible!important;
+  transform:none!important;contain:none!important;
+}
+#composer.mode-music .composer-input-row{display:contents!important}
+#composer.mode-music #composerInput{
+  grid-column:1/-1!important;grid-row:1!important;display:block!important;
+  box-sizing:border-box!important;width:100%!important;min-width:0!important;
+  height:34px!important;min-height:34px!important;max-height:none!important;
+  margin:0!important;padding:9px 3px 10px!important;line-height:15px!important;
+  align-self:stretch!important;overflow-y:hidden!important;resize:none!important;
+  transform:none!important;font-size:13px!important;
+}
+#composer.mode-music .music-options{
+  grid-column:1!important;grid-row:2!important;box-sizing:border-box!important;
+  display:flex!important;align-items:center!important;justify-content:flex-start!important;
+  flex-wrap:nowrap!important;gap:5px!important;width:100%!important;min-width:0!important;
+  max-width:100%!important;height:34px!important;min-height:34px!important;max-height:34px!important;
+  margin:0!important;padding:0!important;overflow:visible!important;transform:none!important;
+}
+#composer.mode-music .composer-status{
+  position:static!important;grid-column:1/-1!important;grid-row:3!important;
+  align-self:stretch!important;display:flex!important;align-items:center!important;
+  width:100%!important;min-width:0!important;height:14px!important;min-height:14px!important;
+  max-height:14px!important;margin:0!important;padding:2px 2px 0!important;
+  box-sizing:border-box!important;line-height:1.2!important;overflow:hidden!important;
+  transform:none!important;white-space:nowrap!important;
+}
+@media(max-width:800px){
+  #composer.mode-music{width:100%!important;max-width:100%!important;height:auto!important;
+    min-height:0!important;max-height:none!important;padding:8px 8px 6px!important;
+    grid-template-rows:auto 34px auto!important;row-gap:5px!important;align-content:start!important}
+}
+
 document.head.appendChild(musicFinalAlignment);
  function nav(parent,ref,mobile){if(!parent||parent.querySelector('[data-mode="music"]'))return;const b=document.createElement("button");b.dataset.mode="music";if(mobile)b.innerHTML='<span class="nav-icon icon-music" aria-hidden="true"><svg class="miya-music-note-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg></span><small>Музыка</small>';else{b.className="side-btn";b.innerHTML='<span class="ico icon-music" aria-hidden="true"><svg class="miya-music-note-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg></span><b>Музыка</b>'}parent.insertBefore(b,ref||null)}
  const sv=document.querySelector('.sidebar [data-mode="voice"]'),mv=document.querySelector('.mobile-tabs [data-mode="voice"]');if(sv)nav(sv.parentElement,sv,false);if(mv)nav(mv.parentElement,mv,true);
