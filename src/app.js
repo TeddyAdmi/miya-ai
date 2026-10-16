@@ -5631,6 +5631,7 @@ body.light .mic,body.light #composerMic{border:0!important;background:transparen
 #composer.mode-music .composer-status{grid-column:1/-1!important;grid-row:3!important;align-self:stretch!important}\n\n\n#composer.mode-music .music-options .select-pill,#composer.mode-music .music-options #musicLyricsOpen{font-size:12px!important}\n\n`;
 
 /* Match the Video composer geometry exactly; only the controls and actions remain Music-specific. */
+musicFinalAlignment.textContent += `
 #composer.mode-music{
   box-sizing:border-box!important;display:grid!important;
   width:min(900px,calc(100vw - 265px))!important;max-width:900px!important;min-width:0!important;
@@ -5670,6 +5671,7 @@ body.light .mic,body.light #composerMic{border:0!important;background:transparen
     min-height:0!important;max-height:none!important;padding:8px 8px 6px!important;
     grid-template-rows:auto 34px auto!important;row-gap:5px!important;align-content:start!important}
 }
+`;
 
 document.head.appendChild(musicFinalAlignment);
  function nav(parent,ref,mobile){if(!parent||parent.querySelector('[data-mode="music"]'))return;const b=document.createElement("button");b.dataset.mode="music";if(mobile)b.innerHTML='<span class="nav-icon icon-music" aria-hidden="true"><svg class="miya-music-note-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg></span><small>Музыка</small>';else{b.className="side-btn";b.innerHTML='<span class="ico icon-music" aria-hidden="true"><svg class="miya-music-note-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg></span><b>Музыка</b>'}parent.insertBefore(b,ref||null)}
