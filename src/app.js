@@ -1,3 +1,5 @@
+// Remove the obsolete inline chat height before the first composer layout.
+(function normalizeInitialComposerMarkup(){const input=document.getElementById("composerInput");if(input)input.removeAttribute("style")})();
 (function ensureChatWallNoFlicker(){
  if(document.getElementById("miyaChatWallNoFlicker"))return;
  const st=document.createElement("style");st.id="miyaChatWallNoFlicker";
@@ -2660,7 +2662,7 @@ function toast(message){
  t.textContent=message;t.classList.add("show");clearTimeout(window.__toast);
  window.__toast=setTimeout(()=>t.classList.remove("show"),2600)
 }
-function syncInput(){const i=$("#composerInput");if(!i)return;const cs=getComputedStyle(i);const lineHeight=Number.parseFloat(cs.lineHeight)||15;const padding=(Number.parseFloat(cs.paddingTop)||0)+(Number.parseFloat(cs.paddingBottom)||0);const minHeight=mode==="chat"?34:Math.ceil(lineHeight+padding);const maxLines=10;const maxHeight=Math.ceil(lineHeight*maxLines+padding);i.style.setProperty("min-height",minHeight+"px","important");i.style.setProperty("max-height",maxHeight+"px","important");i.style.setProperty("height","auto","important");i.style.setProperty("overflow-y","hidden","important");const contentHeight=Math.max(minHeight,i.scrollHeight);const h=Math.min(maxHeight,contentHeight);i.style.setProperty("height",h+"px","important");i.style.setProperty("overflow-y",contentHeight>maxHeight?"auto":"hidden","important");const row=i.closest(".composer-input-row");if(row)row.style.height=""}
+function syncInput(){const i=$("#composerInput");if(!i)return;const cs=getComputedStyle(i);const lineHeight=Number.parseFloat(cs.lineHeight)||15;const padding=(Number.parseFloat(cs.paddingTop)||0)+(Number.parseFloat(cs.paddingBottom)||0);const minHeight=34;const maxLines=10;const maxHeight=Math.ceil(lineHeight*maxLines+padding);i.style.setProperty("min-height",minHeight+"px","important");i.style.setProperty("max-height",maxHeight+"px","important");i.style.setProperty("height","auto","important");i.style.setProperty("overflow-y","hidden","important");const contentHeight=Math.max(minHeight,i.scrollHeight);const h=Math.min(maxHeight,contentHeight);i.style.setProperty("height",h+"px","important");i.style.setProperty("overflow-y",contentHeight>maxHeight?"auto":"hidden","important");const row=i.closest(".composer-input-row");if(row)row.style.height=""}
 function renderAssistantQuoteBlock(){
  const composer=$("#composer");if(!composer)return;
  let block=composer.querySelector(".composer-quote-block");
@@ -6098,6 +6100,53 @@ body.light #composer.mode-music .music-options #composerMic:focus-visible{
 }
 `;
 document.head.appendChild(musicFinalAlignment);
+/* Canonical composer standard, based on the accepted Images layout. */
+musicFinalAlignment.textContent += `
+#composer.mode-chat #composerInput,
+#composer.mode-images #composerInput,
+#composer.mode-video #composerInput,
+#composer.mode-voice #composerInput,
+#composer.mode-music #composerInput{
+  box-sizing:border-box!important;display:block!important;width:100%!important;min-width:0!important;
+  min-height:34px!important;max-height:none!important;height:auto!important;
+  margin:0!important;padding:9px 3px 10px!important;
+  font-size:13px!important;line-height:15px!important;
+  align-self:stretch!important;overflow-x:hidden!important;overflow-y:hidden!important;
+  resize:none!important;white-space:pre-wrap!important;overflow-wrap:anywhere!important;transform:none!important;
+}
+#composer.mode-chat,#composer.mode-images,#composer.mode-video,#composer.mode-voice,#composer.mode-music{box-sizing:border-box!important;align-items:center!important}
+#composer.mode-chat #composerMic,#composer.mode-images #composerMic,#composer.mode-video #composerMic,#composer.mode-voice #composerMic,#composer.mode-music #composerMic,
+#composer.mode-chat #composerSend,#composer.mode-images #composerSend,#composer.mode-video #composerSend,#composer.mode-voice #composerSend,#composer.mode-music #composerSend{
+  box-sizing:border-box!important;display:grid!important;place-items:center!important;
+  flex:0 0 34px!important;width:34px!important;min-width:34px!important;max-width:34px!important;
+  height:34px!important;min-height:34px!important;max-height:34px!important;margin:0!important;padding:0!important;align-self:center!important;
+}
+#composer.mode-chat #composerMic svg,#composer.mode-images #composerMic svg,#composer.mode-video #composerMic svg,#composer.mode-voice #composerMic svg,#composer.mode-music #composerMic svg{
+  display:block!important;width:18px!important;height:18px!important;min-width:18px!important;min-height:18px!important;margin:0!important;transform:none!important;
+}
+#composer.mode-chat #composerSend .send-icon,#composer.mode-images #composerSend .send-icon,#composer.mode-video #composerSend .send-icon,#composer.mode-voice #composerSend .send-icon,#composer.mode-music #composerSend .send-icon,
+#composer.mode-chat #composerSend .send-icon svg,#composer.mode-images #composerSend .send-icon svg,#composer.mode-video #composerSend .send-icon svg,#composer.mode-voice #composerSend .send-icon svg,#composer.mode-music #composerSend .send-icon svg{
+  display:flex!important;align-items:center!important;justify-content:center!important;
+  width:18px!important;height:18px!important;min-width:18px!important;min-height:18px!important;margin:0!important;padding:0!important;line-height:1!important;transform:none!important;
+}
+/* Text-action buttons share the Images button footprint and glyph size. */
+#composer .composer-copy,#composer .composer-paste,#composer .composer-trash,#composer .voice-tool,#composer .music-tool{
+  box-sizing:border-box!important;flex:0 0 29px!important;width:29px!important;min-width:29px!important;max-width:29px!important;
+  height:29px!important;min-height:29px!important;max-height:29px!important;margin:0!important;padding:0!important;display:grid!important;place-items:center!important;
+}
+#composer .composer-copy svg,#composer .composer-paste svg,#composer .composer-trash svg,#composer .voice-tool svg,#composer .music-tool svg{
+  display:block!important;width:15px!important;height:15px!important;min-width:15px!important;min-height:15px!important;margin:0!important;padding:0!important;transform:none!important;
+}
+#composer .composer-left-actions .attach{
+  box-sizing:border-box!important;display:grid!important;place-items:center!important;width:29px!important;min-width:29px!important;max-width:29px!important;
+  height:29px!important;min-height:29px!important;max-height:29px!important;margin:0!important;padding:0!important;align-self:center!important;
+}
+#composer .composer-left-actions .attach svg{width:16px!important;height:16px!important;min-width:16px!important;min-height:16px!important}
+@media(max-width:800px){
+ #composer.mode-chat #composerInput,#composer.mode-images #composerInput,#composer.mode-video #composerInput,#composer.mode-voice #composerInput,#composer.mode-music #composerInput{min-height:34px!important;padding:9px 3px 10px!important}
+}
+`;
+
 
  function nav(parent,ref,mobile){if(!parent||parent.querySelector('[data-mode="music"]'))return;const b=document.createElement("button");b.dataset.mode="music";if(mobile)b.innerHTML='<span class="nav-icon icon-music" aria-hidden="true"><svg class="miya-music-note-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg></span><small>Музыка</small>';else{b.className="side-btn";b.innerHTML='<span class="ico icon-music" aria-hidden="true"><svg class="miya-music-note-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg></span><b>Музыка</b>'}parent.insertBefore(b,ref||null)}
  const sv=document.querySelector('.sidebar [data-mode="voice"]'),mv=document.querySelector('.mobile-tabs [data-mode="voice"]');if(sv)nav(sv.parentElement,sv,false);if(mv)nav(mv.parentElement,mv,true);
