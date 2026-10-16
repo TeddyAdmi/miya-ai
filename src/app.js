@@ -6006,32 +6006,94 @@ body.light #composer.mode-voice .voice-options .voice-tool:focus-visible{
 }
 `;
 
-/* Music prompt: one line at rest, grow with content up to the shared 10-line limit. */
+/* Music prompt: compact rail aligned to the shared Images/Video geometry. */
 musicFinalAlignment.textContent += `
 #composer.mode-music{
+  box-sizing:border-box!important;display:grid!important;
   height:auto!important;min-height:0!important;max-height:none!important;
-  grid-template-rows:auto 34px auto!important;row-gap:5px!important;
-  align-content:start!important;overflow:visible!important;
+  grid-template-columns:minmax(0,1fr)!important;grid-template-rows:auto 34px auto!important;
+  row-gap:5px!important;align-content:start!important;align-items:center!important;
+  padding:6px 10px 4px!important;overflow:visible!important;transform:none!important;contain:none!important;
 }
 #composer.mode-music .composer-input-row{
   display:contents!important;height:auto!important;min-height:0!important;max-height:none!important;
 }
 #composer.mode-music #composerInput{
-  height:auto!important;min-height:34px!important;max-height:none!important;
-  line-height:15px!important;padding:9px 3px 10px!important;
-  overflow-x:hidden!important;overflow-y:hidden!important;resize:none!important;
-  white-space:pre-wrap!important;overflow-wrap:anywhere!important;
+  grid-column:1/-1!important;grid-row:1!important;display:block!important;
+  box-sizing:border-box!important;width:100%!important;min-width:0!important;
+  height:auto!important;min-height:30px!important;max-height:none!important;
+  margin:0!important;padding:7px 3px 8px!important;line-height:15px!important;
+  align-self:stretch!important;overflow-x:hidden!important;overflow-y:hidden!important;
+  resize:none!important;white-space:pre-wrap!important;overflow-wrap:anywhere!important;transform:none!important;
 }
-#composer.mode-music .music-options{grid-row:2!important}
-#composer.mode-music .composer-status{grid-row:3!important}
-/* Music does not use the image-attachment plus control. */
-#composer.mode-music #composerAttach{display:none!important}
+#composer.mode-music .music-options{
+  grid-column:1/-1!important;grid-row:2!important;align-self:center!important;
+  display:flex!important;align-items:center!important;justify-content:flex-start!important;
+  flex-wrap:nowrap!important;gap:5px!important;width:100%!important;min-width:0!important;max-width:100%!important;
+  height:34px!important;min-height:34px!important;max-height:34px!important;margin:0!important;padding:0!important;
+}
+#composer.mode-music .composer-status{
+  position:static!important;grid-column:1/-1!important;grid-row:3!important;
+  display:flex!important;align-items:center!important;gap:5px!important;
+  width:100%!important;min-width:0!important;height:14px!important;min-height:14px!important;max-height:14px!important;
+  margin:0!important;padding:0 2px!important;box-sizing:border-box!important;line-height:14px!important;
+  overflow:hidden!important;transform:none!important;white-space:nowrap!important;
+}
+#composer.mode-music .composer-status .status-dot{
+  position:static!important;align-self:center!important;flex:0 0 6px!important;
+  width:6px!important;height:6px!important;min-width:6px!important;min-height:6px!important;
+  margin:0!important;transform:none!important;
+}
+#composer.mode-music .music-options .music-tool,
+#composer.mode-music .music-options #composerMic{
+  box-sizing:border-box!important;display:grid!important;place-items:center!important;
+  flex:0 0 34px!important;width:34px!important;min-width:34px!important;max-width:34px!important;
+  height:34px!important;min-height:34px!important;max-height:34px!important;
+  margin:0!important;padding:0!important;border:1px solid transparent!important;border-radius:7px!important;
+  background:transparent!important;box-shadow:none!important;outline:0!important;transform:none!important;
+}
+#composer.mode-music .music-options .music-tool:hover,
+#composer.mode-music .music-options .music-tool:focus-visible,
+#composer.mode-music .music-options #composerMic:hover,
+#composer.mode-music .music-options #composerMic:focus-visible{
+  border-color:transparent!important;background:rgba(145,157,181,.08)!important;
+  color:#b88cff!important;box-shadow:none!important;outline:0!important;
+}
+body.light #composer.mode-music .music-options .music-tool:hover,
+body.light #composer.mode-music .music-options .music-tool:focus-visible,
+body.light #composer.mode-music .music-options #composerMic:hover,
+body.light #composer.mode-music .music-options #composerMic:focus-visible{
+  border-color:transparent!important;background:rgba(123,97,200,.08)!important;color:#7b61c8!important;
+}
+#composer.mode-music .music-options .music-tool svg,
+#composer.mode-music .music-options #composerMic svg{
+  display:block!important;width:18px!important;height:18px!important;min-width:18px!important;min-height:18px!important;
+  margin:0!important;padding:0!important;transform:none!important;
+}
+#composer.mode-music #composerSend{
+  box-sizing:border-box!important;display:flex!important;align-items:center!important;justify-content:center!important;
+  flex:0 0 34px!important;width:34px!important;min-width:34px!important;max-width:34px!important;
+  height:34px!important;min-height:34px!important;max-height:34px!important;margin:0!important;padding:0!important;
+}
+#composer.mode-music #composerSend .send-icon,
+#composer.mode-music #composerSend .send-icon svg{
+  display:block!important;width:16px!important;height:16px!important;min-width:16px!important;min-height:16px!important;
+  margin:0!important;padding:0!important;line-height:1!important;transform:none!important;
+}
+.chat-welcome.section-welcome.music-welcome .hero-mark.music .nav-icon.icon-music .miya-music-note-svg{
+  display:block!important;width:23px!important;height:23px!important;min-width:23px!important;min-height:23px!important;
+  margin:0!important;padding:0!important;position:static!important;left:auto!important;top:auto!important;
+  transform:translateX(-2px)!important;align-self:center!important;justify-self:center!important;
+}
 @media(max-width:800px){
-  #composer.mode-music{height:auto!important;min-height:0!important;max-height:none!important;grid-template-rows:auto 34px auto!important}
-  #composer.mode-music .composer-input-row{height:auto!important;min-height:0!important;max-height:none!important}
-  #composer.mode-music #composerInput{height:auto!important;min-height:34px!important;max-height:none!important}
-}`;
+  #composer.mode-music{width:100%!important;max-width:100%!important;padding:6px 8px 4px!important}
+  #composer.mode-music .music-options{gap:3px!important}
+  #composer.mode-music .music-options .music-spacer{min-width:3px!important}
+  #composer.mode-music #composerInput{min-height:30px!important}
+}
+`;
 document.head.appendChild(musicFinalAlignment);
+
  function nav(parent,ref,mobile){if(!parent||parent.querySelector('[data-mode="music"]'))return;const b=document.createElement("button");b.dataset.mode="music";if(mobile)b.innerHTML='<span class="nav-icon icon-music" aria-hidden="true"><svg class="miya-music-note-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg></span><small>Музыка</small>';else{b.className="side-btn";b.innerHTML='<span class="ico icon-music" aria-hidden="true"><svg class="miya-music-note-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg></span><b>Музыка</b>'}parent.insertBefore(b,ref||null)}
  const sv=document.querySelector('.sidebar [data-mode="voice"]'),mv=document.querySelector('.mobile-tabs [data-mode="voice"]');if(sv)nav(sv.parentElement,sv,false);if(mv)nav(mv.parentElement,mv,true);
  function select(id,label,values,chosen){const s=document.createElement("select");s.className="select-pill";s.id=id;s.title=label;s.setAttribute("aria-label",label);values.forEach(v=>{const o=document.createElement("option");o.value=v;o.textContent=v;o.selected=v===chosen;s.appendChild(o)});return s}

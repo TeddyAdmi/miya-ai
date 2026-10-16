@@ -12,6 +12,13 @@
 <link rel="icon" href="/favicon.svg" type="image/svg+xml">
 <link rel="manifest" href="/b_manifest.json">
 <link rel="stylesheet" href="/styles.css">
+<!-- Critical first-paint composer geometry: avoid a second, legacy-sized Chat prompt flashing before app.js initializes. -->
+<style>
+.composer-wrap{overflow:visible!important}
+#composer{box-sizing:border-box!important;height:auto!important;min-height:0!important;max-height:none!important;grid-template-rows:auto 34px auto!important;row-gap:5px!important;align-content:start!important;overflow:visible!important;transition:none!important;animation:none!important}
+#composer:not(.mode-images):not(.mode-video):not(.mode-voice):not(.mode-music) .composer-input-row{display:contents!important}
+#composer:not(.mode-images):not(.mode-video):not(.mode-voice):not(.mode-music) #composerInput{height:34px!important;min-height:34px!important;max-height:none!important;box-sizing:border-box!important;padding:9px 3px 10px!important;line-height:15px!important;overflow-y:hidden!important}
+</style>
 <!-- prompt-controls-sync -->
 </head>
 <body>
