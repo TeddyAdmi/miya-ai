@@ -5849,19 +5849,28 @@ musicFinalAlignment.textContent+=`
  #composer.mode-music #composerMic{flex-basis:30px!important;width:30px!important;min-width:30px!important;max-width:30px!important;height:30px!important;min-height:30px!important;max-height:30px!important}
  #composer.mode-music #composerSend{flex-basis:30px!important;width:30px!important;min-width:30px!important;max-width:30px!important;height:30px!important;min-height:30px!important;max-height:30px!important}
 }
-/* Match the compact Video baseline; offset only the status contents without enlarging the composer. */
-#composer.mode-music{grid-template-rows:34px 34px 14px!important;row-gap:2px!important;padding-top:5px!important;padding-bottom:3px!important}
-#composer.mode-music .composer-status{position:relative!important;top:3px!important;transform:none!important;color:var(--muted,#6e87a3)!important}
+/* Compact the Music composer and align its status baseline with Video. */
+#composer.mode-music{grid-template-rows:34px 34px 14px!important;row-gap:2px!important;padding:3px 10px 2px!important}
+#composer.mode-music .composer-status{position:relative!important;top:0!important;transform:none!important;overflow:visible!important;color:var(--muted,#6e87a3)!important}
+#composer.mode-music .composer-status .status-dot,
 #composer.mode-music .composer-status #composerStatus,
-#composer.mode-music .composer-status .status-right{color:var(--muted,#6e87a3)!important}
+#composer.mode-music .composer-status .status-right{position:relative!important;top:3px!important;transform:translateY(3px)!important;color:var(--muted,#6e87a3)!important}
+#composer.mode-music .music-options .select-pill{
+ appearance:none!important;-webkit-appearance:none!important;
+ background-color:var(--surface,#fff)!important;
+ background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath d='m3 4.5 3 3 3-3' fill='none' stroke='%2371839a' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E")!important;
+ background-repeat:no-repeat!important;background-position:right 7px center!important;background-size:12px 12px!important;padding-right:23px!important;
+ border-color:var(--border,rgba(150,150,180,.25))!important;color:var(--text,#eef0f8)!important
+}
+body.light #composer.mode-music .music-options .select-pill{background-color:#f7f9fc!important;color:#43566d!important;border-color:#d5deea!important}
 body.light #composer.mode-music .composer-status,
 body.light #composer.mode-music .composer-status #composerStatus,
 body.light #composer.mode-music .composer-status .status-right{color:#53657a!important}
 .chat-welcome.section-welcome.music-welcome .hero-mark.music .nav-icon.icon-music .miya-music-note-svg{transform:translate(-1px,1px)!important;stroke:#fff!important}
 .chat-welcome.section-welcome.music-welcome .hero-mark.music .nav-icon.icon-music{color:#fff!important}
 @media(max-width:800px){
- #composer.mode-music{padding-top:5px!important;padding-bottom:3px!important;row-gap:2px!important}
- #composer.mode-music .composer-status{top:3px!important;transform:none!important}
+ #composer.mode-music{padding:3px 8px 2px!important;row-gap:2px!important}
+ #composer.mode-music .music-options .select-pill{padding-right:20px!important;background-position:right 5px center!important}
 }
 `;
 
