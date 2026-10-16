@@ -5849,18 +5849,19 @@ musicFinalAlignment.textContent+=`
  #composer.mode-music #composerMic{flex-basis:30px!important;width:30px!important;min-width:30px!important;max-width:30px!important;height:30px!important;min-height:30px!important;max-height:30px!important}
  #composer.mode-music #composerSend{flex-basis:30px!important;width:30px!important;min-width:30px!important;max-width:30px!important;height:30px!important;min-height:30px!important;max-height:30px!important}
 }
-/* Final measured correction: lower the whole status rail, keep the shell height stable, match Video's muted text. */
-#composer.mode-music{grid-template-rows:34px 34px 14px!important;row-gap:5px!important;padding-top:8px!important;padding-bottom:0!important}
-#composer.mode-music .composer-status{transform:translateY(3px)!important;color:var(--muted,#6e87a3)!important}
+/* Match the compact Video baseline; offset only the status contents without enlarging the composer. */
+#composer.mode-music{grid-template-rows:34px 34px 14px!important;row-gap:2px!important;padding-top:5px!important;padding-bottom:3px!important}
+#composer.mode-music .composer-status{position:relative!important;top:3px!important;transform:none!important;color:var(--muted,#6e87a3)!important}
 #composer.mode-music .composer-status #composerStatus,
 #composer.mode-music .composer-status .status-right{color:var(--muted,#6e87a3)!important}
 body.light #composer.mode-music .composer-status,
 body.light #composer.mode-music .composer-status #composerStatus,
 body.light #composer.mode-music .composer-status .status-right{color:#53657a!important}
-.chat-welcome.section-welcome.music-welcome .hero-mark.music .nav-icon.icon-music .miya-music-note-svg{transform:translate(-1px,1px)!important}
+.chat-welcome.section-welcome.music-welcome .hero-mark.music .nav-icon.icon-music .miya-music-note-svg{transform:translate(-1px,1px)!important;stroke:#fff!important}
+.chat-welcome.section-welcome.music-welcome .hero-mark.music .nav-icon.icon-music{color:#fff!important}
 @media(max-width:800px){
- #composer.mode-music{padding-top:8px!important;padding-bottom:0!important;row-gap:5px!important}
- #composer.mode-music .composer-status{transform:translateY(3px)!important}
+ #composer.mode-music{padding-top:5px!important;padding-bottom:3px!important;row-gap:2px!important}
+ #composer.mode-music .composer-status{top:3px!important;transform:none!important}
 }
 `;
 
