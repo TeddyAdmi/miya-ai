@@ -6006,6 +6006,29 @@ body.light #composer.mode-voice .voice-options .voice-tool:focus-visible{
 }
 `;
 
+/* Music prompt: one line at rest, grow with content up to the shared 10-line limit. */
+musicFinalAlignment.textContent += `
+#composer.mode-music{
+  height:auto!important;min-height:0!important;max-height:none!important;
+  grid-template-rows:auto 34px auto!important;row-gap:5px!important;
+  align-content:start!important;overflow:visible!important;
+}
+#composer.mode-music .composer-input-row{
+  display:contents!important;height:auto!important;min-height:0!important;max-height:none!important;
+}
+#composer.mode-music #composerInput{
+  height:auto!important;min-height:34px!important;max-height:none!important;
+  line-height:15px!important;padding:9px 3px 10px!important;
+  overflow-x:hidden!important;overflow-y:hidden!important;resize:none!important;
+  white-space:pre-wrap!important;overflow-wrap:anywhere!important;
+}
+#composer.mode-music .music-options{grid-row:2!important}
+#composer.mode-music .composer-status{grid-row:3!important}
+@media(max-width:800px){
+  #composer.mode-music{height:auto!important;min-height:0!important;max-height:none!important;grid-template-rows:auto 34px auto!important}
+  #composer.mode-music .composer-input-row{height:auto!important;min-height:0!important;max-height:none!important}
+  #composer.mode-music #composerInput{height:auto!important;min-height:34px!important;max-height:none!important}
+}`;
 document.head.appendChild(musicFinalAlignment);
  function nav(parent,ref,mobile){if(!parent||parent.querySelector('[data-mode="music"]'))return;const b=document.createElement("button");b.dataset.mode="music";if(mobile)b.innerHTML='<span class="nav-icon icon-music" aria-hidden="true"><svg class="miya-music-note-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg></span><small>Музыка</small>';else{b.className="side-btn";b.innerHTML='<span class="ico icon-music" aria-hidden="true"><svg class="miya-music-note-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg></span><b>Музыка</b>'}parent.insertBefore(b,ref||null)}
  const sv=document.querySelector('.sidebar [data-mode="voice"]'),mv=document.querySelector('.mobile-tabs [data-mode="voice"]');if(sv)nav(sv.parentElement,sv,false);if(mv)nav(mv.parentElement,mv,true);
@@ -6019,7 +6042,7 @@ document.head.appendChild(musicFinalAlignment);
  const musicSpacer=document.createElement("span");musicSpacer.className="music-spacer";musicSpacer.setAttribute("aria-hidden","true");opts.appendChild(musicSpacer);
  musicCopy?.addEventListener("click",e=>copyComposerPrompt(e.currentTarget));musicPaste?.addEventListener("click",e=>pasteComposerContent(e.currentTarget));musicTrash?.addEventListener("click",()=>{if(input)input.value="";lyricsApproved=false;syncInput();input?.focus();if(status)status.textContent="Текст очищен";toast("Текст очищен")});
 
- const baseSetMode=setMode;setMode=function(next,render=true){const active=String(next)==="music";if(!active&&composerRow){if(micButton&&micButton.parentElement!==composerRow)composerRow.appendChild(micButton);if(send&&send.parentElement!==composerRow)composerRow.appendChild(send)}$m("#composer")?.classList.remove("mode-music");input?.classList.remove("prompt-music");const r=baseSetMode(next,render);$m("#composer")?.classList.toggle("mode-music",active);input?.classList.toggle("prompt-music",active);opts.style.setProperty("display",active?"flex":"none","important");if(active){if(micButton&&micButton.parentElement!==opts)opts.appendChild(micButton);if(send&&send.parentElement!==opts)opts.appendChild(send)}if(clearWall)clearWall.style.display=["images","video","voice","music"].includes(String(next))?"":"none";if(active&&render)renderWall();requestAnimationFrame(()=>{if(mode==="music"&&typeof ensureSpeechVisualizer==="function"&&$("#composerVoiceVisualizer")?.style.display!=="none")ensureSpeechVisualizer()});return r};
+ const baseSetMode=setMode;setMode=function(next,render=true){const active=String(next)==="music";if(!active&&composerRow){if(micButton&&micButton.parentElement!==composerRow)composerRow.appendChild(micButton);if(send&&send.parentElement!==composerRow)composerRow.appendChild(send)}$m("#composer")?.classList.remove("mode-music");input?.classList.remove("prompt-music");const r=baseSetMode(next,render);$m("#composer")?.classList.toggle("mode-music",active);input?.classList.toggle("prompt-music",active);opts.style.setProperty("display",active?"flex":"none","important");if(active){if(micButton&&micButton.parentElement!==opts)opts.appendChild(micButton);if(send&&send.parentElement!==opts)opts.appendChild(send);syncInput()}if(clearWall)clearWall.style.display=["images","video","voice","music"].includes(String(next))?"":"none";if(active&&render)renderWall();requestAnimationFrame(()=>{if(mode==="music"&&typeof ensureSpeechVisualizer==="function"&&$("#composerVoiceVisualizer")?.style.display!=="none")ensureSpeechVisualizer()});return r};
  function getSongs(){let hidden=new Set();try{hidden=new Set(JSON.parse(localStorage.getItem("miyaMusicWallHidden")||"[]").map(String))}catch{}return getLibrary().filter(x=>x.type==="music"&&!hidden.has(String(x.id)))}
  function date(ts){try{return new Date(Number(ts)||Date.now()).toLocaleDateString("ru-RU",{day:"2-digit",month:"long",year:"numeric"})}catch{return""}}
  function renderWall(){if(mode!=="music")return;canvas.innerHTML="";const list=getSongs();if(!list.length){canvas.innerHTML='<div class="studio-room clean-canvas"><div class="chat-welcome section-welcome music-welcome"><div class="mini-badge">MIYA MUSIC</div><h2>Твоя музыкальная стена</h2><p>Создавай песни с Miya: выбери повод, жанр и вокал, сравни два варианта текста и создай свою музыку.</p><div class="hero-mark music"><span class="nav-icon icon-music" aria-hidden="true"><svg class="miya-music-note-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg></span></div></div></div>';return}const wall=document.createElement("div");wall.className="miya-music-wall";list.forEach(item=>{const card=document.createElement("article");card.className="miya-music-card";card.tabIndex=0;const title=document.createElement("div");title.className="miya-music-card-title";title.textContent=item.model||"Новая песня";const meta=document.createElement("div");meta.className="miya-music-card-meta";meta.textContent=[item.musicMeta?.genre,item.musicMeta?.occasion,date(item.createdAt)].filter(Boolean).join(" · ");const audio=document.createElement("audio");audio.controls=true;audio.preload="none";audio.src=item.url;const brand=document.createElement("div");brand.className="miya-music-brand";brand.innerHTML='♫ Создано с помощью <a href="https://aurasoundai.ru/" target="_blank" rel="noopener noreferrer">Aura</a>';card.append(title,meta,audio,brand);card.addEventListener("click",e=>{if(!e.target.closest("audio,a"))detail(item)});card.addEventListener("keydown",e=>{if((e.key==="Enter"||e.key===" ")&&e.target===card){e.preventDefault();detail(item)}});wall.appendChild(card)});canvas.appendChild(wall)}
