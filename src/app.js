@@ -1,5 +1,33 @@
-/* Mount Music in the initial navigation pass so its tab does not appear last. */
-(function mountMusicNavEarly(){const add=(p,r,m)=>{if(!p||p.querySelector('[data-mode="music"]'))return;const b=document.createElement("button");b.dataset.mode="music";b.innerHTML=m?'<span class="nav-icon icon-music" aria-hidden="true"><svg class="miya-music-note-svg" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg></span><small>Музыка</small>':'<span class="ico icon-music" aria-hidden="true"><svg class="miya-music-note-svg" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg></span><b>Музыка</b>';if(!m)b.className="side-btn";p.insertBefore(b,r||null)};const a=document.querySelector('.sidebar [data-mode="voice"]'),b=document.querySelector('.mobile-tabs [data-mode="voice"]');if(a)add(a.parentElement,a,false);if(b)add(b.parentElement,b,true)})();
+/* Mount Music beside Voice as soon as navigation exists; avoid adding the tab after the whole app initializes. */
+(function mountMusicNavEarly(){
+ const add=(parent,reference,mobile)=>{
+  if(!parent||parent.querySelector('[data-mode="music"]'))return;
+  const button=document.createElement("button");
+  button.dataset.mode="music";
+  button.type="button";
+  button.innerHTML=mobile
+   ?'<span class="nav-icon icon-music" aria-hidden="true"><svg class="miya-music-note-svg" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg></span><small>Музыка</small>'
+   :'<span class="ico icon-music" aria-hidden="true"><svg class="miya-music-note-svg" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg></span><b>Музыка</b>';
+  if(!mobile)button.className="side-btn";
+  parent.insertBefore(button,reference||null);
+ };
+ const mount=()=>{
+  const sideVoice=document.querySelector('.sidebar [data-mode="voice"]');
+  const mobileVoice=document.querySelector('.mobile-tabs [data-mode="voice"]');
+  if(sideVoice)add(sideVoice.parentElement,sideVoice,false);
+  if(mobileVoice)add(mobileVoice.parentElement,mobileVoice,true);
+  return !!document.querySelector('.sidebar [data-mode="music"]');
+ };
+ if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",mount,{once:true});
+ if(mount())return;
+ const root=document.documentElement;
+ if(root){
+  const observer=new MutationObserver(()=>{
+   if(mount())observer.disconnect();
+  });
+  observer.observe(root,{childList:true,subtree:true});
+ }
+})();
 (function ensureImageWallAndProgressPolish(){
  if(document.getElementById("miyaImageWallProgressPolish"))return;
  const st=document.createElement("style");st.id="miyaImageWallProgressPolish";
@@ -5677,34 +5705,150 @@ body.light #composer.mode-music #composerSend{background:linear-gradient(135deg,
 `;
 document.head.appendChild(musicFinalAlignment);
 musicFinalAlignment.textContent+=`
-/* Use a real centered SVG for the Music navigation and wall mark; do not rely on the broken CSS mask glyph. */
+/* Single source of truth: mirror Video's three-row composer geometry. */
+#composer.mode-music{
+ box-sizing:border-box!important;width:min(900px,calc(100vw - 265px))!important;min-width:0!important;max-width:900px!important;
+ flex:0 1 auto!important;flex-basis:auto!important;height:auto!important;min-height:0!important;max-height:none!important;
+ margin:0 auto!important;padding:8px 10px 6px!important;display:grid!important;
+ grid-template-columns:minmax(0,1fr)!important;grid-template-rows:auto 34px auto!important;row-gap:5px!important;
+ align-content:start!important;align-items:center!important;overflow:visible!important;position:relative!important;
+ left:auto!important;right:auto!important;transform:none!important
+}
+#composer.mode-music .composer-input-row{display:contents!important}
+#composer.mode-music #composerInput{
+ grid-column:1!important;grid-row:1!important;display:block!important;box-sizing:border-box!important;
+ width:100%!important;min-width:0!important;height:34px!important;min-height:34px!important;max-height:34px!important;
+ margin:0!important;padding:9px 3px 10px!important;line-height:15px!important;align-self:stretch!important;
+ overflow-y:hidden!important;transform:none!important
+}
+#composer.mode-music .composer-left-actions,#composer.mode-music #composerAttach,#composer.mode-music #composerAttachment,
+#composer.mode-music #chatComposerAttachments,#composer.mode-music #chatOptions,#composer.mode-music #composerOptions,
+#composer.mode-music .image-settings,#composer.mode-music #videoOptions,#composer.mode-music .voice-options{
+ display:none!important;visibility:hidden!important
+}
+#composer.mode-music .music-options{
+ grid-column:1!important;grid-row:2!important;box-sizing:border-box!important;display:flex!important;
+ align-items:center!important;align-self:center!important;justify-content:flex-start!important;flex-wrap:nowrap!important;
+ gap:4px!important;width:100%!important;min-width:0!important;max-width:100%!important;height:34px!important;
+ min-height:34px!important;max-height:34px!important;margin:0!important;padding:0!important;overflow:visible!important;transform:none!important
+}
+#composer.mode-music .music-options .select-pill{
+ box-sizing:border-box!important;height:29px!important;min-height:29px!important;align-self:center!important;
+ border:1px solid var(--border,rgba(150,150,180,.25))!important;border-radius:8px!important;
+ background:var(--surface,#fff)!important;color:var(--text,#142033)!important;font:inherit!important;
+ font-size:11px!important;line-height:1!important;padding:0 7px!important;flex:0 1 auto!important;min-width:0!important
+}
+#composer.mode-music .music-options #musicOccasion{width:clamp(100px,14vw,145px)!important;max-width:145px!important}
+#composer.mode-music .music-options #musicGenre{width:clamp(70px,10vw,105px)!important;max-width:105px!important}
+#composer.mode-music .music-options #musicVocal{width:clamp(75px,10vw,105px)!important;max-width:105px!important}
+#composer.mode-music .music-options #musicLyricsOpen{
+ box-sizing:border-box!important;flex:0 0 auto!important;width:auto!important;max-width:112px!important;
+ height:29px!important;min-height:29px!important;padding:0 8px!important;border:0!important;border-radius:8px!important;
+ background:linear-gradient(135deg,#b783ff 0%,#9564f4 52%,#7555e8 100%)!important;color:#fff!important;
+ font-size:10px!important;line-height:1!important;white-space:nowrap!important
+}
+/* Tool icons use the same unboxed 30px targets as the other sections; hover changes color only. */
+#composer.mode-music .music-options button.music-tool{
+ appearance:none!important;-webkit-appearance:none!important;box-sizing:border-box!important;display:inline-grid!important;
+ place-items:center!important;flex:0 0 30px!important;width:30px!important;min-width:30px!important;max-width:30px!important;
+ height:30px!important;min-height:30px!important;max-height:30px!important;margin:0!important;padding:0!important;
+ border:0!important;border-radius:0!important;outline:0!important;background:transparent!important;background-color:transparent!important;
+ box-shadow:none!important;color:var(--icon-color,#718096)!important;transform:none!important;transition:color .15s ease!important
+}
+#composer.mode-music .music-options button.music-tool:hover,#composer.mode-music .music-options button.music-tool:focus,
+#composer.mode-music .music-options button.music-tool:focus-visible,#composer.mode-music .music-options button.music-tool:active{
+ border:0!important;outline:0!important;background:transparent!important;background-color:transparent!important;
+ box-shadow:none!important;color:#7653c6!important
+}
+#composer.mode-music .music-options button.music-tool svg{
+ display:block!important;width:17px!important;height:17px!important;min-width:17px!important;min-height:17px!important;
+ max-width:17px!important;max-height:17px!important;margin:0!important;padding:0!important;stroke:currentColor!important;
+ stroke-width:1.8!important;stroke-linecap:round!important;stroke-linejoin:round!important;fill:none!important
+}
+#composer.mode-music .music-spacer{display:block!important;flex:1 1 auto!important;min-width:8px!important;height:1px!important;margin:0!important;padding:0!important}
+#composer.mode-music #composerMic{
+ appearance:none!important;-webkit-appearance:none!important;box-sizing:border-box!important;display:inline-grid!important;
+ place-items:center!important;flex:0 0 34px!important;width:34px!important;min-width:34px!important;max-width:34px!important;
+ height:34px!important;min-height:34px!important;max-height:34px!important;margin:0!important;padding:0!important;
+ border:0!important;border-radius:0!important;outline:0!important;background:transparent!important;background-color:transparent!important;
+ box-shadow:none!important;color:var(--icon-color,#718096)!important;transform:none!important;transition:color .15s ease!important
+}
+#composer.mode-music #composerMic:hover,#composer.mode-music #composerMic:focus,#composer.mode-music #composerMic:focus-visible,
+#composer.mode-music #composerMic:active{
+ border:0!important;outline:0!important;background:transparent!important;background-color:transparent!important;
+ box-shadow:none!important;color:#7653c6!important
+}
+#composer.mode-music #composerMic svg{
+ display:block!important;width:18px!important;height:18px!important;min-width:18px!important;min-height:18px!important;
+ max-width:18px!important;max-height:18px!important;margin:0!important;padding:0!important;stroke:currentColor!important;
+ stroke-width:1.8!important;fill:none!important
+}
+#composer.mode-music #composerSend{
+ appearance:none!important;-webkit-appearance:none!important;box-sizing:border-box!important;display:grid!important;
+ place-items:center!important;flex:0 0 34px!important;width:34px!important;min-width:34px!important;max-width:34px!important;
+ height:34px!important;min-height:34px!important;max-height:34px!important;margin:0!important;padding:0!important;
+ border:0!important;border-radius:8px!important;background:var(--send-bg,linear-gradient(145deg,#d29aff 0%,#ad68ff 30%,#8a58f5 63%,#6658e8 100%))!important;
+ color:#fff!important;box-shadow:none!important;transform:none!important
+}
+#composer.mode-music #composerSend .send-icon{
+ display:block!important;position:relative!important;flex:none!important;width:17px!important;height:17px!important;
+ min-width:17px!important;min-height:17px!important;max-width:17px!important;max-height:17px!important;margin:0!important;
+ padding:0!important;left:0!important;top:0!important;transform:none!important;color:#fff!important
+}
+#composer.mode-music #composerSend .send-icon::before{
+ display:block!important;content:""!important;position:absolute!important;left:0!important;top:0!important;width:17px!important;
+ height:17px!important;margin:0!important;padding:0!important;background-color:currentColor!important;transform:none!important;
+ mask-size:contain!important;-webkit-mask-size:contain!important;mask-repeat:no-repeat!important;-webkit-mask-repeat:no-repeat!important;
+ mask-position:center!important;-webkit-mask-position:center!important
+}
+#composer.mode-music #composerSendText{display:none!important}
+#composer.mode-music .composer-status{
+ grid-column:1!important;grid-row:3!important;display:flex!important;align-items:center!important;align-self:center!important;
+ gap:5px!important;box-sizing:border-box!important;height:14px!important;min-height:14px!important;max-height:14px!important;
+ margin:0!important;padding:2px 2px 0!important;line-height:12px!important;position:relative!important;inset:auto!important;
+ overflow:hidden!important;transform:none!important
+}
+#composer.mode-music .composer-status .status-dot{
+ display:inline-block!important;position:static!important;flex:0 0 6px!important;width:6px!important;height:6px!important;
+ min-width:6px!important;min-height:6px!important;margin:0!important;align-self:center!important;transform:none!important
+}
+#composer.mode-music .composer-status #composerStatus{display:inline-block!important;align-self:center!important;line-height:12px!important;margin:0!important;padding:0!important;transform:none!important}
+#composer.mode-music .composer-status .status-right{display:block!important;align-self:center!important;line-height:12px!important;margin-left:auto!important;padding:0!important;transform:none!important;text-align:right!important}
 .icon-music::before{content:none!important;display:none!important;-webkit-mask-image:none!important;mask-image:none!important;background:none!important}
-.miya-music-note-svg{display:block!important;width:100%!important;height:100%!important;min-width:0!important;min-height:0!important;max-width:100%!important;max-height:100%!important;overflow:visible!important;box-sizing:border-box!important;transform:none!important;flex:none!important}
-.miya-music-note-svg path{fill:none!important;stroke:currentColor!important;stroke-width:1.9!important;stroke-linecap:round!important;stroke-linejoin:round!important}
-.miya-music-note-svg circle{fill:currentColor!important;stroke:none!important}
-.sidebar .side-btn .ico.icon-music,.sidebar .side-btn .ico.icon-music .miya-music-note-svg,.mobile-tabs .nav-icon.icon-music,.mobile-tabs .nav-icon.icon-music .miya-music-note-svg{position:relative!important;top:0!important;left:0!important;margin:0!important;padding:0!important;transform:none!important;vertical-align:middle!important}
-.chat-welcome.section-welcome.music-welcome .hero-mark.music{display:grid!important;place-items:center!important}
-.chat-welcome.section-welcome.music-welcome .hero-mark.music .nav-icon.icon-music{display:grid!important;place-items:center!important;position:absolute!important;inset:0!important;width:100%!important;height:100%!important;margin:0!important;padding:0!important;transform:none!important;line-height:0!important;color:#fff!important}
-.chat-welcome.section-welcome.music-welcome .hero-mark.music .nav-icon.icon-music .miya-music-note-svg{display:block!important;width:22px!important;height:22px!important;min-width:22px!important;min-height:22px!important;max-width:22px!important;max-height:22px!important;margin:0!important;padding:0!important;transform:none!important;stroke-width:1.65!important;overflow:visible!important}
-
-/* Final alignment pass: match Video's prompt rows, status baseline and purple tool hover states. */
-#composer.mode-music{grid-template-rows:34px 34px 14px!important;row-gap:2px!important;padding:5px 10px 5px!important;align-content:start!important;align-items:center!important;box-sizing:border-box!important}
-#composer.mode-music .composer-input-row{grid-row:1!important;display:flex!important;align-items:center!important;align-self:center!important;height:34px!important;min-height:34px!important;max-height:34px!important;margin:0!important;padding:0!important;transform:none!important}
-#composer.mode-music #composerInput{height:34px!important;min-height:34px!important;max-height:34px!important;align-self:center!important;margin:0!important;padding:9px 3px 10px!important;line-height:15px!important;box-sizing:border-box!important;transform:none!important}
-#composer.mode-music .music-options{grid-row:2!important;height:34px!important;min-height:34px!important;max-height:34px!important;align-self:center!important;align-items:center!important;justify-content:flex-start!important;gap:4px!important;margin:0!important;padding:0!important;transform:none!important}
-#composer.mode-music .music-options button.music-tool,#composer.mode-music #composerMic{box-sizing:border-box!important;display:inline-grid!important;place-items:center!important;align-self:center!important;flex:0 0 34px!important;width:34px!important;min-width:34px!important;max-width:34px!important;height:34px!important;min-height:34px!important;max-height:34px!important;margin:0!important;padding:0!important;border:1px solid transparent!important;border-radius:7px!important;background:transparent!important;background-color:transparent!important;box-shadow:none!important;color:var(--icon-color,#9aa0ad)!important;transform:none!important;transition:background-color .15s ease,border-color .15s ease,color .15s ease!important}
-#composer.mode-music .music-options button.music-tool svg,#composer.mode-music #composerMic svg{display:block!important;width:18px!important;height:18px!important;min-width:18px!important;min-height:18px!important;max-width:18px!important;max-height:18px!important;margin:0!important;stroke:currentColor!important;stroke-width:1.8!important;stroke-linecap:round!important;stroke-linejoin:round!important;fill:none!important}
-#composer.mode-music .music-options button.music-tool:hover,#composer.mode-music .music-options button.music-tool:focus-visible,#composer.mode-music #composerMic:hover,#composer.mode-music #composerMic:focus-visible{border:1px solid rgba(169,124,255,.52)!important;background:rgba(157,112,255,.14)!important;background-color:rgba(157,112,255,.14)!important;color:#b99aff!important;box-shadow:none!important;outline:none!important}
-#composer.mode-music .composer-status{grid-row:3!important;display:flex!important;align-items:center!important;align-self:center!important;gap:5px!important;height:14px!important;min-height:14px!important;max-height:14px!important;line-height:14px!important;margin:0!important;padding:0!important;position:relative!important;inset:auto!important;transform:none!important;overflow:hidden!important}
-#composer.mode-music .composer-status .status-dot{display:inline-block!important;flex:0 0 6px!important;width:6px!important;height:6px!important;min-width:6px!important;min-height:6px!important;margin:0!important;align-self:center!important;transform:none!important;position:static!important}
-#composer.mode-music .composer-status #composerStatus{display:inline-block!important;align-self:center!important;line-height:14px!important;margin:0!important;padding:0!important;transform:none!important}
-#composer.mode-music .composer-status .status-right{display:block!important;align-self:center!important;line-height:14px!important;margin-left:auto!important;padding:0 0 0 10px!important;transform:none!important;text-align:right!important}
-#composer.mode-music #composerSend{box-sizing:border-box!important;display:grid!important;place-items:center!important;flex:0 0 34px!important;width:34px!important;min-width:34px!important;max-width:34px!important;height:34px!important;min-height:34px!important;max-height:34px!important;margin:0!important;padding:0!important;border:0!important;border-radius:8px!important;transform:none!important}
-#composer.mode-music #composerSend .send-icon,#composer.mode-music #composerSend .send-icon svg{display:block!important;place-items:center!important;width:17px!important;height:17px!important;min-width:17px!important;min-height:17px!important;max-width:17px!important;max-height:17px!important;margin:0!important;padding:0!important;transform:none!important;stroke:#fff!important;color:#fff!important}
-body.light #composer.mode-music .music-options button.music-tool,body.light #composer.mode-music #composerMic{color:#64748b!important}
-body.light #composer.mode-music .music-options button.music-tool:hover,body.light #composer.mode-music .music-options button.music-tool:focus-visible,body.light #composer.mode-music #composerMic:hover,body.light #composer.mode-music #composerMic:focus-visible{border-color:rgba(130,88,220,.42)!important;background:rgba(157,112,255,.14)!important;background-color:rgba(157,112,255,.14)!important;color:#7653c6!important}
-@media(max-width:800px){#composer.mode-music{grid-template-rows:34px 34px 14px!important;padding:5px 8px 5px!important;row-gap:2px!important}#composer.mode-music .composer-input-row,#composer.mode-music #composerInput{height:34px!important;min-height:34px!important;max-height:34px!important}#composer.mode-music .music-options button.music-tool,#composer.mode-music #composerMic{flex-basis:30px!important;width:30px!important;min-width:30px!important;max-width:30px!important;height:30px!important;min-height:30px!important;max-height:30px!important}}
+.miya-music-note-svg{display:block!important;flex:none!important;overflow:visible!important;box-sizing:border-box!important;margin:0!important;padding:0!important;position:static!important;top:0!important;left:0!important;transform:none!important}
+.sidebar .side-btn .ico.icon-music{
+ display:grid!important;place-items:center!important;position:relative!important;flex:0 0 17px!important;width:17px!important;min-width:17px!important;
+ max-width:17px!important;height:17px!important;min-height:17px!important;max-height:17px!important;margin:0!important;padding:0!important;
+ line-height:0!important;font-size:0!important;color:inherit!important
+}
+.sidebar .side-btn .ico.icon-music .miya-music-note-svg{width:17px!important;height:17px!important;min-width:17px!important;min-height:17px!important;max-width:17px!important;max-height:17px!important}
+.mobile-tabs .nav-icon.icon-music{
+ display:grid!important;place-items:center!important;position:relative!important;width:18px!important;height:18px!important;
+ min-width:18px!important;min-height:18px!important;margin:0 auto 2px!important;padding:0!important;line-height:0!important;color:inherit!important
+}
+.mobile-tabs .nav-icon.icon-music .miya-music-note-svg{width:18px!important;height:18px!important;min-width:18px!important;min-height:18px!important;max-width:18px!important;max-height:18px!important}
+.chat-welcome.section-welcome.music-welcome .hero-mark.music{display:grid!important;place-items:center!important;position:relative!important}
+.chat-welcome.section-welcome.music-welcome .hero-mark.music .nav-icon.icon-music{
+ display:grid!important;place-items:center!important;position:static!important;inset:auto!important;width:22px!important;height:22px!important;
+ min-width:22px!important;min-height:22px!important;max-width:22px!important;max-height:22px!important;margin:0!important;padding:0!important;
+ transform:none!important;line-height:0!important;color:#fff!important
+}
+.chat-welcome.section-welcome.music-welcome .hero-mark.music .nav-icon.icon-music .miya-music-note-svg{
+ width:22px!important;height:22px!important;min-width:22px!important;min-height:22px!important;max-width:22px!important;max-height:22px!important
+}
+@media(max-width:800px){
+ #composer.mode-music{width:100%!important;max-width:100%!important;padding:8px 8px 6px!important;grid-template-rows:auto 34px auto!important;row-gap:5px!important}
+ #composer.mode-music .music-options{gap:2px!important}
+ #composer.mode-music .music-options #musicOccasion{width:clamp(70px,20vw,116px)!important}
+ #composer.mode-music .music-options #musicGenre{width:clamp(50px,14vw,78px)!important}
+ #composer.mode-music .music-options #musicVocal{width:clamp(50px,14vw,76px)!important}
+ #composer.mode-music .music-options #musicLyricsOpen{max-width:88px!important;padding:0 4px!important;font-size:9px!important}
+ #composer.mode-music .music-options button.music-tool{flex-basis:24px!important;width:24px!important;min-width:24px!important;max-width:24px!important}
+ #composer.mode-music #composerMic{flex-basis:30px!important;width:30px!important;min-width:30px!important;max-width:30px!important;height:30px!important;min-height:30px!important;max-height:30px!important}
+ #composer.mode-music #composerSend{flex-basis:30px!important;width:30px!important;min-width:30px!important;max-width:30px!important;height:30px!important;min-height:30px!important;max-height:30px!important}
+}
 `;
+
 
  function nav(parent,ref,mobile){if(!parent||parent.querySelector('[data-mode="music"]'))return;const b=document.createElement("button");b.dataset.mode="music";if(mobile)b.innerHTML='<span class="nav-icon icon-music" aria-hidden="true"><svg class="miya-music-note-svg" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg></span><small>Музыка</small>';else{b.className="side-btn";b.innerHTML='<span class="ico icon-music" aria-hidden="true"><svg class="miya-music-note-svg" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg></span><b>Музыка</b>'}parent.insertBefore(b,ref||null)}
  const sv=document.querySelector('.sidebar [data-mode="voice"]'),mv=document.querySelector('.mobile-tabs [data-mode="voice"]');if(sv)nav(sv.parentElement,sv,false);if(mv)nav(mv.parentElement,mv,true);
