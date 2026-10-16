@@ -230,7 +230,11 @@ body:not(.light) .chat-welcome.section-welcome .hero-mark.image .nav-icon.icon-i
   height:auto!important;min-height:0!important;max-height:none!important;flex:0 0 auto!important;flex-basis:auto!important;
   grid-template-rows:auto 34px auto!important;row-gap:5px!important;align-content:start!important;overflow:visible!important;
 }
-.composer.mode-chat #composerInput,.composer.mode-images #composerInput,.composer.mode-video #composerInput{
+.composer.mode-chat #composerInput{
+  height:30px!important;min-height:30px!important;max-height:none!important;overflow-y:hidden!important;
+  align-self:center!important;box-sizing:border-box!important;padding:7px 3px 8px!important;line-height:15px!important;
+}
+.composer.mode-images #composerInput,.composer.mode-video #composerInput{
   height:34px!important;min-height:34px!important;max-height:none!important;overflow-y:hidden!important;
   align-self:stretch!important;box-sizing:border-box!important;padding:9px 3px 10px!important;line-height:15px!important;
 }
@@ -247,7 +251,8 @@ body:not(.light) .chat-welcome.section-welcome .hero-mark.image .nav-icon.icon-i
 .composer.mode-chat .chat-attachment-list:not([hidden]){grid-column:2!important;grid-row:2!important;max-width:calc(100% - 150px)!important;width:max-content!important;min-width:0!important}
 @media(max-width:800px){
  .composer.mode-chat,.composer.mode-images,.composer.mode-video{grid-template-rows:auto 34px auto!important}
- .composer.mode-chat #composerInput,.composer.mode-images #composerInput,.composer.mode-video #composerInput{height:34px!important;min-height:34px!important}
+ .composer.mode-chat #composerInput{height:30px!important;min-height:30px!important;align-self:center!important;padding-top:7px!important;padding-bottom:8px!important}
+ .composer.mode-images #composerInput,.composer.mode-video #composerInput{height:34px!important;min-height:34px!important}
  .composer.mode-chat .chat-attachment-list:not([hidden]){max-width:calc(100% - 120px)!important}
 }
 /* Keep the media wall and library tabs close to the workspace heading, as previously approved. */
