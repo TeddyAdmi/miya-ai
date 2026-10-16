@@ -5636,6 +5636,8 @@ $("#workspace")?.addEventListener("scroll",()=>closeAllMediaMenus(),{passive:tru
 #composer.mode-music #composerSend .send-icon,#composer.mode-music #composerSend .send-icon svg{display:block!important;width:16px!important;height:16px!important;color:#fff!important;stroke:#fff!important}
 #composer.mode-music #composerSendText{display:none!important}
 #composer.mode-music .composer-status{grid-column:1 / -1!important;grid-row:3!important;display:flex!important;align-items:center!important;gap:5px!important;width:100%!important;min-width:0!important;height:14px!important;min-height:14px!important;max-height:14px!important;margin:0!important;padding:2px 2px 0!important;line-height:1.2!important;overflow:hidden!important;transform:none!important;white-space:nowrap!important}
+/* Move the complete Music status/help line down; let the auto grid grow with it. */
+#composer.mode-music .composer-status{margin-top:8px!important;}
 #composer.mode-music .composer-status .status-dot{flex:0 0 auto!important;transform:none!important}
 #composer.mode-music .composer-status #composerStatus{min-width:0!important;overflow:hidden!important;text-overflow:ellipsis!important;white-space:nowrap!important}
 #composer.mode-music .composer-status .status-right{display:block!important;flex:0 0 auto!important;margin-left:auto!important;padding-left:10px!important;text-align:right!important;white-space:nowrap!important}
