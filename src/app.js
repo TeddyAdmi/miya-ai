@@ -5939,8 +5939,6 @@ body.light #composer.mode-voice .voice-options .voice-tool:focus-visible{
 }
 `;
 
-`;
-
 document.head.appendChild(musicFinalAlignment);
  function nav(parent,ref,mobile){if(!parent||parent.querySelector('[data-mode="music"]'))return;const b=document.createElement("button");b.dataset.mode="music";if(mobile)b.innerHTML='<span class="nav-icon icon-music" aria-hidden="true"><svg class="miya-music-note-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg></span><small>Музыка</small>';else{b.className="side-btn";b.innerHTML='<span class="ico icon-music" aria-hidden="true"><svg class="miya-music-note-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg></span><b>Музыка</b>'}parent.insertBefore(b,ref||null)}
  const sv=document.querySelector('.sidebar [data-mode="voice"]'),mv=document.querySelector('.mobile-tabs [data-mode="voice"]');if(sv)nav(sv.parentElement,sv,false);if(mv)nav(mv.parentElement,mv,true);
