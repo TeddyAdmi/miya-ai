@@ -5816,6 +5816,8 @@ musicFinalAlignment.textContent+=`
 #composer.mode-music .composer-status .status-right{display:block!important;align-self:center!important;line-height:12px!important;margin-left:auto!important;padding:0!important;transform:none!important;text-align:right!important}
 .icon-music::before{content:none!important;display:none!important;-webkit-mask-image:none!important;mask-image:none!important;background:none!important}
 .miya-music-note-svg{display:block!important;flex:none!important;overflow:visible!important;box-sizing:border-box!important;margin:0!important;padding:0!important;position:static!important;top:0!important;left:0!important;transform:none!important}
+.miya-music-note-svg path{fill:none!important;stroke:currentColor!important;stroke-width:1.9!important;stroke-linecap:round!important;stroke-linejoin:round!important}
+.miya-music-note-svg circle{fill:currentColor!important;stroke:none!important}
 .sidebar .side-btn .ico.icon-music{
  display:grid!important;place-items:center!important;position:relative!important;flex:0 0 17px!important;width:17px!important;min-width:17px!important;
  max-width:17px!important;height:17px!important;min-height:17px!important;max-height:17px!important;margin:0!important;padding:0!important;
