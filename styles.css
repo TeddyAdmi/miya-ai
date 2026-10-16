@@ -3943,3 +3943,21 @@ body.light .media-action.media-more svg circle{
 }
 .media-action.media-more svg circle,
 body.light .media-action.media-more svg circle{r:1.5px!important}
+
+
+/* Music SVGs render correctly before JavaScript: suppress the generic icon mask square. */
+.ico.icon-music::before,.nav-icon.icon-music::before{
+ content:none!important;display:none!important;background:none!important;mask-image:none!important;-webkit-mask-image:none!important;
+}
+.ico.icon-music,.nav-icon.icon-music{display:inline-grid!important;place-items:center!important;line-height:0!important}
+.ico.icon-music .miya-music-note-svg,.nav-icon.icon-music .miya-music-note-svg{
+ display:block!important;width:18px!important;height:18px!important;min-width:18px!important;min-height:18px!important;
+ margin:0!important;padding:0!important;position:static!important;transform:none!important;overflow:visible!important;
+}
+.ico.icon-music .miya-music-note-svg path,.nav-icon.icon-music .miya-music-note-svg path{
+ fill:none!important;stroke:currentColor!important;stroke-width:1.8!important;stroke-linecap:round!important;stroke-linejoin:round!important;
+}
+.ico.icon-music .miya-music-note-svg circle,.nav-icon.icon-music .miya-music-note-svg circle{fill:currentColor!important;stroke:none!important}
+.chat-welcome.section-welcome.music-welcome .hero-mark.music .nav-icon.icon-music .miya-music-note-svg{
+ width:22px!important;height:22px!important;transform:translate(-1px,1px)!important;
+}
