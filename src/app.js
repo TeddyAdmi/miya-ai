@@ -2662,7 +2662,7 @@ function toast(message){
  t.textContent=message;t.classList.add("show");clearTimeout(window.__toast);
  window.__toast=setTimeout(()=>t.classList.remove("show"),2600)
 }
-function syncInput(){const i=$("#composerInput");if(!i)return;const cs=getComputedStyle(i);const lineHeight=Number.parseFloat(cs.lineHeight)||15;const padding=(Number.parseFloat(cs.paddingTop)||0)+(Number.parseFloat(cs.paddingBottom)||0);const minHeight=34;const maxLines=10;const maxHeight=Math.ceil(lineHeight*maxLines+padding);i.style.setProperty("min-height",minHeight+"px","important");i.style.setProperty("max-height",maxHeight+"px","important");i.style.setProperty("height","auto","important");i.style.setProperty("overflow-y","hidden","important");const contentHeight=Math.max(minHeight,i.scrollHeight);const h=Math.min(maxHeight,contentHeight);i.style.setProperty("height",h+"px","important");i.style.setProperty("overflow-y",contentHeight>maxHeight?"auto":"hidden","important");const row=i.closest(".composer-input-row");if(row)row.style.height=""}
+function syncInput(){const i=$("#composerInput");if(!i)return;const cs=getComputedStyle(i);const lineHeight=Number.parseFloat(cs.lineHeight)||15;const padding=(Number.parseFloat(cs.paddingTop)||0)+(Number.parseFloat(cs.paddingBottom)||0);const minHeight=34;const maxLines=10;const maxHeight=Math.ceil(lineHeight*maxLines+padding);i.style.setProperty("min-height",minHeight+"px","important");i.style.setProperty("max-height",maxHeight+"px","important");i.style.setProperty("overflow-y","hidden","important");i.style.setProperty("height","0px","important");const contentHeight=Math.max(minHeight,i.scrollHeight);const h=Math.min(maxHeight,contentHeight);i.style.setProperty("height",h+"px","important");i.style.setProperty("overflow-y",contentHeight>maxHeight?"auto":"hidden","important");const row=i.closest(".composer-input-row");if(row)row.style.height=""}
 function renderAssistantQuoteBlock(){
  const composer=$("#composer");if(!composer)return;
  let block=composer.querySelector(".composer-quote-block");
@@ -6148,6 +6148,22 @@ musicFinalAlignment.textContent += `
 `;
 
 
+/* Music final parity with Video: stable 1–10 line growth, aligned status row, matching hover feedback. */
+musicFinalAlignment.textContent += `
+#composer.mode-music #composerInput{
+  box-sizing:border-box!important;display:block!important;width:100%!important;min-width:0!important;
+  min-height:34px!important;height:auto!important;margin:0!important;padding:9px 3px 10px!important;
+  font-size:13px!important;line-height:15px!important;align-self:stretch!important;
+  overflow-x:hidden!important;overflow-y:hidden!important;resize:none!important;white-space:pre-wrap!important;
+  overflow-wrap:anywhere!important;transform:none!important;
+}
+#composer.mode-music .composer-input-row{display:contents!important;height:auto!important;min-height:0!important;max-height:none!important}
+#composer.mode-music .music-options{grid-column:1/-1!important;grid-row:2!important;align-self:center!important;display:flex!important;align-items:center!important;flex-wrap:nowrap!important;width:100%!important;min-width:0!important;max-width:100%!important;height:34px!important;min-height:34px!important;max-height:34px!important;margin:0!important;padding:0!important;overflow:visible!important}
+#composer.mode-music .composer-status{position:static!important;grid-column:1/-1!important;grid-row:3!important;display:flex!important;align-items:center!important;gap:5px!important;width:100%!important;height:14px!important;min-height:14px!important;max-height:14px!important;margin:0!important;padding:0 2px!important;box-sizing:border-box!important;line-height:14px!important;overflow:hidden!important;transform:none!important}
+#composer.mode-music .composer-status .status-dot{position:static!important;display:block!important;align-self:center!important;flex:0 0 6px!important;width:6px!important;height:6px!important;min-width:6px!important;min-height:6px!important;margin:0!important;transform:none!important}
+#composer.mode-music .music-options .music-tool:hover,#composer.mode-music .music-options .music-tool:focus-visible,#composer.mode-music #composerMic:hover,#composer.mode-music #composerMic:focus-visible{border:1px solid rgba(145,157,181,.7)!important;border-radius:7px!important;background:rgba(145,157,181,.10)!important;background-color:rgba(145,157,181,.10)!important;color:#b88cff!important;box-shadow:none!important;transform:none!important}
+body.light #composer.mode-music .music-options .music-tool:hover,body.light #composer.mode-music .music-options .music-tool:focus-visible,body.light #composer.mode-music #composerMic:hover,body.light #composer.mode-music #composerMic:focus-visible{border-color:rgba(90,76,160,.45)!important;background:rgba(123,97,200,.10)!important;background-color:rgba(123,97,200,.10)!important;color:#7b61c8!important}
+`;
  function nav(parent,ref,mobile){if(!parent||parent.querySelector('[data-mode="music"]'))return;const b=document.createElement("button");b.dataset.mode="music";if(mobile)b.innerHTML='<span class="nav-icon icon-music" aria-hidden="true"><svg class="miya-music-note-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg></span><small>Музыка</small>';else{b.className="side-btn";b.innerHTML='<span class="ico icon-music" aria-hidden="true"><svg class="miya-music-note-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg></span><b>Музыка</b>'}parent.insertBefore(b,ref||null)}
  const sv=document.querySelector('.sidebar [data-mode="voice"]'),mv=document.querySelector('.mobile-tabs [data-mode="voice"]');if(sv)nav(sv.parentElement,sv,false);if(mv)nav(mv.parentElement,mv,true);
  function select(id,label,values,chosen){const s=document.createElement("select");s.className="select-pill";s.id=id;s.title=label;s.setAttribute("aria-label",label);values.forEach(v=>{const o=document.createElement("option");o.value=v;o.textContent=v;o.selected=v===chosen;s.appendChild(o)});return s}
