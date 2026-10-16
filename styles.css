@@ -3984,3 +3984,51 @@ body.light .media-action.media-more svg circle{r:1.5px!important}
 .sidebar .side-btn .ico > svg,
 .mobile-tabs .nav-icon > svg{display:block!important;stroke:currentColor;fill:none}
 .sidebar .side-btn{gap:9px}
+
+
+/* Keep the prompt compact from first paint; all section prompts stay on one line. */
+.composer.mode-chat,
+.composer.mode-images,
+.composer.mode-video{
+  height:110px!important;
+  min-height:110px!important;
+  max-height:110px!important;
+  grid-template-rows:34px 34px 14px!important;
+  row-gap:5px!important;
+  align-content:start!important;
+}
+.composer.mode-chat #composerInput,
+.composer.mode-images #composerInput,
+.composer.mode-video #composerInput,
+.composer.mode-music #composerInput,
+.composer.mode-voice #composerInput{
+  box-sizing:border-box!important;
+  height:34px!important;
+  min-height:34px!important;
+  max-height:34px!important;
+  overflow-y:hidden!important;
+  resize:none!important;
+  line-height:15px!important;
+}
+@media(min-width:801px){
+  .composer.mode-chat,
+  .composer.mode-images,
+  .composer.mode-video{
+    flex:0 1 auto!important;
+    flex-basis:auto!important;
+    height:110px!important;
+    min-height:110px!important;
+    max-height:110px!important;
+    grid-template-rows:34px 34px 14px!important;
+  }
+}
+@media(max-width:800px){
+  .composer.mode-chat,
+  .composer.mode-images,
+  .composer.mode-video{
+    height:110px!important;
+    min-height:110px!important;
+    max-height:110px!important;
+    grid-template-rows:34px 34px 14px!important;
+  }
+}
