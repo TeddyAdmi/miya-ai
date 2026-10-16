@@ -5869,6 +5869,76 @@ body.light #composer.mode-video #composerMic:focus-visible,body.light #composer.
   #composer.mode-music .music-options{gap:3px!important}
   #composer.mode-music .music-options .music-spacer{min-width:3px!important}
 }
+
+/* Final parity correction: restore readable status text and consistent icon controls. */
+musicFinalAlignment.textContent += `
+#composer.mode-video .composer-status #composerStatus,#composer.mode-music .composer-status #composerStatus,
+#composer.mode-video .composer-status .status-right,#composer.mode-music .composer-status .status-right{
+  font-size:11px!important;line-height:1.2!important;
+}
+#composer.mode-video .composer-status,#composer.mode-music .composer-status{
+  min-height:14px!important;height:14px!important;max-height:14px!important;
+  align-items:center!important;padding:2px 2px 0!important;gap:5px!important;
+}
+#composer.mode-video .composer-status .status-dot,#composer.mode-music .composer-status .status-dot{
+  align-self:center!important;position:relative!important;top:0!important;left:0!important;transform:none!important;
+}
+#composer.mode-music .music-options .music-tool,
+#composer.mode-music .music-options #composerMic{
+  box-sizing:border-box!important;border:1px solid transparent!important;border-radius:7px!important;
+  background:transparent!important;box-shadow:none!important;transform:none!important;
+  width:34px!important;min-width:34px!important;max-width:34px!important;
+  height:34px!important;min-height:34px!important;max-height:34px!important;
+  display:grid!important;place-items:center!important;
+}
+#composer.mode-music .music-options .music-tool:hover,
+#composer.mode-music .music-options .music-tool:focus-visible,
+#composer.mode-music .music-options #composerMic:hover,
+#composer.mode-music .music-options #composerMic:focus-visible{
+  border:1px solid rgba(145,157,181,.7)!important;border-radius:7px!important;
+  background:rgba(145,157,181,.10)!important;color:#b88cff!important;box-shadow:none!important;transform:none!important;
+}
+body.light #composer.mode-music .music-options .music-tool:hover,
+body.light #composer.mode-music .music-options .music-tool:focus-visible,
+body.light #composer.mode-music .music-options #composerMic:hover,
+body.light #composer.mode-music .music-options #composerMic:focus-visible{
+  border-color:rgba(90,76,160,.45)!important;background:rgba(123,97,200,.10)!important;color:#7b61c8!important;
+}
+#composer.mode-music .music-options .music-tool svg,
+#composer.mode-music .music-options #composerMic svg{
+  width:16px!important;height:16px!important;min-width:16px!important;min-height:16px!important;
+  margin:0!important;transform:none!important;
+}
+#composer.mode-music #composerSend .send-icon,
+#composer.mode-music #composerSend .send-icon svg{
+  display:flex!important;align-items:center!important;justify-content:center!important;
+  width:17px!important;height:17px!important;min-width:17px!important;min-height:17px!important;
+  margin:0!important;padding:0!important;transform:none!important;
+}
+#composer.mode-music #composerSend{justify-content:center!important;align-items:center!important}
+.chat-welcome.section-welcome.music-welcome .hero-mark.music .nav-icon.icon-music{
+  display:grid!important;place-items:center!important;justify-content:center!important;align-items:center!important;
+  width:100%!important;height:100%!important;line-height:0!important;
+}
+.chat-welcome.section-welcome.music-welcome .hero-mark.music .nav-icon.icon-music .miya-music-note-svg{
+  width:22px!important;height:22px!important;margin:1px 0 0 1px!important;
+  position:static!important;transform:none!important;align-self:center!important;justify-self:center!important;
+}
+body.light #composer.mode-voice .voice-options .select-pill,
+body.light #composer.mode-voice .voice-options .voice-range,
+body.light #composer.mode-voice .voice-options .voice-tool{
+  background:#0b223b!important;background-color:#0b223b!important;
+  color:#a9bad0!important;border:1px solid #1a4b78!important;box-shadow:none!important;
+}
+body.light #composer.mode-voice .voice-options .select-pill,
+body.light #composer.mode-voice .voice-options .voice-range{border-radius:6px!important}
+body.light #composer.mode-voice .voice-options .voice-tool:hover,
+body.light #composer.mode-voice .voice-options .voice-tool:focus-visible{
+  background:#0b223b!important;background-color:#0b223b!important;
+  color:#bd7aff!important;border-color:#2a79b7!important;
+}
+`;
+
 `;
 
 document.head.appendChild(musicFinalAlignment);
