@@ -4841,6 +4841,7 @@ $("#composerTrash")?.addEventListener("click",()=>{
     const status=$("#composerStatus");
     if(status)status.textContent=model ? (mode==="images"?imageModelLabel(model):model)+" · готов к созданию" : (modes[mode]?.status||"Готово");
   }
+  toast("Текст очищен");
 });
 $("#composerAttachmentRemove")?.addEventListener("click",()=>clearComposerAttachment());
 
@@ -4880,8 +4881,9 @@ $("#chatTrash")?.addEventListener("click",()=>{
   input?.focus();
   if(mode==="chat"&&!$("#composerSend")?.disabled){
     const status=$("#composerStatus");
-    if(status)status.textContent=modes.chat.status;
+    if(status)status.textContent="Текст очищен";
   }
+  toast("Текст очищен");
 });
 $("#videoImprove")?.addEventListener("click",improveComposerPrompt);
 $("#videoCopyPrompt")?.addEventListener("click",e=>copyComposerPrompt(e.currentTarget));
