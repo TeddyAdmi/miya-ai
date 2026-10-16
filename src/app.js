@@ -5870,8 +5870,76 @@ body.light #composer.mode-video #composerMic:focus-visible,body.light #composer.
   #composer.mode-music .music-options .music-spacer{min-width:3px!important}
 }
 
-/* Final parity correction: restore readable status text and consistent icon controls. */
+/* Final parity correction: Music uses the same prompt rail dimensions and icon treatment as Video. */
+#composer.mode-music{
+  box-sizing:border-box!important;height:152px!important;min-height:152px!important;max-height:152px!important;
+  grid-template-rows:76px 34px 14px!important;row-gap:5px!important;align-content:start!important;
+  padding:9px 10px 7px!important;
+}
+#composer.mode-music #composerInput{
+  height:76px!important;min-height:76px!important;max-height:76px!important;
+  line-height:1.5!important;padding:9px 3px 10px!important;overflow-y:auto!important;
+}
+#composer.mode-music .composer-status{
+  grid-column:1/-1!important;grid-row:3!important;display:flex!important;align-items:center!important;
+  box-sizing:border-box!important;width:100%!important;height:14px!important;min-height:14px!important;max-height:14px!important;
+  margin:0!important;padding:0 2px!important;line-height:14px!important;overflow:hidden!important;
+}
 #composer.mode-video .composer-status #composerStatus,#composer.mode-music .composer-status #composerStatus,
+#composer.mode-video .composer-status .status-right,#composer.mode-music .composer-status .status-right{
+  font-size:11px!important;line-height:14px!important;min-width:0!important;
+}
+#composer.mode-video .composer-status .status-dot,#composer.mode-music .composer-status .status-dot{
+  align-self:center!important;position:static!important;top:auto!important;left:auto!important;transform:none!important;
+  flex:0 0 6px!important;width:6px!important;height:6px!important;min-width:6px!important;min-height:6px!important;margin:0!important;
+}
+#composer.mode-music .music-options .music-tool,
+#composer.mode-music .music-options #composerMic{
+  box-sizing:border-box!important;border:1px solid transparent!important;border-radius:7px!important;
+  background:transparent!important;box-shadow:none!important;transform:none!important;
+  width:34px!important;min-width:34px!important;max-width:34px!important;
+  height:34px!important;min-height:34px!important;max-height:34px!important;
+  display:grid!important;place-items:center!important;padding:0!important;
+}
+#composer.mode-music .music-options .music-tool:hover,
+#composer.mode-music .music-options .music-tool:focus-visible,
+#composer.mode-music .music-options #composerMic:hover,
+#composer.mode-music .music-options #composerMic:focus-visible,
+#composer.mode-video #composerMic:hover,#composer.mode-video #composerMic:focus-visible{
+  border:1px solid rgba(145,157,181,.55)!important;border-radius:7px!important;
+  background:rgba(145,157,181,.08)!important;color:#b88cff!important;box-shadow:none!important;transform:none!important;
+}
+body.light #composer.mode-music .music-options .music-tool:hover,
+body.light #composer.mode-music .music-options .music-tool:focus-visible,
+body.light #composer.mode-music .music-options #composerMic:hover,
+body.light #composer.mode-music .music-options #composerMic:focus-visible,
+body.light #composer.mode-video #composerMic:hover,body.light #composer.mode-video #composerMic:focus-visible{
+  border-color:rgba(90,76,160,.35)!important;background:rgba(123,97,200,.08)!important;color:#7b61c8!important;
+}
+#composer.mode-music .music-options .music-tool svg,
+#composer.mode-music .music-options #composerMic svg{
+  display:block!important;width:18px!important;height:18px!important;min-width:18px!important;min-height:18px!important;
+  margin:0!important;padding:0!important;transform:none!important;
+}
+#composer.mode-music #composerSend,#composer.mode-video #composerSend{
+  box-sizing:border-box!important;display:flex!important;align-items:center!important;justify-content:center!important;
+  width:34px!important;min-width:34px!important;max-width:34px!important;height:34px!important;min-height:34px!important;max-height:34px!important;
+}
+#composer.mode-music #composerSend .send-icon,#composer.mode-music #composerSend .send-icon svg,
+#composer.mode-video #composerSend .send-icon,#composer.mode-video #composerSend .send-icon svg{
+  display:flex!important;align-items:center!important;justify-content:center!important;
+  width:18px!important;height:18px!important;min-width:18px!important;min-height:18px!important;
+  margin:0!important;padding:0!important;transform:none!important;
+}
+.chat-welcome.section-welcome.music-welcome .hero-mark.music .nav-icon.icon-music{
+  display:grid!important;place-items:center!important;align-items:center!important;justify-content:center!important;
+  width:100%!important;height:100%!important;line-height:0!important;padding:0!important;margin:0!important;
+}
+.chat-welcome.section-welcome.music-welcome .hero-mark.music .nav-icon.icon-music .miya-music-note-svg{
+  display:block!important;width:23px!important;height:23px!important;min-width:23px!important;min-height:23px!important;
+  margin:0!important;padding:0!important;position:static!important;left:auto!important;top:auto!important;transform:none!important;
+  align-self:center!important;justify-self:center!important;
+} .composer-status #composerStatus,#composer.mode-music .composer-status #composerStatus,
 #composer.mode-video .composer-status .status-right,#composer.mode-music .composer-status .status-right{
   font-size:11px!important;line-height:1.2!important;
 }
