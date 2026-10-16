@@ -5673,6 +5673,61 @@ musicFinalAlignment.textContent += `
 }
 `;
 
+
+/* Use the exact shared bottom rail coordinates used by Chat, Images and Video. */
+musicFinalAlignment.textContent += `
+#composer.mode-music{
+  position:relative!important;inset:auto!important;transform:none!important;
+  box-sizing:border-box!important;flex:0 1 auto!important;flex-basis:auto!important;
+  width:min(900px,calc(100vw - 265px))!important;max-width:900px!important;
+  height:152px!important;min-height:152px!important;max-height:152px!important;
+  margin:0 auto!important;padding:9px 10px 7px!important;
+  grid-template-columns:minmax(0,1fr)!important;
+  grid-template-rows:76px 34px 14px!important;row-gap:5px!important;
+  align-content:start!important;align-items:center!important;overflow:visible!important;
+}
+#composer.mode-music #composerInput{
+  grid-column:1/-1!important;grid-row:1!important;
+  height:76px!important;min-height:76px!important;max-height:76px!important;
+  overflow-y:auto!important;
+}
+#composer.mode-music .music-options{
+  grid-column:1!important;grid-row:2!important;
+  height:34px!important;min-height:34px!important;max-height:34px!important;
+  align-self:center!important;margin:0!important;transform:none!important;
+}
+#composer.mode-music #composerMic,
+#composer.mode-music #composerSend{
+  align-self:center!important;transform:none!important;margin-top:0!important;margin-bottom:0!important;
+}
+#composer.mode-music .composer-status{
+  position:static!important;grid-column:1/-1!important;grid-row:3!important;
+  height:14px!important;min-height:14px!important;max-height:14px!important;
+  padding:2px 2px 0!important;margin:0!important;gap:5px!important;
+  display:flex!important;align-items:center!important;align-self:stretch!important;
+  line-height:1.2!important;overflow:hidden!important;transform:none!important;
+}
+#composer.mode-music .composer-status .status-dot{
+  position:static!important;align-self:center!important;flex:0 0 6px!important;
+  width:6px!important;height:6px!important;min-width:6px!important;min-height:6px!important;
+  margin:0!important;transform:none!important;
+}
+#composer.mode-music .composer-status #composerStatus{
+  min-width:0!important;overflow:hidden!important;text-overflow:ellipsis!important;white-space:nowrap!important;
+}
+#composer.mode-music .composer-status .status-right{
+  display:block!important;flex:0 0 auto!important;margin-left:auto!important;
+  padding-left:10px!important;text-align:right!important;white-space:nowrap!important;
+}
+@media(max-width:800px){
+  #composer.mode-music{
+    width:100%!important;max-width:100%!important;height:152px!important;
+    min-height:152px!important;max-height:152px!important;
+    padding:9px 8px 7px!important;grid-template-rows:76px 34px 14px!important;
+  }
+}
+`;
+
 document.head.appendChild(musicFinalAlignment);
  function nav(parent,ref,mobile){if(!parent||parent.querySelector('[data-mode="music"]'))return;const b=document.createElement("button");b.dataset.mode="music";if(mobile)b.innerHTML='<span class="nav-icon icon-music" aria-hidden="true"><svg class="miya-music-note-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg></span><small>Музыка</small>';else{b.className="side-btn";b.innerHTML='<span class="ico icon-music" aria-hidden="true"><svg class="miya-music-note-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg></span><b>Музыка</b>'}parent.insertBefore(b,ref||null)}
  const sv=document.querySelector('.sidebar [data-mode="voice"]'),mv=document.querySelector('.mobile-tabs [data-mode="voice"]');if(sv)nav(sv.parentElement,sv,false);if(mv)nav(mv.parentElement,mv,true);
