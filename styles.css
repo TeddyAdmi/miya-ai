@@ -3961,3 +3961,26 @@ body.light .media-action.media-more svg circle{r:1.5px!important}
 .chat-welcome.section-welcome.music-welcome .hero-mark.music .nav-icon.icon-music .miya-music-note-svg{
  width:22px!important;height:22px!important;transform:translate(-1px,1px)!important;
 }
+
+
+/* Normalize navigation icons across all sections, including SVG icons added at runtime. */
+.sidebar .side-btn .ico,
+.sidebar .side-btn .ico::before,
+.sidebar .side-btn .ico > svg,
+.sidebar .tool-btn > span,
+.sidebar .tool-btn > span::before,
+.mobile-tabs .nav-icon,
+.mobile-tabs .nav-icon::before,
+.mobile-tabs .nav-icon > svg{
+  box-sizing:border-box!important;
+  width:18px!important;height:18px!important;
+  min-width:18px!important;min-height:18px!important;
+  max-width:18px!important;max-height:18px!important;
+  flex:0 0 18px!important;
+}
+.sidebar .side-btn .ico,
+.sidebar .tool-btn > span,
+.mobile-tabs .nav-icon{display:inline-grid!important;place-items:center!important;line-height:0!important}
+.sidebar .side-btn .ico > svg,
+.mobile-tabs .nav-icon > svg{display:block!important;stroke:currentColor;fill:none}
+.sidebar .side-btn{gap:9px}
