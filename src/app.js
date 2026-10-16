@@ -231,8 +231,8 @@ body:not(.light) .chat-welcome.section-welcome .hero-mark.image .nav-icon.icon-i
   grid-template-rows:auto 34px auto!important;row-gap:5px!important;align-content:start!important;overflow:visible!important;
 }
 .composer.mode-chat #composerInput{
-  height:30px!important;min-height:30px!important;max-height:none!important;overflow-y:hidden!important;
-  align-self:center!important;box-sizing:border-box!important;padding:7px 3px 8px!important;line-height:15px!important;
+  height:34px!important;min-height:34px!important;max-height:none!important;overflow-y:hidden!important;
+  align-self:stretch!important;box-sizing:border-box!important;padding:9px 3px 10px!important;line-height:15px!important;
 }
 .composer.mode-images #composerInput,.composer.mode-video #composerInput{
   height:34px!important;min-height:34px!important;max-height:none!important;overflow-y:hidden!important;
@@ -251,7 +251,7 @@ body:not(.light) .chat-welcome.section-welcome .hero-mark.image .nav-icon.icon-i
 .composer.mode-chat .chat-attachment-list:not([hidden]){grid-column:2!important;grid-row:2!important;max-width:calc(100% - 150px)!important;width:max-content!important;min-width:0!important}
 @media(max-width:800px){
  .composer.mode-chat,.composer.mode-images,.composer.mode-video{grid-template-rows:auto 34px auto!important}
- .composer.mode-chat #composerInput{height:30px!important;min-height:30px!important;align-self:center!important;padding-top:7px!important;padding-bottom:8px!important}
+ .composer.mode-chat #composerInput{height:34px!important;min-height:34px!important;align-self:stretch!important;padding-top:9px!important;padding-bottom:10px!important}
  .composer.mode-images #composerInput,.composer.mode-video #composerInput{height:34px!important;min-height:34px!important}
  .composer.mode-chat .chat-attachment-list:not([hidden]){max-width:calc(100% - 120px)!important}
 }
@@ -2660,7 +2660,7 @@ function toast(message){
  t.textContent=message;t.classList.add("show");clearTimeout(window.__toast);
  window.__toast=setTimeout(()=>t.classList.remove("show"),2600)
 }
-function syncInput(){const i=$("#composerInput");if(!i)return;const cs=getComputedStyle(i);const lineHeight=Number.parseFloat(cs.lineHeight)||15;const padding=(Number.parseFloat(cs.paddingTop)||0)+(Number.parseFloat(cs.paddingBottom)||0);const minHeight=mode==="chat"?30:Math.ceil(lineHeight+padding);const maxLines=10;const maxHeight=Math.ceil(lineHeight*maxLines+padding);i.style.setProperty("min-height",minHeight+"px","important");i.style.setProperty("max-height",maxHeight+"px","important");i.style.setProperty("height","auto","important");i.style.setProperty("overflow-y","hidden","important");const contentHeight=Math.max(minHeight,i.scrollHeight);const h=Math.min(maxHeight,contentHeight);i.style.setProperty("height",h+"px","important");i.style.setProperty("overflow-y",contentHeight>maxHeight?"auto":"hidden","important");const row=i.closest(".composer-input-row");if(row)row.style.height=""}
+function syncInput(){const i=$("#composerInput");if(!i)return;const cs=getComputedStyle(i);const lineHeight=Number.parseFloat(cs.lineHeight)||15;const padding=(Number.parseFloat(cs.paddingTop)||0)+(Number.parseFloat(cs.paddingBottom)||0);const minHeight=mode==="chat"?34:Math.ceil(lineHeight+padding);const maxLines=10;const maxHeight=Math.ceil(lineHeight*maxLines+padding);i.style.setProperty("min-height",minHeight+"px","important");i.style.setProperty("max-height",maxHeight+"px","important");i.style.setProperty("height","auto","important");i.style.setProperty("overflow-y","hidden","important");const contentHeight=Math.max(minHeight,i.scrollHeight);const h=Math.min(maxHeight,contentHeight);i.style.setProperty("height",h+"px","important");i.style.setProperty("overflow-y",contentHeight>maxHeight?"auto":"hidden","important");const row=i.closest(".composer-input-row");if(row)row.style.height=""}
 function renderAssistantQuoteBlock(){
  const composer=$("#composer");if(!composer)return;
  let block=composer.querySelector(".composer-quote-block");
@@ -6018,7 +6018,7 @@ musicFinalAlignment.textContent += `
   height:auto!important;min-height:0!important;max-height:none!important;
   grid-template-columns:minmax(0,1fr)!important;grid-template-rows:auto 34px auto!important;
   row-gap:5px!important;align-content:start!important;align-items:center!important;
-  padding:6px 10px 4px!important;overflow:visible!important;transform:none!important;contain:none!important;
+  padding:9px 10px 7px!important;overflow:visible!important;transform:none!important;contain:none!important;
 }
 #composer.mode-music .composer-input-row{
   display:contents!important;height:auto!important;min-height:0!important;max-height:none!important;
@@ -6026,8 +6026,8 @@ musicFinalAlignment.textContent += `
 #composer.mode-music #composerInput{
   grid-column:1/-1!important;grid-row:1!important;display:block!important;
   box-sizing:border-box!important;width:100%!important;min-width:0!important;
-  height:auto!important;min-height:30px!important;max-height:none!important;
-  margin:0!important;padding:7px 3px 8px!important;line-height:15px!important;
+  height:auto!important;min-height:34px!important;max-height:none!important;
+  margin:0!important;padding:9px 3px 10px!important;line-height:15px!important;
   align-self:stretch!important;overflow-x:hidden!important;overflow-y:hidden!important;
   resize:none!important;white-space:pre-wrap!important;overflow-wrap:anywhere!important;transform:none!important;
 }
@@ -6091,7 +6091,7 @@ body.light #composer.mode-music .music-options #composerMic:focus-visible{
   transform:translateX(-2px)!important;align-self:center!important;justify-self:center!important;
 }
 @media(max-width:800px){
-  #composer.mode-music{width:100%!important;max-width:100%!important;padding:6px 8px 4px!important}
+  #composer.mode-music{width:100%!important;max-width:100%!important;padding:8px 8px 6px!important}
   #composer.mode-music .music-options{gap:3px!important}
   #composer.mode-music .music-options .music-spacer{min-width:3px!important}
   #composer.mode-music #composerInput{min-height:30px!important}
