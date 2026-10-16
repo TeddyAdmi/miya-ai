@@ -5871,7 +5871,6 @@ body.light #composer.mode-video #composerMic:focus-visible,body.light #composer.
 }
 
 /* Final parity correction: restore readable status text and consistent icon controls. */
-musicFinalAlignment.textContent += `
 #composer.mode-video .composer-status #composerStatus,#composer.mode-music .composer-status #composerStatus,
 #composer.mode-video .composer-status .status-right,#composer.mode-music .composer-status .status-right{
   font-size:11px!important;line-height:1.2!important;
