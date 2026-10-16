@@ -5762,6 +5762,115 @@ musicFinalAlignment.textContent += "/* Content-sized composer stays bottom-ancho
 
 
 
+
+/* Final parity pass: use the accepted Images composer rail measurements verbatim. */
+musicFinalAlignment.textContent += `
+#composer.mode-video,#composer.mode-music{
+  position:relative!important;inset:auto!important;transform:none!important;contain:none!important;
+  box-sizing:border-box!important;flex:0 0 auto!important;flex-basis:auto!important;
+  width:min(900px,calc(100vw - 265px))!important;max-width:900px!important;min-width:0!important;
+  height:auto!important;min-height:0!important;max-height:none!important;margin:0 auto!important;
+  padding:9px 10px 7px!important;grid-template-rows:auto 34px auto!important;
+  row-gap:5px!important;column-gap:8px!important;align-content:start!important;align-items:center!important;
+  overflow:visible!important;
+}
+#composer.mode-video{grid-template-columns:34px auto minmax(0,1fr) 34px 34px!important}
+#composer.mode-music{grid-template-columns:minmax(0,1fr)!important}
+#composer.mode-video .composer-input-row,#composer.mode-music .composer-input-row{display:contents!important}
+#composer.mode-video #composerInput,#composer.mode-music #composerInput{
+  grid-column:1/-1!important;grid-row:1!important;align-self:stretch!important;
+  width:100%!important;min-width:0!important;height:auto!important;min-height:34px!important;max-height:none!important;
+  margin:0!important;padding:9px 3px 10px!important;line-height:15px!important;
+  box-sizing:border-box!important;overflow-y:hidden!important;resize:none!important;transform:none!important;
+}
+#composer.mode-video .composer-status,#composer.mode-music .composer-status{
+  position:static!important;inset:auto!important;grid-column:1/-1!important;grid-row:3!important;
+  align-self:stretch!important;display:flex!important;align-items:center!important;gap:5px!important;
+  width:100%!important;min-width:0!important;height:auto!important;min-height:0!important;max-height:none!important;
+  margin:0!important;padding:2px 2px 0!important;box-sizing:border-box!important;
+  line-height:normal!important;overflow:hidden!important;transform:none!important;white-space:nowrap!important;
+}
+#composer.mode-video .composer-status .status-dot,#composer.mode-music .composer-status .status-dot{
+  position:static!important;align-self:center!important;flex:0 0 6px!important;
+  width:6px!important;height:6px!important;min-width:6px!important;min-height:6px!important;
+  margin:0!important;transform:none!important;
+}
+#composer.mode-video .composer-status #composerStatus,#composer.mode-music .composer-status #composerStatus,
+#composer.mode-video .composer-status .status-right,#composer.mode-music .composer-status .status-right{
+  font-size:6px!important;line-height:normal!important;min-width:0!important;
+  overflow:hidden!important;text-overflow:ellipsis!important;white-space:nowrap!important;
+}
+#composer.mode-video #videoOptions{
+  grid-column:2/4!important;grid-row:2!important;align-self:center!important;justify-self:stretch!important;
+  box-sizing:border-box!important;display:flex!important;align-items:center!important;justify-content:flex-start!important;
+  flex-wrap:nowrap!important;gap:4px!important;min-width:0!important;width:100%!important;max-width:100%!important;
+  height:34px!important;min-height:34px!important;max-height:34px!important;margin:0!important;padding:0!important;
+  overflow-x:auto!important;overflow-y:hidden!important;transform:none!important;
+}
+#composer.mode-video:has(.composer-attachment.has-image) #videoOptions{grid-column:3/4!important}
+#composer.mode-video .composer-left-actions{
+  grid-column:1!important;grid-row:2!important;position:static!important;
+  display:flex!important;align-items:center!important;justify-content:center!important;
+  width:34px!important;height:34px!important;min-width:34px!important;margin:0!important;z-index:5!important;
+}
+#composer.mode-video .composer-attachment.has-image{grid-column:2!important;grid-row:2!important}
+#composer.mode-video #composerMic{grid-column:4!important;grid-row:2!important;justify-self:center!important}
+#composer.mode-video #composerSend{grid-column:5!important;grid-row:2!important;justify-self:center!important}
+#composer.mode-music .music-options{
+  grid-column:1/-1!important;grid-row:2!important;align-self:center!important;
+  box-sizing:border-box!important;display:flex!important;align-items:center!important;justify-content:flex-start!important;
+  flex-wrap:nowrap!important;gap:7px!important;width:100%!important;min-width:0!important;max-width:100%!important;
+  height:34px!important;min-height:34px!important;max-height:34px!important;margin:0!important;padding:0!important;
+  overflow:visible!important;transform:none!important;
+}
+#composer.mode-music .music-options .music-spacer{display:block!important;flex:1 1 auto!important;min-width:7px!important}
+#composer.mode-music .music-options .select-pill{flex:0 1 auto!important;min-width:0!important;max-width:170px!important}
+#composer.mode-music .music-options #composerMic,#composer.mode-music .music-options #composerSend{flex:0 0 34px!important}
+#composer.mode-video #composerMic,#composer.mode-music #composerMic{
+  box-sizing:border-box!important;display:grid!important;place-items:center!important;
+  flex:0 0 34px!important;width:34px!important;min-width:34px!important;max-width:34px!important;
+  height:34px!important;min-height:34px!important;max-height:34px!important;margin:0!important;padding:0!important;
+  border:1px solid transparent!important;border-radius:7px!important;background:transparent!important;
+  color:#9aa9bc!important;box-shadow:none!important;transform:none!important;
+}
+#composer.mode-video #composerMic svg,#composer.mode-music #composerMic svg{
+  display:block!important;width:18px!important;height:18px!important;min-width:18px!important;min-height:18px!important;
+  stroke:currentColor!important;stroke-width:1.8!important;fill:none!important;
+}
+#composer.mode-video #composerMic:hover,#composer.mode-music #composerMic:hover,
+#composer.mode-video #composerMic:focus-visible,#composer.mode-music #composerMic:focus-visible{
+  border:1px solid rgba(145,157,181,.7)!important;border-radius:7px!important;
+  background:rgba(145,157,181,.10)!important;color:#b88cff!important;box-shadow:none!important;transform:none!important;
+}
+body.light #composer.mode-video #composerMic,body.light #composer.mode-music #composerMic{color:#7254d8!important}
+body.light #composer.mode-video #composerMic:hover,body.light #composer.mode-music #composerMic:hover,
+body.light #composer.mode-video #composerMic:focus-visible,body.light #composer.mode-music #composerMic:focus-visible{
+  border-color:rgba(90,76,160,.45)!important;background:rgba(123,97,200,.10)!important;color:#7b61c8!important;
+}
+#composer.mode-video #composerSend,#composer.mode-music #composerSend{
+  box-sizing:border-box!important;display:flex!important;align-items:center!important;justify-content:center!important;
+  flex:0 0 34px!important;width:34px!important;min-width:34px!important;max-width:34px!important;
+  height:34px!important;min-height:34px!important;max-height:34px!important;margin:0!important;padding:0!important;
+  line-height:1!important;
+}
+#composer.mode-video #composerSend .send-icon,#composer.mode-video #composerSend .send-icon svg,
+#composer.mode-music #composerSend .send-icon,#composer.mode-music #composerSend .send-icon svg{
+  display:block!important;width:17px!important;height:17px!important;min-width:17px!important;min-height:17px!important;
+  margin:0!important;padding:0!important;line-height:1!important;transform:none!important;
+}
+.chat-welcome.section-welcome.music-welcome .hero-mark.music .nav-icon.icon-music .miya-music-note-svg{
+  display:block!important;width:22px!important;height:22px!important;margin:0!important;padding:0!important;
+  position:static!important;transform:none!important;align-self:center!important;justify-self:center!important;
+}
+@media(max-width:800px){
+  #composer.mode-video,#composer.mode-music{width:100%!important;max-width:100%!important;padding:9px 8px 7px!important}
+  #composer.mode-video{grid-template-columns:32px auto minmax(0,1fr) 32px 32px!important;column-gap:4px!important}
+  #composer.mode-video #composerMic,#composer.mode-video #composerSend{width:32px!important;min-width:32px!important;max-width:32px!important;flex-basis:32px!important}
+  #composer.mode-music .music-options{gap:3px!important}
+  #composer.mode-music .music-options .music-spacer{min-width:3px!important}
+}
+`;
+
 document.head.appendChild(musicFinalAlignment);
  function nav(parent,ref,mobile){if(!parent||parent.querySelector('[data-mode="music"]'))return;const b=document.createElement("button");b.dataset.mode="music";if(mobile)b.innerHTML='<span class="nav-icon icon-music" aria-hidden="true"><svg class="miya-music-note-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg></span><small>Музыка</small>';else{b.className="side-btn";b.innerHTML='<span class="ico icon-music" aria-hidden="true"><svg class="miya-music-note-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg></span><b>Музыка</b>'}parent.insertBefore(b,ref||null)}
  const sv=document.querySelector('.sidebar [data-mode="voice"]'),mv=document.querySelector('.mobile-tabs [data-mode="voice"]');if(sv)nav(sv.parentElement,sv,false);if(mv)nav(mv.parentElement,mv,true);
