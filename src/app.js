@@ -11,7 +11,27 @@
  .generation-loading:not(.video-generation-loading) .progress-circle .progress-percent{
    font-size:13px!important;line-height:1!important;font-weight:850!important;
  }
- `;
+ 
+/* Precise final pass from Video reference: move only the Music status rail, not the composer shell. */
+#composer.mode-music{padding-bottom:2px!important;grid-template-rows:34px 34px 14px!important;row-gap:2px!important}
+#composer.mode-music .composer-status{transform:translateY(3px)!important}
+#composer.mode-music .composer-status .status-dot,#composer.mode-music .composer-status #composerStatus,#composer.mode-music .composer-status .status-right{transform:none!important;align-self:center!important;line-height:14px!important}
+#composer.mode-music .music-options button.music-tool{border:1px solid transparent!important;border-radius:7px!important;background:transparent!important;box-shadow:none!important}
+#composer.mode-music .music-options button.music-tool:hover,#composer.mode-music .music-options button.music-tool:focus-visible{border-color:rgba(169,124,255,.52)!important;background:rgba(157,112,255,.14)!important;background-color:rgba(157,112,255,.14)!important;color:#b99aff!important;box-shadow:none!important;outline:none!important}
+#composer.mode-music #composerMic{border:0!important;border-color:transparent!important;border-radius:0!important;background:transparent!important;background-color:transparent!important;box-shadow:none!important;outline:none!important}
+#composer.mode-music #composerMic:hover,#composer.mode-music #composerMic:focus-visible{border:0!important;border-color:transparent!important;background:transparent!important;background-color:transparent!important;box-shadow:none!important;color:#b99aff!important;outline:none!important}
+body.light #composer.mode-music .music-options button.music-tool:hover,body.light #composer.mode-music .music-options button.music-tool:focus-visible{border-color:rgba(130,88,220,.42)!important;background:rgba(157,112,255,.14)!important;background-color:rgba(157,112,255,.14)!important;color:#7653c6!important}
+body.light #composer.mode-music #composerMic:hover,body.light #composer.mode-music #composerMic:focus-visible{border:0!important;background:transparent!important;background-color:transparent!important;box-shadow:none!important;color:#7653c6!important}
+#composer.mode-music #composerSend .send-icon{display:grid!important;place-items:center!important;position:relative!important;left:0!important;top:0!important;width:17px!important;height:17px!important;margin:0!important;padding:0!important;transform:none!important}
+#composer.mode-music #composerSend .send-icon::before{display:none!important;content:none!important}
+#composer.mode-music #composerSend .send-icon svg{display:block!important;position:static!important;width:17px!important;height:17px!important;min-width:17px!important;min-height:17px!important;max-width:17px!important;max-height:17px!important;margin:0!important;transform:none!important;stroke:#fff!important;color:#fff!important}
+.chat-welcome.section-welcome.music-welcome .hero-mark.music .icon-music{display:grid!important;place-items:center!important;width:22px!important;height:22px!important;min-width:22px!important;min-height:22px!important;max-width:22px!important;max-height:22px!important;margin:0 auto!important;position:relative!important;top:0!important;left:0!important;transform:none!important}
+.chat-welcome.section-welcome.music-welcome .hero-mark.music .icon-music::before,.chat-welcome.section-welcome.music-welcome .hero-mark.music .icon-music::after{display:none!important;content:none!important;background:none!important;mask-image:none!important;-webkit-mask-image:none!important}
+.chat-welcome.section-welcome.music-welcome .hero-mark.music .miya-music-note-svg{display:block!important;width:22px!important;height:22px!important;min-width:22px!important;min-height:22px!important;max-width:22px!important;max-height:22px!important;margin:0!important;position:static!important;transform:none!important}
+.sidebar .side-btn .ico.icon-music,.mobile-tabs .nav-icon.icon-music{display:flex!important;align-items:center!important;justify-content:center!important;position:relative!important;top:0!important;left:0!important;width:18px!important;height:18px!important;min-width:18px!important;min-height:18px!important;max-width:18px!important;max-height:18px!important;margin:0!important;padding:0!important;transform:none!important;color:inherit!important}
+.sidebar .side-btn .ico.icon-music .miya-music-note-svg,.mobile-tabs .nav-icon.icon-music .miya-music-note-svg{display:block!important;width:18px!important;height:18px!important;min-width:18px!important;min-height:18px!important;max-width:18px!important;max-height:18px!important;margin:0!important;position:static!important;transform:none!important}
+@media(max-width:800px){#composer.mode-music{padding-bottom:2px!important}#composer.mode-music .composer-status{transform:translateY(3px)!important}}
+`;
  document.head.appendChild(st);
 })();
 
