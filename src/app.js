@@ -6280,7 +6280,8 @@ body.light #composer.mode-music .music-options .music-tool:hover,body.light #com
     .miya-music-card-title,.miya-music-card-meta,.miya-music-brand{position:relative!important;z-index:4!important}
     .miya-music-detail-fixed .miya-audio-player{background:transparent!important;border:0!important;outline:0!important;box-shadow:none!important}
     @media(max-width:600px){.miya-audio-volume-wrap,.miya-audio-player.compact .miya-audio-volume-wrap{flex-basis:58px!important;width:58px!important}.miya-audio-volume,.miya-audio-player.compact .miya-audio-volume{width:34px!important;flex-basis:34px!important}}
-   `document.head.appendChild(finalPlayerFix);
+   `;
+  document.head.appendChild(finalPlayerFix);
  })();
  function createMusicPlayer(item,compact){
   const wrap=document.createElement("div");wrap.className="miya-audio-player"+(compact?" compact":"");
