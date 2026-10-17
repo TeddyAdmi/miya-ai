@@ -6246,6 +6246,11 @@ body.light #composer.mode-music .music-options .music-tool:hover,body.light #com
   // and an isolated Aura credit layer above the cover.
   const finalPlayerFix=document.createElement("style");finalPlayerFix.id="miyaMusicPlayerFinalFix";finalPlayerFix.textContent=`
     .miya-audio-player{background:transparent!important;border:0!important;border-radius:18px!important;box-shadow:none!important;backdrop-filter:none!important;-webkit-backdrop-filter:none!important}
+    .miya-music-card-cover{filter:none!important;opacity:1!important;mix-blend-mode:normal!important;backdrop-filter:none!important;-webkit-backdrop-filter:none!important;brightness:1!important}
+    .miya-music-card.has-cover:before{display:none!important;visibility:hidden!important;opacity:0!important;background:transparent!important;filter:none!important;backdrop-filter:none!important;-webkit-backdrop-filter:none!important}
+    .miya-music-card.has-cover{background:transparent!important}
+    .miya-music-card .miya-audio-player{position:relative!important;transform:translateY(7px)!important;align-self:center!important}
+    .miya-music-card .miya-music-brand{transform:translateY(7px)!important}
     .miya-audio-player.compact{background:transparent!important;border:0!important;outline:0!important;box-shadow:none!important;border-radius:18px!important}
     .miya-audio-play,.miya-audio-player.compact .miya-audio-play{border-radius:50%!important;overflow:hidden!important;flex:0 0 34px!important;width:34px!important;height:34px!important;color:#fff!important}
     .miya-audio-play svg,.miya-audio-play svg path{fill:#fff!important;color:#fff!important}
