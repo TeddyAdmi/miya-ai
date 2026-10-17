@@ -6237,7 +6237,7 @@ body.light #composer.mode-music .music-options .music-tool:hover,body.light #com
   if(!lines.length)return {image:"",model:""};
   const excerpt=lines.join("\n");
   const prompt=[
-   "Создай оригинальную квадратную обложку музыкального сингла, соотношение сторон строго 1:1.",
+   "Создай оригинальную горизонтальную обложку музыкального сингла в формате 16:9, как широкая кинематографичная обложка.",
    "Используй следующие строки припева только как смысловое и эмоциональное вдохновение: передай их сюжет, образы и настроение выразительной кинематографичной сценой. Не изображай текст песни буквально.",
    "Первые четыре строки припева:\n"+excerpt,
    "Профессиональная обложка музыкального релиза, выразительная композиция, яркие насыщенные цвета, детализированный главный образ, красивый свет и глубина.",
@@ -6252,7 +6252,7 @@ body.light #composer.mode-music .music-options .music-tool:hover,body.light #com
   try{
    const response=await fetch("/api/agnes-image",{
     method:"POST",headers:{"Content-Type":"application/json","Accept":"application/json"},
-    body:JSON.stringify({prompt,ratio:"1:1",quality:"4K",n:1}),
+    body:JSON.stringify({prompt,ratio:"16:9",quality:"4K",n:1}),
     cache:"no-store",signal:AbortSignal.timeout(65000)
    });
    return {image:await readImage(response),model:"Agnes Image"};
@@ -6262,7 +6262,7 @@ body.light #composer.mode-music .music-options .music-tool:hover,body.light #com
   try{
    const response=await fetch("/api/image",{
     method:"POST",headers:{"Content-Type":"application/json","Accept":"application/json"},
-    body:JSON.stringify({prompt,model:"Flux Dev",ratio:"1:1"}),
+    body:JSON.stringify({prompt,model:"Flux Dev",ratio:"16:9"}),
     cache:"no-store",signal:AbortSignal.timeout(60000)
    });
    return {image:await readImage(response),model:"Flux Dev"};
