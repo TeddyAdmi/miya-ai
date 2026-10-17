@@ -6215,10 +6215,66 @@ body.light #composer.mode-music .music-options .music-tool:hover,body.light #com
  }
  function progress(pct,msg){const b=$m(".miya-music-loading",canvas);if(!b)return;const n=$m(".miya-music-progress-ring span",b),d=$m(".miya-music-loading-detail",b);if(n)n.textContent=Math.round(Math.max(1,Math.min(99,pct)) )+"%";if(d)d.textContent=msg}
  function saveSong(url,lyrics,title,meta,image){const item={id:"music-"+Date.now()+"-"+Math.random().toString(36).slice(2),type:"music",url,image:image||"",prompt:lyrics,model:title||"Новая песня",format:"audio/flac",createdAt:Date.now(),musicMeta:meta};const list=getLibrary();list.unshift(item);try{localStorage.setItem(LIB_KEY,JSON.stringify(list.slice(0,500)))}catch{try{localStorage.setItem(LIB_KEY,JSON.stringify(list.slice(0,100)))}catch{}}}
+ function firstFourChorusLines(lyrics){
+  const raw=String(lyrics||"").replace(/\r/g,"").split("\n");
+  const sections=[];let current=null;
+  const heading=/^\s*\[?\s*(куплет|verse|припев|chorus|бридж|bridge|интро|intro|аутро|outro)\s*(?:\d+)?[^\]]*\]?\s*:?\s*$/i;
+  for(const line of raw){
+   const clean=String(line||"").trim();
+   const match=clean.match(heading);
+   if(match){
+    const kind=/^(припев|chorus)$/i.test(match[1])?"chorus":"other";
+    current={kind,lines:[]};sections.push(current);continue;
+   }
+   if(current&&clean&&!/^(не заменять|не менять|повторить припев)$/i.test(clean))current.lines.push(clean);
+  }
+  const chorus=sections.find(section=>section.kind==="chorus");
+  const chosen=chorus?.lines?.length?chorus.lines:raw.map(line=>String(line||"").trim()).filter(line=>line&&!heading.test(line)&&!/^(не заменять|не менять|повторить припев)$/i.test(line));
+  return chosen.slice(0,4);
+ }
+ async function generateMusicCover(lyrics){
+  const lines=firstFourChorusLines(lyrics);
+  if(!lines.length)return {image:"",model:""};
+  const excerpt=lines.join("\n");
+  const prompt=[
+   "Создай оригинальную квадратную обложку музыкального сингла, соотношение сторон строго 1:1.",
+   "Используй следующие строки припева только как смысловое и эмоциональное вдохновение: передай их сюжет, образы и настроение выразительной кинематографичной сценой. Не изображай текст песни буквально.",
+   "Первые четыре строки припева:\n"+excerpt,
+   "Профессиональная обложка музыкального релиза, выразительная композиция, яркие насыщенные цвета, детализированный главный образ, красивый свет и глубина.",
+   "Не добавляй никаких надписей, букв, цифр, текста песни, логотипов, водяных знаков или рамок. Без коллажа и без макета обложки внутри картинки."
+  ].join("\n\n");
+  const readImage=async response=>{
+   const raw=await response.text();let data={};try{data=raw?JSON.parse(raw):{}}catch{}
+   const image=String(data.imageUrl||(Array.isArray(data.imageUrls)?data.imageUrls[0]:"")||"").trim();
+   if(!response.ok||!/^https?:\/\//i.test(image))throw new Error(String(data.message||data.error||("HTTP "+response.status)+"; "+raw.slice(0,300)));
+   return image;
+  };
+  try{
+   const response=await fetch("/api/agnes-image",{
+    method:"POST",headers:{"Content-Type":"application/json","Accept":"application/json"},
+    body:JSON.stringify({prompt,ratio:"1:1",quality:"4K",n:1}),
+    cache:"no-store",signal:AbortSignal.timeout(65000)
+   });
+   return {image:await readImage(response),model:"Agnes Image"};
+  }catch(error){
+   console.warn("Music cover: Agnes failed; trying Flux Dev.",String(error?.message||error));
+  }
+  try{
+   const response=await fetch("/api/image",{
+    method:"POST",headers:{"Content-Type":"application/json","Accept":"application/json"},
+    body:JSON.stringify({prompt,model:"Flux Dev",ratio:"1:1"}),
+    cache:"no-store",signal:AbortSignal.timeout(60000)
+   });
+   return {image:await readImage(response),model:"Flux Dev"};
+  }catch(error){
+   console.warn("Music cover: Agnes and Flux Dev failed.",String(error?.message||error));
+   return {image:"",model:""};
+  }
+ }
  async function generateMusic(lyrics){
   const finalLyrics=String(lyrics||"").trim();if(busy){toast("Песня уже создаётся. Дождитесь завершения.");return}if(!lyricsApproved&&!(/\[(?:куплет|припев|бридж|интро|аутро)/i.test(finalLyrics)||finalLyrics.split(/\n/).filter(x=>x.trim()).length>=4)){toast("Сначала открой «Создать текст» и подготовь текст песни");openLyrics();return}if(!finalLyrics){toast("Добавь текст песни перед созданием");return}
   busy=true;if(send)send.disabled=true;canvas.innerHTML='<div class="miya-music-loading"><div class="miya-music-progress-ring"><span>1%</span></div><b>Создание песни</b><div class="miya-music-loading-detail">Подключаюсь к Aura…</div></div>';if(status)status.textContent="Создание песни…";const started=Date.now();clearInterval(progressTimer);progressTimer=setInterval(()=>progress(Math.min(94,3+(Date.now()-started)/1000*1.1),"Aura создаёт музыку и вокал…"),1000);
-  try{const occasion=$m("#musicOccasion").value,recipient=$m("#musicRecipient",opts)?.value||"Маме",genre=$m("#musicGenre").value,vocal=$m("#musicVocal").value,title=occasion!=="Своя история"?occasion:(lastTopic||finalLyrics.split("\n").find(x=>x.trim())||"Новая песня").replace(/^\[.*?\]\s*/,"").slice(0,70),payload={lyrics:finalLyrics,recipient,genre,genre_label:genre,style_prompt:genrePrompts[genre]||"",mood:/люб|романт|свадьб/i.test(occasion+" "+lastTopic)?"romantic":"warm",occasion,performer:genrePrompts[genre]||"",vocal,title,instrumental:vocal==="Без слов",tier:"standard"};const r=await fetch("https://aurasoundai.ru/api/generate-song",{method:"POST",mode:"cors",credentials:"omit",headers:{"Content-Type":"application/json","Accept":"application/json"},body:JSON.stringify(payload),cache:"no-store"});const raw=await r.text();let created={};try{created=raw?JSON.parse(raw):{}}catch{}if(!r.ok)throw new Error(created.message||created.error||"Aura song HTTP "+r.status);const id=String(created.task_id||created.taskId||created.id||"");if(!id)throw new Error("Aura не вернула идентификатор задачи");let result=null;for(let i=0;i<120;i++){await new Promise(r=>setTimeout(r,4000));const pr=await fetch("https://aurasoundai.ru/api/task/"+encodeURIComponent(id),{method:"GET",mode:"cors",credentials:"omit",headers:{"Accept":"application/json"},cache:"no-store"});const txt=await pr.text();let state={};try{state=txt?JSON.parse(txt):{}}catch{}if(!pr.ok)throw new Error(state.message||state.error||"Aura status HTTP "+pr.status);const s=String(state.status||state.data?.status||"").toLowerCase();if(["done","completed","success"].includes(s)){result=state;break}if(["error","failed"].includes(s))throw new Error(state.error?.message||state.error||state.message||"Aura не смогла создать песню");progress(Math.min(96,8+(Date.now()-started)/1000*.75),s==="waiting_audio"?"Музыка почти готова…":"Создаю мелодию и вокал…")}clearInterval(progressTimer);progressTimer=0;const url=String(result?.audio_url||result?.audioUrl||result?.result?.audio_url||result?.data?.audio_url||"");if(!/^https:\/\//i.test(url))throw new Error("Aura не успела вернуть аудиофайл");const imageKeys=["image","image_url","imageUrl","cover","cover_url","coverUrl","thumbnail","thumbnail_url","thumbnailUrl","artwork","artwork_url","artworkUrl"];const audioKeys=["audio_url","audioUrl","audio","url"];const findImageForAudio=(node,target,depth=0)=>{if(!node||typeof node!=="object"||depth>8)return "";if(Array.isArray(node)){for(const child of node){const found=findImageForAudio(child,target,depth+1);if(found)return found}return ""}const audioValue=audioKeys.map(k=>node[k]).find(v=>typeof v==="string"&&/^https:\/\//i.test(v));if(audioValue===target){for(const key of imageKeys){const value=node[key];if(typeof value==="string"&&/^https:\/\//i.test(value))return value}}for(const value of Object.values(node)){const found=findImageForAudio(value,target,depth+1);if(found)return found}return ""};const image=findImageForAudio(result,url);progress(99,"Сохраняю готовую песню…");saveSong(url,finalLyrics,String(result?.title||result?.result?.title||title),{genre,occasion,recipient,vocal,taskId:id},image);lyricsApproved=false;input.value="";syncInput();if(status)status.textContent="Песня готова";toast("Песня создана и добавлена на стену");renderWall()
+  try{const occasion=$m("#musicOccasion").value,recipient=$m("#musicRecipient",opts)?.value||"Маме",genre=$m("#musicGenre").value,vocal=$m("#musicVocal").value,title=occasion!=="Своя история"?occasion:(lastTopic||finalLyrics.split("\n").find(x=>x.trim())||"Новая песня").replace(/^\[.*?\]\s*/,"").slice(0,70),payload={lyrics:finalLyrics,recipient,genre,genre_label:genre,style_prompt:genrePrompts[genre]||"",mood:/люб|романт|свадьб/i.test(occasion+" "+lastTopic)?"romantic":"warm",occasion,performer:genrePrompts[genre]||"",vocal,title,instrumental:vocal==="Без слов",tier:"standard"};const coverPromise=generateMusicCover(finalLyrics);const r=await fetch("https://aurasoundai.ru/api/generate-song",{method:"POST",mode:"cors",credentials:"omit",headers:{"Content-Type":"application/json","Accept":"application/json"},body:JSON.stringify(payload),cache:"no-store"});const raw=await r.text();let created={};try{created=raw?JSON.parse(raw):{}}catch{}if(!r.ok)throw new Error(created.message||created.error||"Aura song HTTP "+r.status);const id=String(created.task_id||created.taskId||created.id||"");if(!id)throw new Error("Aura не вернула идентификатор задачи");let result=null;for(let i=0;i<120;i++){await new Promise(r=>setTimeout(r,4000));const pr=await fetch("https://aurasoundai.ru/api/task/"+encodeURIComponent(id),{method:"GET",mode:"cors",credentials:"omit",headers:{"Accept":"application/json"},cache:"no-store"});const txt=await pr.text();let state={};try{state=txt?JSON.parse(txt):{}}catch{}if(!pr.ok)throw new Error(state.message||state.error||"Aura status HTTP "+pr.status);const s=String(state.status||state.data?.status||"").toLowerCase();if(["done","completed","success"].includes(s)){result=state;break}if(["error","failed"].includes(s))throw new Error(state.error?.message||state.error||state.message||"Aura не смогла создать песню");progress(Math.min(96,8+(Date.now()-started)/1000*.75),s==="waiting_audio"?"Музыка почти готова…":"Создаю мелодию и вокал…")}clearInterval(progressTimer);progressTimer=0;const url=String(result?.audio_url||result?.audioUrl||result?.result?.audio_url||result?.data?.audio_url||"");if(!/^https:\/\//i.test(url))throw new Error("Aura не успела вернуть аудиофайл");const cover=await coverPromise;const image=cover.image;progress(99,"Сохраняю готовую песню…");saveSong(url,finalLyrics,String(result?.title||result?.result?.title||title),{genre,occasion,recipient,vocal,taskId:id,coverModel:cover.model||""},image);lyricsApproved=false;input.value="";syncInput();if(status)status.textContent="Песня готова";toast(image?("Песня создана, обложка готова · "+cover.model):"Песня создана, но обложку не удалось создать");renderWall()
   }catch(e){console.error("Aura song failed",e);clearInterval(progressTimer);progressTimer=0;canvas.innerHTML="";const wrap=document.createElement("div");wrap.className="miya-music-empty";const inner=document.createElement("div"),h=document.createElement("h2"),p=document.createElement("p"),a=document.createElement("a");h.textContent="Не удалось создать песню";p.textContent=/Failed to fetch|NetworkError|CORS|fetch/i.test(String(e?.message||""))?"Браузер не смог обратиться к Aura из Miya. Открой Aura напрямую или подключи официальный API Aura для внешних приложений.":String(e?.message||"Ошибка Aura");a.href="https://aurasoundai.ru/";a.target="_blank";a.rel="noopener noreferrer";a.textContent="Открыть Aura AI";a.style.color="#a98bff";inner.append(h,p,a);wrap.appendChild(inner);canvas.appendChild(wrap);if(status)status.textContent="Не удалось создать песню";toast("Не удалось создать песню")}
   finally{clearInterval(progressTimer);progressTimer=0;busy=false;if(send)send.disabled=false}
  }
