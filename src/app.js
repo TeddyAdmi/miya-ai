@@ -6245,25 +6245,42 @@ body.light #composer.mode-music .music-options .music-tool:hover,body.light #com
   // Final player/card corrections: visible horizontal volume, circular play control,
   // and an isolated Aura credit layer above the cover.
   const finalPlayerFix=document.createElement("style");finalPlayerFix.id="miyaMusicPlayerFinalFix";finalPlayerFix.textContent=`
-   .miya-audio-player{background:transparent!important;border:0!important;border-radius:18px!important;box-shadow:none!important;backdrop-filter:none!important;-webkit-backdrop-filter:none!important}
-   .miya-audio-player.compact{background:rgba(18,22,38,.18)!important;border:1px solid rgba(255,255,255,.18)!important;border-radius:18px!important}
-   .miya-audio-play,.miya-audio-player.compact .miya-audio-play{border-radius:50%!important;overflow:hidden!important;flex:0 0 34px!important;width:34px!important;height:34px!important}
-   .miya-audio-volume-wrap,.miya-audio-player.compact .miya-audio-volume-wrap{position:relative!important;display:flex!important;flex:0 0 70px!important;width:70px!important;height:28px!important;align-items:center!important;justify-content:flex-end!important;gap:6px!important;overflow:visible!important}
-   .miya-audio-volume-wrap svg{position:static!important;flex:0 0 15px!important;width:15px!important;height:15px!important;opacity:.95!important}
-   .miya-audio-volume,.miya-audio-player.compact .miya-audio-volume{position:static!important;display:block!important;opacity:1!important;pointer-events:auto!important;transform:none!important;transform-origin:center!important;width:42px!important;height:16px!important;flex:0 0 42px!important;margin:0!important;accent-color:#a77af7!important;cursor:pointer!important;background:transparent!important}
-   .miya-audio-volume::-webkit-slider-runnable-track{height:4px!important;background:linear-gradient(to right,#a77af7 0%,#a77af7 var(--volume-level,90%),rgba(210,215,230,.7) var(--volume-level,90%),rgba(210,215,230,.7) 100%)!important;border-radius:4px!important}
-   .miya-audio-volume::-moz-range-track{height:4px!important;background:rgba(210,215,230,.7)!important;border-radius:4px!important}
-   .miya-audio-volume::-moz-range-progress{height:4px!important;background:#a77af7!important;border-radius:4px!important}
-   .miya-audio-volume::-webkit-slider-thumb{-webkit-appearance:none!important;width:13px!important;height:13px!important;margin-top:-4.5px!important;border:1px solid #6f4ac5!important;border-radius:4px!important;background:#a77af7!important;box-shadow:0 0 0 2px rgba(167,122,247,.15)!important}
-   .miya-audio-volume::-moz-range-thumb{width:13px!important;height:13px!important;border:1px solid #6f4ac5!important;border-radius:4px!important;background:#a77af7!important}
-   .miya-music-card.has-cover:before{pointer-events:none!important;z-index:1!important}
-   .miya-music-card-cover{z-index:0!important}
-   .miya-music-card-title,.miya-music-card-meta,.miya-music-brand{position:relative!important;z-index:4!important}
-   .miya-music-brand{display:inline-flex!important;align-items:center!important;justify-self:start!important;width:max-content!important;max-width:100%!important;padding:4px 8px!important;border-radius:7px!important;background:rgba(8,10,20,.62)!important;color:#fff!important;text-shadow:none!important;opacity:1!important;isolation:isolate!important}
-   .miya-music-brand a{color:#fff!important;text-decoration:underline!important;text-underline-offset:2px!important}
-   .miya-music-detail-fixed .miya-audio-player{background:rgba(18,22,38,.18)!important;border:1px solid rgba(255,255,255,.18)!important;border-radius:18px!important}
-   @media(max-width:600px){.miya-audio-volume-wrap,.miya-audio-player.compact .miya-audio-volume-wrap{flex-basis:58px!important;width:58px!important}.miya-audio-volume,.miya-audio-player.compact .miya-audio-volume{width:34px!important;flex-basis:34px!important}}
-  `;document.head.appendChild(finalPlayerFix);
+    .miya-audio-player{background:transparent!important;border:0!important;border-radius:18px!important;box-shadow:none!important;backdrop-filter:none!important;-webkit-backdrop-filter:none!important}
+    .miya-audio-player.compact{background:transparent!important;border:0!important;outline:0!important;box-shadow:none!important;border-radius:18px!important}
+    .miya-audio-play,.miya-audio-player.compact .miya-audio-play{border-radius:50%!important;overflow:hidden!important;flex:0 0 34px!important;width:34px!important;height:34px!important;color:#fff!important}
+    .miya-audio-play svg,.miya-audio-play svg path{fill:#fff!important;color:#fff!important}
+    .miya-audio-body{align-self:center!important;transform:translateY(3px)!important}
+    .miya-audio-track-area{top:3px!important;height:30px!important;overflow:visible!important}
+    .miya-audio-wave{opacity:0!important;visibility:hidden!important}
+    .miya-audio-player.is-started .miya-audio-wave{opacity:.82!important;visibility:visible!important}
+    .miya-audio-player.is-started .miya-audio-wave i:before,.miya-audio-player.is-started .miya-audio-wave i:after{opacity:1!important}
+    .miya-audio-progress{top:50%!important;transform:translateY(-50%)!important}
+    .miya-audio-progress::-webkit-slider-runnable-track{height:3px!important;background:linear-gradient(to right,#eee 0%,#eee var(--audio-progress,0%),rgba(160,160,180,.68) var(--audio-progress,0%),rgba(160,160,180,.68) 100%)!important;border-radius:3px!important}
+    .miya-audio-progress::-moz-range-track{height:3px!important;background:rgba(160,160,180,.68)!important;border-radius:3px!important}
+    .miya-audio-progress::-moz-range-progress{height:3px!important;background:#eee!important;border-radius:3px!important}
+    .miya-audio-progress::-webkit-slider-thumb{-webkit-appearance:none!important;width:5px!important;height:5px!important;margin-top:-1px!important;border-radius:50%!important;background:#fff!important;border:0!important;box-shadow:0 0 0 1px rgba(255,255,255,.28)!important}
+    .miya-audio-progress::-moz-range-thumb{width:5px!important;height:5px!important;border-radius:50%!important;background:#fff!important;border:0!important}
+    .miya-audio-volume-wrap,.miya-audio-player.compact .miya-audio-volume-wrap{position:relative!important;display:flex!important;flex:0 0 70px!important;width:70px!important;height:28px!important;align-items:center!important;justify-content:flex-end!important;gap:6px!important;overflow:visible!important}
+    .miya-audio-volume-wrap svg{position:static!important;flex:0 0 15px!important;width:15px!important;height:15px!important;opacity:.95!important}
+    .miya-audio-volume,.miya-audio-player.compact .miya-audio-volume{position:static!important;display:block!important;opacity:1!important;pointer-events:auto!important;transform:none!important;width:42px!important;height:16px!important;flex:0 0 42px!important;margin:0!important;accent-color:#a77af7!important;cursor:pointer!important;background:transparent!important}
+    .miya-audio-volume::-webkit-slider-runnable-track{height:3px!important;background:rgba(210,215,230,.7)!important;border-radius:3px!important}
+    .miya-audio-volume::-moz-range-track{height:3px!important;background:rgba(210,215,230,.7)!important;border-radius:3px!important}
+    .miya-audio-volume::-moz-range-progress{height:3px!important;background:#a77af7!important;border-radius:3px!important}
+    .miya-audio-volume::-webkit-slider-thumb{-webkit-appearance:none!important;width:6px!important;height:6px!important;margin-top:-1.5px!important;border:0!important;border-radius:50%!important;background:#fff!important;box-shadow:none!important}
+    .miya-audio-volume::-moz-range-thumb{width:6px!important;height:6px!important;border:0!important;border-radius:50%!important;background:#fff!important}
+    .miya-music-card{padding-top:10px!important;padding-bottom:8px!important}
+    .miya-music-card-title{margin-top:0!important;margin-bottom:3px!important;line-height:1.15!important}
+    .miya-music-card-meta{margin-top:0!important;margin-bottom:0!important;line-height:1.15!important}
+    .miya-music-card .miya-audio-player{margin-top:auto!important;margin-bottom:0!important;padding-bottom:0!important}
+    .miya-music-card .miya-music-brand{margin-top:0!important;margin-bottom:0!important;padding:2px 6px!important;line-height:1.1!important}
+    .miya-music-brand{display:inline-flex!important;align-items:center!important;justify-self:start!important;width:max-content!important;max-width:100%!important;border-radius:7px!important;background:rgba(8,10,20,.62)!important;color:#fff!important;text-shadow:none!important;opacity:1!important;isolation:isolate!important}
+    .miya-music-brand a{color:#fff!important;text-decoration:underline!important;text-underline-offset:2px!important}
+    .miya-music-card.has-cover:before{pointer-events:none!important;z-index:1!important}
+    .miya-music-card-cover{z-index:0!important}
+    .miya-music-card-title,.miya-music-card-meta,.miya-music-brand{position:relative!important;z-index:4!important}
+    .miya-music-detail-fixed .miya-audio-player{background:transparent!important;border:0!important;outline:0!important;box-shadow:none!important}
+    @media(max-width:600px){.miya-audio-volume-wrap,.miya-audio-player.compact .miya-audio-volume-wrap{flex-basis:58px!important;width:58px!important}.miya-audio-volume,.miya-audio-player.compact .miya-audio-volume{width:34px!important;flex-basis:34px!important}}
+   `document.head.appendChild(finalPlayerFix);
  })();
  function createMusicPlayer(item,compact){
   const wrap=document.createElement("div");wrap.className="miya-audio-player"+(compact?" compact":"");
@@ -6283,7 +6300,7 @@ body.light #composer.mode-music .music-options .music-tool:hover,body.light #com
   const volume=document.createElement("input");volume.type="range";volume.className="miya-audio-volume";volume.min="0";volume.max="100";volume.value="90";volume.setAttribute("aria-label","Громкость");volumeWrap.appendChild(volume);
   wrap.append(audio,play,body,volumeWrap);
   const fmt=n=>{if(!Number.isFinite(n)||n<0)return"0:00";return Math.floor(n/60)+":"+String(Math.floor(n%60)).padStart(2,"0")};
-  const sync=()=>{current.textContent=fmt(audio.currentTime);total.textContent=fmt(audio.duration);const ratio=audio.duration?audio.currentTime/audio.duration:0;track.value=String(Math.round(ratio*1000));wrap.style.setProperty("--audio-progress",(ratio*100)+"%");bars.forEach((bar,i)=>bar.classList.toggle("played",i/bars.length<=ratio));wrap.classList.toggle("is-playing",!audio.paused);play.innerHTML=audio.paused?'<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5.5v13l10-6.5z"/></svg>':'<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 5h4v14H7zM15 5h4v14h-4z"/></svg>';play.setAttribute("aria-label",audio.paused?"Воспроизвести":"Пауза")};
+  const sync=()=>{if(audio.currentTime>0||!audio.paused||audio.ended)wrap.classList.add("is-started");current.textContent=fmt(audio.currentTime);total.textContent=fmt(audio.duration);const ratio=audio.duration?audio.currentTime/audio.duration:0;track.value=String(Math.round(ratio*1000));wrap.style.setProperty("--audio-progress",(ratio*100)+"%");bars.forEach((bar,i)=>bar.classList.toggle("played",i/bars.length<=ratio));wrap.classList.toggle("is-playing",!audio.paused);play.innerHTML=audio.paused?'<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5.5v13l10-6.5z"/></svg>':'<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 5h4v14H7zM15 5h4v14h-4z"/></svg>';play.setAttribute("aria-label",audio.paused?"Воспроизвести":"Пауза")};
   play.addEventListener("click",async e=>{e.stopPropagation();try{if(audio.paused){if(compact){if(activeWallAudio&&activeWallAudio!==audio)activeWallAudio.pause();activeWallAudio=audio}if(audio.ended)audio.currentTime=0;await audio.play()}else audio.pause()}catch{if(activeWallAudio===audio)activeWallAudio=null}});
   track.addEventListener("input",()=>{if(Number.isFinite(audio.duration)&&audio.duration>0)audio.currentTime=audio.duration*(Number(track.value)/1000)});
   volume.addEventListener("input",()=>{audio.volume=Number(volume.value)/100;volumeWrap.style.setProperty("--volume-level",volume.value+"%")});
