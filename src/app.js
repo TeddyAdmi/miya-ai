@@ -6250,7 +6250,8 @@ body.light #composer.mode-music .music-options .music-tool:hover,body.light #com
     .miya-audio-play,.miya-audio-player.compact .miya-audio-play{border-radius:50%!important;overflow:hidden!important;flex:0 0 34px!important;width:34px!important;height:34px!important;color:#fff!important}
     .miya-audio-play svg,.miya-audio-play svg path{fill:#fff!important;color:#fff!important}
     .miya-audio-body{align-self:center!important;transform:translateY(3px)!important}
-    .miya-audio-track-area{top:7px!important;height:30px!important;overflow:visible!important}
+    .miya-audio-track-area{top:4px!important;height:30px!important;overflow:visible!important}
+    .miya-audio-wave{top:3px!important;height:24px!important}
     .miya-audio-wave{opacity:0!important;visibility:hidden!important}
     .miya-audio-player.is-started .miya-audio-wave{opacity:.82!important;visibility:visible!important}
     .miya-audio-player.is-started .miya-audio-wave i:before,.miya-audio-player.is-started .miya-audio-wave i:after{opacity:1!important}
