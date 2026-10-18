@@ -15,6 +15,27 @@ module.exports = async function handler(req, res) {
     }
 
     const target = new URL(rawUrl);
+    if (String(req.query?.audio || "") === "1") {
+      if (target.protocol !== "https:") return res.status(400).json({ ok: false, error: "HTTPS_REQUIRED" });
+      const audioHost = target.hostname.toLowerCase();
+      const audioAllowed = audioHost === "aurasoundai.ru" || audioHost.endsWith(".aurasoundai.ru") || audioHost === "overchat.s3.eu-north-1.amazonaws.com" || audioHost === "s3.amazonaws.com" || /^s3[.-][a-z0-9-]+\.amazonaws\.com$/.test(audioHost) || /^[a-z0-9.-]+\.s3\.amazonaws\.com$/.test(audioHost) || /^[a-z0-9.-]+\.r2\.dev$/.test(audioHost);
+      if (!audioAllowed) return res.status(403).json({ ok: false, error: "AUDIO_HOST_NOT_ALLOWED" });
+      const upstreamAudio = await fetch(target.toString(), { headers: { Accept: "audio/*,application/octet-stream;q=0.9,*/*;q=0.5" }, signal: AbortSignal.timeout(25000) });
+      if (!upstreamAudio.ok) return res.status(upstreamAudio.status).json({ ok: false, error: "UPSTREAM_AUDIO_HTTP", status: upstreamAudio.status });
+      const audioType = String(upstreamAudio.headers.get("content-type") || "application/octet-stream").split(";")[0].toLowerCase();
+      if (!(audioType.startsWith("audio/") || audioType === "application/octet-stream" || audioType === "binary/octet-stream")) return res.status(415).json({ ok: false, error: "UPSTREAM_NOT_AUDIO" });
+      const length = Number(upstreamAudio.headers.get("content-length") || 0);
+      if (length > 100 * 1024 * 1024) return res.status(413).json({ ok: false, error: "AUDIO_TOO_LARGE" });
+      const audioBytes = Buffer.from(await upstreamAudio.arrayBuffer());
+      if (!audioBytes.length || audioBytes.length > 100 * 1024 * 1024) return res.status(413).json({ ok: false, error: "AUDIO_TOO_LARGE" });
+      const requestedName = typeof req.query?.filename === "string" ? req.query.filename : "miya-song.mp3";
+      const filename = requestedName.replace(/[^a-zA-Z0-9._ -]/g, "_").slice(0, 120) || "miya-song.mp3";
+      res.setHeader("Cache-Control", "no-store");
+      res.setHeader("Content-Type", audioType);
+      res.setHeader("Content-Length", String(audioBytes.length));
+      res.setHeader("Content-Disposition", 'attachment; filename="' + filename.replace(/["\\]/g, "_") + '"');
+      return res.status(200).send(audioBytes);
+    }
     const requestedRatio = String(req.query?.ratio || "").trim();
     const ratioMatch = requestedRatio.match(/^(\d+):(\d+)$/);
     let targetRatio = 0;
