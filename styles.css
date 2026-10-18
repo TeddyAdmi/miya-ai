@@ -4041,3 +4041,8 @@ body.light .media-action.media-more svg circle{r:1.5px!important}
 .miya-music-card.has-cover:not(.cover-loaded):before{content:"";display:block;position:absolute;inset:0;pointer-events:none;background:linear-gradient(135deg,rgba(34,48,70,.20),rgba(8,14,26,.10))}
 body.light .miya-music-wall .miya-music-card,body.light .library-music-wall .miya-music-card{background-color:#e9edf5!important;background-image:linear-gradient(135deg,#dce5f0 0%,#edf1f7 55%,#d6dfeb 100%)!important}
 body.light .miya-music-brand a{color:#7152dc!important}
+
+
+/* Final audio-player alignment: raise the progress axis and volume slider slightly so their centerlines meet the play-circle and speaker-icon centers. */
+.voice-player-track{transform:translateY(-2px)!important}
+.voice-player-volume-wrap input[type="range"]{transform:translateY(-2px)!important}
