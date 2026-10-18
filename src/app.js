@@ -6310,7 +6310,7 @@ body.light #composer.mode-music .music-options .music-tool:hover,body.light #com
  })();
  function createMusicPlayer(item,compact){
   const wrap=document.createElement("div");wrap.className="miya-audio-player"+(compact?" compact":"");
-  const songKey=String(item.id);let audio=audioBySong.get(songKey);if(!audio){audio=new Audio();audio.preload="auto";audio.src=item.url;audio.setAttribute("aria-label","Аудиоплеер песни");audio.volume=.9;audioBySong.set(songKey,audio)}
+  const songKey=String(item.id);let audio=audioBySong.get(songKey);if(!audio){audio=new Audio();audio.preload="auto";audio.crossOrigin="anonymous";audio.src=item.url;audio.setAttribute("aria-label","Аудиоплеер песни");audio.volume=1;audioBySong.set(songKey,audio)}
   const play=document.createElement("button");play.type="button";play.className="miya-audio-play";play.setAttribute("aria-label","Воспроизвести");play.innerHTML='<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5.5v13l10-6.5z"/></svg>';
   const body=document.createElement("div");body.className="miya-audio-body";
   const trackArea=document.createElement("div");trackArea.className="miya-audio-track-area";
@@ -6318,6 +6318,25 @@ body.light #composer.mode-music .music-options .music-tool:hover,body.light #com
   const heights=Array.from({length:128},(_,i)=>Math.max(2,Math.round(7+Math.abs(Math.sin(i*1.73)*Math.cos(i*.37))*16)));
   const bars=[];heights.forEach((h,i)=>{const bar=document.createElement("i");bar.style.setProperty("--bar-h",h+"%");bar.style.setProperty("--bar-index",String(i));wave.appendChild(bar);bars.push(bar)});
   let waveformPreparation=null;
+  let liveAnalyser=null,liveSource=null,liveAudioContext=null,liveFrequencyData=null,liveWaveFrame=0;
+  const startLiveSpectrum=async()=>{
+   if(liveAnalyser||!bars.length)return;
+   try{
+    const AC=window.AudioContext||window.webkitAudioContext;if(!AC)return;
+    liveAudioContext=new AC();await liveAudioContext.resume();
+    liveSource=liveAudioContext.createMediaElementSource(audio);
+    liveAnalyser=liveAudioContext.createAnalyser();liveAnalyser.fftSize=512;liveAnalyser.smoothingTimeConstant=.78;
+    liveSource.connect(liveAnalyser);liveAnalyser.connect(liveAudioContext.destination);
+    liveFrequencyData=new Uint8Array(liveAnalyser.frequencyBinCount);
+    const animate=()=>{
+     if(!liveAnalyser||audio.paused||audio.ended){liveWaveFrame=0;return}
+     liveAnalyser.getByteFrequencyData(liveFrequencyData);
+     const count=bars.length,nyquist=liveAudioContext.sampleRate/2;
+     bars.forEach((bar,i)=>{const pos=i/Math.max(1,count-1);const f=45*Math.pow(15000/45,pos);const bin=Math.max(0,Math.min(liveFrequencyData.length-1,Math.round(f/nyquist*liveFrequencyData.length)));const magnitude=liveFrequencyData[bin]/255;bar.style.setProperty("--bar-h",Math.max(4,Math.min(96,Math.round(4+magnitude*92)))+"%")});
+     liveWaveFrame=requestAnimationFrame(animate);
+    };animate();
+   }catch{}
+  };
   const prepareSongWaveform=()=>{
    if(waveformPreparation)return waveformPreparation;
    waveformPreparation=(async()=>{
@@ -6351,15 +6370,15 @@ body.light #composer.mode-music .music-options .music-tool:hover,body.light #com
   body.append(trackArea,times);
   const volumeWrap=document.createElement("div");volumeWrap.className="miya-audio-volume-wrap";volumeWrap.title="Громкость";
   const muteButton=document.createElement("button");muteButton.type="button";muteButton.className="miya-audio-mute";muteButton.setAttribute("aria-label","Выключить звук");muteButton.setAttribute("aria-pressed","false");muteButton.innerHTML='<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9v6h4l5 4V5L8 9H4z"/><path d="M16 9a5 5 0 0 1 0 6M18.5 6.5a8.5 8.5 0 0 1 0 11"/></svg>';
-  const volume=document.createElement("input");volume.type="range";volume.className="miya-audio-volume";volume.min="0";volume.max="100";volume.value="90";volume.setAttribute("aria-label","Громкость");volumeWrap.append(muteButton,volume);
+  const volume=document.createElement("input");volume.type="range";volume.className="miya-audio-volume";volume.min="0";volume.max="100";volume.value=String(Math.round(audio.volume*100));volume.setAttribute("aria-label","Громкость");volumeWrap.append(muteButton,volume);
   wrap.append(play,body,volumeWrap);
   const fmt=n=>{if(!Number.isFinite(n)||n<0)return"0:00";return Math.floor(n/60)+":"+String(Math.floor(n%60)).padStart(2,"0")};
   const sync=()=>{if(audio.currentTime>0||!audio.paused||audio.ended)wrap.classList.add("is-started");current.textContent=fmt(audio.currentTime);total.textContent=fmt(audio.duration);const ratio=audio.duration?audio.currentTime/audio.duration:0;track.value=String(Math.round(ratio*1000));wrap.style.setProperty("--audio-progress",(ratio*100)+"%");bars.forEach((bar,i)=>bar.classList.toggle("played",i/bars.length<=ratio));wrap.classList.toggle("is-playing",!audio.paused);wrap.classList.toggle("has-waveform",!audio.paused);const muted=audio.muted||audio.volume===0;muteButton.classList.toggle("is-muted",muted);muteButton.setAttribute("aria-pressed",String(muted));muteButton.setAttribute("aria-label",muted?"Включить звук":"Выключить звук");muteButton.innerHTML=muted?'<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9v6h4l5 4V5L8 9H4z"/><path d="m16 9 5 6m0-6-5 6"/></svg>':'<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9v6h4l5 4V5L8 9H4z"/><path d="M16 9a5 5 0 0 1 0 6M18.5 6.5a8.5 8.5 0 0 1 0 11"/></svg>';play.innerHTML=audio.paused?'<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5.5v13l10-6.5z"/></svg>':'<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 5h4v14H6zM14 5h4v14h-4z"/></svg>';play.setAttribute("aria-label",audio.paused?"Воспроизвести":"Пауза")};
-  play.addEventListener("click",async e=>{e.stopPropagation();try{if(audio.paused){for(const other of audioBySong.values())if(other!==audio&&!other.paused){other.pause();other.currentTime=0}activeWallAudio=audio;wrap.classList.add("has-waveform");prepareSongWaveform();if(audio.ended)audio.currentTime=0;await audio.play()}else audio.pause()}catch{if(activeWallAudio===audio)activeWallAudio=null}});
+  let playRequestPending=false;play.addEventListener("click",async e=>{e.preventDefault();e.stopPropagation();if(playRequestPending)return;try{if(audio.paused){playRequestPending=true;for(const other of audioBySong.values())if(other!==audio){if(!other.paused)other.pause();if(other.currentTime>0){try{other.currentTime=0}catch{}}}activeWallAudio=audio;wrap.classList.add("has-waveform");if(audio.ended)audio.currentTime=0;const startPromise=audio.play();prepareSongWaveform();startLiveSpectrum();await startPromise;sync()}else{audio.pause();sync()}}catch(err){if(activeWallAudio===audio)activeWallAudio=null;wrap.classList.remove("is-playing");sync()}finally{playRequestPending=false}});
   const seekFromPointer=e=>{if(!Number.isFinite(audio.duration)||audio.duration<=0)return;const rect=track.getBoundingClientRect();if(!rect.width)return;const ratio=Math.max(0,Math.min(1,(e.clientX-rect.left)/rect.width));audio.currentTime=audio.duration*ratio;track.value=String(Math.round(ratio*1000));wrap.style.setProperty("--audio-progress",(ratio*100)+"%");sync()};track.addEventListener("input",()=>{if(Number.isFinite(audio.duration)&&audio.duration>0)audio.currentTime=audio.duration*(Number(track.value)/1000)});track.addEventListener("pointerdown",e=>{if(e.button!==0)return;seekFromPointer(e)});
-  volume.addEventListener("input",()=>{audio.volume=Number(volume.value)/100;audio.muted=false;volumeWrap.style.setProperty("--volume-level",volume.value+"%");sync()});muteButton.addEventListener("click",e=>{e.preventDefault();e.stopPropagation();if(!audio.muted&&audio.volume>0){wrap.dataset.miyaLastVolume=String(audio.volume);audio.muted=true;volume.value="0";volumeWrap.style.setProperty("--volume-level","0%")}else{const restore=Math.max(.01,Math.min(1,Number(wrap.dataset.miyaLastVolume)||.9));audio.volume=restore;audio.muted=false;volume.value=String(Math.round(restore*100));volumeWrap.style.setProperty("--volume-level",volume.value+"%")}sync()});
+  volume.addEventListener("input",()=>{audio.volume=Number(volume.value)/100;audio.muted=false;volumeWrap.style.setProperty("--volume-level",volume.value+"%");sync()});muteButton.addEventListener("click",e=>{e.preventDefault();e.stopPropagation();if(!audio.muted&&audio.volume>0){audio.muted=true;audio.volume=0;volume.value="0";volumeWrap.style.setProperty("--volume-level","0%")}else{audio.muted=false;audio.volume=1;volume.value="100";volumeWrap.style.setProperty("--volume-level","100%")}sync()});
   ["loadedmetadata","durationchange","timeupdate","play","pause","ended"].forEach(ev=>audio.addEventListener(ev,sync));
-  audio.addEventListener("pause",()=>{if(activeWallAudio===audio)activeWallAudio=null});
+  audio.addEventListener("pause",()=>{if(activeWallAudio===audio)activeWallAudio=null;if(liveWaveFrame)cancelAnimationFrame(liveWaveFrame);liveWaveFrame=0});
   audio.addEventListener("ended",()=>{if(activeWallAudio===audio)activeWallAudio=null});
   wrap.__miyaAudio=audio;wrap.__miyaSync=sync;wrap.addEventListener("click",e=>e.stopPropagation());sync();return wrap;
  }
@@ -6925,4 +6944,18 @@ document.head.appendChild(musicCardPolish);const oldHero=modeHero;modeHero=funct
  }
  `;
  document.head.appendChild(st);
+})();
+
+/* Force the seek track lower; override compact-player positioning rules. */
+(function miyaMusicSpectrumAxisFinal(){
+ if(document.getElementById("miyaMusicSpectrumAxisFinal"))return;
+ const st=document.createElement("style");st.id="miyaMusicSpectrumAxisFinal";
+ st.textContent=[
+ ".miya-music-wall .miya-music-card .miya-audio-player.compact .miya-audio-body .miya-audio-track-area,.library-music-wall .miya-music-card .miya-audio-player.compact .miya-audio-body .miya-audio-track-area{position:relative!important;top:3px!important;left:-23px!important;right:-19px!important;width:calc(100% + 42px)!important;height:30px!important;min-height:30px!important;transform:none!important;overflow:visible!important}",
+ ".miya-music-wall .miya-music-card .miya-audio-player.compact .miya-audio-body .miya-audio-track-area .miya-audio-progress,.library-music-wall .miya-music-card .miya-audio-player.compact .miya-audio-body .miya-audio-track-area .miya-audio-progress{position:absolute!important;top:50%!important;left:0!important;right:0!important;transform:translateY(-50%)!important;z-index:6!important}",
+ ".miya-music-wall .miya-music-card .miya-audio-player.compact .miya-audio-body .miya-audio-track-area .miya-audio-wave,.library-music-wall .miya-music-card .miya-audio-player.compact .miya-audio-body .miya-audio-track-area .miya-audio-wave{position:absolute!important;inset:0!important;width:100%!important;height:30px!important;transform:none!important;align-items:center!important;gap:1px!important}",
+ ".miya-music-wall .miya-music-card .miya-audio-wave i,.library-music-wall .miya-music-card .miya-audio-wave i{max-width:2px!important;min-width:1px!important;flex:1 1 1px!important}",
+ ".miya-music-wall .miya-music-card .miya-audio-wave i:before,.miya-music-wall .miya-music-card .miya-audio-wave i:after,.library-music-wall .miya-music-card .miya-audio-wave i:before,.library-music-wall .miya-music-card .miya-audio-wave i:after{left:0!important;right:0!important;max-height:48%!important;border-radius:1px!important}",
+ ".miya-music-wall .miya-music-card .miya-audio-volume-wrap,.library-music-wall .miya-music-card .miya-audio-volume-wrap{align-self:center!important}"
+ ].join("");document.head.appendChild(st);
 })();
