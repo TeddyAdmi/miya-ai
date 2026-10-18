@@ -4032,3 +4032,12 @@ body.light .media-action.media-more svg circle{r:1.5px!important}
     grid-template-rows:34px 34px 14px!important;
   }
 }
+
+
+/* Music cover loading fallback: never expose a white card while a remote cover is pending. */
+.miya-music-wall .miya-music-card,.library-music-wall .miya-music-card{background-color:#111827!important;background-image:linear-gradient(135deg,#17243a 0%,#202b40 52%,#101827 100%)!important}
+.miya-music-card.has-cover .miya-music-card-cover{opacity:0!important;transition:opacity .18s ease!important;background:transparent!important}
+.miya-music-card.has-cover.cover-loaded .miya-music-card-cover{opacity:1!important}
+.miya-music-card.has-cover:not(.cover-loaded):before{content:"";display:block;position:absolute;inset:0;pointer-events:none;background:linear-gradient(135deg,rgba(34,48,70,.20),rgba(8,14,26,.10))}
+body.light .miya-music-wall .miya-music-card,body.light .library-music-wall .miya-music-card{background-color:#e9edf5!important;background-image:linear-gradient(135deg,#dce5f0 0%,#edf1f7 55%,#d6dfeb 100%)!important}
+body.light .miya-music-brand a{color:#7152dc!important}

@@ -97,8 +97,9 @@ module.exports = async function handler(req, res) {
       }
     }
     const n=Math.max(1,Math.min(4,Number(body.n)||1));
-    // Send the user's prompt to Agnes unchanged, without added instructions.
-    const qualityPrompt=prompt;
+    // Apply Miya default appearance only when no ethnicity was requested and no source image is being edited.
+    const explicitAppearance=/(asian|east asian|south asian|japanese|chinese|korean|mongolian|азиат|япон|кита|корей|монгол|african|black person|afro|afro-american|африкан|афроамерикан|араб|arab|indian|индийск|латино|latino|hispanic|испаноязыч|мексикан|indigenous|native american|коренной американ|еврей|jewish|славян|slavic|европейск|european|caucasian|кавказск)/i.test(prompt);
+    const qualityPrompt=source||explicitAppearance?prompt:prompt+"\n\nDefault appearance instruction: If the user has not specified an ethnicity or a reference image, portray any person (woman, man, child, or older adult) with a natural Slavic / European appearance. Do not default to East Asian or other specific ethnic features. Follow any ethnicity or appearance explicitly requested by the user.";
     // Use the maximum native output size supported by Agnes Image 2.5 Flash (4K).
     // Use Agnes' documented native dimensions so the requested aspect ratio is not subtly distorted.
     const qualitySizes={
