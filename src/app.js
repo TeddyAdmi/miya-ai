@@ -6974,3 +6974,25 @@ document.head.appendChild(musicCardPolish);const oldHero=modeHero;modeHero=funct
  `;
  document.head.appendChild(st);
 })();
+
+
+/* Last alignment override: lift the entire music seek axis (waveform + progress line) 2px, and center the volume range on the speaker icon. */
+(function miyaAudioCenterlineFinal(){
+ if(document.getElementById("miyaAudioCenterlineFinal"))return;
+ const st=document.createElement("style");st.id="miyaAudioCenterlineFinal";
+ st.textContent=`
+ .miya-music-wall .miya-music-card .miya-audio-player.compact .miya-audio-body .miya-audio-track-area,
+ .library-music-wall .miya-music-card .miya-audio-player.compact .miya-audio-body .miya-audio-track-area{
+   top:calc(50% - 2px)!important;transform:translateY(-50%)!important
+ }
+ .miya-music-wall .miya-music-card .miya-audio-player.compact .miya-audio-body .miya-audio-progress,
+ .library-music-wall .miya-music-card .miya-audio-player.compact .miya-audio-body .miya-audio-progress{
+   top:50%!important;transform:translateY(-50%)!important
+ }
+ .miya-music-wall .miya-music-card .miya-audio-volume,
+ .library-music-wall .miya-music-card .miya-audio-volume{
+   transform:translateY(-2px)!important
+ }
+ `;
+ document.head.appendChild(st);
+})();
