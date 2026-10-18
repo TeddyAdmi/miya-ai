@@ -6799,3 +6799,49 @@ document.head.appendChild(musicCardPolish);const oldHero=modeHero;modeHero=funct
  `;
  document.head.appendChild(st);
 })();
+
+/* Follow-up: symmetric chip spacing, true control-axis alignment, playback-only waveform, glass menu. */
+(function miyaMusicSpacingAndAxisFinal(){
+ if(document.getElementById("miyaMusicSpacingAndAxisFinal"))return;
+ const st=document.createElement("style");st.id="miyaMusicSpacingAndAxisFinal";
+ st.textContent=`
+ /* Give both text rows equal tiny breathing room; separate the title row so chips never touch. */
+ .miya-music-wall .miya-music-card .miya-music-recipient,
+ .library-music-wall .miya-music-card .miya-music-recipient{padding:1px 1px!important;margin:0 0 1px 0!important;line-height:1.12!important}
+ .miya-music-wall .miya-music-card .miya-music-card-title,
+ .library-music-wall .miya-music-card .miya-music-card-title{padding:1px 1px!important;margin:1px 0 0!important;line-height:1.12!important}
+ .miya-music-wall .miya-music-card .miya-music-card-head,
+ .library-music-wall .miya-music-card .miya-music-card-head{row-gap:1px!important;column-gap:1px!important}
+ /* The timeline's center line runs exactly from the play-button center to the speaker center. */
+ .miya-music-wall .miya-music-card .miya-audio-player .miya-audio-body,
+ .library-music-wall .miya-music-card .miya-audio-player .miya-audio-body{position:relative!important;align-self:center!important;transform:none!important;top:auto!important;margin:0!important}
+ .miya-music-wall .miya-music-card .miya-audio-player .miya-audio-track-area,
+ .library-music-wall .miya-music-card .miya-audio-player .miya-audio-track-area{left:-17px!important;right:-16px!important;width:auto!important;top:50%!important;transform:translateY(-50%)!important}
+ .miya-music-wall .miya-music-card .miya-audio-player .miya-audio-progress,
+ .library-music-wall .miya-music-card .miya-audio-player .miya-audio-progress{left:0!important;right:0!important;top:50%!important;transform:translateY(-50%)!important}
+ /* Waveform must depend on actual playback, never on whether the cover image has loaded. */
+ .miya-music-card .miya-audio-wave{opacity:0!important;visibility:hidden!important}
+ .miya-music-card .miya-audio-player.is-playing .miya-audio-wave{opacity:.96!important;visibility:visible!important}
+ .miya-music-card .miya-audio-player:not(.is-playing) .miya-audio-wave{opacity:0!important;visibility:hidden!important}
+ /* The three-dot square is compact and translucent in both themes; only the dots are bright. */
+ .miya-music-wall .miya-music-card .miya-music-more,
+ .library-music-wall .miya-music-card .miya-music-more,
+ body.light .miya-music-wall .miya-music-card .miya-music-more,
+ body.light .library-music-wall .miya-music-card .miya-music-more{
+  width:22px!important;height:22px!important;min-width:22px!important;min-height:22px!important;
+  padding:0!important;border-radius:6px!important;
+  background:rgba(10,12,18,.055)!important;color:#fff!important;
+  border:0!important;outline:0!important;box-shadow:none!important;
+  -webkit-backdrop-filter:blur(5px) saturate(115%)!important;backdrop-filter:blur(5px) saturate(115%)!important;
+ }
+ .miya-music-wall .miya-music-card .miya-music-more svg,
+ .library-music-wall .miya-music-card .miya-music-more svg,
+ body.light .miya-music-wall .miya-music-card .miya-music-more svg,
+ body.light .library-music-wall .miya-music-card .miya-music-more svg{color:#fff!important;fill:#fff!important;stroke:#fff!important}
+ .miya-music-wall .miya-music-card .miya-music-more::before,
+ .miya-music-wall .miya-music-card .miya-music-more::after,
+ .library-music-wall .miya-music-card .miya-music-more::before,
+ .library-music-wall .miya-music-card .miya-music-more::after{background:#fff!important}
+ `;
+ document.head.appendChild(st);
+})();
