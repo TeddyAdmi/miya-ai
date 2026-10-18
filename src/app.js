@@ -6946,7 +6946,7 @@ document.head.appendChild(musicCardPolish);const oldHero=modeHero;modeHero=funct
  }
  .miya-music-wall .miya-music-card .miya-audio-player.compact .miya-audio-body .miya-audio-progress,
  .library-music-wall .miya-music-card .miya-audio-player.compact .miya-audio-body .miya-audio-progress{
-  position:absolute!important;top:50%!important;left:0!important;right:0!important;
+  position:absolute!important;top:calc(50% - 2px)!important;left:0!important;right:0!important;
   transform:translateY(-50%)!important;z-index:6!important
  }
  .miya-music-wall .miya-music-card .miya-audio-player.compact .miya-audio-body .miya-audio-wave,
