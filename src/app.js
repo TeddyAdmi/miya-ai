@@ -6357,7 +6357,7 @@ body.light #composer.mode-music .music-options .music-tool:hover,body.light #com
   const sync=()=>{if(audio.currentTime>0||!audio.paused||audio.ended)wrap.classList.add("is-started");current.textContent=fmt(audio.currentTime);total.textContent=fmt(audio.duration);const ratio=audio.duration?audio.currentTime/audio.duration:0;track.value=String(Math.round(ratio*1000));wrap.style.setProperty("--audio-progress",(ratio*100)+"%");bars.forEach((bar,i)=>bar.classList.toggle("played",i/bars.length<=ratio));wrap.classList.toggle("is-playing",!audio.paused);wrap.classList.toggle("has-waveform",!audio.paused);const muted=audio.muted||audio.volume===0;muteButton.classList.toggle("is-muted",muted);muteButton.setAttribute("aria-pressed",String(muted));muteButton.setAttribute("aria-label",muted?"Включить звук":"Выключить звук");muteButton.innerHTML=muted?'<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9v6h4l5 4V5L8 9H4z"/><path d="m16 9 5 6m0-6-5 6"/></svg>':'<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9v6h4l5 4V5L8 9H4z"/><path d="M16 9a5 5 0 0 1 0 6M18.5 6.5a8.5 8.5 0 0 1 0 11"/></svg>';play.innerHTML=audio.paused?'<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5.5v13l10-6.5z"/></svg>':'<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 5h4v14H6zM14 5h4v14h-4z"/></svg>';play.setAttribute("aria-label",audio.paused?"Воспроизвести":"Пауза")};
   play.addEventListener("click",async e=>{e.stopPropagation();try{if(audio.paused){for(const other of audioBySong.values())if(other!==audio&&!other.paused){other.pause();other.currentTime=0}activeWallAudio=audio;wrap.classList.add("has-waveform");prepareSongWaveform();if(audio.ended)audio.currentTime=0;await audio.play()}else audio.pause()}catch{if(activeWallAudio===audio)activeWallAudio=null}});
   track.addEventListener("input",()=>{if(Number.isFinite(audio.duration)&&audio.duration>0)audio.currentTime=audio.duration*(Number(track.value)/1000)});
-  volume.addEventListener("input",()=>{audio.volume=Number(volume.value)/100;audio.muted=false;volumeWrap.style.setProperty("--volume-level",volume.value+"%");sync()});muteButton.addEventListener("click",e=>{e.preventDefault();e.stopPropagation();audio.muted=!audio.muted;if(!audio.muted&&audio.volume===0){audio.volume=.9;volume.value="90"}sync()});
+  volume.addEventListener("input",()=>{audio.volume=Number(volume.value)/100;audio.muted=false;volumeWrap.style.setProperty("--volume-level",volume.value+"%");sync()});muteButton.addEventListener("click",e=>{e.preventDefault();e.stopPropagation();if(!audio.muted&&audio.volume>0){wrap.dataset.miyaLastVolume=String(audio.volume);audio.muted=true;volume.value="0";volumeWrap.style.setProperty("--volume-level","0%")}else{const restore=Math.max(.01,Math.min(1,Number(wrap.dataset.miyaLastVolume)||.9));audio.volume=restore;audio.muted=false;volume.value=String(Math.round(restore*100));volumeWrap.style.setProperty("--volume-level",volume.value+"%")}sync()});
   ["loadedmetadata","durationchange","timeupdate","play","pause","ended"].forEach(ev=>audio.addEventListener(ev,sync));
   audio.addEventListener("pause",()=>{if(activeWallAudio===audio)activeWallAudio=null});
   audio.addEventListener("ended",()=>{if(activeWallAudio===audio)activeWallAudio=null});
@@ -6842,6 +6842,52 @@ document.head.appendChild(musicCardPolish);const oldHero=modeHero;modeHero=funct
  .miya-music-wall .miya-music-card .miya-music-more::after,
  .library-music-wall .miya-music-card .miya-music-more::before,
  .library-music-wall .miya-music-card .miya-music-more::after{background:#fff!important}
+ `;
+ document.head.appendChild(st);
+})();
+
+
+/* Final music-card spacing and aligned seek/volume controls. */
+(function miyaMusicAxisAndMuteFinal(){
+ if(document.getElementById("miyaMusicAxisAndMuteFinal"))return;
+ const st=document.createElement("style");st.id="miyaMusicAxisAndMuteFinal";
+ st.textContent=`
+ .miya-music-wall .miya-music-card .miya-music-recipient,
+ .library-music-wall .miya-music-card .miya-music-recipient{
+  padding:2px 1px 1px!important;margin:0 0 1px 0!important;line-height:1.12!important;
+ }
+ .miya-music-wall .miya-music-card .miya-music-card-title,
+ .library-music-wall .miya-music-card .miya-music-card-title{
+  padding:1px!important;margin:1px 0 0!important;line-height:1.12!important;
+ }
+ /* Center the seek line on the same horizontal axis as the play circle and speaker. */
+ .miya-music-wall .miya-music-card .miya-audio-player .miya-audio-track-area,
+ .library-music-wall .miya-music-card .miya-audio-player .miya-audio-track-area{
+  left:-23px!important;right:-19px!important;width:auto!important;
+  top:calc(50% + 3px)!important;transform:translateY(-50%)!important;
+ }
+ .miya-music-wall .miya-music-card .miya-audio-player .miya-audio-progress,
+ .library-music-wall .miya-music-card .miya-audio-player .miya-audio-progress{
+  left:0!important;right:0!important;top:50%!important;transform:translateY(-50%)!important;
+ }
+ .miya-music-wall .miya-music-card .miya-audio-volume-wrap,
+ .library-music-wall .miya-music-card .miya-audio-volume-wrap{
+  gap:8px!important;align-items:center!important;
+ }
+ .miya-music-wall .miya-music-card .miya-audio-volume,
+ .library-music-wall .miya-music-card .miya-audio-volume{
+  accent-color:#a17bf5!important;
+ }
+ .miya-music-wall .miya-music-card .miya-audio-volume::-webkit-slider-runnable-track,
+ .library-music-wall .miya-music-card .miya-audio-volume::-webkit-slider-runnable-track{
+  background:linear-gradient(to right,#a17bf5 0%,#a17bf5 var(--volume-level,90%),rgba(160,160,180,.68) var(--volume-level,90%),rgba(160,160,180,.68) 100%)!important;
+ }
+ .miya-music-wall .miya-music-card .miya-audio-mute.is-muted svg path:last-child,
+ .library-music-wall .miya-music-card .miya-audio-mute.is-muted svg path:last-child{
+  stroke:#ff394f!important;stroke-width:2.2!important;stroke-linecap:round!important;
+ }
+ .miya-music-wall .miya-music-card .miya-audio-mute.is-muted,
+ .library-music-wall .miya-music-card .miya-audio-mute.is-muted{color:#ff394f!important;opacity:1!important}
  `;
  document.head.appendChild(st);
 })();
