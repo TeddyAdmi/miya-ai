@@ -2642,6 +2642,7 @@ async function generateVoice(text){
 }
 function renderVoiceLibrary(){ensureVoiceWallStyles();ensureVoiceCardFinalStyles();const c=$("#canvas"),hidden=getHiddenWallIds("audio"),items=getLibrary().filter(x=>x.type==="audio"&&!hidden.has(String(x.id)));if(!items.length){showEmpty();return}c.innerHTML='<div class="library-section"><div class="voice-wall"></div></div>';const wall=c.querySelector(".voice-wall");items.forEach((item,index)=>wall.appendChild(createVoiceCard(item,()=>resolveMediaUrl(item),{voiceItems:items,voiceIndex:index})))}
 function dateLibraryMusic(ts){try{return new Date(Number(ts)||Date.now()).toLocaleDateString("ru-RU",{day:"2-digit",month:"2-digit",year:"numeric"})}catch{return""}}
+ function musicDownloadAction(item){const link=document.createElement("a");link.className="miya-music-brand miya-music-download";link.href=String(item.url||"");link.download=(String(item.model||"Песня").replace(/[\\/:*?"<>|]+/g," ").trim()||"Песня")+".mp3";link.setAttribute("aria-label","Скачать песню на устройство");link.textContent="♫ Скачай песню";link.addEventListener("click",async e=>{e.preventDefault();e.stopPropagation();if(!item.url)return;const name=link.download||"Песня.mp3";try{const response=await fetch(item.url,{mode:"cors"});if(!response.ok)throw new Error("download failed");const blob=await response.blob();const url=URL.createObjectURL(blob);const a=document.createElement("a");a.href=url;a.download=name;a.style.display="none";document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),60000)}catch{const a=document.createElement("a");a.href=String(item.url);a.download=name;a.target="_blank";a.rel="noopener";document.body.appendChild(a);a.click();a.remove()}});return link}
 function renderLibrary(tab="images"){
  libraryActiveTab=tab;
  const libraryWallClear=$("#clearImageWall");if(libraryWallClear)libraryWallClear.style.display=tab==="music"?"none":"";
@@ -2665,7 +2666,7 @@ function renderLibrary(tab="images"){
    const title=document.createElement("div");title.className="miya-music-card-title";title.textContent=String(item.model||"Новая песня")+" · "+String(item.musicMeta?.genre||"Не указан");
    const dateLine=document.createElement("div");dateLine.className="miya-music-card-date";dateLine.textContent=dateLibraryMusic(item.createdAt);head.appendChild(dateLine);
    const player=window.__miyaCreateMusicPlayer?window.__miyaCreateMusicPlayer(item,true):document.createElement("audio");if(player.tagName==="AUDIO"){player.controls=true;player.preload="none";player.src=item.url}
-   const brand=document.createElement("div");brand.className="miya-music-brand";brand.textContent="♫ Создано с помощью Aura";
+   const brand=musicDownloadAction(item);
    more.addEventListener("click",e=>{e.preventDefault();e.stopPropagation();const opening=menu.hidden;document.querySelectorAll(".miya-music-card-menu").forEach(m=>{if(m!==menu)m.hidden=true});menu.hidden=!opening});
    rename.addEventListener("click",e=>{e.preventDefault();e.stopPropagation();menu.hidden=true;const edit=document.createElement("input");edit.type="text";edit.className="miya-music-rename-input";edit.value=item.model||"";edit.maxLength=120;title.replaceWith(edit);edit.focus();edit.select();let finished=false;const finish=save=>{if(finished)return;finished=true;if(save&&edit.value.trim()){const value=edit.value.trim();const all=getLibrary();localStorage.setItem(LIB_KEY,JSON.stringify(all.map(x=>String(x.id)===String(item.id)?{...x,model:value}:x)));item.model=value;title.textContent=value;toast("Название песни изменено")}edit.replaceWith(title)};edit.addEventListener("keydown",ev=>{if(ev.key==="Enter"){ev.preventDefault();finish(true)}if(ev.key==="Escape"){ev.preventDefault();finish(false)}});edit.addEventListener("blur",()=>finish(true))});
    remove.addEventListener("click",e=>{e.preventDefault();e.stopPropagation();menu.hidden=true;if(!confirm("Удалить песню «"+(item.model||item.musicMeta?.recipient||"Песня")+"» из библиотеки?"))return;const all=getLibrary();localStorage.setItem(LIB_KEY,JSON.stringify(all.filter(x=>String(x.id)!==String(item.id))));const audio=window.__miyaStopMusicItem?.(item.id);renderLibrary("music");toast("Песня удалена из библиотеки")});
@@ -6403,7 +6404,7 @@ body.light #composer.mode-music .music-options .music-tool:hover,body.light #com
   const cover=document.createElement("img");if(item.image&&/^https?:\/\//i.test(item.image)){cover.className="miya-music-detail-cover";cover.src=item.image;cover.alt="Обложка песни";cover.decoding="async";cover.referrerPolicy="no-referrer";cover.setAttribute("aria-hidden","true")}
   const meta=document.createElement("div");meta.className="miya-music-detail-meta";meta.textContent=["Жанр: "+(item.musicMeta?.genre||"Не указан"),"Повод: "+(item.musicMeta?.occasion||"Своя тема"),"Вокал: "+(item.musicMeta?.vocal||"Не указан")].join(" · ");
   const label=document.createElement("b");label.className="miya-music-lyrics-label";label.textContent="Текст песни";const lyrics=document.createElement("div");lyrics.className="miya-music-lyrics";lyrics.textContent=item.prompt||"Текст не сохранён";
-  const brand=document.createElement("div");brand.className="miya-music-brand";brand.textContent="Создано с помощью Aura AI";
+  const brand=musicDownloadAction(item);
   if(cover.src)box.appendChild(cover);box.append(top,head,meta,label,lyrics,brand)
  }
  function openLyrics(){
@@ -7009,4 +7010,25 @@ document.head.appendChild(musicCardPolish);const oldHero=modeHero;modeHero=funct
  }
  `;
  document.head.appendChild(st);
+})();
+
+
+/* Music card interaction and centered detail text: final overrides. */
+(function miyaMusicDownloadAndCenterFix(){
+ if(document.getElementById("miyaMusicDownloadAndCenterFix"))return;
+ const st=document.createElement("style");st.id="miyaMusicDownloadAndCenterFix";st.textContent=`
+ .miya-audio-play,.miya-music-card .miya-audio-play{position:relative!important;z-index:12!important;pointer-events:auto!important;flex-shrink:0!important}
+ .miya-audio-track-area{pointer-events:none!important;z-index:1!important}
+ .miya-audio-progress{pointer-events:auto!important;position:relative;z-index:5!important}
+ .miya-audio-volume-wrap,.miya-audio-mute,.miya-audio-volume{position:relative!important;z-index:12!important;pointer-events:auto!important}
+ .miya-audio-mute.is-muted,.miya-music-wall .miya-audio-mute.is-muted,.library-music-wall .miya-audio-mute.is-muted{color:#fff!important;opacity:1!important}
+ .miya-audio-mute.is-muted svg path:last-child,.miya-music-wall .miya-audio-mute.is-muted svg path:last-child,.library-music-wall .miya-audio-mute.is-muted svg path:last-child{d:path("M16 9L21 15M21 9L16 15")!important;stroke:#fff!important;stroke-width:2!important;stroke-linecap:round!important;fill:none!important}
+ .miya-music-card .miya-music-recipient,.library-music-wall .miya-music-card .miya-music-recipient{padding:5px 9px!important}
+ .miya-music-card .miya-music-download,.miya-music-detail-fixed .miya-music-download{cursor:pointer!important;text-decoration:none!important;color:inherit!important;pointer-events:auto!important}
+ .miya-music-detail-fixed .miya-music-dialog-head{justify-content:center!important;text-align:center!important}
+ .miya-music-detail-fixed .miya-music-title-row{display:flex!important;align-items:center!important;justify-content:center!important;flex-wrap:wrap!important;text-align:center!important;width:100%!important}
+ .miya-music-detail-fixed .miya-music-dialog-head h2,.miya-music-detail-fixed .miya-music-detail-meta,.miya-music-detail-fixed .miya-music-lyrics-label,.miya-music-detail-fixed .miya-music-lyrics{text-align:center!important}
+ .miya-music-detail-fixed .miya-music-lyrics{padding-left:12px!important;padding-right:12px!important}
+ .miya-music-detail-fixed .miya-music-brand{align-self:center!important;justify-content:center!important;text-align:center!important}
+ `;document.head.appendChild(st);
 })();
