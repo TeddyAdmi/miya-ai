@@ -1709,7 +1709,7 @@ body.light .voice-editor-save{color:#fff}
 .voice-editor-tool.voice-editor-split{min-height:72px;width:auto;border-radius:16px;background:linear-gradient(135deg,rgba(169,92,255,.22),rgba(110,99,255,.18));border-color:rgba(184,143,255,.48);color:#e6d8ff;box-shadow:0 12px 30px rgba(104,66,210,.16)}
 .voice-editor-tool:disabled{opacity:.5;cursor:wait;transform:none}
 .voice-editor-delete{width:52px!important;height:52px!important;border-radius:16px!important;border:1px solid rgba(255,91,116,.42)!important;background:linear-gradient(145deg,rgba(255,70,98,.16),rgba(255,255,255,.045))!important;color:#ff9aaa!important;box-shadow:0 10px 28px rgba(255,70,98,.12)}
-.voice-editor-delete:hover{transform:translateY(-2px)!important;border-color:rgba(255,125,145,.72)!important;background:linear-gradient(145deg,rgba(255,70,98,.25),rgba(255,255,255,.06))!important;color:#fff!important;box-shadow:0 15px 34px rgba(255,70,98,.18)!important}
+.voice-editor-delete:hover{transform:none!important;border-color:rgba(255,125,145,.72)!important;background:linear-gradient(145deg,rgba(255,70,98,.25),rgba(255,255,255,.06))!important;color:#fff!important;box-shadow:0 15px 34px rgba(255,70,98,.18)!important}
 .voice-editor-delete:disabled{opacity:.35!important;cursor:default!important;transform:none!important;box-shadow:none!important}
 .voice-editor-footer{display:flex;justify-content:flex-end;gap:8px}.voice-editor-save{background:linear-gradient(135deg,#a95cff,#6e63ff);border:0;color:#fff}.voice-editor-close-btn{background:rgba(255,255,255,.04)}
 @media(max-width:760px){.voice-editor-stems{grid-template-columns:1fr}.voice-editor-toolbar{grid-template-columns:1fr 1fr}.voice-editor-dialog{justify-content:flex-start;padding-top:28px}}@media(max-width:520px){.voice-editor-toolbar{grid-template-columns:1fr}.voice-editor-tool{min-height:64px}.voice-editor-tool.voice-editor-split{min-height:64px}.voice-editor-upload{padding:14px}}
@@ -6976,14 +6976,14 @@ document.head.appendChild(musicCardPolish);const oldHero=modeHero;modeHero=funct
 })();
 
 
-/* Last alignment override: lift the entire music seek axis (waveform + progress line) 2px, and center the volume range on the speaker icon. */
+/* Final alignment correction: move the seek axis down onto the play and speaker centerline. */
 (function miyaAudioCenterlineFinal(){
  if(document.getElementById("miyaAudioCenterlineFinal"))return;
  const st=document.createElement("style");st.id="miyaAudioCenterlineFinal";
  st.textContent=`
  .miya-music-wall .miya-music-card .miya-audio-player.compact .miya-audio-body .miya-audio-track-area,
  .library-music-wall .miya-music-card .miya-audio-player.compact .miya-audio-body .miya-audio-track-area{
-   top:calc(50% - 2px)!important;transform:translateY(-50%)!important
+   top:calc(50% + 2px)!important;transform:translateY(-50%)!important
  }
  .miya-music-wall .miya-music-card .miya-audio-player.compact .miya-audio-body .miya-audio-progress,
  .library-music-wall .miya-music-card .miya-audio-player.compact .miya-audio-body .miya-audio-progress{
