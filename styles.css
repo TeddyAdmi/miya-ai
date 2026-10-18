@@ -4046,3 +4046,23 @@ body.light .miya-music-brand a{color:#7152dc!important}
 /* Final audio-player alignment: raise the progress axis and volume slider slightly so their centerlines meet the play-circle and speaker-icon centers. */
 .voice-player-track{transform:translateY(-2px)!important}
 .voice-player-volume-wrap input[type="range"]{transform:translateY(-2px)!important}
+
+/* Dedicated poetry and song-lyrics workspaces. */
+#composer.mode-poems .composer-left-actions .attach,#composer.mode-lyrics .composer-left-actions .attach{display:none!important}
+#composer.mode-poems .composer-options,#composer.mode-lyrics .composer-options{display:flex!important;align-items:center!important;gap:8px!important;padding-top:5px!important;min-width:0!important}
+#composer.mode-poems .miya-text-style-select,#composer.mode-lyrics .miya-text-style-select{display:block!important;flex:0 1 auto!important;width:auto!important;min-width:150px!important;max-width:100%!important}
+.miya-text-grid{align-items:stretch!important;grid-auto-rows:minmax(210px,auto)!important}
+.miya-text-card{display:flex;flex-direction:column;min-width:0;min-height:210px;padding:14px;border:1px solid var(--line);border-radius:13px;background:var(--card,rgba(255,255,255,.035));color:var(--text);box-shadow:0 6px 20px rgba(18,24,40,.06);overflow:hidden}
+.miya-text-card-head{display:flex;align-items:flex-start;justify-content:space-between;gap:8px;margin-bottom:10px}
+.miya-text-card-meta{font-size:12px;font-weight:800;line-height:1.35;overflow-wrap:anywhere}
+.miya-text-card-date{font-size:10px;opacity:.68;white-space:nowrap}
+.miya-text-card-body{flex:1;min-height:90px;max-height:300px;overflow:auto;white-space:pre-wrap;overflow-wrap:anywhere;font-size:12px;line-height:1.65;scrollbar-width:thin}
+.miya-text-card-actions{display:flex;justify-content:flex-end;gap:6px;padding-top:10px;margin-top:10px;border-top:1px solid var(--line)}
+.miya-text-card-actions button{border:1px solid var(--line);border-radius:7px;padding:6px 9px;background:transparent;color:inherit;font-size:10px;cursor:pointer}
+.miya-text-card-actions button:hover{border-color:#9270e8;color:#9b7cf3}
+.miya-text-empty{margin:8vh auto;max-width:460px;text-align:center;padding:30px 20px;color:var(--text)}
+.miya-text-empty-title{font-size:18px;font-weight:800;margin-bottom:8px}
+.miya-text-empty p{font-size:12px;opacity:.7;line-height:1.6}
+.miya-library-text-wall{width:100%;min-width:0}
+@media(max-width:800px){.miya-text-grid{grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:8px!important}.miya-text-card{padding:10px;min-height:180px}.miya-text-card-body{font-size:11px}.miya-text-card-head{flex-wrap:wrap}.miya-text-card-date{font-size:9px}}
+@media(max-width:520px){.miya-text-grid{grid-template-columns:1fr 1fr!important}.miya-text-card-actions{flex-wrap:wrap}.miya-text-card-actions button{padding:5px 7px}}
