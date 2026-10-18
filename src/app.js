@@ -6983,7 +6983,7 @@ document.head.appendChild(musicCardPolish);const oldHero=modeHero;modeHero=funct
  st.textContent=`
  .miya-music-wall .miya-music-card .miya-audio-player.compact .miya-audio-body .miya-audio-track-area,
  .library-music-wall .miya-music-card .miya-audio-player.compact .miya-audio-body .miya-audio-track-area{
-   top:50%!important;transform:translateY(-50%)!important
+   top:calc(50% - 1px)!important;transform:translateY(-50%)!important
  }
  .miya-music-wall .miya-music-card .miya-audio-player.compact .miya-audio-body .miya-audio-progress,
  .library-music-wall .miya-music-card .miya-audio-player.compact .miya-audio-body .miya-audio-progress{
@@ -6991,7 +6991,7 @@ document.head.appendChild(musicCardPolish);const oldHero=modeHero;modeHero=funct
  }
  .miya-music-wall .miya-music-card .miya-audio-volume,
  .library-music-wall .miya-music-card .miya-audio-volume{
-   transform:translateY(0)!important
+   transform:translateY(-1px)!important
  }
  `;
  document.head.appendChild(st);
