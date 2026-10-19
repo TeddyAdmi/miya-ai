@@ -137,48 +137,6 @@ module.exports = async function imageHandler(req, res) {
 
     const action = typeof body.action === "string" ? body.action.trim() : "";
 
-    if (action === "kapy-enhance-test") {
-      // Fixed, harmless probe: tests server-to-server access without exposing
-      // an unrestricted public proxy for arbitrary third-party prompts.
-      const testPrompt = "девушка";
-      const endpoint = "https://kapy.co/api/enhance-prompt";
-      try {
-        const upstream = await fetch(endpoint, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            "Accept": "application/json"
-          },
-          body: JSON.stringify({
-            prompt: testPrompt,
-            modelId: "flux-2-klein-9b"
-          }),
-          cache: "no-store",
-          signal: AbortSignal.timeout(20000)
-        });
-        const raw = await upstream.text();
-        let data = {};
-        try { data = raw ? JSON.parse(raw) : {}; } catch {}
-        return res.status(200).json({
-          ok: upstream.ok && data.success === true && typeof data.enhanced === "string",
-          test: "kapy-enhance-prompt",
-          upstreamStatus: upstream.status,
-          contentType: upstream.headers.get("content-type") || "",
-          success: data.success === true,
-          original: typeof data.original === "string" ? data.original : testPrompt,
-          enhanced: typeof data.enhanced === "string" ? data.enhanced : "",
-          upstreamBody: typeof data.enhanced === "string" ? undefined : raw.slice(0, 800)
-        });
-      } catch (error) {
-        return res.status(200).json({
-          ok: false,
-          test: "kapy-enhance-prompt",
-          error: "KAPY_ENHANCE_REQUEST_FAILED",
-          message: String(error?.message || error || "Kapy request failed").slice(0, 300)
-        });
-      }
-    }
-
     if (action === "upscale-mcp") {
       const imageUrl = typeof body.imageUrl === "string" ? body.imageUrl.trim() : "";
       const imageData = typeof body.imageData === "string" ? body.imageData.trim() : "";
