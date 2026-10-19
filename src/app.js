@@ -862,6 +862,7 @@ function imageModelLabel(model){
  if(/^Seedream$/i.test(name))return "Seedream · T2I";
  if(/^Nano Banana 2$/i.test(name))return "Nano Banana 2 · T2I";
  if(/^GPT Image 2\.5$/i.test(name))return "GPT Image 2.5 · T2I";
+ if(/^Z-Image Turbo$/i.test(name))return "Z-Image Turbo · Kapy · T2I";
  if(/^Agnes Image(?: 2\.5 Flash)?$/i.test(name))return "Agnes Image · T2I / I2I";
  if(/^FLUX Dev$/i.test(name))return "FLUX Dev · T2I";
  if(/^FLUX Kontext Dev$/i.test(name))return "FLUX Kontext Dev · I2I";
@@ -2972,9 +2973,10 @@ async function generateImage(prompt){
  const useAgnesImage=/^Agnes Image/i.test(selectedModel);
  const useAuraImage=/^(?:Nano Banana|Seedream)$/i.test(selectedModel);
  const useCvronImage=/^(?:Nano Banana 2|GPT Image 2\\.5)$/i.test(selectedModel);
+ const useKapyImage=/^Z-Image Turbo$/i.test(selectedModel);
  // Nano Banana 2 and GPT Image 2.5 are generation-only here.
  // Existing-image edits stay on the established Agnes editing route.
- if(referenceImage && useCvronImage){
+ if(referenceImage && (useCvronImage || useKapyImage)){
   $("#composerModel").value="Agnes Image 2.5 Flash";
   return generateAgnesImage(prompt);
  }
@@ -2987,7 +2989,7 @@ async function generateImage(prompt){
  const percent=ring?.querySelector(".progress-percent");
  const modelName=selectedModel||"FLUX Dev";
  const displayModel=imageModelLabel(modelName);
- const timeoutMs=/^(?:Nano Banana|Nano Banana 2|Seedream)$/.test(modelName)?180000:120000;
+ const timeoutMs=/^(?:Nano Banana|Nano Banana 2|Seedream|Z-Image Turbo)$/.test(modelName)?180000:120000;
  const progressDurationMs=40000;
  const usesReferenceImage=Boolean(referenceImage);
  const hasFileUpload=Boolean(referenceImage);
@@ -3029,6 +3031,8 @@ async function generateImage(prompt){
    ? JSON.stringify({prompt,ratio:$("#composerRatio").value,n:requestedCount,imageBase64:referenceImage||""})
    : useAuraImage
      ? JSON.stringify({mode:"image",provider:"aura",prompt,model:modelName})
+     : useKapyImage
+     ? JSON.stringify({mode:"image",provider:"kapy",prompt,model:modelName,ratio:selectedRatio})
      : useCvronImage
        ? JSON.stringify({
           mode:"image",provider:"cvron",prompt,model:modelName,ratio:selectedRatio,quality:selectedQuality,

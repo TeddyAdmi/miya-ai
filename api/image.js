@@ -458,6 +458,118 @@ module.exports = async function imageHandler(req, res) {
     const provider = typeof body.provider === "string" ? body.provider.trim().toLowerCase() : "";
     const requestedModel = typeof body.model === "string" ? body.model.trim() : "";
 
+    if (provider === "kapy") {
+      const userPrompt = typeof body.prompt === "string" ? body.prompt.trim() : "";
+      const allowedRatios = ["1:1", "4:3", "3:2", "16:9", "2:1", "9:16"];
+      const aspectRatio = allowedRatios.includes(String(body.ratio || "")) ? String(body.ratio) : "16:9";
+      if (requestedModel !== "Z-Image Turbo") {
+        return res.status(400).json({ ok:false, error:"KAPY_MODEL_UNSUPPORTED", message:"Неизвестная модель Kapy." });
+      }
+      if (!userPrompt) return res.status(400).json({ ok:false, error:"PROMPT_REQUIRED" });
+
+      const requestKapyJson = async (url, init) => {
+        const upstream = await fetch(url, {
+          ...init,
+          headers: { Accept:"application/json", ...(init?.headers || {}) },
+          cache:"no-store",
+          signal: AbortSignal.timeout(18000)
+        });
+        const raw = await upstream.text();
+        let data = {};
+        try { data = raw ? JSON.parse(raw) : {}; } catch {}
+        if (!upstream.ok) {
+          const err = new Error("Kapy вернул HTTP " + upstream.status + (data?.message ? ": " + String(data.message) : ""));
+          err.status = upstream.status;
+          err.body = raw.slice(0, 700);
+          throw err;
+        }
+        return data;
+      };
+
+      try {
+        const created = await requestKapyJson("https://kapy.co/api/generate", {
+          method:"POST",
+          headers: { "Content-Type":"application/json" },
+          body:JSON.stringify({
+            prompt:userPrompt,
+            aspectRatio,
+            modelId:"z-image-turbo",
+            upscaleFactor:"0",
+            enhancePrompt:false,
+            turnstileToken:""
+          })
+        });
+        const jobId = String(created?.jobId || created?.job?.id || created?.data?.jobId || "").trim();
+        if (!created?.success || !jobId) {
+          return res.status(502).json({
+            ok:false, error:"KAPY_JOB_CREATE_FAILED",
+            message:String(created?.message || created?.error || "Kapy не вернул идентификатор задания.")
+          });
+        }
+
+        const findValue = (root, keys) => {
+          const seen = new Set();
+          const visit = value => {
+            if (!value || typeof value !== "object" || seen.has(value)) return "";
+            seen.add(value);
+            for (const key of keys) {
+              if (typeof value[key] === "string" && value[key].trim()) return value[key].trim();
+            }
+            for (const child of Object.values(value)) {
+              const found = visit(child);
+              if (found) return found;
+            }
+            return "";
+          };
+          return visit(root);
+        };
+        let lastStatus = {};
+        let finalImageUrl = "";
+        let wallpaperId = "";
+        for (let attempt = 0; attempt < 65; attempt++) {
+          await new Promise(resolve => setTimeout(resolve, 1200));
+          lastStatus = await requestKapyJson("https://kapy.co/api/job-status/" + encodeURIComponent(jobId), { method:"GET" });
+          const statusText = String(findValue(lastStatus, ["status", "state"]) || "").toLowerCase();
+          finalImageUrl = findValue(lastStatus, ["originalImage", "imageUrl", "image_url", "outputUrl", "output_url"]);
+          wallpaperId = findValue(lastStatus, ["wallpaperId", "wallpaper_id"]);
+          const idCandidate = findValue(lastStatus, ["id"]);
+          if (!wallpaperId && /^wallpaper_/.test(idCandidate)) wallpaperId = idCandidate;
+          if (finalImageUrl && /^https:\/\//i.test(finalImageUrl)) break;
+          if (["failed", "error", "cancelled", "canceled"].includes(statusText)) {
+            return res.status(502).json({
+              ok:false, error:"KAPY_GENERATION_FAILED",
+              message:String(findValue(lastStatus, ["message", "error"]) || "Kapy не смог создать изображение.")
+            });
+          }
+          if (["completed", "complete", "done", "success", "succeeded"].includes(statusText)) break;
+        }
+
+        if (!finalImageUrl && wallpaperId) {
+          const wallpaper = await requestKapyJson("https://kapy.co/api/wallpaper/" + encodeURIComponent(wallpaperId), { method:"GET" });
+          finalImageUrl = findValue(wallpaper, ["originalImage", "imageUrl", "image_url", "outputUrl", "output_url"]);
+        }
+        if (!finalImageUrl || !/^https:\/\//i.test(finalImageUrl)) {
+          return res.status(502).json({
+            ok:false, error:"KAPY_IMAGE_URL_MISSING",
+            message:"Kapy принял задание, но Miya не смогла получить ссылку на готовую картинку.",
+            jobId
+          });
+        }
+        return res.status(200).json({
+          ok:true, mode:"image", status:"completed", provider:"Kapy",
+          model:"Z-Image Turbo", imageUrl:finalImageUrl, imageUrls:[finalImageUrl], count:1,
+          meta:{ free:true, aspectRatio, jobId, upstream:"kapy.co" }
+        });
+      } catch (error) {
+        return res.status(502).json({
+          ok:false, error:"KAPY_GENERATION_ERROR",
+          message:String(error?.message || error || "Ошибка обращения к Kapy."),
+          upstreamStatus:error?.status || null,
+          upstreamBody:error?.body || ""
+        });
+      }
+    }
+
     if (provider === "aura") {
       const auraModels = {"Nano Banana":"nano-banana","Seedream":"seedream"};
       const auraModel = auraModels[requestedModel];
