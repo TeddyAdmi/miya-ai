@@ -158,14 +158,13 @@ async function handler(req, res) {
     const isWrongMiyaIdentity = value => {
       const text = String(value || "").trim();
       if (!text) return true;
-      // Reject identity claims and canned corrections from upstream providers,
-      // including alternate wording and translated model names.
+      // Reject alternate identity claims and canned corrections from upstream providers.
       const claimsForeignIdentity =
-        /(?:^|[.!?\\n])\\s*(?:я|меня зовут|мо[её] имя|на самом деле я|я на самом деле|i am|i'm|my name is|actually,? i am)\\b[^.!?\\n]{0,100}\\b(?:gpt\\s*[- ]?6(?:\\s*[- ]?luna)?|gpt\\s*[- ]?5\\s*nano|luna|луна)\\b/i.test(text) ||
-        /(?:gpt\\s*[- ]?6(?:\\s*[- ]?luna)?|luna|луна)[^.!?\\n]{0,100}(?:это я|я на самом деле|меня зовут|моя модель|my name is|i am|i'm)/i.test(text);
+        /(?:^|[.!?\n])\s*(?:я|меня зовут|мо[её] имя|на самом деле я|я на самом деле|i am|i'm|my name is|actually,?\s*i am)\b[^.!?\n]{0,100}\b(?:gpt\s*[- ]?6(?:\s*[- ]?luna)?|gpt\s*[- ]?5\s*nano|luna|луна)\b/i.test(text) ||
+        /(?:gpt\s*[- ]?6(?:\s*[- ]?luna)?|luna|луна)[^.!?\n]{0,100}(?:это я|я на самом деле|меня зовут|моя модель|my name is|i am|i'm)/i.test(text);
       const arguesAboutName =
-        /(?:вы\\s+(?:ошиблись|ошибочно\\s+назвали)|ошибочно\\s+назвали|вы\\s+сказали,?\\s*что\\s+(?:ваше\\s+имя|меня)|не\\s+называйте\\s+меня|я\\s+не\\s+(?:мия|miya)|не\\s+являюсь\\s+(?:мией|miya)|i am not miya|you (?:are|have) (?:mistaken|wrong)|you called me incorrectly)/i.test(text);
-      const identityName = /(?:gpt\\s*[- ]?6|gpt\\s*[- ]?5\\s*nano|luna|луна|мия|miya)/i.test(text);
+        /(?:вы\s+(?:ошиблись|ошибочно\s+назвали)|ошибочно\s+назвали|вы\s+сказали,?\s*что\s+(?:ваше\s+имя|меня)|не\s+называйте\s+меня|я\s+не\s+(?:мия|miya)|не\s+являюсь\s+(?:мией|miya)|i am not miya|you (?:are|have) (?:mistaken|wrong)|you called me incorrectly)/i.test(text);
+      const identityName = /(?:gpt\s*[- ]?6|gpt\s*[- ]?5\s*nano|luna|луна|мия|miya)/i.test(text);
       return claimsForeignIdentity || (arguesAboutName && identityName);
     };
 
