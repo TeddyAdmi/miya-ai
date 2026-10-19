@@ -132,8 +132,11 @@ function localOutputUrl(req, externalUrl) {
 
 function isAllowedOutputHost(url) {
   try {
-    const host = new URL(url).hostname.toLowerCase();
-    return host === "cleverutils.com" || host.endsWith(".cleverutils.com");
+    const parsed = new URL(url);
+    const host = parsed.hostname.toLowerCase();
+    if (host === "cleverutils.com" || host.endsWith(".cleverutils.com")) return true;
+    // Same-origin audio proxy for Aura-generated tracks. Restrict both host and path.
+    return host === "aurasoundai.ru" && /^\/acestep-results\/[a-z0-9-]+\.flac$/i.test(parsed.pathname);
   } catch {
     return false;
   }

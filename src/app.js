@@ -6446,12 +6446,12 @@ body.light #composer.mode-music .music-options .music-tool:hover,body.light #com
    toast((kind==="instrumental"?"Минусовка":"Вокал")+" сохранён на стене");
   };
   try{
-   const sourceResponse=await fetch(sourceItem.url,{mode:"cors",credentials:"omit",cache:"no-store"});
+   const sourceProxyUrl="/api/cleverutils-vocal-remover?output="+encodeURIComponent(sourceItem.url);const sourceResponse=await fetch(sourceProxyUrl,{credentials:"same-origin",cache:"no-store"});
    if(!sourceResponse.ok)throw new Error("Не удалось загрузить исходную песню");
    const sourceBlob=await sourceResponse.blob();
    if(!sourceBlob.size)throw new Error("Исходная песня оказалась пустой");
    if(sourceBlob.size>20*1024*1024)throw new Error("Песня превышает лимит Aura в 20 МБ");
-   const ext=/\.wav(?:$|[?#])/i.test(sourceItem.url)?"wav":"mp3";
+   const ext=/\.wav(?:$|[?#])/i.test(sourceItem.url)?"wav":/\.flac(?:$|[?#])/i.test(sourceItem.url)?"flac":"mp3";
    const form=new FormData();form.append("file",new File([sourceBlob],"miya-song."+ext,{type:sourceBlob.type||(ext==="wav"?"audio/wav":"audio/mpeg")}));
    const upload=await readJson(await fetch("https://aurasoundai.ru/api/split/upload",{method:"POST",mode:"cors",credentials:"omit",body:form,headers:{Accept:"application/json"},cache:"no-store"}));
    const uploadedUrl=pickUrl(upload);if(!/^https:\/\//i.test(uploadedUrl))throw new Error("Aura не вернула ссылку на загруженную песню");
