@@ -467,7 +467,7 @@ module.exports = async function imageHandler(req, res) {
 
       // Route only the two new models to Aura. Preserve the provider's native
       // output dimensions; no cropping, stretching, blurred padding, or frames.
-      const auraPrompt = userPrompt + "\n\nФотореалистичная фотография, не открытка и не постер. Без рамки, полей, обводки, декоративных углов, текста, надписей, поздравлений и шаблонов. Изображение должно быть самостоятельной фотографией от края до края.";
+      const auraPrompt = userPrompt + "\n\nSTRICT PROMPT FIDELITY: Treat this as a completely independent image request. Follow only the current user prompt. Do not reuse, remember, or carry over any objects, clothing, costumes, accessories, props, poses, or composition from previous generations, images, or requests. Do not add clothing, shoes, jewelry, bags, collars, hats, or accessories to any person or animal unless the current prompt explicitly asks for them. Do not invent extra details or reinterpret the subject. Preserve only the appearance and details explicitly requested by the user. Create a standalone photorealistic image, not a postcard or poster. No frame, border, margins, decorative corners, text, lettering, greeting, or template. The photograph must fill the image edge to edge.";
       try {
         const form = new FormData();
         form.append("prompt", auraPrompt);

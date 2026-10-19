@@ -1180,8 +1180,12 @@ function openImageViewer(item){
  }
  const img=modal.querySelector(".image-viewer-image");
  modal.dataset.viewerItemId=item.id;
- img.src=item.url;
- resolveMediaUrl(item).then(url=>{if(url&&modal.classList.contains("open")&&modal.dataset.viewerItemId===item.id)img.src=url}).catch(()=>{});
+ const isAuraModel=/^(Nano Banana|Seedream)$/i.test(String(item.model||"").trim());
+ const viewerSource=isAuraModel?jpegImageUrl(item.url):item.url;
+ img.src=viewerSource;
+ if(!isAuraModel){
+  resolveMediaUrl(item).then(url=>{if(url&&modal.classList.contains("open")&&modal.dataset.viewerItemId===item.id)img.src=url}).catch(()=>{});
+ }
  img.onerror=()=>{img.alt="Изображение недоступно"};
  img.dataset.zoom="1";
  img.dataset.panX="0";
@@ -1457,6 +1461,13 @@ function buildMediaCard(item,{video=false}={}){
    // This lets an already loaded wall render from saved image bytes after reloads and in new tabs.
    resolveMediaUrl(item).then(url=>{
      if(!url||mediaFailed)return;
+     const isAuraModel=/^(Nano Banana|Seedream)$/i.test(String(item.model||"").trim());
+     if(isAuraModel&&proxyUrl){
+       // Use the final same-origin image response as the first visible source.
+       // Do not flash the provider's transient raw image before its 200 response.
+       setImageSource(proxyUrl);
+       return;
+     }
      if(url.startsWith("blob:")){setImageSource(url);return}
      if(!isDeadVheer&&directUrl)setImageSource(directUrl);
      if(proxyUrl){
@@ -4815,7 +4826,7 @@ async function pasteComposerContent(button){
  if(!input){toast("Поле ввода недоступно");return}
  const insertText=text=>{
   const value=String(text||"");
-  if(!value){toast("В буфере обмена нет текста");return false}
+  if(!value)return false;
   const start=input.selectionStart??input.value.length;
   const end=input.selectionEnd??start;
   input.setRangeText(value,start,end,"end");
@@ -4824,14 +4835,25 @@ async function pasteComposerContent(button){
   toast("Текст вставлен");
   return true;
  };
+ // Prefer plain text first: the previous clipboard.read() call triggered an
+ // extra browser permission/menu before inserting ordinary copied text.
  try{
-  if(mode==="images"&&navigator.clipboard?.read){
+  if(navigator.clipboard?.readText){
+   const text=await navigator.clipboard.readText();
+   if(insertText(text))return;
+  }
+ }catch{}
+ // Only fall back to rich clipboard access in Images when no text was available,
+ // so pasting an image as a reference remains supported.
+ if(mode==="images"&&navigator.clipboard?.read){
+  try{
    const items=await navigator.clipboard.read();
    for(const item of items){
     const imageType=item.types.find(type=>/^image\//i.test(type));
     if(imageType){
      const blob=await item.getType(imageType);
-     const file=new File([blob],"clipboard-image."+((imageType.split("/")[1]||"png").replace("jpeg","jpg")),{type:imageType});
+     const extension=(imageType.split("/")[1]||"png").replace("jpeg","jpg");
+     const file=new File([blob],"clipboard-image."+extension,{type:imageType});
      await attachReferenceFile(file);
      toast("Изображение вставлено");
      return;
@@ -4843,22 +4865,9 @@ async function pasteComposerContent(button){
      if(insertText(await blob.text()))return;
     }
    }
-  }
-  if(navigator.clipboard?.readText){
-   const text=await navigator.clipboard.readText();
-   if(insertText(text))return;
-  }else{
-   toast("Браузер не разрешил доступ к буферу обмена");
-  }
- }catch(error){
-  try{
-   if(navigator.clipboard?.readText){
-    const text=await navigator.clipboard.readText();
-    if(insertText(text))return;
-   }
   }catch{}
-  toast(mode==="images"?"Не удалось прочитать буфер. Разреши доступ к буферу обмена.":"Не удалось вставить текст. Разреши доступ к буферу обмена.");
  }
+ toast(mode==="images"?"В буфере нет текста или изображения либо браузер не разрешил доступ.":"Не удалось вставить текст. Разреши доступ к буферу обмена.");
 }
 
 function improveComposerPrompt(){
