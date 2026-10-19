@@ -489,7 +489,7 @@ module.exports = async function imageHandler(req, res) {
           for (const key of ["image_url","imageUrl","output_url","outputUrl","url"]) {
             if (typeof value[key] !== "string") continue;
             const candidate = value[key].trim();
-            if (/^https?:\\/\\//i.test(candidate)) return candidate;
+            if (/^https?:\/\//i.test(candidate)) return candidate;
             if (candidate.startsWith("/") || candidate.startsWith("postcard-results/")) {
               return new URL(candidate.startsWith("/") ? candidate : "/" + candidate, "https://aurasoundai.ru").toString();
             }
