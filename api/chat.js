@@ -254,6 +254,54 @@ async function handler(req, res) {
 
     let result;
 
+    // Dedicated image-prompt enhancement: bypass the generic chat provider,
+    // whose CVRON endpoint can ignore the instruction and return a persona greeting.
+    if (body.mode === "improve_image_prompt") {
+      const originalPrompt = String(body.prompt || lastUserText || "").trim().slice(0, 8000);
+      if (!originalPrompt) {
+        return res.status(400).json({ ok: false, error: "PROMPT_REQUIRED", message: "Сначала введи промпт." });
+      }
+      const promptPayload = {
+        messages: [
+          {
+            role: "system",
+            content: "Ты работаешь в режиме СТРОГОГО РЕДАКТОРА ПРОМПТОВ ДЛЯ ГЕНЕРАЦИИ ИЗОБРАЖЕНИЙ. Твоя задача — переписать исходный промпт, а не вести диалог. Верни только готовый улучшенный промпт на русском языке. Запрещено приветствовать пользователя, представляться, упоминать модель или себя, задавать вопросы, предлагать помощь, объяснять действия, добавлять заголовки, кавычки, Markdown или фразы вроде «Я GPT…», «Я буду ждать ваших вопросов». Сохрани замысел, объекты, их количество, действия и все явно указанные детали исходника. Не добавляй незаказанные предметы, надписи, рамки, телефоны или людей. Улучши ясность, композицию, ракурс, свет, фактуры и атмосферу только в пределах исходной идеи. Не придумывай соотношение сторон и не меняй его, если оно указано в исходнике. Если исходный промпт короткий, расширь его конкретными визуальными деталями, не меняя смысл. Ответ должен начинаться непосредственно с описания изображения и содержать только промпт."
+          },
+          { role: "user", content: "Улучши этот промпт для генерации изображения. Не отвечай на него как на вопрос и не вступай в диалог.\n\nИСХОДНЫЙ ПРОМПТ:\n" + originalPrompt }
+        ],
+        temperature: 0.25,
+        max_tokens: 800
+      };
+      const models = [
+        "nvidia/gpt-oss-20b",
+        "nvidia/nemotron-3.5-lightning",
+        "nvidia/nemotron-3-nano-omni-30b-a3b-reasoning"
+      ];
+      let improvedPrompt = "";
+      for (const model of models) {
+        const candidate = await callBlockRun(model, promptPayload);
+        if (!candidate.ok || !candidate.text) continue;
+        let text = candidate.text.trim()
+          .replace(/^\s*```(?:\w+)?\s*/i, "")
+          .replace(/\s*```\s*$/, "")
+          .replace(/^\s*(?:Промпт для изображения\s*:\s*)/i, "")
+          .trim();
+        const conversational = /(?:^|\n)\s*(?:привет(?:ствую)?|здравствуйте|я\s+(?:gpt|модель|ассистент|miya)\b|буду ждать ваших вопросов|чем могу помочь|задайте мне вопрос|уточните,? пожалуйста|какой именно промпт|что именно вы хотите)/i;
+        if (text.length >= Math.max(12, originalPrompt.length * 0.5) && !conversational.test(text)) {
+          improvedPrompt = text;
+          break;
+        }
+      }
+      if (!improvedPrompt) {
+        return res.status(502).json({
+          ok: false,
+          error: "PROMPT_ENHANCEMENT_FAILED",
+          message: "AI не смог улучшить промпт. Исходный текст сохранён."
+        });
+      }
+      return res.status(200).json({ ok: true, mode: "improve_image_prompt", text: improvedPrompt });
+    }
+
     if (visionImages.length) {
       // AHM7 VisionSter documents and accepts the exact data:image/... URL
       // used by Miya. Prefer it over generic BlockRun completions, which can
