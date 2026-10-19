@@ -1,3 +1,5 @@
+import { Readable } from "node:stream";
+import { pipeline } from "node:stream/promises";
 export const config = { api: { bodyParser: false } };
 export const maxDuration = 300;
 
@@ -163,14 +165,17 @@ async function proxyOutput(req, res, externalUrl) {
     });
   }
 
-  const buffer = Buffer.from(await upstream.arrayBuffer());
   const contentType = upstream.headers.get("content-type") || "audio/mpeg";
   const disposition = upstream.headers.get("content-disposition");
   res.status(200);
   res.setHeader("content-type", contentType);
   res.setHeader("cache-control", "private, no-store, max-age=0");
+  const contentLength = upstream.headers.get("content-length");
+  if (contentLength) res.setHeader("content-length", contentLength);
   if (disposition) res.setHeader("content-disposition", disposition);
-  res.send(buffer);
+  // Stream large audio instead of buffering it in memory or triggering a function response-size failure.
+  if (!upstream.body) return res.end();
+  await pipeline(Readable.fromWeb(upstream.body), res);
 }
 
 export default async function handler(req, res) {
