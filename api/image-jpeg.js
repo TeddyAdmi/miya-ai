@@ -65,7 +65,8 @@ module.exports = async function handler(req, res) {
       "cleverutil.com",
       "overchat.s3.eu-north-1.amazonaws.com"
     ];
-    if (!allowed.includes(host)) {
+    const auraImageHost = host === "aurasoundai.ru" || host.endsWith(".aurasoundai.ru");
+    if (!allowed.includes(host) && !auraImageHost) {
       return res.status(403).json({ ok: false, error: "IMAGE_HOST_NOT_ALLOWED" });
     }
 

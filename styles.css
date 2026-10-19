@@ -4068,6 +4068,20 @@ body.light .miya-music-brand a{color:#7152dc!important}
 @media(max-width:520px){.miya-text-grid{grid-template-columns:1fr 1fr!important}.miya-text-card-actions{flex-wrap:wrap}.miya-text-card-actions button{padding:5px 7px}}
 
 
-/* Keep image model selector text at its established readable size. */
-.composer.mode-images #composerModel.select-pill{font-size:12px!important;}
-@media(max-width:800px){.composer.mode-images #composerModel.select-pill{font-size:12px!important;}}
+/* Keep all three image prompt controls on the same readable font as Nano Banana. */
+.composer.mode-images #composerModel.select-pill,
+.composer.mode-images #composerRatio.select-pill,
+.composer.mode-images #composerQuality.select-pill{
+  font-family:Inter,system-ui,sans-serif!important;
+  font-size:12px!important;
+  font-weight:700!important;
+}
+@media(max-width:800px){
+  .composer.mode-images #composerModel.select-pill,
+  .composer.mode-images #composerRatio.select-pill,
+  .composer.mode-images #composerQuality.select-pill{
+    font-family:Inter,system-ui,sans-serif!important;
+    font-size:12px!important;
+    font-weight:700!important;
+  }
+}
