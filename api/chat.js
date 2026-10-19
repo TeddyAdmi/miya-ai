@@ -155,8 +155,19 @@ async function handler(req, res) {
 
     // Some upstream chat endpoints ignore the persona instruction and emit a canned
     // "I'm GPT-6 Luna, not Miya" correction. Reject that answer and use a fallback.
-    const isWrongMiyaIdentity = value =>
-      /(?:я\s+(?:не\s+)?(?:gpt\s*[- ]?6(?:\s+luna)?|gpt\s*[- ]?6\s+luna|luna)\b|меня\s+зовут\s+gpt\s*[- ]?6|вы\s+(?:ошиблись|ошибочно\s+назвали)|ошибочно\s+назвали\s+меня|я\s+не\s+мия|не\s+называйте\s+меня\s+мия|i am not miya|my name is gpt\s*[- ]?6)/i.test(String(value || ""));
+    const isWrongMiyaIdentity = value => {
+      const text = String(value || "").trim();
+      if (!text) return true;
+      // Reject identity claims and canned corrections from upstream providers,
+      // including alternate wording and translated model names.
+      const claimsForeignIdentity =
+        /(?:^|[.!?\\n])\\s*(?:я|меня зовут|мо[её] имя|на самом деле я|я на самом деле|i am|i'm|my name is|actually,? i am)\\b[^.!?\\n]{0,100}\\b(?:gpt\\s*[- ]?6(?:\\s*[- ]?luna)?|gpt\\s*[- ]?5\\s*nano|luna|луна)\\b/i.test(text) ||
+        /(?:gpt\\s*[- ]?6(?:\\s*[- ]?luna)?|luna|луна)[^.!?\\n]{0,100}(?:это я|я на самом деле|меня зовут|моя модель|my name is|i am|i'm)/i.test(text);
+      const arguesAboutName =
+        /(?:вы\\s+(?:ошиблись|ошибочно\\s+назвали)|ошибочно\\s+назвали|вы\\s+сказали,?\\s*что\\s+(?:ваше\\s+имя|меня)|не\\s+называйте\\s+меня|я\\s+не\\s+(?:мия|miya)|не\\s+являюсь\\s+(?:мией|miya)|i am not miya|you (?:are|have) (?:mistaken|wrong)|you called me incorrectly)/i.test(text);
+      const identityName = /(?:gpt\\s*[- ]?6|gpt\\s*[- ]?5\\s*nano|luna|луна|мия|miya)/i.test(text);
+      return claimsForeignIdentity || (arguesAboutName && identityName);
+    };
 
     const blockRunMessages = cleanMessages.slice(-12).map((m, index, arr) => {
       if (visionImages.length && index === arr.length - 1 && m.role === "user") {
