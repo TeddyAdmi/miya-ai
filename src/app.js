@@ -3014,11 +3014,10 @@ async function generateImage(prompt){
     ? String($("#composerRatio").value) : "16:9";
   const selectedQuality=["1K","2K","4K"].includes(String($("#composerQuality")?.value))
     ? String($("#composerQuality").value) : "2K";
-  const auraPrompt=prompt+"\\n\\nФотореалистичная фотография, не открытка и не постер. Без рамки, полей, обводки, декоративных углов, текста, надписей, поздравлений и шаблонов. Изображение должно быть самостоятельной фотографией от края до края.";
   const body=useAgnesImage
    ? JSON.stringify({prompt,ratio:$("#composerRatio").value,n:requestedCount,imageBase64:referenceImage||""})
    : useAuraImage
-     ? JSON.stringify({mode:"image",provider:"aura",prompt:auraPrompt,model:modelName})
+     ? JSON.stringify({mode:"image",provider:"aura",prompt,model:modelName})
      : useCvronImage
        ? JSON.stringify({
           mode:"image",provider:"cvron",prompt,model:modelName,ratio:selectedRatio,quality:selectedQuality,
