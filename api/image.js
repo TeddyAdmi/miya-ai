@@ -465,8 +465,13 @@ module.exports = async function imageHandler(req, res) {
       if (!auraModel) return res.status(400).json({ok:false,error:"AURA_MODEL_UNSUPPORTED",message:"Неизвестная модель Aura."});
       if (!userPrompt) return res.status(400).json({ok:false,error:"PROMPT_REQUIRED"});
 
-      // Pass the user's prompt through unchanged; no assistant-added instructions.
-      const auraPrompt = userPrompt;
+      // Keep the two Aura models' proven no-frame instructions separate.
+      // Add only natural-photo quality guidance; preserve the user's requested subject and composition.
+      const auraPromptSuffixes = {
+        "Nano Banana": "\n\nAn ordinary photograph without postcard styling, filling the image from edge to edge, with no frames, borders, margins, decorative corners, text or greetings.\n\nMaximum achievable image quality, exceptionally fine natural detail, sharp realistic textures, accurate anatomy and realistic material details, lifelike fine detail, balanced exposure, natural lighting, clear details in both highlights and shadows, realistic colors, excellent focus and professional photographic clarity. Avoid artificial sharpening and unnatural textures.",
+        "Seedream": "\n\nCreate a normal standalone photorealistic image. Do not create a postcard, greeting card, poster, border, frame, template, or text.\n\nUse the highest available image quality, with exceptionally fine natural detail, accurate anatomy, crisp focus, lifelike textures, balanced exposure, natural lighting, clear highlights and shadows, and true-to-life colors. Preserve a natural photographic appearance without artificial sharpening or excessive processing."
+      };
+      const auraPrompt = userPrompt + auraPromptSuffixes[requestedModel];
       try {
         const form = new FormData();
         form.append("prompt", auraPrompt);
