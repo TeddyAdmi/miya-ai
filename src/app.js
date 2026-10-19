@@ -3025,7 +3025,12 @@ async function generateImage(prompt){
           imageUrl:referenceImage && !referenceImage.startsWith("data:image/") ? referenceImage : "",
           imageBase64:referenceImage && referenceImage.startsWith("data:image/") ? referenceImage : ""
          })
-       : JSON.stringify({  let data;
+       : JSON.stringify({
+          mode:"image",provider:"ahm7",prompt,model:modelName,
+          ratio:$("#composerRatio").value,quality:selectedQuality,outputFormat:"jpeg",copies:requestedCount,
+          options:referenceImage?payload:{}
+         });
+  let data;
   const requestThroughMiyaApi=async()=>new Promise((resolve,reject)=>{
    const xhr=new XMLHttpRequest();
    xhr.open("POST",useAgnesImage?"/api/agnes-image":"/api/image",true);
