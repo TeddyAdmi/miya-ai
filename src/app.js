@@ -4870,11 +4870,61 @@ async function pasteComposerContent(button){
  toast(mode==="images"?"В буфере нет текста или изображения либо браузер не разрешил доступ.":"Не удалось вставить текст. Разреши доступ к буферу обмена.");
 }
 
-function improveComposerPrompt(){
+function improveVideoComposerPrompt(){
  const i=$("#composerInput");if(!i)return;
- if(i.value.trim())i.value=i.value.trim()+", cinematic composition, professional lighting, realistic textures, highly detailed, premium quality";
+ if(i.value.trim())i.value=i.value.trim()+", кинематографичная композиция, профессиональное освещение, реалистичные текстуры, высокая детализация, премиальное качество";
  else toast("Сначала введи промпт");
  syncInput();
+}
+async function improveImageComposerPrompt(){
+ const input=$("#composerInput");
+ const button=$("#improve");
+ if(!input||!button)return;
+ const original=String(input.value||"").trim();
+ if(!original){toast("Сначала введи промпт");input.focus();return}
+ if(button.dataset.improving==="1")return;
+ const previousTitle=button.title||"Улучшить промпт AI";
+ const status=$("#composerStatus");
+ button.dataset.improving="1";
+ button.disabled=true;
+ button.setAttribute("aria-busy","true");
+ button.title="AI улучшает промпт…";
+ button.setAttribute("aria-label","AI улучшает промпт");
+ if(status)status.textContent="AI улучшает промпт…";
+ try{
+  const response=await fetch("/api/chat",{
+   method:"POST",
+   headers:{"Content-Type":"application/json","Accept":"application/json"},
+   body:JSON.stringify({messages:[{role:"user",content:
+    "Ты — профессиональный редактор промптов для генерации изображений. Улучши следующий промпт, сохранив исходную идею, главные объекты, их количество, действия и все явно указанные детали. Не добавляй неожиданных объектов, текста, рамок, телефонов или других предметов, если их не просили. Сделай описание конкретнее за счёт композиции, ракурса, света, материалов, атмосферы и качества изображения только там, где это уместно. Не меняй формат или соотношение сторон, если пользователь этого не указал. Пиши итог исключительно на русском языке. Верни только один готовый улучшенный промпт, без заголовка, пояснений, кавычек, списков и Markdown-разметки.\n\nИсходный промпт:\n"+original
+   }]})
+  });
+  const data=await response.json().catch(()=>null);
+  if(!response.ok||!data?.ok||typeof data.text!=="string"||!data.text.trim()){
+   throw new Error(data?.message||data?.error||"AI временно недоступен");
+  }
+  let improved=data.text.trim()
+   .replace(/^\s*Промпт для изображения\s*:\s*/i,"")
+   .replace(/^\s*```(?:\w+)?\s*/,"")
+   .replace(/\s*```\s*$/,"")
+   .trim();
+  if(improved.length<original.length*0.45||improved.length<8){
+   throw new Error("AI вернул слишком короткий промпт");
+  }
+  input.value=improved;
+  syncInput();
+  if(status)status.textContent="Промпт улучшен с помощью AI";
+  toast("Промпт улучшен AI");
+ }catch(error){
+  if(status)status.textContent="Не удалось улучшить промпт — исходный текст сохранён";
+  toast("Не удалось улучшить промпт AI. Исходный текст сохранён.");
+ }finally{
+  button.disabled=false;
+  button.removeAttribute("aria-busy");
+  button.dataset.improving="0";
+  button.title=previousTitle;
+  button.setAttribute("aria-label","Улучшить промпт AI");
+ }
 }
 $("#voiceGender")?.addEventListener("change",refreshVoiceSelects);
 $("#voiceRate")?.addEventListener("input",e=>$("#voiceRateValue").textContent=e.target.value);
@@ -4919,7 +4969,9 @@ $("#composerModel")?.addEventListener("change",()=>{
       :modelLabel+" · готов к созданию";
   }
 });
-$("#improve")?.addEventListener("click",improveComposerPrompt);
+$("#improve")?.addEventListener("click",improveImageComposerPrompt);
+$("#improve")?.setAttribute("title","Улучшить промпт AI");
+$("#improve")?.setAttribute("aria-label","Улучшить промпт AI");
 $("#copyPrompt")?.addEventListener("click",e=>copyComposerPrompt(e.currentTarget));
 $("#chatPastePrompt")?.addEventListener("click",e=>pasteComposerContent(e.currentTarget));
 $("#imagePastePrompt")?.addEventListener("click",e=>pasteComposerContent(e.currentTarget));
@@ -4937,7 +4989,7 @@ $("#chatTrash")?.addEventListener("click",()=>{
   }
   toast("Текст очищен");
 });
-$("#videoImprove")?.addEventListener("click",improveComposerPrompt);
+$("#videoImprove")?.addEventListener("click",improveVideoComposerPrompt);
 $("#videoCopyPrompt")?.addEventListener("click",e=>copyComposerPrompt(e.currentTarget));
 $("#videoModel")?.addEventListener("change",()=>{
  const model=$("#videoModel").value;
