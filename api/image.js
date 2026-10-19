@@ -465,9 +465,8 @@ module.exports = async function imageHandler(req, res) {
       if (!auraModel) return res.status(400).json({ok:false,error:"AURA_MODEL_UNSUPPORTED",message:"Неизвестная модель Aura."});
       if (!userPrompt) return res.status(400).json({ok:false,error:"PROMPT_REQUIRED"});
 
-      // Route only the two new models to Aura. Preserve the provider's native
-      // output dimensions; no cropping, stretching, blurred padding, or frames.
-      const auraPrompt = userPrompt + "\n\nОБЯЗАТЕЛЬНО СОБЛЮДАЙ ЭТИ УСЛОВИЯ: это самостоятельная реалистичная фотография, НЕ открытка, НЕ постер и НЕ фотография внутри рамки. Изображение должно идти от края до края одним непрерывным кадром. Никаких рамок, бордюров, полей, обводок, декоративных углов, паспарту, коллажных вставок или размытого заполнения по краям. Не добавляй одежду, костюм, обувь или аксессуары животному: естественная шерсть, без одежды, если пользователь прямо не попросил обратного. Если в кадре есть телефон, держи его в естественной правильной ориентации: верх телефона сверху, низ снизу; не переворачивай его вверх ногами. Не переноси детали из предыдущих генераций и не выдумывай предметы, которых нет в текущем описании. Сохраняй точный смысл исходного промпта.\n\nSTRICT REQUIREMENTS: standalone full-bleed realistic photograph, NOT a postcard, poster, framed picture, or picture-in-picture. No frame, border, margin, outline, mat, decorative corners, collage inset, or blurred side padding. Animals must have natural fur and NO clothes, costumes, shoes, or accessories unless explicitly requested. If a phone is present, keep it upright in its normal orientation, never upside down. Follow only the current prompt; do not carry over elements from previous generations.";
+      // Pass the user's prompt through unchanged; no assistant-added instructions.
+      const auraPrompt = userPrompt;
       try {
         const form = new FormData();
         form.append("prompt", auraPrompt);
@@ -696,15 +695,12 @@ module.exports = async function imageHandler(req, res) {
       });
     }
 
-    // Keep the proven AHM7 FLUX Dev contract exact: prompt + ratio only.
-    // Add a concise anatomy guard because FLUX can otherwise duplicate limbs
-    // when several hand/arm poses are described in one scene.
+    // Send the user's prompt unchanged, with only the selected ratio.
     if (!isImageToImage) {
-      const anatomyPrompt = prompt + "\n\nANATOMY CONSISTENCY: exactly one person with exactly two arms and exactly two hands. Each arm must connect naturally to one shoulder and each hand to one wrist. Do not generate extra arms, hands, fingers, duplicated limbs, detached limbs, or limbs growing from the torso, legs, table, or background. Keep the requested pose physically coherent and anatomically realistic.";
       const upstream = await fetch("https://ahm7xmakki.com/api/tti", {
         method: "POST",
         headers: { "Content-Type": "application/json", "Accept": "application/json" },
-        body: JSON.stringify({ prompt: anatomyPrompt, ratio }),
+        body: JSON.stringify({ prompt, ratio }),
         signal: AbortSignal.timeout(55000)
       });
 
