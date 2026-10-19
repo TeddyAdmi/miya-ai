@@ -4066,3 +4066,8 @@ body.light .miya-music-brand a{color:#7152dc!important}
 .miya-library-text-wall{width:100%;min-width:0}
 @media(max-width:800px){.miya-text-grid{grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:8px!important}.miya-text-card{padding:10px;min-height:180px}.miya-text-card-body{font-size:11px}.miya-text-card-head{flex-wrap:wrap}.miya-text-card-date{font-size:9px}}
 @media(max-width:520px){.miya-text-grid{grid-template-columns:1fr 1fr!important}.miya-text-card-actions{flex-wrap:wrap}.miya-text-card-actions button{padding:5px 7px}}
+
+
+/* Keep image model selector text at its established readable size. */
+.composer.mode-images #composerModel.select-pill{font-size:12px!important;}
+@media(max-width:800px){.composer.mode-images #composerModel.select-pill{font-size:12px!important;}}

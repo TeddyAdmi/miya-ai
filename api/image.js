@@ -460,6 +460,8 @@ module.exports = async function imageHandler(req, res) {
 
     if (provider === "cvron") {
       const cvronModels = {
+        "Nano Banana": "https://cvron.alwaysdata.net/cvronai/multi-gen.php?model=nano-banana",
+        "Seedream": "https://cvron.alwaysdata.net/cvronai/multi-gen.php?model=seedream",
         "Nano Banana 2": "https://cvron.alwaysdata.net/cvronai/nanobanana2.php",
         "GPT Image 2.5": "https://cvron.alwaysdata.net/cvronai/gpt-image-2-5-flare.php"
       };
@@ -494,7 +496,8 @@ module.exports = async function imageHandler(req, res) {
         // Preserve the provider's original working request: send the user's prompt unchanged.
         const target =
           endpoint +
-          "?prompt=" + encodeURIComponent(cvronPrompt) +
+          (endpoint.includes("?") ? "&" : "?") +
+          "prompt=" + encodeURIComponent(cvronPrompt) +
           "&ratio=" + encodeURIComponent(cvronRatio) +
           "&aspect_ratio=" + encodeURIComponent(cvronRatio) +
           "&size=" + encodeURIComponent(cvronRatio) +
