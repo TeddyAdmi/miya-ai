@@ -4902,9 +4902,9 @@ async function improveImageComposerPrompt(){
    throw new Error(data?.message||data?.error||"AI временно недоступен");
   }
   let improved=data.text.trim()
-   .replace(/^\s*Промпт для изображения\s*:\s*/i,"")
-   .replace(/^\s*```(?:\w+)?\s*/,"")
+   .replace(/^\s*```(?:\w+)?\s*/i,"")
    .replace(/\s*```\s*$/,"")
+   .replace(/^(?:\s*(?:промпт\s+для\s+изображения|изображение|картинка|промпт|описание\s+изображения|описание)\s*[:：—–-]\s*)+/i,"")
    .trim();
   if(improved.length<original.length*0.45||improved.length<8){
    throw new Error("AI вернул слишком короткий промпт");
