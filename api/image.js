@@ -467,7 +467,7 @@ module.exports = async function imageHandler(req, res) {
 
       // Route only the two new models to Aura. Preserve the provider's native
       // output dimensions; no cropping, stretching, blurred padding, or frames.
-      const auraPrompt = userPrompt;
+      const auraPrompt = userPrompt + "\n\nТочно следуй только текущему описанию. Создай обычную цельную фотографию: сама сцена заполняет изображение до самых краёв, края продолжают фотографию. Не добавляй декоративное оформление и не переноси детали из прошлых генераций. Животные должны сохранять естественный вид с шерстью; не добавляй им одежду, костюмы, обувь или аксессуары, если пользователь прямо этого не просил. Если в запросе сказано «без одежды», соблюдай это буквально. Не выдумывай предметы и детали, которых нет в описании.";
       try {
         const form = new FormData();
         form.append("prompt", auraPrompt);
