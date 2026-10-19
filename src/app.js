@@ -6322,7 +6322,7 @@ body.light #composer.mode-music .music-options .music-tool:hover,body.light #com
  })();
  function createMusicPlayer(item,compact){
   const wrap=document.createElement("div");wrap.className="miya-audio-player"+(compact?" compact":"");
-  const songKey=String(item.id);let audio=audioBySong.get(songKey);if(!audio){audio=new Audio();audio.preload="auto";audio.crossOrigin="anonymous";audio.src=item.url;audio.setAttribute("aria-label","Аудиоплеер песни");audio.volume=1;audioBySong.set(songKey,audio)}
+  const songKey=String(item.id);let audio=audioBySong.get(songKey);if(!audio){audio=new Audio();audio.preload="auto";/* Do not set crossOrigin for Aura-hosted audio: Aura omits Access-Control-Allow-Origin, and anonymous CORS mode prevents playback. */audio.src=item.url;audio.setAttribute("aria-label","Аудиоплеер песни");audio.volume=1;audioBySong.set(songKey,audio)}
   const play=document.createElement("button");play.type="button";play.className="miya-audio-play";play.setAttribute("aria-label","Воспроизвести");play.innerHTML='<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5.5v13l10-6.5z"/></svg>';
   const body=document.createElement("div");body.className="miya-audio-body";
   const trackArea=document.createElement("div");trackArea.className="miya-audio-track-area";
@@ -6333,6 +6333,8 @@ body.light #composer.mode-music .music-options .music-tool:hover,body.light #com
   let liveAnalyser=null,liveSource=null,liveAudioContext=null,liveFrequencyData=null,liveWaveFrame=0;
   const startLiveSpectrum=async()=>{
    if(liveAnalyser||!bars.length)return;
+   /* Web Audio analyser taints/mutes cross-origin media without CORS. Keep Aura audio audible and use the static waveform instead. */
+   try{if(new URL(audio.currentSrc||audio.src,location.href).origin!==location.origin)return}catch{return}
    try{
     const AC=window.AudioContext||window.webkitAudioContext;if(!AC)return;
     liveAudioContext=new AC();await liveAudioContext.resume();
