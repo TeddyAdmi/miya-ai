@@ -458,10 +458,93 @@ module.exports = async function imageHandler(req, res) {
     const provider = typeof body.provider === "string" ? body.provider.trim().toLowerCase() : "";
     const requestedModel = typeof body.model === "string" ? body.model.trim() : "";
 
+    if (provider === "aura") {
+      const auraModels = {"Nano Banana":"nano-banana","Seedream":"seedream"};
+      const auraModel = auraModels[requestedModel];
+      const userPrompt = typeof body.prompt === "string" ? body.prompt.trim() : "";
+      if (!auraModel) return res.status(400).json({ok:false,error:"AURA_MODEL_UNSUPPORTED",message:"Неизвестная модель Aura."});
+      if (!userPrompt) return res.status(400).json({ok:false,error:"PROMPT_REQUIRED"});
+
+      // Route only the two new models to Aura. Preserve the provider's native
+      // output dimensions; no cropping, stretching, blurred padding, or frames.
+      const auraPrompt = userPrompt + "\n\nФотореалистичная фотография, не открытка и не постер. Без рамки, полей, обводки, декоративных углов, текста, надписей, поздравлений и шаблонов. Изображение должно быть самостоятельной фотографией от края до края.";
+      try {
+        const form = new FormData();
+        form.append("prompt", auraPrompt);
+        form.append("model", auraModel);
+        const createResponse = await fetch("https://aurasoundai.ru/api/postcard/generate", {
+          method:"POST", headers:{Accept:"application/json"}, body:form,
+          cache:"no-store", signal:AbortSignal.timeout(30000)
+        });
+        const createRaw = await createResponse.text();
+        let createData = {};
+        try { createData = createRaw ? JSON.parse(createRaw) : {}; } catch {}
+        if (!createResponse.ok) return res.status(502).json({
+          ok:false,error:"AURA_GENERATE_HTTP",message:"Aura вернула HTTP " + createResponse.status + ".",
+          upstreamStatus:createResponse.status,upstreamBody:createRaw.slice(0,1200)
+        });
+
+        const findAuraImage = value => {
+          if (!value || typeof value !== "object") return "";
+          for (const key of ["image_url","imageUrl","output_url","outputUrl","url"]) {
+            if (typeof value[key] !== "string") continue;
+            const candidate = value[key].trim();
+            if (/^https?:\\/\\//i.test(candidate)) return candidate;
+            if (candidate.startsWith("/") || candidate.startsWith("postcard-results/")) {
+              return new URL(candidate.startsWith("/") ? candidate : "/" + candidate, "https://aurasoundai.ru").toString();
+            }
+          }
+          for (const key of ["data","result","output"]) {
+            const found = findAuraImage(value[key]);
+            if (found) return found;
+          }
+          return "";
+        };
+        let imageUrl = findAuraImage(createData);
+        const taskId = String(createData.task_id || createData.taskId || createData.id || "");
+        if (!imageUrl && !taskId) return res.status(502).json({
+          ok:false,error:"AURA_TASK_ID_MISSING",message:"Aura не вернула идентификатор задачи.",
+          upstreamBody:createRaw.slice(0,1200)
+        });
+
+        const deadline = Date.now() + 95000;
+        let lastStatus = "";
+        while (!imageUrl && Date.now() < deadline) {
+          await new Promise(resolve => setTimeout(resolve, 1800));
+          const statusResponse = await fetch(
+            "https://aurasoundai.ru/api/postcard/status?task_id=" + encodeURIComponent(taskId),
+            {headers:{Accept:"application/json"},cache:"no-store",signal:AbortSignal.timeout(12000)}
+          );
+          const statusRaw = await statusResponse.text();
+          let statusData = {};
+          try { statusData = statusRaw ? JSON.parse(statusRaw) : {}; } catch {}
+          if (!statusResponse.ok) return res.status(502).json({
+            ok:false,error:"AURA_STATUS_HTTP",upstreamStatus:statusResponse.status,upstreamBody:statusRaw.slice(0,1000)
+          });
+          lastStatus = String(statusData.status || "");
+          imageUrl = findAuraImage(statusData);
+          if (imageUrl) break;
+          if (/^(failed|error|cancelled|canceled)$/i.test(lastStatus)) return res.status(502).json({
+            ok:false,error:"AURA_GENERATION_FAILED",
+            message:String(statusData.error || statusData.message || "Aura не смогла создать изображение."),
+            upstreamBody:statusRaw.slice(0,1000)
+          });
+        }
+        if (!imageUrl) return res.status(504).json({
+          ok:false,error:"AURA_GENERATION_TIMEOUT",message:"Aura не завершила генерацию вовремя.",
+          taskId,status:lastStatus
+        });
+        return res.status(200).json({
+          ok:true,mode:"image",status:"completed",provider:"Aura",model:requestedModel,
+          imageUrl,imageUrls:[imageUrl],count:1,meta:{native:true,noCrop:true,noFrame:true}
+        });
+      } catch (error) {
+        return res.status(502).json({ok:false,error:"AURA_HANDLER_ERROR",message:String(error?.message||error||"Ошибка обращения к Aura.")});
+      }
+    }
+
     if (provider === "cvron") {
       const cvronModels = {
-        "Nano Banana": "https://cvron.alwaysdata.net/cvronai/multi-gen.php?model=nano-banana",
-        "Seedream": "https://cvron.alwaysdata.net/cvronai/multi-gen.php?model=seedream",
         "Nano Banana 2": "https://cvron.alwaysdata.net/cvronai/nanobanana2.php",
         "GPT Image 2.5": "https://cvron.alwaysdata.net/cvronai/gpt-image-2-5-flare.php"
       };

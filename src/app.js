@@ -2959,7 +2959,8 @@ async function generateAgnesImage(prompt){
 async function generateImage(prompt){
  const selectedModel=String($("#composerModel")?.value||"").trim();
  const useAgnesImage=/^Agnes Image/i.test(selectedModel);
- const useCvronImage=/^(?:Nano Banana|Nano Banana 2|Seedream|GPT Image 2\.5)$/i.test(selectedModel);
+ const useAuraImage=/^(?:Nano Banana|Seedream)$/i.test(selectedModel);
+ const useCvronImage=/^(?:Nano Banana 2|GPT Image 2\\.5)$/i.test(selectedModel);
  // Nano Banana 2 and GPT Image 2.5 are generation-only here.
  // Existing-image edits stay on the established Agnes editing route.
  if(referenceImage && useCvronImage){
@@ -3013,28 +3014,18 @@ async function generateImage(prompt){
     ? String($("#composerRatio").value) : "16:9";
   const selectedQuality=["1K","2K","4K"].includes(String($("#composerQuality")?.value))
     ? String($("#composerQuality").value) : "2K";
-  const cvronPrompt=/^(?:Nano Banana|Seedream)$/.test(modelName)
-    ? prompt+"\n\nСоздай фотореалистичную фотографию, а не открытку. Без рамки, полей, обводки, декоративных углов, текста и поздравлений. Изображение должно заполнять весь кадр от края до края."
-    : prompt;
+  const auraPrompt=prompt+"\\n\\nФотореалистичная фотография, не открытка и не постер. Без рамки, полей, обводки, декоративных углов, текста, надписей, поздравлений и шаблонов. Изображение должно быть самостоятельной фотографией от края до края.";
   const body=useAgnesImage
    ? JSON.stringify({prompt,ratio:$("#composerRatio").value,n:requestedCount,imageBase64:referenceImage||""})
-   : useCvronImage
-     ? JSON.stringify({
-        mode:"image",
-        provider:"cvron",
-        prompt:cvronPrompt,
-        model:modelName,
-        ratio:selectedRatio,
-        quality:selectedQuality,
-        imageUrl:referenceImage && !referenceImage.startsWith("data:image/") ? referenceImage : "",
-        imageBase64:referenceImage && referenceImage.startsWith("data:image/") ? referenceImage : ""
-       })
-     : JSON.stringify({
-        mode:"image",provider:"ahm7",prompt,model:modelName,
-        ratio:$("#composerRatio").value,quality:selectedQuality,outputFormat:"jpeg",copies:requestedCount,
-        options:referenceImage?payload:{}
-       });
-  let data;
+   : useAuraImage
+     ? JSON.stringify({mode:"image",provider:"aura",prompt:auraPrompt,model:modelName})
+     : useCvronImage
+       ? JSON.stringify({
+          mode:"image",provider:"cvron",prompt,model:modelName,ratio:selectedRatio,quality:selectedQuality,
+          imageUrl:referenceImage && !referenceImage.startsWith("data:image/") ? referenceImage : "",
+          imageBase64:referenceImage && referenceImage.startsWith("data:image/") ? referenceImage : ""
+         })
+       : JSON.stringify({  let data;
   const requestThroughMiyaApi=async()=>new Promise((resolve,reject)=>{
    const xhr=new XMLHttpRequest();
    xhr.open("POST",useAgnesImage?"/api/agnes-image":"/api/image",true);
