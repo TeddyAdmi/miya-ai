@@ -858,6 +858,8 @@ async function resolveMediaUrl(item){
 }
 function imageModelLabel(model){
  const name=String(model||"").trim();
+ if(/^GPT Image 2\.5 Flare$/i.test(name))return "GPT Image 2.5 Flare · T2I";
+ if(/^GPT Image 2\.5 Sunburst$/i.test(name))return "GPT Image 2.5 Sunburst · T2I";
  if(/^Nano Banana$/i.test(name))return "Nano Banana · T2I";
  if(/^Seedream$/i.test(name))return "Seedream · T2I";
  if(/^Nano Banana 2$/i.test(name))return "Nano Banana 2 · T2I";
@@ -2971,6 +2973,7 @@ async function generateImage(prompt){
  const selectedModel=String($("#composerModel")?.value||"").trim();
  const useAgnesImage=/^Agnes Image/i.test(selectedModel);
  const useAuraImage=/^(?:Nano Banana|Seedream)$/i.test(selectedModel);
+  const useImage25Image=/^GPT Image 2\.5 (?:Flare|Sunburst)$/i.test(selectedModel);
  const useCvronImage=/^(?:Nano Banana 2|GPT Image 2\\.5)$/i.test(selectedModel);
  // Nano Banana 2 and GPT Image 2.5 are generation-only here.
  // Existing-image edits stay on the established Agnes editing route.
@@ -3029,13 +3032,15 @@ async function generateImage(prompt){
    ? JSON.stringify({prompt,ratio:$("#composerRatio").value,n:requestedCount,imageBase64:referenceImage||""})
    : useAuraImage
      ? JSON.stringify({mode:"image",provider:"aura",prompt,model:modelName})
-     : useCvronImage
-       ? JSON.stringify({
+     : useImage25Image
+       ? JSON.stringify({mode:"image",provider:"image25",prompt,model:modelName,ratio:selectedRatio,quality:selectedQuality})
+       : useCvronImage
+         ? JSON.stringify({
           mode:"image",provider:"cvron",prompt,model:modelName,ratio:selectedRatio,quality:selectedQuality,
           imageUrl:referenceImage && !referenceImage.startsWith("data:image/") ? referenceImage : "",
           imageBase64:referenceImage && referenceImage.startsWith("data:image/") ? referenceImage : ""
          })
-       : JSON.stringify({
+         : JSON.stringify({
           mode:"image",provider:"ahm7",prompt,model:modelName,
           ratio:$("#composerRatio").value,quality:selectedQuality,outputFormat:"jpeg",copies:requestedCount,
           options:referenceImage?payload:{}
@@ -3091,7 +3096,7 @@ async function generateImage(prompt){
     if(modelLabel)modelLabel.textContent=imageModelLabel(actualModel);
    }
   scrollImagesToTop();
-  if(modelName === "Nano Banana 2"){
+  if(modelName === "Nano Banana 2" || useImage25Image){
    referenceImage=null;
    chatAttachmentFile=null;
    try{sessionStorage.removeItem("miyaReferenceImage")}catch{}

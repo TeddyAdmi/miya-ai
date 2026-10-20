@@ -660,6 +660,56 @@ module.exports = async function imageHandler(req, res) {
       }
     }
 
+    if (provider === "image25") {
+      const image25Models = {
+        "GPT Image 2.5 Flare": "gpt-image-2.5-flare",
+        "GPT Image 2.5 Sunburst": "gpt-image-2.5-sunburst"
+      };
+      const upstreamModel = image25Models[requestedModel];
+      const image25Prompt = typeof body.prompt === "string" ? body.prompt.trim() : "";
+      const image25Ratio = ["1:1","3:4","4:3","16:9","9:16","2:3","3:2","21:9"].includes(String(body.ratio || "")) ? String(body.ratio) : "16:9";
+      const resolution = ({ "1K":"1k", "2K":"2k", "4K":"4k" })[String(body.quality || "").toUpperCase()] || "2k";
+      if (!upstreamModel) return res.status(400).json({ok:false,error:"IMAGE25_MODEL_UNSUPPORTED",message:"Неизвестная модель Image25.ai."});
+      if (!image25Prompt) return res.status(400).json({ok:false,error:"PROMPT_REQUIRED"});
+      try {
+        const createResponse = await fetch("https://image25.ai/api/generate", {
+          method:"POST",headers:{"Content-Type":"application/json","Accept":"application/json"},
+          cache:"no-store",signal:AbortSignal.timeout(30000),
+          body:JSON.stringify({prompt:image25Prompt,model:upstreamModel,size:image25Ratio,resolution,quality:"medium",outputFormat:"png",background:"auto",imageUrls:[]})
+        });
+        const createRaw = await createResponse.text();
+        let createData = {};
+        try { createData = createRaw ? JSON.parse(createRaw) : {}; } catch {}
+        if (!createResponse.ok || !createData.taskId || !createData.token) {
+          return res.status(502).json({ok:false,error:"IMAGE25_CREATE_FAILED",message:String(createData.message || createData.error || "Image25.ai не принял задачу (HTTP " + createResponse.status + ")."),upstreamStatus:createResponse.status});
+        }
+        const taskId = String(createData.taskId);
+        const taskToken = String(createData.token);
+        const deadline = Date.now() + 150000;
+        let taskData = {};
+        let lastStatus = "";
+        while (Date.now() < deadline) {
+          await new Promise(resolve => setTimeout(resolve, 2000));
+          const taskResponse = await fetch("https://image25.ai/api/tasks/" + encodeURIComponent(taskId), {
+            method:"GET",headers:{"Accept":"application/json","x-task-token":taskToken},
+            cache:"no-store",signal:AbortSignal.timeout(15000)
+          });
+          const taskRaw = await taskResponse.text();
+          try { taskData = taskRaw ? JSON.parse(taskRaw) : {}; } catch { taskData = {}; }
+          if (!taskResponse.ok) return res.status(502).json({ok:false,error:"IMAGE25_TASK_HTTP",message:"Image25.ai вернул HTTP " + taskResponse.status + " при проверке задачи."});
+          lastStatus = String(taskData.status || "").toLowerCase();
+          if (lastStatus === "completed") break;
+          if (["failed","error","cancelled"].includes(lastStatus)) return res.status(502).json({ok:false,error:"IMAGE25_GENERATION_FAILED",message:String(taskData.error || "Image25.ai не смог создать изображение.")});
+        }
+        if (String(taskData.status || "").toLowerCase() !== "completed") return res.status(504).json({ok:false,error:"IMAGE25_GENERATION_TIMEOUT",message:"Image25.ai не завершил генерацию вовремя.",taskId,lastStatus});
+        const images = Array.isArray(taskData.images) ? taskData.images.filter(url => typeof url === "string" && /^https:\/\//i.test(url)) : [];
+        if (!images.length) return res.status(502).json({ok:false,error:"IMAGE25_IMAGE_URL_MISSING",message:"Image25.ai завершил задачу, но не вернул изображение."});
+        return res.status(200).json({ok:true,mode:"image",status:"completed",provider:"Image25.ai",model:requestedModel,imageUrl:images[0],imageUrls:images,count:images.length,meta:{free:true,requestedRatio:image25Ratio,native:true,noCrop:true,source:"Image25.ai"}});
+      } catch (error) {
+        return res.status(502).json({ok:false,error:"IMAGE25_HANDLER_ERROR",message:String(error?.message||error||"Ошибка обращения к Image25.ai.")});
+      }
+    }
+
     if (provider === "cvron") {
       const cvronModels = {
         "Nano Banana 2": "https://cvron.alwaysdata.net/cvronai/nanobanana2.php",
