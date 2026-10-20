@@ -63,7 +63,8 @@ module.exports = async function handler(req, res) {
       "www.cleverutils.com",
       "cleverutil",
       "cleverutil.com",
-      "overchat.s3.eu-north-1.amazonaws.com"
+      "overchat.s3.eu-north-1.amazonaws.com",
+      "pub-62e693a7058040f98bba94ed1d6f880b.r2.dev"
     ];
     const auraImageHost = host === "aurasoundai.ru" || host.endsWith(".aurasoundai.ru");
     if (!allowed.includes(host) && !auraImageHost) {
