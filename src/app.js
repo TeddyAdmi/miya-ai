@@ -863,6 +863,7 @@ function imageModelLabel(model){
  if(/^Nano Banana 2$/i.test(name))return "Nano Banana 2 · T2I";
  if(/^GPT Image 2\.5$/i.test(name))return "GPT Image 2.5 · T2I";
  if(/^Agnes Image(?: 2\.5 Flash)?$/i.test(name))return "Agnes Image · T2I / I2I";
+ if(/^Z-Image Turbo \(ImageFree\)$/i.test(name))return "Z-Image Turbo · ImageFree";
  if(/^FLUX Dev$/i.test(name))return "FLUX Dev · T2I";
  if(/^FLUX Kontext Dev$/i.test(name))return "FLUX Kontext Dev · I2I";
  if(/^FLUX Content Dev$/i.test(name))return "FLUX Content Dev · I2I";
@@ -2970,11 +2971,12 @@ async function generateAgnesImage(prompt){
 async function generateImage(prompt){
  const selectedModel=String($("#composerModel")?.value||"").trim();
  const useAgnesImage=/^Agnes Image/i.test(selectedModel);
+ const useImageFree=/^Z-Image Turbo \(ImageFree\)$/i.test(selectedModel);
  const useAuraImage=/^(?:Nano Banana|Seedream)$/i.test(selectedModel);
  const useCvronImage=/^(?:Nano Banana 2|GPT Image 2\\.5)$/i.test(selectedModel);
  // Nano Banana 2 and GPT Image 2.5 are generation-only here.
  // Existing-image edits stay on the established Agnes editing route.
- if(referenceImage && useCvronImage){
+ if(referenceImage && (useCvronImage || useImageFree)){
   $("#composerModel").value="Agnes Image 2.5 Flash";
   return generateAgnesImage(prompt);
  }
@@ -2987,7 +2989,7 @@ async function generateImage(prompt){
  const percent=ring?.querySelector(".progress-percent");
  const modelName=selectedModel||"FLUX Dev";
  const displayModel=imageModelLabel(modelName);
- const timeoutMs=/^(?:Nano Banana|Nano Banana 2|Seedream)$/.test(modelName)?180000:120000;
+ const timeoutMs=/^(?:Nano Banana|Nano Banana 2|Seedream|Z-Image Turbo \(ImageFree\))$/.test(modelName)?180000:120000;
  const progressDurationMs=40000;
  const usesReferenceImage=Boolean(referenceImage);
  const hasFileUpload=Boolean(referenceImage);
@@ -3027,7 +3029,9 @@ async function generateImage(prompt){
     ? String($("#composerQuality").value) : "2K";
   const body=useAgnesImage
    ? JSON.stringify({prompt,ratio:$("#composerRatio").value,n:requestedCount,imageBase64:referenceImage||""})
-   : useAuraImage
+   : useImageFree
+     ? JSON.stringify({mode:"image",provider:"imagefree",prompt,model:modelName,ratio:selectedRatio})
+     : useAuraImage
      ? JSON.stringify({mode:"image",provider:"aura",prompt,model:modelName})
      : useCvronImage
          ? JSON.stringify({
@@ -3084,7 +3088,7 @@ async function generateImage(prompt){
    ? data.imageUrls
    : data.imageUrl?[data.imageUrl]:[];
   if(!generatedUrls.length)throw new Error("Сервер не вернул готовое изображение");
-  await Promise.all(generatedUrls.map(url=>showImage(url,prompt,imageModelLabel(actualModel),useCvronImage?selectedRatio:"")));
+  await Promise.all(generatedUrls.map(url=>showImage(url,prompt,imageModelLabel(actualModel),(useCvronImage||useImageFree)?selectedRatio:"")));
    if(loader){
     setProgress(100);
     const modelLabel=loader.querySelector(".progress-model");

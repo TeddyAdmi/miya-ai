@@ -459,6 +459,100 @@ module.exports = async function imageHandler(req, res) {
     const provider = typeof body.provider === "string" ? body.provider.trim().toLowerCase() : "";
     const requestedModel = typeof body.model === "string" ? body.model.trim() : "";
 
+    if (provider === "imagefree") {
+      const userPrompt = typeof body.prompt === "string" ? body.prompt.trim() : "";
+      const allowedRatios = ["1:1", "3:4", "4:3", "16:9", "9:16", "2:3", "3:2", "21:9"];
+      const aspectRatio = allowedRatios.includes(String(body.ratio || "")) ? String(body.ratio) : "16:9";
+      if (requestedModel !== "Z-Image Turbo (ImageFree)") {
+        return res.status(400).json({ok:false,error:"IMAGEFREE_MODEL_UNSUPPORTED",message:"Неизвестная модель ImageFree."});
+      }
+      if (!userPrompt) return res.status(400).json({ok:false,error:"PROMPT_REQUIRED"});
+
+      const requestImageFree = async (url, init) => {
+        const upstream = await fetch(url, {
+          ...init,
+          headers: { Accept:"application/json", ...(init?.headers || {}) },
+          cache:"no-store",
+          signal:AbortSignal.timeout(25000)
+        });
+        const raw = await upstream.text();
+        let data = {};
+        try { data = raw ? JSON.parse(raw) : {}; } catch {}
+        if (!upstream.ok) {
+          const error = new Error("ImageFree вернул HTTP " + upstream.status + (data?.message ? ": " + String(data.message) : ""));
+          error.status = upstream.status;
+          error.body = raw.slice(0, 900);
+          throw error;
+        }
+        return data;
+      };
+
+      try {
+        // Do not forge a challenge token. This empty value tests whether the
+        // provider permits task creation without an interactive challenge.
+        const created = await requestImageFree("https://imagefree.net/api/generate", {
+          method:"POST",
+          headers:{"Content-Type":"application/json"},
+          body:JSON.stringify({
+            prompt:userPrompt,
+            aspect_ratio:aspectRatio,
+            turnstile_token:""
+          })
+        });
+        const taskId = String(created?.taskId || "").trim();
+        if (!taskId) {
+          return res.status(502).json({
+            ok:false,error:"IMAGEFREE_TASK_ID_MISSING",
+            message:String(created?.message || created?.error || "ImageFree не вернул taskId."),
+            upstreamBody:JSON.stringify(created).slice(0,900)
+          });
+        }
+
+        const startedAt = Date.now();
+        let lastStatus = {};
+        while (Date.now() - startedAt < 180000) {
+          await new Promise(resolve => setTimeout(resolve, 2000));
+          lastStatus = await requestImageFree(
+            "https://imagefree.net/api/generate/status?taskId=" + encodeURIComponent(taskId),
+            {method:"GET"}
+          );
+          const status = String(lastStatus?.status || "").toLowerCase();
+          const imageUrl = String(lastStatus?.image || "").trim();
+          if (status === "completed" && /^https:\/\//i.test(imageUrl)) {
+            let parsed;
+            try { parsed = new URL(imageUrl); } catch {}
+            if (!parsed || parsed.hostname !== "pub-62e693a7058040f98bba94ed1d6f880b.r2.dev") {
+              return res.status(502).json({ok:false,error:"IMAGEFREE_IMAGE_HOST_UNEXPECTED",message:"ImageFree вернул ссылку с неожиданного домена."});
+            }
+            return res.status(200).json({
+              ok:true,mode:"image",status:"completed",provider:"ImageFree",
+              model:"Z-Image Turbo (ImageFree)",imageUrl,imageUrls:[imageUrl],count:1,
+              meta:{free:true,aspectRatio,taskId,upstream:"imagefree.net"}
+            });
+          }
+          if (["failed","error","cancelled","canceled"].includes(status)) {
+            return res.status(502).json({
+              ok:false,error:"IMAGEFREE_GENERATION_FAILED",
+              message:String(lastStatus?.message || lastStatus?.error || "ImageFree не смог создать изображение."),
+              upstreamBody:JSON.stringify(lastStatus).slice(0,900)
+            });
+          }
+        }
+        return res.status(504).json({
+          ok:false,error:"IMAGEFREE_GENERATION_TIMEOUT",
+          message:"ImageFree не завершил генерацию за 3 минуты.",
+          taskId,lastStatus
+        });
+      } catch (error) {
+        return res.status(502).json({
+          ok:false,error:"IMAGEFREE_HANDLER_ERROR",
+          message:String(error?.message || error || "Ошибка обращения к ImageFree."),
+          upstreamStatus:error?.status || null,
+          upstreamBody:error?.body || ""
+        });
+      }
+    }
+
     if (provider === "kapy") {
       const userPrompt = typeof body.prompt === "string" ? body.prompt.trim() : "";
       const allowedRatios = ["1:1", "4:3", "3:2", "16:9", "2:1", "9:16"];
