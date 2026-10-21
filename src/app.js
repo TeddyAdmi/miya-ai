@@ -5058,16 +5058,18 @@ async function improveImageComposerPrompt(){
   const response=await fetch("/api/chat",{
    method:"POST",
    headers:{"Content-Type":"application/json","Accept":"application/json"},
-   body:JSON.stringify({mode:"improve_image_prompt",prompt:original,messages:[{role:"user",content:original}]})
+   body:JSON.stringify({messages:[{role:"user",content:
+    "Ты — профессиональный редактор промптов для генерации изображений. Улучши следующий промпт, сохранив исходную идею, главные объекты, их количество, действия и все явно указанные детали. Не добавляй неожиданных объектов, текста, рамок, телефонов или других предметов, если их не просили. Сделай описание конкретнее за счёт композиции, ракурса, света, материалов, атмосферы и качества изображения только там, где это уместно. Не меняй формат или соотношение сторон, если пользователь этого не указал. Пиши итог исключительно на русском языке. Верни только один готовый улучшенный промпт, без заголовка, пояснений, кавычек, списков и Markdown-разметки.\n\nИсходный промпт:\n"+original
+   }]})
   });
   const data=await response.json().catch(()=>null);
   if(!response.ok||!data?.ok||typeof data.text!=="string"||!data.text.trim()){
    throw new Error(data?.message||data?.error||"AI временно недоступен");
   }
   let improved=data.text.trim()
-   .replace(/^\s*```(?:\w+)?\s*/i,"")
+   .replace(/^\s*Промпт для изображения\s*:\s*/i,"")
+   .replace(/^\s*```(?:\w+)?\s*/,"")
    .replace(/\s*```\s*$/,"")
-   .replace(/^(?:\s*(?:промпт\s+для\s+изображения|изображение|картинка|промпт|описание\s+изображения|описание)\s*[:：—–-]\s*)+/i,"")
    .trim();
   if(improved.length<original.length*0.45||improved.length<8){
    throw new Error("AI вернул слишком короткий промпт");
