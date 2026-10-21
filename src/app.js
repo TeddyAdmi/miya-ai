@@ -4948,13 +4948,19 @@ if(videoModelSelect)videoModelSelect.addEventListener("change",()=>{
  }
 });
 $("#composerInput").addEventListener("input",()=>{
-  // A user edit starts a new prompt chain; AI writeback is programmatic and
-  // does not fire this event, so repeated clicks continue from the last result.
-  delete $("#composerInput").dataset.improveSeedPrompt;
-  delete $("#composerInput").dataset.improveLatestPrompt;
+  const promptInput=$("#composerInput");
+  const currentValue=String(promptInput.value||"").normalize("NFC").replace(/[\\u00a0\\u2007\\u202f]/g," ").replace(/\\s+/g," ").trim();
+  const latestValue=String(promptInput.dataset.improveLatestPrompt||"").normalize("NFC").replace(/[\\u00a0\\u2007\\u202f]/g," ").replace(/\\s+/g," ").trim();
+
+  // Some browser/editor events can fire even when the visible text is just the
+  // AI result. Preserve the seed in that case; reset only for a real text change.
+  if(!latestValue||currentValue!==latestValue){
+    delete promptInput.dataset.improveSeedPrompt;
+    delete promptInput.dataset.improveLatestPrompt;
+  }
   if(!speechStream){
     speechRecordingCount=0;
-    speechCommittedText=$("#composerInput").value.trim();
+    speechCommittedText=promptInput.value.trim();
   }
   syncInput();
 });
@@ -5052,8 +5058,15 @@ async function improveImageComposerPrompt(){
  const visiblePrompt=String(input.value||"").trim();
  const previousSeed=String(input.dataset.improveSeedPrompt||"").trim();
  const previousLatest=String(input.dataset.improveLatestPrompt||"").trim();
+ const normalizePromptSessionText=value=>String(value||"").normalize("NFC").replace(/[\\u00a0\\u2007\\u202f]/g," ").replace(/\\s+/g," ").trim();
+ const visibleKey=normalizePromptSessionText(visiblePrompt);
+ const latestKey=normalizePromptSessionText(previousLatest);
+ const seedKey=normalizePromptSessionText(previousSeed);
  let original=visiblePrompt;
- if(previousSeed&&previousLatest&&(visiblePrompt===previousLatest||visiblePrompt===previousSeed)){
+
+ // The seed is immutable while the composer still shows one of its outputs.
+ // An input event only breaks the chain when the user actually changes the text.
+ if(previousSeed&&(!previousLatest||visibleKey===latestKey||visibleKey===seedKey)){
   original=previousSeed;
  }else{
   input.dataset.improveSeedPrompt=visiblePrompt;
