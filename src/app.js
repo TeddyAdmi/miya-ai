@@ -845,7 +845,10 @@ function saveMedia(type,url,prompt="",model="",format=""){
  try{localStorage.setItem(LIB_KEY,JSON.stringify(items.slice(0,500)))}catch{
    try{localStorage.setItem(LIB_KEY,JSON.stringify(items.slice(0,100)))}catch{}
  }
- cacheMedia(id,normalizedUrl,type);
+ // For images, let the visible <img> perform the first download. Starting a second
+ // fetch here competes with the card preview and can delay the first visible paint.
+ // buildMediaCard caches the image after its load event; non-image media still caches here.
+ if(type!=="image")cacheMedia(id,normalizedUrl,type);
  return item;
 }
 
