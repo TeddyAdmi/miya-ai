@@ -100,11 +100,9 @@ function installAnimatedStatusDots(){
    const match=value.match(/(?:…|\.{3})\s*$/);
    if(!match)return;
    const base=value.slice(0,match.index).trimEnd();
-   // Numeric generation progress must never be replaced by animated dots.
-   if(["images","video","music"].includes(String(mode||"").toLowerCase())){
-     status.textContent=base;
-     return;
-   }
+   // Keep numeric generation progress untouched, but animate any explicit waiting status
+   // (including speech recognition) regardless of the active section.
+   if(/^\s*\d+(?:[.,]\d+)?\s*%/.test(base))return;
    status.replaceChildren(document.createTextNode(base+" "));
    const dots=document.createElement("span");
    dots.className="thinking-dots";
@@ -5048,14 +5046,17 @@ async function improveImageComposerPrompt(){
  if(button.dataset.improving==="1")return;
  const previousTitle=button.title||"Улучшить промпт AI";
  const status=$("#composerStatus");
+ const promptController=new AbortController();
+ const promptTimeout=setTimeout(()=>promptController.abort(),30000);
  button.dataset.improving="1";
  button.disabled=true;
  button.setAttribute("aria-busy","true");
  button.title="AI улучшает промпт…";
  button.setAttribute("aria-label","AI улучшает промпт");
- if(status)status.textContent="AI улучшает промпт";
- const statusDot=status?.parentElement?.querySelector(".status-dot");
- statusDot?.classList.add("status-dot-thinking");
+ if(status){
+  status.classList.add("composer-status-loading");
+  status.textContent="AI улучшает промпт…";
+ }
  try{
   const response=await fetch("/api/chat",{
    method:"POST",
