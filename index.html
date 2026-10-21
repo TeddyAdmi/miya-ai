@@ -111,7 +111,7 @@
           <option value="FLUX Dev">FLUX Dev · T2I</option>
           <option value="FLUX Kontext Dev">FLUX Kontext Dev · I2I</option>
         </select>
-        <select class="select-pill" id="composerRatio" aria-label="Соотношение сторон"><option value="auto">auto</option><option value="16:9" selected>16:9</option><option value="9:16">9:16</option><option value="1:1">1:1</option></select>
+        <select class="select-pill" id="composerRatio" aria-label="Соотношение сторон"><option value="auto">auto</option><option value="16:9" selected>16:9 ▱</option><option value="9:16">9:16 ▯</option><option value="1:1">1:1 ▣</option></select>
         <select class="select-pill" id="composerQuality" aria-label="Качество изображения"><option value="1K">1K · Быстро</option><option value="2K" selected>2K · Высокое</option><option value="4K">4K · Максимум</option></select>
         <button class="improve composer-trash" id="improve" type="button" title="Улучшить промпт" aria-label="Улучшить промпт">
           <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m14 3-1.7 4.3L8 9l4.3 1.7L14 15l1.7-4.3L20 9l-4.3-1.7L14 3Z"/><path d="m6.5 13-.9 2.3L3 16.2l2.6.9.9 2.4.9-2.4 2.6-.9-2.6-.9L6.5 13Z"/><path d="m18.5 14-.6 1.6-1.7.6 1.7.6.6 1.7.6-1.7 1.7-.6-1.7-.6-.6-1.6Z"/></svg>
@@ -137,7 +137,7 @@
       <div class="video-options" id="videoOptions">
         <select class="select-pill" id="videoModel"><option selected>OmegaTech T2V</option><option>NovAI CogVideoX-Flash</option><option>Agnes Video 2.5 Flash</option><option>Agnes Video v2.0</option><option>LTX-2.3 Distilled</option><option value="Animate On" title="Image to Video (I2V)">Animate · I2V</option></select>
         <select class="select-pill" id="videoDuration"><option>4 сек</option><option selected>5 сек</option><option>6 сек</option><option>8 сек</option><option>10 сек</option><option>12 сек</option></select>
-        <select class="select-pill" id="videoRatio" aria-label="Соотношение сторон видео"><option value="16:9" selected>16:9</option><option value="9:16">9:16</option><option value="1:1">1:1</option></select>
+        <select class="select-pill" id="videoRatio" aria-label="Соотношение сторон видео"><option value="16:9" selected>16:9 ▱</option><option value="9:16">9:16 ▯</option><option value="1:1">1:1 ▣</option></select>
         <button class="improve video-tool" id="videoImprove" type="button" title="Улучшить промпт" aria-label="Улучшить промпт"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m12 3 1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8L12 3Z"/><path d="M19 16l.9 2.1L22 19l-2.1.9L19 22l-.9-2.1L16 19l2.1-.9L19 16Z"/></svg></button>
         <button class="composer-copy video-tool" id="videoCopyPrompt" type="button" title="Копировать текст" aria-label="Копировать текст"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M15 9V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v7a2 2 0 0 0 2 2h3"/></svg></button>
         <button class="composer-paste video-tool" id="videoPastePrompt" type="button" title="Вставить" aria-label="Вставить"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 4.5h6a2 2 0 0 1 2 2V8H7V6.5a2 2 0 0 1 2-2Z"/><rect x="5" y="8" width="14" height="13" rx="2"/><path d="M9 12h6M9 16h4"/></svg></button>
@@ -159,24 +159,16 @@
   </nav>
 </div>
 <style>
-/* Device icons belong inside the original ratio controls, not in a second selector. */
+/* Compact ratio controls; labels and device glyphs also appear in the native dropdown options. */
 #composerRatio,#videoRatio{
- width:82px!important;min-width:82px!important;max-width:82px!important;flex:0 0 82px!important;
- padding-left:8px!important;padding-right:29px!important;
+ width:76px!important;min-width:76px!important;max-width:76px!important;flex:0 0 76px!important;
+ padding-left:7px!important;padding-right:19px!important;
  background-image:linear-gradient(45deg,transparent 50%,#7690ad 50%),linear-gradient(135deg,#7690ad 50%,transparent 50%)!important;
- background-position:calc(100% - 11px) 50%,calc(100% - 7px) 50%!important;
+ background-position:calc(100% - 8px) 50%,calc(100% - 4px) 50%!important;
  background-size:4px 4px,4px 4px!important;background-repeat:no-repeat!important;
+ letter-spacing:-.2px!important;
 }
-#composerRatio:has(option[value="16:9"]:checked),#videoRatio:has(option[value="16:9"]:checked){
- background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2389a1bd' stroke-width='1.65' stroke-linecap='round' stroke-linejoin='round'%3E%3Crect x='2.7' y='3.2' width='18.6' height='13.1' rx='2.2'/%3E%3Cpath d='M12 16.5v3.2M8.2 20h7.6'/%3E%3C/svg%3E"),linear-gradient(45deg,transparent 50%,#7690ad 50%),linear-gradient(135deg,#7690ad 50%,transparent 50%)!important;
-}
-#composerRatio:has(option[value="9:16"]:checked),#videoRatio:has(option[value="9:16"]:checked){
- background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2389a1bd' stroke-width='1.65' stroke-linecap='round' stroke-linejoin='round'%3E%3Crect x='6.3' y='1.8' width='11.4' height='20.4' rx='3'/%3E%3Cpath d='M10.2 4.3h3.6M10.5 19.1h3'/%3E%3C/svg%3E"),linear-gradient(45deg,transparent 50%,#7690ad 50%),linear-gradient(135deg,#7690ad 50%,transparent 50%)!important;
-}
-#composerRatio:has(option[value="1:1"]:checked),#videoRatio:has(option[value="1:1"]:checked){
- background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2389a1bd' stroke-width='1.65' stroke-linecap='round' stroke-linejoin='round'%3E%3Crect x='3.1' y='2.7' width='17.8' height='18.6' rx='3'/%3E%3Ccircle cx='12' cy='5.2' r='.65' fill='%2389a1bd' stroke='none'/%3E%3Cpath d='M9.2 18.5h5.6'/%3E%3C/svg%3E"),linear-gradient(45deg,transparent 50%,#7690ad 50%),linear-gradient(135deg,#7690ad 50%,transparent 50%)!important;
-}
-#composerRatio,#videoRatio{background-size:18px 18px,4px 4px,4px 4px!important;background-position:calc(100% - 32px) center,calc(100% - 11px) 50%,calc(100% - 7px) 50%!important}
+#composerRatio option,#videoRatio option{padding:3px 5px}
 body.light #composerRatio,body.light #videoRatio{background-color:#f4f7fa!important}
 </style>
 
