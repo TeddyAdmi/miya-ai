@@ -96,6 +96,11 @@ function installAnimatedStatusDots(){
    const match=value.match(/(?:…|\.{3})\s*$/);
    if(!match)return;
    const base=value.slice(0,match.index).trimEnd();
+   // Numeric generation progress must never be replaced by animated dots.
+   if(["images","video","music"].includes(String(mode||"").toLowerCase())){
+     status.textContent=base;
+     return;
+   }
    status.replaceChildren(document.createTextNode(base+" "));
    const dots=document.createElement("span");
    dots.className="thinking-dots";
@@ -3072,7 +3077,7 @@ async function generateImage(prompt){
    };
    xhr.upload.onload=()=>{
     if(!hasFileUpload)return;
-    if($("#composerStatus"))$("#composerStatus").textContent=displayModel+" · файл загружен · создание…";
+    if($("#composerStatus"))$("#composerStatus").textContent=displayModel+" · файл загружен · создание изображения";
    };
    xhr.onerror=()=>reject(new Error("Не удалось соединиться с сервером генерации"));
    xhr.ontimeout=()=>reject(new Error("Сервер генерации не ответил вовремя"));
@@ -3089,7 +3094,8 @@ async function generateImage(prompt){
       const requestError=new Error(detail);requestError.code=result.error||"";requestError.status=xhr.status;reject(requestError);
     }
    };
-   xhr.timeout=timeoutMs;
+   // After reaching 99%, allow at most 20 additional seconds.
+   xhr.timeout=Math.min(timeoutMs,progressDurationMs+20000);
    xhr.send(body);
   });
 ;
@@ -3110,16 +3116,19 @@ async function generateImage(prompt){
    const started=await requestImageFreeJson({...basePayload,action:"start"},25000);
    const taskId=String(started.taskId||"").trim();
    if(!taskId)throw new Error("Z-Image Turbo не вернул номер задания");
-   const deadline=Date.now()+70000;
+   // Match the progress clock: allow only 20 seconds after reaching 99%.
+   const deadline=progressStartedAt+progressDurationMs+20000;
    let completed=null;
    while(Date.now()<deadline){
     await new Promise(resolve=>setTimeout(resolve,1600));
     const status=await requestImageFreeJson({mode:"image",provider:"imagefree",model:modelName,ratio:selectedRatio,action:"status",taskId},12000);
     if(status.status==="completed"&&status.imageUrl){completed=status;break}
     if(["failed","error","cancelled","canceled"].includes(String(status.status||"").toLowerCase()))throw new Error(String(status.message||"Z-Image Turbo завершилась ошибкой"));
-    const elapsed=Date.now()-progressStartedAt;
-    setProgress(20+Math.min(79,elapsed/65000*79));
-    if($("#composerStatus"))$("#composerStatus").textContent=displayModel+" · "+(status.status==="queued"?"в очереди": "создание изображения…");
+    // The shared progress timer is the only writer of numeric progress.
+    if(status.status==="queued" && $("#composerStatus")){
+      const current=Number.parseInt(String(composerProgress?.textContent||"").replace("%",""),10)||1;
+      $("#composerStatus").textContent=displayModel+" · Создание изображения · "+current+"%";
+    }
    }
    if(!completed)throw new Error("Z-Image Turbo не вернула изображение за 70 секунд");
    data=completed;
@@ -3160,7 +3169,7 @@ async function generateImage(prompt){
   if(moderationBlocked){const notice="Промпт отклонён модерацией. Измените формулировку запроса и попробуйте снова.";$("#composerStatus").textContent=notice;toast(notice);return;}
   const timedOut=e?.message==="Сервер генерации не ответил вовремя";
   if(timedOut){
-   const seconds=modelName==="Nano Banana 2"?90:120;
+   const seconds=Math.round(Math.min(timeoutMs,progressDurationMs+20000)/1000);
    toast("Изображение не появилось за "+seconds+" секунд. Попробуй ещё раз или выбери другую модель.");
    $("#composerStatus").textContent=displayModel+" · время вышло";
   }else{
