@@ -189,6 +189,33 @@ async function handler(req, res) {
       max_tokens: 1024
     };
 
+    function extractProviderText(payload) {
+      const excludedType = /^(?:analysis|reasoning|thinking|thought|chain_of_thought|tool_call|tool_use|refusal|meta)$/i;
+      const preferredKeys = ["output_text", "response", "text", "answer", "generated_text", "completion", "content", "choices", "candidates", "result", "output", "data", "message"];
+      const read = (value, depth = 0, inheritedType = "") => {
+        if (depth > 7 || value == null) return "";
+        if (typeof value === "string") return value.trim();
+        if (typeof value === "number" || typeof value === "boolean") return "";
+        if (Array.isArray(value)) {
+          return value.map(item => {
+            const kind = item && typeof item === "object" ? String(item.type || item.kind || "") : "";
+            if (excludedType.test(kind)) return "";
+            return read(item, depth + 1, kind);
+          }).filter(Boolean).join("\n").trim();
+        }
+        if (typeof value !== "object") return "";
+        const kind = String(value.type || value.kind || inheritedType || "");
+        if (excludedType.test(kind)) return "";
+        for (const key of preferredKeys) {
+          if (value[key] == null) continue;
+          const result = read(value[key], depth + 1, key);
+          if (result) return result;
+        }
+        return "";
+      };
+      return read(payload);
+    }
+
     async function callCvronGPT5Nano(prompt, timeoutMs = 12000) {
       const started = Date.now();
       try {
@@ -205,7 +232,7 @@ async function handler(req, res) {
         let data = {};
         let parsedJson = false;
         try { data = raw ? JSON.parse(raw) : {}; parsedJson = !!raw; } catch {}
-        const answer = String(data?.response || data?.text || data?.message || (!parsedJson ? raw : "")).trim();
+        const answer = (extractProviderText(data) || (!parsedJson ? raw : "")).trim();
         if(response.ok && answer){
           return {ok:true,text:answer,model:"GPT-5 Nano",provider:"CVRON",status:response.status,elapsedMs:Date.now()-started};
         }
@@ -232,10 +259,7 @@ async function handler(req, res) {
         let data = {};
         try { data = raw ? JSON.parse(raw) : {}; } catch {}
 
-        const content = data?.choices?.[0]?.message?.content ?? data?.choices?.[0]?.text ?? data?.output_text ?? data?.response ?? "";
-        const answer = (typeof content === "string" ? content :
-          Array.isArray(content) ? content.map(item => typeof item === "string" ? item : String(item?.text || item?.content || "")).join("") :
-          String(content || "")).trim();
+        const answer = extractProviderText(data);
 
         if (response.ok && answer) {
           return {
@@ -302,9 +326,7 @@ async function handler(req, res) {
         const raw = await response.text();
         let data = {};
         try { data = raw ? JSON.parse(raw) : {}; } catch {}
-        const content = data?.choices?.[0]?.message?.content;
-        const answer = (typeof content === "string" ? content :
-          Array.isArray(content) ? content.map(item => typeof item === "string" ? item : String(item?.text || "")).join("") : "").trim();
+        const answer = extractProviderText(data);
         if (response.ok && answer) {
           return { ok: true, text: answer, model: String(data?.model || "@cf/openai/gpt-oss-20b"), provider: "Cloudflare Workers AI", status: response.status, elapsedMs: Date.now() - started };
         }
@@ -343,49 +365,59 @@ async function handler(req, res) {
         max_tokens: 700
       };
 
+      let lastNormalizationReason = "EMPTY_RESPONSE";
       const normalizeCandidate = (rawValue, provider) => {
         let value = String(rawValue || "").trim()
           .replace(/^\s*\x60{3}(?:\w+)?\s*/i, "")
           .replace(/\s*\x60{3}\s*$/, "")
+          .replace(/<think\b[^>]*>[\s\S]*?<\/think>/gi, " ")
+          .replace(/<analysis\b[^>]*>[\s\S]*?<\/analysis>/gi, " ")
+          .replace(/<reasoning\b[^>]*>[\s\S]*?<\/reasoning>/gi, " ")
           .trim();
-        if (!value) return null;
+        const reject = reason => { lastNormalizationReason = reason; return null; };
+        if (!value) return reject("EMPTY_TEXT");
 
-        const isMeta = text => /^(?:пользователь\s+(?:просит|хочет|говорит|предлагает)|задача\s*[:：—-]|задание\s*[:：—-]|план\s*[:：—-]|анализ\s*[:：—-]|рассуждение\s*[:：—-]|нужно\s+(?:написать|описать|создать|превратить|придумать)|ответ\s+должен|требуется\s+(?:написать|описать|создать)|сначала\s+нужно|вот\s+как\s+нужно)/i.test(String(text || "").trim());
-
-        // If a provider mixes commentary and its draft, prefer the explicitly marked draft.
-        const finalMarkers = [...value.matchAll(/(?:^|\n)\s*(?:готовый промпт|улучшенный промпт|итоговый промпт|итоговый вариант|финальный вариант|финальный ответ|промпт для изображения|описание сцены|черновик)\s*[:：—–-]\s*/gi)];
-        if (finalMarkers.length) {
-          const marker = finalMarkers[finalMarkers.length - 1];
+        const metaLead = /^(?:пользователь\s+(?:просит|хочет|говорит|предлагает)|задача\s*[:：—-]|задание\s*[:：—-]|план\s*[:：—-]|анализ\s*[:：—-]|рассуждение\s*[:：—-]|нужно\s+(?:написать|описать|создать|превратить|придумать)|ответ\s+должен|требуется\s+(?:написать|описать|создать)|сначала\s+нужно|вот\s+как\s+нужно|the user (?:asks|wants)|we need to|let me think|analysis\s*:|reasoning\s*:|draft\s*:|task\s*:)/i;
+        const markers = [...value.matchAll(/(?:^|\n)\s*(?:финальный ответ|final answer|final prompt|improved prompt|готовый промпт|улучшенный промпт|итоговый промпт|итоговый вариант|финальный вариант|промпт для изображения|описание сцены|готовое описание|сцена|черновик|draft)\s*[:：—–-]\s*/gi)];
+        if (markers.length) {
+          const marker = markers[markers.length - 1];
           value = value.slice(marker.index + marker[0].length).trim();
           value = value.split(/\n\s*\n+/)[0].trim();
         } else {
           const paragraphs = value.split(/\n\s*\n+/).map(part => part.trim()).filter(Boolean);
-          if (paragraphs.length > 1 && isMeta(paragraphs[0])) {
-            const scene = paragraphs.find(part => !isMeta(part) && !/^(?:черновик|анализ|рассуждение|требования|план)\s*[:：—-]/i.test(part));
-            if (scene) value = scene;
+          if (paragraphs.length > 1) {
+            const candidates = paragraphs.filter(part =>
+              !metaLead.test(part) &&
+              !/^(?:analysis|reasoning|notes|explanation|task|requirements|draft|план|анализ|рассуждение|требования)\s*[:：—-]/i.test(part) &&
+              (/[А-Яа-яЁё]/.test(part) || !/[A-Za-z]{3,}/.test(part))
+            );
+            if (candidates.length) value = candidates[candidates.length - 1];
           }
         }
 
         value = value
-          .replace(/^\s*(?:(?:готовый|улучшенный|итоговый|финальный)\s+промпт|промпт\s+для\s+изображения|промпт|описание\s+изображения|описание\s+сцены|черновик)\s*[:：—–-]\s*/i, "")
+          .replace(/^\s*(?:(?:готовый|улучшенный|итоговый|финальный)\s+промпт|промпт\s+для\s+изображения|промпт|описание\s+изображения|описание\s+сцены|готовое описание|сцена|финальный ответ|final answer|final prompt|draft)\s*[:：—–-]\s*/i, "")
           .replace(/^["'«]+|["'»]+$/g, "")
           .replace(/\s+/g, " ")
           .trim();
-        if (!value) return null;
+        if (!value) return reject("EMPTY_AFTER_CLEANUP");
 
-        // Reject provider notes, not creative wording or scene details.
-        if (/(?:пользователь\s+(?:просит|хочет|предлагает)|ответ\s+должен|требования\s*:|системная\s+инструкция|как\s+я\s+могу\s+написать|мне\s+нужно\s+(?:написать|описать)|сначала\s+нужно\s+(?:написать|описать)|в\s+этом\s+ответе\s+я)/i.test(value)) return null;
+        // If the provider returned planning text only, reject that text; don't mistake one meta phrase
+        // inside an otherwise valid scene for a reason to discard the entire answer.
+        if (metaLead.test(value)) return reject("PLANNING_TEXT_ONLY");
+        if (/^(?:as an ai|i cannot help|i am an ai|я не могу выполнить|я не могу создать|я должен объяснить)/i.test(value)) return reject("NOT_A_SCENE");
 
         const wordCount = value.split(/\s+/).filter(Boolean).length;
         const cyrillic = (value.match(/[А-Яа-яЁё]/g) || []).length;
         const latin = (value.match(/[A-Za-z]/g) || []).length;
         const normalized = text => String(text || "").replace(/[\s.!?,;:—–-]+/g, " ").trim().toLocaleLowerCase("ru-RU");
-        if (value.length < 12 || wordCount < 2 || cyrillic < 6) return null;
-        if (latin > Math.max(30, cyrillic * 1.5)) return null;
-        if (normalized(value) === normalized(originalPrompt)) return null;
-        if (/^(?:создай|выбери|придумай|добавь|покажи|опиши|сгенерируй|напиши|укажи|представь себе)(?=$|[\s,.:;—–])/i.test(value)) return null;
-        if (value.length > 1600 || wordCount > 200) return null;
+        if (value.length < 24 || wordCount < 4 || cyrillic < 10) return reject("TOO_SHORT_OR_NOT_RUSSIAN");
+        if (latin > Math.max(35, cyrillic * 1.5)) return reject("NOT_RUSSIAN_ENOUGH");
+        if (normalized(value) === normalized(originalPrompt)) return reject("NO_EXPANSION");
+        if (/^(?:создай|выбери|придумай|добавь|покажи|опиши|сгенерируй|напиши|укажи|представь себе)(?=$|[\s,.:;—–])/i.test(value)) return reject("INSTRUCTION_NOT_SCENE");
+        if (value.length > 2000 || wordCount > 240) return reject("RESPONSE_TOO_LONG");
         if (!/[.!?…]$/.test(value)) value += ".";
+        lastNormalizationReason = "";
         return { text: value, provider, wordCount, length: value.length };
       }
 
@@ -430,7 +462,7 @@ async function handler(req, res) {
           elapsedMs: result.elapsedMs || null,
           error: String(typeof result.upstreamError === "string" ? result.upstreamError : (result.upstreamError?.message || result.upstreamError || "")).slice(0, 180),
           responseLength: rawText.length,
-          rejected: result.ok && rawText ? (normalized ? null : "RESPONSE_NOT_ACCEPTED") : null
+          rejected: result.ok && rawText ? (normalized ? null : lastNormalizationReason) : null
         };
         providerDiagnostics.push(diagnostic);
         if (normalized) {
