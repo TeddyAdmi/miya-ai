@@ -291,8 +291,8 @@ async function handler(req, res) {
             body: JSON.stringify({
               model: "@cf/openai/gpt-oss-20b",
               messages,
-              temperature: 0.86,
-              top_p: 0.9,
+              temperature: 0.95,
+              top_p: 0.92,
               max_tokens: 650,
               stream: false
             }),
@@ -333,14 +333,14 @@ async function handler(req, res) {
       }
 
       const creativeId = Math.random().toString(36).slice(2, 9) + "-" + Date.now().toString(36);
-      const systemPrompt = "Ты — автор визуальных сцен. По идее пользователя каждый раз самостоятельно придумай новую, цельную и выразительную сцену для одного статичного изображения. Сохрани смысл идеи и всё, что задано явно; остальное придумай сам, исходя из логики идеи. Не используй готовые сюжеты, постоянные наборы предметов или заученные формулировки. Развивай краткую идею в конкретное описание видимой сцены, где детали естественно связаны друг с другом. Пиши грамотным естественным русским, одним абзацем примерно на 50–90 слов. Верни только описание сцены, без анализа, пояснений, заголовка и технических параметров. Код варианта: " + creativeId + ". Не выводи код в ответ.";
+      const systemPrompt = "Ты — художник-концептуалист. По короткой идее пользователя самостоятельно придумай цельную, выразительную сцену для одного статичного изображения. Сохрани смысл и все явно заданные условия; всё неуказанное реши сам, руководствуясь логикой идеи. При каждом новом запуске с тем же запросом находи новую самостоятельную трактовку: меняй само визуальное решение и содержание сцены, а не только ракурс или прилагательные. Все детали должны быть естественно связаны между собой. Не используй готовые сюжеты, повторяющиеся наборы деталей или заученные формулировки. Пиши грамотным естественным русским, одним содержательным абзацем примерно на 50–90 слов. Верни только видимую сцену — без анализа, пояснений, заголовка и технических параметров. Ключ творческого варианта: " + creativeId + ". Не упоминай ключ в ответе.";
       const promptPayload = {
         messages: [
           { role: "system", content: systemPrompt },
-          { role: "user", content: "Идея пользователя:\n" + originalPrompt + "\nНужна оригинальная трактовка. Результат — только готовое описание сцены." }
+          { role: "user", content: "Исходная идея:\n" + originalPrompt + "\nПридумай самостоятельный новый вариант и верни только готовое описание сцены." }
         ],
-        temperature: 0.9,
-        max_tokens: 650
+        temperature: 1.0,
+        max_tokens: 700
       };
 
       const normalizeCandidate = (rawValue, provider) => {
@@ -397,15 +397,15 @@ async function handler(req, res) {
         },
         {
           provider: "BlockRun / GPT-OSS",
-          promise: callBlockRun("nvidia/gpt-oss-20b", promptPayload, 15000)
+          promise: callBlockRun("nvidia/gpt-oss-20b", promptPayload, 18000)
         },
         {
           provider: "BlockRun / Nemotron",
-          promise: callBlockRun("nvidia/nemotron-3.5-lightning", promptPayload, 15000)
+          promise: callBlockRun("nvidia/nemotron-3.5-lightning", promptPayload, 18000)
         },
         {
           provider: "CVRON / GPT-5 Nano",
-          promise: callCvronGPT5Nano(systemPrompt + "\n\nИдея пользователя:\n" + originalPrompt + "\n\nВерни только готовое описание.", 15000)
+          promise: callCvronGPT5Nano(systemPrompt + "\n\nИсходная идея:\n" + originalPrompt + "\n\nВерни только готовое описание сцены.", 18000)
         }      ].map((attempt, index) => ({
         index,
         provider: attempt.provider,
@@ -440,10 +440,30 @@ async function handler(req, res) {
         console.warn("Miya image prompt provider result rejected", diagnostic);
       }
 
+      // One more independent attempt is important for intermittently slow free providers.
+      // It uses the same abstract creative brief and contains no preset subjects or scene examples.
+      const rescuePrompt = systemPrompt + "\n\nИсходная идея пользователя:\n" + originalPrompt +
+        "\n\nПридумай новый, самостоятельный вариант сцены по этой идее. Сразу верни только один готовый русский абзац без рассуждений и заголовков.";
+      const rescue = await callCvronGPT5Nano(rescuePrompt, 12000);
+      const rescueRaw = String(rescue?.text || "").trim();
+      const rescueCandidate = rescue?.ok ? normalizeCandidate(rescueRaw, "CVRON / GPT-5 Nano (повторная попытка)") : null;
+      providerDiagnostics.push({
+        provider: "CVRON / GPT-5 Nano (повторная попытка)",
+        ok: !!rescue?.ok,
+        status: rescue?.status || null,
+        elapsedMs: rescue?.elapsedMs || null,
+        error: String(typeof rescue?.upstreamError === "string" ? rescue.upstreamError : (rescue?.upstreamError?.message || rescue?.upstreamError || "")).slice(0, 180),
+        responseLength: rescueRaw.length,
+        rejected: rescue?.ok && rescueRaw ? (rescueCandidate ? null : "RESPONSE_NOT_ACCEPTED") : null
+      });
+      if (rescueCandidate) {
+        return res.status(200).json({ ok: true, mode: "improve_image_prompt", text: rescueCandidate.text });
+      }
+
       return res.status(502).json({
         ok: false,
         error: "IMAGE_PROMPT_CREATION_FAILED",
-        message: "Сервисы не вернули готовое описание сцены. Попробуй ещё раз.",
+        message: "Не удалось получить ответ от генераторов описания сцены.",
         diagnostics: providerDiagnostics
       });
     }
