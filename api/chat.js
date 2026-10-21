@@ -302,33 +302,42 @@ async function handler(req, res) {
           .replace(/^(?:\s*(?:промпт\s+для\s+изображения|изображение|картинка|промпт|описание\s+изображения|описание|готовый\s+промпт)\s*[:：—–-]\s*)+/i, "")
           .trim();
 
-        // Some provider models return a chatty English preface and put the
-        // actual Russian image prompt later. Keep only descriptive prompt text.
-        const isMeta = value => /^(?:here(?:'s| is)|below is|certainly|sure[,!]?|i(?:'| a)m happy to|as an ai|вот (?:улучшенный|готовый)|готово[,!]?|конечно[,!]?|я (?:улучшил|подготовил)|обновлённый промпт|улучшенный промпт)\b/i.test(value.trim());
+        // Models may leak internal reasoning. Never return that text to the UI:
+        // extract only a clearly marked final prompt, otherwise use the last
+        // substantial Russian descriptive paragraph and reject reasoning dumps.
         const russianScore = value => {
           const cyrillic = (value.match(/[А-Яа-яЁё]/g) || []).length;
           const letters = (value.match(/[A-Za-zА-Яа-яЁё]/g) || []).length;
-          return {cyrillic, ratio:letters ? cyrillic / letters : 0};
+          return { cyrillic, ratio: letters ? cyrillic / letters : 0 };
         };
-        let paragraphs = text.split(/\n\s*\n+/).map(value => value.trim()).filter(Boolean);
-        if (paragraphs.length > 1) {
-          const russian = paragraphs.filter(value => {
-            const score = russianScore(value);
-            return score.cyrillic >= 8 && score.ratio >= 0.2 && !isMeta(value);
-          });
-          if (russian.length) text = russian.join("\n\n");
-        } else {
-          const sentences = text.split(/(?<=[.!?])\s+(?=[A-ZА-ЯЁ])/u);
-          const firstPromptSentence = sentences.findIndex(value => {
-            const score = russianScore(value);
-            return score.cyrillic >= 4 && score.ratio >= 0.25 && !isMeta(value);
-          });
-          if (firstPromptSentence > 0) text = sentences.slice(firstPromptSentence).join(" ");
-        }
-        text = text
-          .replace(/^(?:вот\s+)?(?:улучшенный|готовый)\s+промпт\s*[:：—–-]\s*/i, "")
+        const cleanPrompt = value => String(value || "")
+          .replace(/^\s*\x60{3}(?:\w+)?\s*/i, "")
+          .replace(/\s*\x60{3}\s*$/, "")
+          .replace(/^\s*(?:(?:final\s+)?(?:improved\s+)?prompt(?:\s*\([^)]*\))?|готовый\s+промпт|улучшенный\s+промпт|промпт)\s*[:：—–-]\s*/i, "")
           .replace(/^\s*["'«]+|["'»]+\s*$/g, "")
           .trim();
+        const isReasoning = /here(?:'s| is) a thinking process|chain of thought|let me think|analy[sz]e user input|deconstruct system instructions|step[- ]by[- ]step reasoning|ход рассуждени|внутренн(?:ие|их) рассуждени|internal reasoning|analysis of (?:the )?user|system instructions|preserve:|expand:/i.test(text);
+        let extracted = "";
+        const marked = [...text.matchAll(/(?:final prompt|improved prompt|готовый промпт|улучшенный промпт|итоговый промпт)\s*(?:\([^)]*\))?\s*[:：—–-]\s*/gi)];
+        if (marked.length) {
+          const last = marked[marked.length - 1];
+          const tail = text.slice(last.index + last[0].length);
+          const nextHeading = tail.search(/\n\s*(?:\*{0,2}(?:analysis|reasoning|explanation|notes|вариант|пояснение)\b)/i);
+          extracted = cleanPrompt(nextHeading >= 0 ? tail.slice(0, nextHeading) : tail);
+        } else {
+          const paragraphs = text.split(/\n\s*\n+/).map(value => value.trim()).filter(Boolean);
+          const candidates = paragraphs.map(cleanPrompt).filter(value => {
+            const score = russianScore(value);
+            return score.cyrillic >= 20 && score.ratio >= 0.45 &&
+              !/^(?:here|below|certainly|sure|step\s*\d|analyze|deconstruct|role:|task:|preserve:|expand:|готово|конечно|вот улучшенный)/i.test(value);
+          });
+          if (candidates.length) extracted = candidates[candidates.length - 1];
+          else if (!isReasoning) extracted = cleanPrompt(text);
+        }
+        if (isReasoning && (!extracted || /thinking process|analy[sz]e user input|system instructions|preserve:|expand:/i.test(extracted))) {
+          continue;
+        }
+        text = extracted || cleanPrompt(text);
         const score = russianScore(text);
         const conversational = /(?:^|\n)\s*(?:привет(?:ствую)?|здравствуйте|я\s+(?:gpt|модель|ассистент|miya)\b|буду ждать ваших вопросов|чем могу помочь|задайте мне вопрос|уточните,? пожалуйста|какой именно промпт|что именно вы хотите|here(?:'s| is)|below is|certainly|sure[,!]?)\b/i;
         if (text.length >= Math.max(12, originalPrompt.length * 0.5) &&
