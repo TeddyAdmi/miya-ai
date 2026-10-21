@@ -4948,6 +4948,10 @@ if(videoModelSelect)videoModelSelect.addEventListener("change",()=>{
  }
 });
 $("#composerInput").addEventListener("input",()=>{
+  // A user edit starts a new prompt chain; AI writeback is programmatic and
+  // does not fire this event, so repeated clicks continue from the last result.
+  delete $("#composerInput").dataset.improveSeedPrompt;
+  delete $("#composerInput").dataset.improveLatestPrompt;
   if(!speechStream){
     speechRecordingCount=0;
     speechCommittedText=$("#composerInput").value.trim();
@@ -5041,7 +5045,20 @@ async function improveImageComposerPrompt(){
  const input=$("#composerInput");
  const button=$("#improve");
  if(!input||!button)return;
- const original=String(input.value||"").trim();
+
+ // Continue from the most recent successful improvement, even if another UI
+ // action accidentally restored the original seed text into the composer.
+ const visiblePrompt=String(input.value||"").trim();
+ const previousLatest=String(input.dataset.improveLatestPrompt||"").trim();
+ const previousSeed=String(input.dataset.improveSeedPrompt||"").trim();
+ let original=visiblePrompt;
+ if(previousLatest&&(visiblePrompt===previousLatest||visiblePrompt===previousSeed)){
+  original=previousLatest;
+  if(visiblePrompt!==original){input.value=original;syncInput()}
+ }else{
+  input.dataset.improveSeedPrompt=visiblePrompt;
+  input.dataset.improveLatestPrompt="";
+ }
  if(!original){toast("Сначала введи промпт");input.focus();return}
  if(button.dataset.improving==="1")return;
  const previousTitle=button.title||"Улучшить промпт AI";
@@ -5077,6 +5094,7 @@ async function improveImageComposerPrompt(){
    throw new Error("AI вернул слишком короткий промпт");
   }
   input.value=improved;
+  input.dataset.improveLatestPrompt=improved;
   syncInput();
   if(status)status.textContent="Промпт улучшен с помощью AI";
   toast("Промпт улучшен AI");
