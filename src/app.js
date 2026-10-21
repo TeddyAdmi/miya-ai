@@ -5060,6 +5060,7 @@ async function improveImageComposerPrompt(){
   const response=await fetch("/api/chat",{
    method:"POST",
    headers:{"Content-Type":"application/json","Accept":"application/json"},
+   signal:promptController.signal,
    body:JSON.stringify({mode:"improve_image_prompt",prompt:original,messages:[{role:"user",content:original}]})
   });
   const data=await response.json().catch(()=>null);
@@ -5079,15 +5080,16 @@ async function improveImageComposerPrompt(){
   if(status)status.textContent="Промпт улучшен с помощью AI";
   toast("Промпт улучшен AI");
  }catch(error){
-  if(status)status.textContent="Не удалось улучшить промпт — исходный текст сохранён";
+  if(status)status.textContent=promptController.signal.aborted?"Превышено время ожидания — исходный текст сохранён":"Не удалось улучшить промпт — исходный текст сохранён";
   toast("Не удалось улучшить промпт AI. Исходный текст сохранён.");
  }finally{
+  clearTimeout(promptTimeout);
+  if(status)status.classList.remove("composer-status-loading");
   button.disabled=false;
   button.removeAttribute("aria-busy");
   button.dataset.improving="0";
   button.title=previousTitle;
   button.setAttribute("aria-label","Улучшить промпт AI");
-  statusDot?.classList.remove("status-dot-thinking");
  }
 }
 $("#voiceGender")?.addEventListener("change",refreshVoiceSelects);
