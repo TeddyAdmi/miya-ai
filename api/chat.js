@@ -232,7 +232,10 @@ async function handler(req, res) {
         let data = {};
         try { data = raw ? JSON.parse(raw) : {}; } catch {}
 
-        const answer = String(data?.choices?.[0]?.message?.content || "").trim();
+        const content = data?.choices?.[0]?.message?.content ?? data?.choices?.[0]?.text ?? data?.output_text ?? data?.response ?? "";
+        const answer = (typeof content === "string" ? content :
+          Array.isArray(content) ? content.map(item => typeof item === "string" ? item : String(item?.text || item?.content || "")).join("") :
+          String(content || "")).trim();
 
         if (response.ok && answer) {
           return {
@@ -377,8 +380,8 @@ async function handler(req, res) {
         const cyrillic = (value.match(/[А-Яа-яЁё]/g) || []).length;
         const latin = (value.match(/[A-Za-z]/g) || []).length;
         const normalized = text => String(text || "").replace(/[\s.!?,;:—–-]+/g, " ").trim().toLocaleLowerCase("ru-RU");
-        if (value.length < 24 || wordCount < 4 || cyrillic < 12) return null;
-        if (latin > cyrillic * 0.65) return null;
+        if (value.length < 12 || wordCount < 2 || cyrillic < 6) return null;
+        if (latin > Math.max(30, cyrillic * 1.5)) return null;
         if (normalized(value) === normalized(originalPrompt)) return null;
         if (/^(?:создай|выбери|придумай|добавь|покажи|опиши|сгенерируй|напиши|укажи|представь себе)(?=$|[\s,.:;—–])/i.test(value)) return null;
         if (value.length > 1600 || wordCount > 200) return null;
@@ -410,6 +413,7 @@ async function handler(req, res) {
       }));
 
       // Providers race in parallel; a valid scene is returned as soon as one is ready.
+      const providerDiagnostics = [];
       // This avoids spending another full timeout on a second-stage rescue call.
       while (attempts.length) {
         const settled = await Promise.race(attempts.map(attempt => attempt.promise));
@@ -419,23 +423,28 @@ async function handler(req, res) {
         const result = settled.result || {};
         const rawText = String(result.text || "").trim();
         const normalized = result.ok ? normalizeCandidate(rawText, settled.provider) : null;
+        const diagnostic = {
+          provider: settled.provider,
+          ok: !!result.ok,
+          status: result.status || null,
+          elapsedMs: result.elapsedMs || null,
+          error: String(typeof result.upstreamError === "string" ? result.upstreamError : (result.upstreamError?.message || result.upstreamError || "")).slice(0, 180),
+          responseLength: rawText.length,
+          rejected: result.ok && rawText ? (normalized ? null : "RESPONSE_NOT_ACCEPTED") : null
+        };
+        providerDiagnostics.push(diagnostic);
         if (normalized) {
           return res.status(200).json({ ok: true, mode: "improve_image_prompt", text: normalized.text });
         }
 
-        console.warn("Miya image prompt provider result rejected", {
-          provider: settled.provider,
-          status: result.status || null,
-          elapsedMs: result.elapsedMs || null,
-          error: String(result.upstreamError || "").slice(0, 160),
-          responseLength: rawText.length
-        });
+        console.warn("Miya image prompt provider result rejected", diagnostic);
       }
 
       return res.status(502).json({
         ok: false,
         error: "IMAGE_PROMPT_CREATION_FAILED",
-        message: "Сервисы не вернули готовое описание сцены. Попробуй ещё раз."
+        message: "Сервисы не вернули готовое описание сцены. Попробуй ещё раз.",
+        diagnostics: providerDiagnostics
       });
     }
 
