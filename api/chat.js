@@ -338,11 +338,20 @@ async function handler(req, res) {
           continue;
         }
         text = extracted || cleanPrompt(text);
+        // Do not invent an aspect ratio: preserve one only when the user supplied it.
+        const sourceSpecifiesRatio = /(?:соотношени[ея]\s+сторон|aspect\s+ratio|\b(?:16\s*:\s*9|9\s*:\s*16|1\s*:\s*1)\b)/i.test(originalPrompt);
+        if (!sourceSpecifiesRatio) {
+          text = text
+            .replace(/[,;]?\s*(?:соотношение\s+сторон|формат\s+кадра|aspect\s+ratio)\s*(?:[:：—–-]\s*)?(?:16\s*:\s*9|9\s*:\s*16|1\s*:\s*1|16\s+на\s+9|9\s+на\s+16|1\s+на\s+1)[^.!?\n]*(?:[.!?]|$)/gi, "")
+            .replace(/\s{2,}/g, " ")
+            .replace(/\s+([,.;!?])/g, "$1")
+            .trim();
+        }
         const score = russianScore(text);
         const conversational = /(?:^|\n)\s*(?:привет(?:ствую)?|здравствуйте|я\s+(?:gpt|модель|ассистент|miya)\b|буду ждать ваших вопросов|чем могу помочь|задайте мне вопрос|уточните,? пожалуйста|какой именно промпт|что именно вы хотите|here(?:'s| is)|below is|certainly|sure[,!]?)\b/i;
         if (text.length >= Math.max(12, originalPrompt.length * 0.5) &&
             score.cyrillic >= 8 && score.ratio >= 0.2 &&
-            !conversational.test(text) && !isMeta(text)) {
+            !conversational.test(text) && !/here(?:'s| is) a thinking process|chain of thought|system instructions|внутренн(?:ие|их) рассуждени/i.test(text)) {
           improvedPrompt = text;
           break;
         }
