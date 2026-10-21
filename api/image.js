@@ -671,86 +671,77 @@ module.exports = async function imageHandler(req, res) {
       const auraModels = {"Nano Banana":"nano-banana","Seedream":"seedream"};
       const auraModel = auraModels[requestedModel];
       const userPrompt = typeof body.prompt === "string" ? body.prompt.trim() : "";
+      const action = String(body.action || "start").toLowerCase();
+      const taskId = String(body.taskId || "").trim();
       if (!auraModel) return res.status(400).json({ok:false,error:"AURA_MODEL_UNSUPPORTED",message:"Неизвестная модель Aura."});
-      if (!userPrompt) return res.status(400).json({ok:false,error:"PROMPT_REQUIRED"});
+      if (action !== "status" && !userPrompt) return res.status(400).json({ok:false,error:"PROMPT_REQUIRED"});
 
-      // Keep the two Aura models' proven no-frame instructions separate.
-      // Add only natural-photo quality guidance; preserve the user's requested subject and composition.
+      const findAuraImage = value => {
+        if (!value || typeof value !== "object") return "";
+        for (const key of ["image_url","imageUrl","output_url","outputUrl","url"]) {
+          if (typeof value[key] !== "string") continue;
+          const candidate = value[key].trim();
+          if (/^https?:\/\//i.test(candidate)) return candidate;
+          if (candidate.startsWith("/") || candidate.startsWith("postcard-results/")) {
+            return new URL(candidate.startsWith("/") ? candidate : "/" + candidate, "https://aurasoundai.ru").toString();
+          }
+        }
+        for (const key of ["data","result","output"]) {
+          const found = findAuraImage(value[key]);
+          if (found) return found;
+        }
+        return "";
+      };
+
+      // Status checks are short, independent requests. Never start a second
+      // generation when the browser polls an existing task.
+      if (action === "status") {
+        if (!taskId) return res.status(400).json({ok:false,error:"AURA_TASK_ID_REQUIRED"});
+        try {
+          const response = await fetch("https://aurasoundai.ru/api/postcard/status?task_id=" + encodeURIComponent(taskId), {
+            headers:{Accept:"application/json"},cache:"no-store",signal:AbortSignal.timeout(7000)
+          });
+          const raw = await response.text();
+          let data = {};
+          try { data = raw ? JSON.parse(raw) : {}; } catch {}
+          if (!response.ok) {
+            if (response.status === 429 || response.status >= 500) {
+              return res.status(200).json({ok:true,status:"processing",taskId,retryAfter:2,provider:"Aura",model:requestedModel});
+            }
+            return res.status(502).json({ok:false,error:"AURA_STATUS_HTTP",upstreamStatus:response.status,upstreamBody:raw.slice(0,1000)});
+          }
+          const status = String(data.status || data.state || "processing");
+          const imageUrl = findAuraImage(data);
+          if (imageUrl) return res.status(200).json({ok:true,mode:"image",status:"completed",provider:"Aura",model:requestedModel,imageUrl,imageUrls:[imageUrl],count:1,meta:{native:true,noCrop:true,noFrame:true}});
+          if (/^(failed|error|cancelled|canceled)$/i.test(status)) {
+            return res.status(200).json({ok:true,status:"failed",taskId,message:String(data.error || data.message || "Aura не смогла создать изображение.")});
+          }
+          return res.status(200).json({ok:true,status:"processing",taskId,retryAfter:2,provider:"Aura",model:requestedModel});
+        } catch {
+          return res.status(200).json({ok:true,status:"processing",taskId,retryAfter:2,provider:"Aura",model:requestedModel});
+        }
+      }
+
       const auraPromptSuffixes = {
         "Nano Banana": "\n\nCreate a premium, crisp, high-end photograph with vivid yet believable colors. No postcard styling: fill the image naturally from edge to edge, with no frames, borders, margins, decorative corners, text or greetings.\n\nPrioritize the highest available image fidelity: tack-sharp focus on the main subject, finely resolved details, clear micro-textures, clean edges, realistic skin and material texture, strong but natural local contrast, rich tonal depth, bright luminous highlights, deep detailed shadows, and a wide dynamic range. Make colors noticeably richer and more vibrant with accurate white balance and clean color separation; give reds, blues, greens and warm tones depth and life without clipping, neon colors, oversaturation, or an artificial HDR look. Use professional photographic lighting, balanced exposure, crisp foreground detail, natural depth, and a polished camera-captured finish. Avoid haze, softness, washed-out colors, flat contrast, blur, plastic skin, halos, oversharpening, and invented details. Preserve the user’s exact subject, composition, object count, and requested aspect ratio.",
         "Seedream": "\n\nCreate a premium, standalone photorealistic image, not a postcard, greeting card, poster, border, frame, template, or text.\n\nMaximize photographic fidelity and clarity: precise crisp focus, very fine resolved details, clear micro-textures, natural skin and material detail, clean edges, strong natural contrast, rich tonal depth, bright but controlled highlights, detailed shadows, and wide dynamic range. Make the image more vivid and visually striking through richer color saturation, deeper blacks, clean whites, and clear separation between colors, while keeping believable skin tones, accurate white balance, and realistic materials. Use professional camera quality and well-shaped light; avoid dull, grey, washed-out, flat, hazy, soft, blurry, or muddy results. Do not use neon colors, oversaturation, artificial HDR, sharpening halos, plastic textures, or fake details. Preserve the exact subject, composition, object count, and requested aspect ratio."
       };
-      const auraPrompt = userPrompt + auraPromptSuffixes[requestedModel];
       try {
         const form = new FormData();
-        form.append("prompt", auraPrompt);
+        form.append("prompt", userPrompt + auraPromptSuffixes[requestedModel]);
         form.append("model", auraModel);
-        const createResponse = await fetch("https://aurasoundai.ru/api/postcard/generate", {
-          method:"POST", headers:{Accept:"application/json"}, body:form,
-          cache:"no-store", signal:AbortSignal.timeout(20000)
+        const response = await fetch("https://aurasoundai.ru/api/postcard/generate", {
+          method:"POST",headers:{Accept:"application/json"},body:form,cache:"no-store",signal:AbortSignal.timeout(20000)
         });
-        const createRaw = await createResponse.text();
-        let createData = {};
-        try { createData = createRaw ? JSON.parse(createRaw) : {}; } catch {}
-        if (!createResponse.ok) return res.status(502).json({
-          ok:false,error:"AURA_GENERATE_HTTP",message:"Aura вернула HTTP " + createResponse.status + ".",
-          upstreamStatus:createResponse.status,upstreamBody:createRaw.slice(0,1200)
-        });
-
-        const findAuraImage = value => {
-          if (!value || typeof value !== "object") return "";
-          for (const key of ["image_url","imageUrl","output_url","outputUrl","url"]) {
-            if (typeof value[key] !== "string") continue;
-            const candidate = value[key].trim();
-            if (/^https?:\/\//i.test(candidate)) return candidate;
-            if (candidate.startsWith("/") || candidate.startsWith("postcard-results/")) {
-              return new URL(candidate.startsWith("/") ? candidate : "/" + candidate, "https://aurasoundai.ru").toString();
-            }
-          }
-          for (const key of ["data","result","output"]) {
-            const found = findAuraImage(value[key]);
-            if (found) return found;
-          }
-          return "";
-        };
-        let imageUrl = findAuraImage(createData);
-        const taskId = String(createData.task_id || createData.taskId || createData.id || "");
-        if (!imageUrl && !taskId) return res.status(502).json({
-          ok:false,error:"AURA_TASK_ID_MISSING",message:"Aura не вернула идентификатор задачи.",
-          upstreamBody:createRaw.slice(0,1200)
-        });
-
-        const deadline = Date.now() + 55000;
-        let lastStatus = "";
-        while (!imageUrl && Date.now() < deadline) {
-          await new Promise(resolve => setTimeout(resolve, 1800));
-          const statusResponse = await fetch(
-            "https://aurasoundai.ru/api/postcard/status?task_id=" + encodeURIComponent(taskId),
-            {headers:{Accept:"application/json"},cache:"no-store",signal:AbortSignal.timeout(7000)}
-          );
-          const statusRaw = await statusResponse.text();
-          let statusData = {};
-          try { statusData = statusRaw ? JSON.parse(statusRaw) : {}; } catch {}
-          if (!statusResponse.ok) return res.status(502).json({
-            ok:false,error:"AURA_STATUS_HTTP",upstreamStatus:statusResponse.status,upstreamBody:statusRaw.slice(0,1000)
-          });
-          lastStatus = String(statusData.status || "");
-          imageUrl = findAuraImage(statusData);
-          if (imageUrl) break;
-          if (/^(failed|error|cancelled|canceled)$/i.test(lastStatus)) return res.status(502).json({
-            ok:false,error:"AURA_GENERATION_FAILED",
-            message:String(statusData.error || statusData.message || "Aura не смогла создать изображение."),
-            upstreamBody:statusRaw.slice(0,1000)
-          });
-        }
-        if (!imageUrl) return res.status(504).json({
-          ok:false,error:"AURA_GENERATION_TIMEOUT",message:"Aura не завершила генерацию вовремя.",
-          taskId,status:lastStatus
-        });
-        return res.status(200).json({
-          ok:true,mode:"image",status:"completed",provider:"Aura",model:requestedModel,
-          imageUrl,imageUrls:[imageUrl],count:1,meta:{native:true,noCrop:true,noFrame:true}
-        });
+        const raw = await response.text();
+        let data = {};
+        try { data = raw ? JSON.parse(raw) : {}; } catch {}
+        if (!response.ok) return res.status(502).json({ok:false,error:"AURA_GENERATE_HTTP",message:"Aura вернула HTTP " + response.status + ".",upstreamStatus:response.status,upstreamBody:raw.slice(0,1200)});
+        const imageUrl = findAuraImage(data);
+        const newTaskId = String(data.task_id || data.taskId || data.id || "").trim();
+        if (imageUrl) return res.status(200).json({ok:true,mode:"image",status:"completed",provider:"Aura",model:requestedModel,imageUrl,imageUrls:[imageUrl],count:1,meta:{native:true,noCrop:true,noFrame:true}});
+        if (!newTaskId) return res.status(502).json({ok:false,error:"AURA_TASK_ID_MISSING",message:"Aura не вернула идентификатор задачи.",upstreamBody:raw.slice(0,1200)});
+        return res.status(200).json({ok:true,mode:"image",status:"processing",provider:"Aura",model:requestedModel,taskId:newTaskId});
       } catch (error) {
         return res.status(502).json({ok:false,error:"AURA_HANDLER_ERROR",message:String(error?.message||error||"Ошибка обращения к Aura.")});
       }
@@ -915,7 +906,7 @@ module.exports = async function imageHandler(req, res) {
         method: "POST",
         headers: { "Content-Type": "application/json", "Accept": "application/json" },
         body: JSON.stringify({ prompt, ratio }),
-        signal: AbortSignal.timeout(55000)
+        signal: AbortSignal.timeout(69000)
       });
 
       const raw = await upstream.text();
@@ -1103,7 +1094,7 @@ module.exports = async function imageHandler(req, res) {
       return res.status(504).json({
         ok: false,
         error: "FLUX_TIMEOUT",
-        message: "AHM7 не завершил запрос в течение 55 секунд."
+        message: "AHM7 не завершил запрос в течение 69 секунд."
       });
     }
 

@@ -118,7 +118,7 @@ module.exports = async function handler(req, res) {
       method:"POST",
       headers:{"Authorization":"Bearer "+key,"Content-Type":"application/json","Accept":"application/json"},
       body:JSON.stringify(payload),
-      signal:AbortSignal.timeout(45000)
+      signal:AbortSignal.timeout(58000)
     });
     const raw=await upstream.text();
     let data={};try{data=raw?JSON.parse(raw):{}}catch{}

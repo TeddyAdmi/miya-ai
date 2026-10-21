@@ -3093,7 +3093,33 @@ async function generateImage(prompt){
   // Image creation/editing is routed through the original AHM7/ API.
   // Do not call public Hugging Face FLUX Spaces here: they were only a fallback
   // experiment and bypass the provider that this app originally used.
-  if(useImageFree){
+  if(useAuraImage){
+   const requestAuraJson=async(payload,timeoutMs)=>{
+    const response=await fetch("/api/image",{
+     method:"POST",headers:{"Content-Type":"application/json","Accept":"application/json"},
+     body:JSON.stringify(payload),cache:"no-store",signal:AbortSignal.timeout(timeoutMs)
+    });
+    const raw=await response.text();let result={};try{result=raw?JSON.parse(raw):{}}catch{}
+    if(!response.ok||result.ok===false)throw new Error(String(result.message||result.error||raw||("Aura HTTP "+response.status)).slice(0,400));
+    return result;
+   };
+   const basePayload=JSON.parse(body);
+   const started=await requestAuraJson({...basePayload,action:"start"},25000);
+   let completed=started.status==="completed"&&started.imageUrl?started:null;
+   const taskId=String(started.taskId||"").trim();
+   if(!completed&&!taskId)throw new Error("Aura не вернула номер задания");
+   // Keep generation asynchronous: Vercel functions can return the task ID quickly,
+   // while the browser polls status without holding one serverless invocation open.
+   const deadline=progressStartedAt+progressDurationMs+30000;
+   while(!completed&&Date.now()<deadline){
+    await new Promise(resolve=>setTimeout(resolve,1600));
+    const status=await requestAuraJson({mode:"image",provider:"aura",model:modelName,action:"status",taskId},10000);
+    if(status.status==="completed"&&/^https?:\/\//i.test(String(status.imageUrl||""))){completed=status;break}
+    if(["failed","error","cancelled","canceled"].includes(String(status.status||"").toLowerCase()))throw new Error(String(status.message||"Aura не смогла создать изображение"));
+   }
+   if(!completed)throw new Error("Aura не вернула изображение за 30 секунд после достижения 99%");
+   data=completed;
+  }else if(useImageFree){
    const requestImageFreeJson=async(payload,timeoutMs)=>{
     const response=await fetch("/api/image",{
      method:"POST",headers:{"Content-Type":"application/json","Accept":"application/json"},
