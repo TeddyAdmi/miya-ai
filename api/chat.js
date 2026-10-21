@@ -344,19 +344,38 @@ async function handler(req, res) {
         let value = String(rawValue || "").trim()
           .replace(/^\s*\x60{3}(?:\w+)?\s*/i, "")
           .replace(/\s*\x60{3}\s*$/, "")
-          .replace(/^\s*(?:(?:готовый|улучшенный|итоговый)\s+промпт|промпт\s+для\s+изображения|промпт|описание\s+изображения)\s*[:：—–-]\s*/i, "")
           .trim();
-
         if (!value) return null;
-        if (/here(?:'s| is) a thinking process|chain of thought|let me think|system instructions|internal reasoning|внутренн(?:ие|их) рассуждени|ход рассуждени/i.test(value)) return null;
 
-        // Strip an echoed source only when it is repeated as a separate opening phrase.
+        // Some models put their planning or self-instructions in the same answer.
+        // If they label the actual draft, extract only that draft; never return the planning text.
+        const finalMarkers = [...value.matchAll(/(?:^|\n)\s*(?:черновик|готовый промпт|улучшенный промпт|итоговый промпт|итоговый вариант|финальный вариант|финальный ответ|промпт для изображения|описание сцены)\s*[:：—–-]\s*/gi)];
+        if (finalMarkers.length) {
+          const marker = finalMarkers[finalMarkers.length - 1];
+          value = value.slice(marker.index + marker[0].length).trim();
+          value = value.split(/\n\s*\n+/)[0].trim();
+        } else {
+          // If there is no explicit final-draft marker, reject reasoning rather than leak it.
+          const planningLead = /^(?:пользователь\s+(?:просит|хочет|говорит|предлагает)|задача\s*[:—-]|задание\s*[:—-]|нужно\s+(?:написать|описать|создать|превратить|придумать|подготовить|выдать)|требуется\s+(?:написать|описать|создать)|ответ\s+должен|сначала\s+нужно|надо\s+(?:написать|описать|создать)|черновик\s*[:—-]|план\s*[:—-]|анализ\s*[:—-]|рассуждение\s*[:—-])/i;
+          if (planningLead.test(value)) return null;
+        }
+
+        value = value
+          .replace(/^\s*(?:(?:готовый|улучшенный|итоговый)\s+промпт|промпт\s+для\s+изображения|промпт|описание\s+изображения|черновик)\s*[:：—–-]\s*/i, "")
+          .replace(/^["'«]+|["'»]+$/g, "")
+          .replace(/\s+/g, " ")
+          .trim();
+        if (!value) return null;
+
+        // Reject any remaining commentary about writing the prompt itself.
+        const metaContent = /(?:пользователь\s+(?:просит|хочет|предлагает)|нужно\s+(?:написать|описать|создать|превратить|придумать|подготовить)|ответ\s+должен|требования\s*:|детали\s*:|черновик\s*:|анализ\s*:|рассуждение\s*:|системная\s+инструкция|следует\s+(?:сформулировать|добавить)|просто\s+описание|необходимо\s+(?:написать|описать|сохранить))/i;
+        if (metaContent.test(value)) return null;
+
         const sourceCore = originalPrompt.replace(/[.!?]+$/g, "").trim();
         if (sourceCore && value.slice(0, sourceCore.length).toLocaleLowerCase("ru-RU") === sourceCore.toLocaleLowerCase("ru-RU") &&
             /[.!?;:,—–]/.test(value.charAt(sourceCore.length))) {
           value = value.slice(sourceCore.length).replace(/^[\s.!?;:,—–-]+/, "").trim();
         }
-        value = value.replace(/^\s*(?:Вот (?:готовый |улучшенный )?промпт|Описание сцены)\s*[:—–-]\s*/i, "").trim();
 
         const instructionOnly = /^(?:создай|выбери|придумай|добавь|покажи|опиши|сгенерируй|напиши|укажи|не ограничивайся|если пользователь|в этой сцене нужно|следует добавить|нужно добавить)(?=$|[\s,.:;—–])/i.test(value) ||
           /(?:^|[.!?]\s+)(?:создай|выбери|придумай|добавь|покажи|опиши|не ограничивайся)(?=$|[\s,.:;—–])/i.test(value);
@@ -366,10 +385,17 @@ async function handler(req, res) {
         const letters = (value.match(/[A-Za-zА-Яа-яЁё]/g) || []).length;
         const wordCount = value.split(/\s+/).filter(Boolean).length;
         const normalized = text => String(text || "").replace(/[\s.!?,;:—–-]+/g, " ").trim().toLocaleLowerCase("ru-RU");
-        if (value.length < 35 || wordCount < 7 || cyrillic < 20 || !letters || cyrillic / letters < 0.58) return null;
+        const latinWords = value.match(/\b[A-Za-z]{3,}\b/g) || [];
+        const sourceLatinWords = (originalPrompt.match(/\b[A-Za-z]{3,}\b/g) || []).map(word => word.toLowerCase());
+        const unexplainedLatin = latinWords.some(word => !sourceLatinWords.includes(word.toLowerCase()) && !/^(?:iphone|ipad|ipod|bmw|audi|mercedes|toyota|lego|nike|adidas)$/i.test(word));
+        if (value.length < 65 || wordCount < 10 || cyrillic < 40 || !letters || cyrillic / letters < 0.78) return null;
+        if (unexplainedLatin) return null;
+        if (!/[.!?…]$/.test(value)) return null;
         if (normalized(value) === normalized(originalPrompt)) return null;
+        if (value.length > 1400 || wordCount > 180) return null;
+
         return { text: value, provider, wordCount, length: value.length };
-      };
+      }
 
       const cvronPrompt = systemPrompt + "\n\nЗАДУМКА ПОЛЬЗОВАТЕЛЯ:\n" + originalPrompt + "\n\nВерни только готовый промпт.";
       const attempts = [
