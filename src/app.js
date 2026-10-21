@@ -3900,11 +3900,6 @@ async function generateFreeAIVideo(prompt){
  }finally{videoGenerationBusy=false;$("#composerSend").disabled=false}
 }
 
-const ANIMATE_ON_PROMPT_5 = "Create a 5-second video. Use the uploaded image as the actual video frame, not just a reference. Animate only a very slow, smooth enlargement of the entire image around its center. Keep the original composition and every detail unchanged in every frame. No generated movement, no altered faces, no invented details, no replacement images, no new scenes. One continuous shot with only a gentle zoom-in.";
-function animateOnPromptForDuration(seconds) {
- const duration=Math.max(5,Math.min(20,Number(seconds)||5));
- return ANIMATE_ON_PROMPT_5.replace(/^Create a 5-second video\./,"Create a "+duration+"-second video.");
-}
 let animateOnSavedControls=null;
 function configureAnimateOnControls(enabled) {
  const duration=$("#videoDuration"),ratio=$("#videoRatio");
@@ -3976,15 +3971,14 @@ async function generateAnimateOnVideo(prompt) {
   const duration=Math.max(5,Math.min(20,Number(durationText.match(/[0-9]+/)?.[0]||5)));
   const ratioText=String($("#videoRatio")?.value||"16:9");
   const ratio=["auto","9:16","16:9"].includes(ratioText)?ratioText:"16:9";
-  const actionPrompt=animateOnPromptForDuration(duration);
   updateVideoProgress(modelLabel,4,"подготовка изображения…");
   const imageBase64=await animateOnImageDataUrl(source);
   updateVideoProgress(modelLabel,8,"отправка в Image to Video…");
   const response=await fetch("/api/pixelster",{
    method:"POST",
    headers:{"Content-Type":"application/json","Accept":"application/json"},
-   body:JSON.stringify({prompt:actionPrompt,ratio,duration,options:{imageBase64}}),
-   signal:AbortSignal.timeout(70000)
+   body:JSON.stringify({ratio,duration,options:{imageBase64}}),
+   signal:AbortSignal.timeout(290000)
   });
   const raw=await response.text();
   let data={};try{data=raw?JSON.parse(raw):{}}catch{}
@@ -3994,7 +3988,7 @@ async function generateAnimateOnVideo(prompt) {
   }
   const videoUrl=String(data.videoUrl).trim();
   updateVideoProgress(modelLabel,99,"видео получено…");
-  const item=saveMedia("video",videoUrl,actionPrompt,"Animate · I2V · "+duration+" сек");
+  const item=saveMedia("video",videoUrl,"","Animate · I2V · "+duration+" сек");
   stopProgress(100,"готово");
   updateVideoProgress(modelLabel,100,"готово");
   removeGenerationLoading();renderVideoLibrary();if(item)scrollImagesToTop();

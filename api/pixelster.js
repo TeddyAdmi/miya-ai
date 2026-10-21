@@ -6,12 +6,13 @@ async function handler(req,res){
     const body=typeof req.body==="string"?JSON.parse(req.body):(req.body||{});
     const prompt=String(body.prompt||"").trim();
     const imageBase64=String(body?.options?.imageBase64||body.imageBase64||"").trim();
-    if(!prompt)return res.status(400).json({ok:false,error:"PROMPT_REQUIRED"});
     if(!imageBase64)return res.status(400).json({ok:false,error:"IMAGE_REQUIRED",message:"Для Animate · I2V нужно исходное изображение."});
+    const payload={ratio:String(body.ratio||"16:9"),duration:Number(body.duration)||5,imageBase64};
+    if(prompt)payload.prompt=prompt;
     const upstream=await fetch("https://ahm7xmakki.com/api/ptv",{
       method:"POST",
       headers:{"Content-Type":"application/json","Accept":"application/json"},
-      body:JSON.stringify({prompt,ratio:String(body.ratio||"16:9"),duration:Number(body.duration)||5,imageBase64}),
+      body:JSON.stringify(payload),
       signal:AbortSignal.timeout(290000)
     });
     const raw=await upstream.text();
