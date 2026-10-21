@@ -5081,8 +5081,10 @@ async function improveImageComposerPrompt(){
   if(status)status.textContent="Промпт улучшен с помощью AI";
   toast("Промпт улучшен AI");
  }catch(error){
-  if(status)status.textContent=promptController.signal.aborted?"Превышено время ожидания — исходный текст сохранён":"Не удалось улучшить промпт — исходный текст сохранён";
-  toast("Не удалось улучшить промпт AI. Исходный текст сохранён.");
+  const reason=String(error?.message||"Модель временно недоступна").trim();
+  const shortReason=reason.length>150?reason.slice(0,147)+"…":reason;
+  if(status)status.textContent=promptController.signal.aborted?"Время ожидания истекло":"Не удалось улучшить промпт";
+  toast(promptController.signal.aborted?"ИИ не успел подготовить промпт за 30 секунд. Попробуй ещё раз.":"Ошибка улучшения промпта: "+shortReason);
  }finally{
   clearTimeout(promptTimeout);
   if(status)status.classList.remove("composer-status-loading");
