@@ -268,6 +268,56 @@ async function handler(req, res) {
       }
     }
 
+    async function callCloudflarePrompt(messages, timeoutMs = 10000) {
+      const started = Date.now();
+      const token = process.env.CLOUDFLARE_API_TOKEN;
+      const accountId = process.env.CLOUDFLARE_ACCOUNT_ID;
+      if (!token || !accountId) {
+        return { ok: false, provider: "Cloudflare Workers AI", model: "@cf/openai/gpt-oss-20b", status: null, elapsedMs: Date.now() - started, upstreamError: "CLOUDFLARE_NOT_CONFIGURED" };
+      }
+      try {
+        const response = await fetch(
+          `https://api.cloudflare.com/client/v4/accounts/${encodeURIComponent(accountId)}/ai/v1/chat/completions`,
+          {
+            method: "POST",
+            headers: {
+              "Authorization": `Bearer ${token}`,
+              "Content-Type": "application/json",
+              "Accept": "application/json"
+            },
+            body: JSON.stringify({
+              model: "@cf/openai/gpt-oss-20b",
+              messages,
+              temperature: 1.15,
+              max_tokens: 850,
+              stream: false
+            }),
+            signal: AbortSignal.timeout(timeoutMs)
+          }
+        );
+        const raw = await response.text();
+        let data = {};
+        try { data = raw ? JSON.parse(raw) : {}; } catch {}
+        const content = data?.choices?.[0]?.message?.content;
+        const answer = (typeof content === "string" ? content :
+          Array.isArray(content) ? content.map(item => typeof item === "string" ? item : String(item?.text || "")).join("") : "").trim();
+        if (response.ok && answer) {
+          return { ok: true, text: answer, model: String(data?.model || "@cf/openai/gpt-oss-20b"), provider: "Cloudflare Workers AI", status: response.status, elapsedMs: Date.now() - started };
+        }
+        return {
+          ok: false,
+          provider: "Cloudflare Workers AI",
+          model: "@cf/openai/gpt-oss-20b",
+          status: response.status,
+          elapsedMs: Date.now() - started,
+          upstreamBody: raw.slice(0, 1800),
+          upstreamError: data?.errors?.map(item => item?.message || item?.code || "").filter(Boolean).join("; ") || data?.error?.message || data?.message || "CLOUDFLARE_EMPTY_RESPONSE"
+        };
+      } catch (error) {
+        return { ok: false, provider: "Cloudflare Workers AI", model: "@cf/openai/gpt-oss-20b", status: null, elapsedMs: Date.now() - started, upstreamError: String(error?.message || error) };
+      }
+    }
+
     let result;
 
     // Dedicated image-prompt enhancement: bypass the generic chat provider,
@@ -323,18 +373,21 @@ async function handler(req, res) {
       const cvronPrompt = systemPrompt + "\n\nЗАДУМКА ПОЛЬЗОВАТЕЛЯ:\n" + originalPrompt + "\n\nВерни только готовый промпт.";
       const attempts = [
         {
+          provider: "Cloudflare Workers AI / GPT-OSS 20B",
+          promise: callCloudflarePrompt(promptPayload.messages, 10000)
+        },
+        {
           provider: "BlockRun / GPT-OSS",
-          promise: callBlockRun("nvidia/gpt-oss-20b", promptPayload, 18000)
+          promise: callBlockRun("nvidia/gpt-oss-20b", promptPayload, 15000)
         },
         {
           provider: "BlockRun / Nemotron",
-          promise: callBlockRun("nvidia/nemotron-3.5-lightning", promptPayload, 18000)
+          promise: callBlockRun("nvidia/nemotron-3.5-lightning", promptPayload, 15000)
         },
         {
           provider: "CVRON / GPT-5 Nano",
-          promise: callCvronGPT5Nano(cvronPrompt, 18000)
-        }
-      ].map((attempt, index) => ({
+          promise: callCvronGPT5Nano(systemPrompt + "\\n\\nЗАДУМКА ПОЛЬЗОВАТЕЛЯ:\\n" + originalPrompt + "\\n\\nВерни только готовый промпт.", 15000)
+        }      ].map((attempt, index) => ({
         index,
         provider: attempt.provider,
         promise: attempt.promise.then(result => ({ result, index, provider: attempt.provider }))
