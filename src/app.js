@@ -2857,6 +2857,19 @@ async function showImage(url,prompt="",model="FLUX Dev",ratio=""){
   if(!grid){c.innerHTML='<div class="result-grid"></div>';grid=c.querySelector(".result-grid")}
   const card=buildMediaCard(item);grid.prepend(card);
   applyFirstSixMediaPriority(grid);
+  const image=card.querySelector("img");
+  if(image&&!image.complete){
+    await new Promise(resolve=>{
+      let settled=false,failedTimer=null;
+      const finish=()=>{if(settled)return;settled=true;if(failedTimer)clearTimeout(failedTimer);clearTimeout(timeout);image.removeEventListener("load",onLoad);image.removeEventListener("error",onError);resolve()};
+      const onLoad=()=>{if(image.naturalWidth>0)finish()};
+      const onError=()=>{if(failedTimer)clearTimeout(failedTimer);failedTimer=setTimeout(finish,5000)};
+      const timeout=setTimeout(finish,60000);
+      image.addEventListener("load",onLoad);
+      image.addEventListener("error",onError);
+      if(image.complete&&image.naturalWidth>0)finish();
+    });
+  }
   return item;
 }
 async function compressAgnesReferenceImage(source){
@@ -3008,7 +3021,7 @@ async function generateImage(prompt){
  };
  const updateProgress=()=>{
   const elapsed=Math.max(0,Date.now()-progressStartedAt);
-  setProgress(1+Math.min(94,elapsed/progressDurationMs*94));
+  setProgress(1+Math.min(98,elapsed/progressDurationMs*98));
  };
  setProgress(1);
  fakeTimer=setInterval(updateProgress,1000);
@@ -3105,7 +3118,7 @@ async function generateImage(prompt){
     if(status.status==="completed"&&status.imageUrl){completed=status;break}
     if(["failed","error","cancelled","canceled"].includes(String(status.status||"").toLowerCase()))throw new Error(String(status.message||"Z-Image Turbo завершилась ошибкой"));
     const elapsed=Date.now()-progressStartedAt;
-    setProgress(20+Math.min(74,elapsed/65000*74));
+    setProgress(20+Math.min(79,elapsed/65000*79));
     if($("#composerStatus"))$("#composerStatus").textContent=displayModel+" · "+(status.status==="queued"?"в очереди": "создание изображения…");
    }
    if(!completed)throw new Error("Z-Image Turbo не вернула изображение за 70 секунд");
@@ -4979,39 +4992,19 @@ async function pasteComposerContent(button){
   toast("Текст вставлен");
   return true;
  };
- // Prefer plain text first: the previous clipboard.read() call triggered an
- // extra browser permission/menu before inserting ordinary copied text.
+ // Read plain text once from the click gesture. Do not call clipboard.read()
+ // afterwards: Firefox can show a second native "Paste" permission window.
  try{
   if(navigator.clipboard?.readText){
    const text=await navigator.clipboard.readText();
    if(insertText(text))return;
+   toast("Буфер обмена пуст");
+   return;
   }
- }catch{}
- // Only fall back to rich clipboard access in Images when no text was available,
- // so pasting an image as a reference remains supported.
- if(mode==="images"&&navigator.clipboard?.read){
-  try{
-   const items=await navigator.clipboard.read();
-   for(const item of items){
-    const imageType=item.types.find(type=>/^image\//i.test(type));
-    if(imageType){
-     const blob=await item.getType(imageType);
-     const extension=(imageType.split("/")[1]||"png").replace("jpeg","jpg");
-     const file=new File([blob],"clipboard-image."+extension,{type:imageType});
-     await attachReferenceFile(file);
-     toast("Изображение вставлено");
-     return;
-    }
-   }
-   for(const item of items){
-    if(item.types.includes("text/plain")){
-     const blob=await item.getType("text/plain");
-     if(insertText(await blob.text()))return;
-    }
-   }
-  }catch{}
+ }catch(error){
+  console.warn("Clipboard text read was denied or unavailable",error);
  }
- toast(mode==="images"?"В буфере нет текста или изображения либо браузер не разрешил доступ.":"Не удалось вставить текст. Разреши доступ к буферу обмена.");
+ toast("Браузер не разрешил чтение буфера. Разреши вставку для этого сайта или используй Ctrl+V.");
 }
 
 function improveVideoComposerPrompt(){
