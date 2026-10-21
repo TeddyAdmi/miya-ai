@@ -3980,11 +3980,11 @@ async function generateAnimateOnVideo(prompt) {
   updateVideoProgress(modelLabel,4,"подготовка изображения…");
   const imageBase64=await animateOnImageDataUrl(source);
   updateVideoProgress(modelLabel,8,"отправка в Image to Video…");
-  const response=await fetch("https://ahm7xmakki.com/api/ptv",{
+  const response=await fetch("/api/pixelster",{
    method:"POST",
    headers:{"Content-Type":"application/json","Accept":"application/json"},
-   body:JSON.stringify({prompt:actionPrompt,ratio,duration,imageBase64}),
-   signal:AbortSignal.timeout(240000)
+   body:JSON.stringify({prompt:actionPrompt,ratio,duration,options:{imageBase64}}),
+   signal:AbortSignal.timeout(70000)
   });
   const raw=await response.text();
   let data={};try{data=raw?JSON.parse(raw):{}}catch{}
