@@ -3977,7 +3977,7 @@ async function generateAnimateOnVideo(prompt) {
   const response=await fetch("/api/pixelster",{
    method:"POST",
    headers:{"Content-Type":"application/json","Accept":"application/json"},
-   body:JSON.stringify({ratio,duration,options:{imageBase64}}),
+   body:JSON.stringify({prompt:"Animate the uploaded image.",ratio,duration,options:{imageBase64}}),
    signal:AbortSignal.timeout(290000)
   });
   const raw=await response.text();
@@ -3988,7 +3988,7 @@ async function generateAnimateOnVideo(prompt) {
   }
   const videoUrl=String(data.videoUrl).trim();
   updateVideoProgress(modelLabel,99,"видео получено…");
-  const item=saveMedia("video",videoUrl,"","Animate · I2V · "+duration+" сек");
+  const item=saveMedia("video",videoUrl,"Animate the uploaded image.","Animate · I2V · "+duration+" сек");
   stopProgress(100,"готово");
   updateVideoProgress(modelLabel,100,"готово");
   removeGenerationLoading();renderVideoLibrary();if(item)scrollImagesToTop();
