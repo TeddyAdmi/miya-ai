@@ -2992,7 +2992,7 @@ async function generateImage(prompt){
  const modelName=selectedModel||"FLUX Dev";
  const displayModel=imageModelLabel(modelName);
  const timeoutMs=/^(?:Nano Banana|Nano Banana 2|Seedream|Z-Image Turbo \(ImageFree\))$/.test(modelName)?180000:120000;
- const progressDurationMs=40000;
+ const progressDurationMs=useImageFree?70000:(/^FLUX Dev$/i.test(modelName)?50000:40000);
  const usesReferenceImage=Boolean(referenceImage);
  const hasFileUpload=Boolean(referenceImage);
  const composerProgress=$("#composerProgress");
@@ -3008,7 +3008,7 @@ async function generateImage(prompt){
  };
  const updateProgress=()=>{
   const elapsed=Math.max(0,Date.now()-progressStartedAt);
-  setProgress(1+Math.min(98,elapsed/progressDurationMs*98));
+  setProgress(1+Math.min(94,elapsed/progressDurationMs*94));
  };
  setProgress(1);
  fakeTimer=setInterval(updateProgress,1000);
@@ -3083,7 +3083,36 @@ async function generateImage(prompt){
   // Image creation/editing is routed through the original AHM7/ API.
   // Do not call public Hugging Face FLUX Spaces here: they were only a fallback
   // experiment and bypass the provider that this app originally used.
-  data=await requestThroughMiyaApi();
+  if(useImageFree){
+   const requestImageFreeJson=async(payload,timeoutMs)=>{
+    const response=await fetch("/api/image",{
+     method:"POST",headers:{"Content-Type":"application/json","Accept":"application/json"},
+     body:JSON.stringify(payload),cache:"no-store",signal:AbortSignal.timeout(timeoutMs)
+    });
+    const raw=await response.text();let result={};try{result=raw?JSON.parse(raw):{}}catch{}
+    if(!response.ok||result.ok===false)throw new Error(String(result.message||result.error||raw||("ImageFree HTTP "+response.status)).slice(0,400));
+    return result;
+   };
+   const basePayload=JSON.parse(body);
+   const started=await requestImageFreeJson({...basePayload,action:"start"},25000);
+   const taskId=String(started.taskId||"").trim();
+   if(!taskId)throw new Error("Z-Image Turbo не вернул номер задания");
+   const deadline=Date.now()+70000;
+   let completed=null;
+   while(Date.now()<deadline){
+    await new Promise(resolve=>setTimeout(resolve,1600));
+    const status=await requestImageFreeJson({mode:"image",provider:"imagefree",model:modelName,ratio:selectedRatio,action:"status",taskId},12000);
+    if(status.status==="completed"&&status.imageUrl){completed=status;break}
+    if(["failed","error","cancelled","canceled"].includes(String(status.status||"").toLowerCase()))throw new Error(String(status.message||"Z-Image Turbo завершилась ошибкой"));
+    const elapsed=Date.now()-progressStartedAt;
+    setProgress(20+Math.min(74,elapsed/65000*74));
+    if($("#composerStatus"))$("#composerStatus").textContent=displayModel+" · "+(status.status==="queued"?"в очереди": "создание изображения…");
+   }
+   if(!completed)throw new Error("Z-Image Turbo не вернула изображение за 70 секунд");
+   data=completed;
+  }else{
+   data=await requestThroughMiyaApi();
+  }
   const actualModel=data.model||modelName;
   if(fakeTimer){clearInterval(fakeTimer);fakeTimer=null;}
   const generatedUrls=Array.isArray(data.imageUrls)&&data.imageUrls.length
@@ -6632,31 +6661,42 @@ body.light #composer.mode-music .music-options .music-tool:hover,body.light #com
    "Профессиональная обложка музыкального релиза, выразительная композиция, яркие насыщенные цвета, детализированный главный образ, красивый свет и глубина.",
    "Не добавляй никаких надписей, букв, цифр, текста песни, логотипов, водяных знаков или рамок. Без коллажа и без макета обложки внутри картинки."
   ].join("\n\n");
-  const readImage=async response=>{
-   const raw=await response.text();let data={};try{data=raw?JSON.parse(raw):{}}catch{}
-   const image=String(data.imageUrl||(Array.isArray(data.imageUrls)?data.imageUrls[0]:"")||"").trim();
-   if(!response.ok||!/^https?:\/\//i.test(image))throw new Error(String(data.message||data.error||("HTTP "+response.status)+"; "+raw.slice(0,300)));
-   return image;
-  };
-  try{
-   const response=await fetch("/api/agnes-image",{
-    method:"POST",headers:{"Content-Type":"application/json","Accept":"application/json"},
-    body:JSON.stringify({prompt,ratio:"16:9",quality:"4K",n:1}),
-    cache:"no-store",signal:AbortSignal.timeout(65000)
-   });
-   return {image:await readImage(response),model:"Agnes Image"};
-  }catch(error){
-   console.warn("Music cover: Agnes failed; trying Flux Dev.",String(error?.message||error));
-  }
-  try{
+  const requestJson=async(payload,timeoutMs)=>{
    const response=await fetch("/api/image",{
     method:"POST",headers:{"Content-Type":"application/json","Accept":"application/json"},
-    body:JSON.stringify({prompt,model:"Flux Dev",ratio:"16:9"}),
-    cache:"no-store",signal:AbortSignal.timeout(60000)
+    body:JSON.stringify(payload),cache:"no-store",signal:AbortSignal.timeout(timeoutMs)
    });
-   return {image:await readImage(response),model:"Flux Dev"};
+   const raw=await response.text();let data={};try{data=raw?JSON.parse(raw):{}}catch{}
+   if(!response.ok||data.ok===false)throw new Error(String(data.message||data.error||raw||("HTTP "+response.status)).slice(0,350));
+   return data;
+  };
+  try{
+   const base={mode:"image",provider:"imagefree",model:"Z-Image Turbo (ImageFree)",ratio:"16:9",prompt};
+   const started=await requestJson({...base,action:"start"},22000);
+   const taskId=String(started.taskId||"").trim();
+   if(!taskId)throw new Error("Z-Image Turbo не вернула номер задания");
+   const deadline=Date.now()+45000;
+   while(Date.now()<deadline){
+    await new Promise(resolve=>setTimeout(resolve,1700));
+    const status=await requestJson({...base,action:"status",taskId},12000);
+    if(status.status==="completed"&&/^https?:\/\//i.test(String(status.imageUrl||""))){
+     return {image:String(status.imageUrl),model:"Z-Image Turbo"};
+    }
+    if(["failed","error","cancelled","canceled"].includes(String(status.status||"").toLowerCase())){
+     throw new Error(String(status.message||"Z-Image Turbo завершилась ошибкой"));
+    }
+   }
+   throw new Error("Z-Image Turbo не вернула обложку за 45 секунд");
   }catch(error){
-   console.warn("Music cover: Agnes and Flux Dev failed.",String(error?.message||error));
+   console.warn("Music cover: Z-Image Turbo failed; trying Flux Dev.",String(error?.message||error));
+  }
+  try{
+   const data=await requestJson({prompt,model:"Flux Dev",ratio:"16:9"},60000);
+   const image=String(data.imageUrl||(Array.isArray(data.imageUrls)?data.imageUrls[0]:"")||"").trim();
+   if(!/^https?:\/\//i.test(image))throw new Error("Flux Dev не вернул ссылку на обложку");
+   return {image,model:"Flux Dev"};
+  }catch(error){
+   console.warn("Music cover: Z-Image Turbo and Flux Dev failed.",String(error?.message||error));
    return {image:"",model:""};
   }
  }

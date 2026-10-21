@@ -463,17 +463,21 @@ module.exports = async function imageHandler(req, res) {
       const userPrompt = typeof body.prompt === "string" ? body.prompt.trim() : "";
       const allowedRatios = ["1:1", "3:4", "4:3", "16:9", "9:16", "2:3", "3:2", "21:9"];
       const aspectRatio = allowedRatios.includes(String(body.ratio || "")) ? String(body.ratio) : "16:9";
+      const action = String(body.action || "start").toLowerCase();
+      const taskIdInput = String(body.taskId || "").trim();
       if (requestedModel !== "Z-Image Turbo (ImageFree)") {
         return res.status(400).json({ok:false,error:"IMAGEFREE_MODEL_UNSUPPORTED",message:"Неизвестная модель ImageFree."});
       }
-      if (!userPrompt) return res.status(400).json({ok:false,error:"PROMPT_REQUIRED"});
+      if (action !== "status" && !userPrompt) return res.status(400).json({ok:false,error:"PROMPT_REQUIRED"});
+      if (action === "status" && !taskIdInput) return res.status(400).json({ok:false,error:"IMAGEFREE_TASK_ID_REQUIRED"});
 
       const requestImageFree = async (url, init) => {
+        const isStatusRequest = /\/status\?/.test(url);
         const upstream = await fetch(url, {
           ...init,
           headers: { Accept:"application/json", ...(init?.headers || {}) },
           cache:"no-store",
-          signal:AbortSignal.timeout(25000)
+          signal:AbortSignal.timeout(isStatusRequest ? 9000 : 20000)
         });
         const raw = await upstream.text();
         let data = {};
@@ -487,17 +491,47 @@ module.exports = async function imageHandler(req, res) {
         return data;
       };
 
+      const normalizeImageFreeStatus = statusData => {
+        const status = String(statusData?.status || statusData?.state || "processing").toLowerCase();
+        const imageUrl = String(statusData?.image || statusData?.imageUrl || statusData?.image_url || "").trim();
+        if (["failed","error","cancelled","canceled"].includes(status)) {
+          return {failed:true,status,message:String(statusData?.message || statusData?.error || "ImageFree не смог создать изображение."),upstreamBody:JSON.stringify(statusData).slice(0,900)};
+        }
+        if (status === "completed" && /^https:\/\//i.test(imageUrl)) {
+          let parsed;
+          try { parsed = new URL(imageUrl); } catch {}
+          if (!parsed || parsed.hostname !== "pub-62e693a7058040f98bba94ed1d6f880b.r2.dev") {
+            return {failed:true,status:"error",message:"ImageFree вернул ссылку с неожиданного домена."};
+          }
+          return {completed:true,status:"completed",imageUrl};
+        }
+        return {status};
+      };
+
       try {
-        // Do not forge a challenge token. This empty value tests whether the
-        // provider permits task creation without an interactive challenge.
+        if (action === "status") {
+          const statusData = await requestImageFree(
+            "https://imagefree.net/api/generate/status?taskId=" + encodeURIComponent(taskIdInput),
+            {method:"GET"}
+          );
+          const normalized = normalizeImageFreeStatus(statusData);
+          if (normalized.failed) {
+            return res.status(502).json({ok:false,error:"IMAGEFREE_GENERATION_FAILED",message:normalized.message,upstreamBody:normalized.upstreamBody || ""});
+          }
+          if (normalized.completed) {
+            return res.status(200).json({
+              ok:true,mode:"image",status:"completed",provider:"ImageFree",
+              model:"Z-Image Turbo (ImageFree)",imageUrl:normalized.imageUrl,imageUrls:[normalized.imageUrl],count:1,
+              meta:{free:true,aspectRatio,taskId:taskIdInput,upstream:"imagefree.net"}
+            });
+          }
+          return res.status(200).json({ok:true,status:normalized.status,provider:"ImageFree",model:"Z-Image Turbo (ImageFree)",taskId:taskIdInput});
+        }
+
         const created = await requestImageFree("https://imagefree.net/api/generate", {
           method:"POST",
           headers:{"Content-Type":"application/json"},
-          body:JSON.stringify({
-            prompt:userPrompt,
-            aspect_ratio:aspectRatio,
-            turnstile_token:""
-          })
+          body:JSON.stringify({prompt:userPrompt,aspect_ratio:aspectRatio,turnstile_token:""})
         });
         const taskId = String(created?.taskId || "").trim();
         if (!taskId) {
@@ -507,41 +541,9 @@ module.exports = async function imageHandler(req, res) {
             upstreamBody:JSON.stringify(created).slice(0,900)
           });
         }
-
-        const startedAt = Date.now();
-        let lastStatus = {};
-        while (Date.now() - startedAt < 180000) {
-          await new Promise(resolve => setTimeout(resolve, 2000));
-          lastStatus = await requestImageFree(
-            "https://imagefree.net/api/generate/status?taskId=" + encodeURIComponent(taskId),
-            {method:"GET"}
-          );
-          const status = String(lastStatus?.status || "").toLowerCase();
-          const imageUrl = String(lastStatus?.image || "").trim();
-          if (status === "completed" && /^https:\/\//i.test(imageUrl)) {
-            let parsed;
-            try { parsed = new URL(imageUrl); } catch {}
-            if (!parsed || parsed.hostname !== "pub-62e693a7058040f98bba94ed1d6f880b.r2.dev") {
-              return res.status(502).json({ok:false,error:"IMAGEFREE_IMAGE_HOST_UNEXPECTED",message:"ImageFree вернул ссылку с неожиданного домена."});
-            }
-            return res.status(200).json({
-              ok:true,mode:"image",status:"completed",provider:"ImageFree",
-              model:"Z-Image Turbo (ImageFree)",imageUrl,imageUrls:[imageUrl],count:1,
-              meta:{free:true,aspectRatio,taskId,upstream:"imagefree.net"}
-            });
-          }
-          if (["failed","error","cancelled","canceled"].includes(status)) {
-            return res.status(502).json({
-              ok:false,error:"IMAGEFREE_GENERATION_FAILED",
-              message:String(lastStatus?.message || lastStatus?.error || "ImageFree не смог создать изображение."),
-              upstreamBody:JSON.stringify(lastStatus).slice(0,900)
-            });
-          }
-        }
-        return res.status(504).json({
-          ok:false,error:"IMAGEFREE_GENERATION_TIMEOUT",
-          message:"ImageFree не завершил генерацию за 3 минуты.",
-          taskId,lastStatus
+        return res.status(200).json({
+          ok:true,status:"processing",provider:"ImageFree",model:"Z-Image Turbo (ImageFree)",taskId,
+          meta:{free:true,aspectRatio,upstream:"imagefree.net"}
         });
       } catch (error) {
         return res.status(502).json({
@@ -685,7 +687,7 @@ module.exports = async function imageHandler(req, res) {
         form.append("model", auraModel);
         const createResponse = await fetch("https://aurasoundai.ru/api/postcard/generate", {
           method:"POST", headers:{Accept:"application/json"}, body:form,
-          cache:"no-store", signal:AbortSignal.timeout(30000)
+          cache:"no-store", signal:AbortSignal.timeout(20000)
         });
         const createRaw = await createResponse.text();
         let createData = {};
@@ -718,13 +720,13 @@ module.exports = async function imageHandler(req, res) {
           upstreamBody:createRaw.slice(0,1200)
         });
 
-        const deadline = Date.now() + 95000;
+        const deadline = Date.now() + 55000;
         let lastStatus = "";
         while (!imageUrl && Date.now() < deadline) {
           await new Promise(resolve => setTimeout(resolve, 1800));
           const statusResponse = await fetch(
             "https://aurasoundai.ru/api/postcard/status?task_id=" + encodeURIComponent(taskId),
-            {headers:{Accept:"application/json"},cache:"no-store",signal:AbortSignal.timeout(12000)}
+            {headers:{Accept:"application/json"},cache:"no-store",signal:AbortSignal.timeout(7000)}
           );
           const statusRaw = await statusResponse.text();
           let statusData = {};
@@ -806,7 +808,7 @@ module.exports = async function imageHandler(req, res) {
             method:"GET",
             headers:{Accept:"application/json, text/plain, */*"},
             cache:"no-store",
-            signal:AbortSignal.timeout(180000)
+            signal:AbortSignal.timeout(45000)
           });
           raw = await upstream.text();
           data = {};
