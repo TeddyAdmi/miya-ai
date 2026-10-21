@@ -316,7 +316,7 @@ async function handler(req, res) {
           .replace(/^\s*(?:(?:final\s+)?(?:improved\s+)?prompt(?:\s*\([^)]*\))?|готовый\s+промпт|улучшенный\s+промпт|промпт)\s*[:：—–-]\s*/i, "")
           .replace(/^\s*["'«]+|["'»]+\s*$/g, "")
           .trim();
-        const isReasoning = /here(?:'s| is) a thinking process|chain of thought|let me think|analy[sz]e user input|deconstruct system instructions|step[- ]by[- ]step reasoning|ход рассуждени|внутренн(?:ие|их) рассуждени|internal reasoning|analysis of (?:the )?user|system instructions|preserve:|expand:|draft prompt|prompt \(internal\)|internal prompt|thinking process|reasoning:/i.test(text);
+        const isReasoning = /here(?:'s| is) a thinking process|chain of thought|let me think|analy[sz]e user input|deconstruct system instructions|step[- ]by[- ]step reasoning|ход рассуждени|внутренн(?:ие|их) рассуждени|internal reasoning|analysis of (?:the )?user|system instructions|preserve:|expand:|draft prompt|prompt \(internal\)|internal prompt|thinking process|reasoning:|(?:^|\n)\s*(?:[-*]\s*)?(?:original|need to|must stay|let'?s (?:craft|write|create)|i can|i should|the output should|adds only|avoid:|let me|we need to)\b|\b(?:weave in|stay in russian|without adding new stuff|not a prompt|just write|rather than|i need to be careful|these are descriptive enhancements)\b/i.test(text);
         let extracted = "";
         const marked = [...text.matchAll(/(?:final prompt|improved prompt|готовый промпт|улучшенный промпт|итоговый промпт)\s*(?:\([^)]*\))?\s*[:：—–-]\s*/gi)];
         if (marked.length) {
