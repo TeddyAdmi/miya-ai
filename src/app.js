@@ -17,6 +17,9 @@
  .generation-loading:not(.video-generation-loading) .progress-circle .progress-percent{
    font-size:13px!important;line-height:1!important;font-weight:850!important;
  }
+ /* Never expose a partially decoded image; reveal it only after the load event. */
+ .media-card img:not(.media-image-ready){opacity:0!important}
+ .media-card img.media-image-ready{opacity:1!important;transition:opacity .16s ease-out!important}
  
 `;
  document.head.appendChild(st);
@@ -1452,12 +1455,13 @@ function buildMediaCard(item,{video=false}={}){
    }catch{}
    const isDeadVheer=/^https?:\/\/access\.vheer\.com\/results\//i.test(directUrl);
    const setImageSource=url=>{if(url&&!mediaFailed)media.src=url};
-   media.addEventListener("load",()=>{if(media.naturalWidth>0)cacheMedia(item.id,proxyUrl||media.currentSrc||storedUrl,"image")},{once:true});
+   media.addEventListener("load",()=>{if(media.naturalWidth>0){media.classList.add("media-image-ready");cacheMedia(item.id,media.currentSrc||media.src||proxyUrl||storedUrl,"image")}});
    media.addEventListener("error",()=>{
-     // A slow JPEG conversion must never hide a usable provider image.
-     if(proxyUrl&&!triedProxy&&media.src!==proxyUrl){triedProxy=true;setImageSource(proxyUrl);return}
+     // Start with the stable same-origin proxy. Use a cached object URL only as
+     // a first fallback, then try the provider URL if the proxy itself fails.
+     if(proxyUrl&&!triedProxy&&media.src.startsWith("blob:")){triedProxy=true;setImageSource(proxyUrl);return}
      if(proxyUrl&&!triedDirect&&directUrl&&directUrl!==storedUrl){triedDirect=true;setImageSource(directUrl);return}
-     mediaFailed=true;media.removeAttribute("src");
+     mediaFailed=true;card.classList.add("media-load-error");media.classList.remove("media-image-ready");media.removeAttribute("src");
      media.alt=isDeadVheer?"Старая копия изображения":"Изображение временно недоступно";
    });
    const isAgnesPreview=/^Agnes Image/i.test(String(item.model||""));
@@ -1468,21 +1472,11 @@ function buildMediaCard(item,{video=false}={}){
    // This lets an already loaded wall render from saved image bytes after reloads and in new tabs.
    resolveMediaUrl(item).then(url=>{
      if(!url||mediaFailed)return;
-     const isAuraModel=/^(Nano Banana|Seedream)$/i.test(String(item.model||"").trim());
-     if(isAuraModel&&proxyUrl){
-       // Use the final same-origin image response as the first visible source.
-       // Do not flash the provider's transient raw image before its 200 response.
-       setImageSource(proxyUrl);
-       return;
-     }
+     // Keep a single source during loading: switching from a half-loaded
+     // provider image to a proxy response caused visible jumps and blank flashes.
      if(url.startsWith("blob:")){setImageSource(url);return}
-     if(!isDeadVheer&&directUrl)setImageSource(directUrl);
-     if(proxyUrl){
-       const optimized=new Image();optimized.decoding="async";
-       optimized.onload=()=>{if(!mediaFailed&&media.isConnected){setImageSource(proxyUrl);cacheMedia(item.id,proxyUrl,"image")}};
-       optimized.onerror=()=>{};
-       optimized.src=proxyUrl;
-     }else if(!media.src&&!isDeadVheer)setImageSource(url);
+     if(proxyUrl){setImageSource(proxyUrl);return}
+     if(!isDeadVheer)setImageSource(url);
    }).catch(()=>{});
    if(isDeadVheer&&!proxyUrl)media.alt="Старая копия изображения";
    media.addEventListener("click",e=>{e.stopPropagation();openImageViewer(item)});
@@ -2863,16 +2857,17 @@ async function showImage(url,prompt="",model="FLUX Dev",ratio=""){
   const card=buildMediaCard(item);grid.prepend(card);
   applyFirstSixMediaPriority(grid);
   const image=card.querySelector("img");
-  if(image&&!image.complete){
-    await new Promise(resolve=>{
-      let settled=false,failedTimer=null;
-      const finish=()=>{if(settled)return;settled=true;if(failedTimer)clearTimeout(failedTimer);clearTimeout(timeout);image.removeEventListener("load",onLoad);image.removeEventListener("error",onError);resolve()};
+  if(image&&!image.classList.contains("media-image-ready")){
+    await new Promise((resolve,reject)=>{
+      let settled=false;
+      const finish=(error)=>{if(settled)return;settled=true;clearTimeout(timeout);image.removeEventListener("load",onLoad);image.removeEventListener("error",onError);if(error)reject(error);else resolve()};
       const onLoad=()=>{if(image.naturalWidth>0)finish()};
-      const onError=()=>{if(failedTimer)clearTimeout(failedTimer);failedTimer=setTimeout(finish,5000)};
-      const timeout=setTimeout(finish,60000);
+      const onError=()=>{if(image.closest(".media-card")?.classList.contains("media-load-error"))finish(new Error("Не удалось загрузить готовое изображение."))};
+      const timeout=setTimeout(()=>finish(new Error("Изображение не загрузилось вовремя.")),30000);
       image.addEventListener("load",onLoad);
       image.addEventListener("error",onError);
       if(image.complete&&image.naturalWidth>0)finish();
+      else if(image.complete&&image.closest(".media-card")?.classList.contains("media-load-error"))finish(new Error("Не удалось загрузить готовое изображение."));
     });
   }
   return item;
@@ -3094,8 +3089,9 @@ async function generateImage(prompt){
       const requestError=new Error(detail);requestError.code=result.error||"";requestError.status=xhr.status;reject(requestError);
     }
    };
-   // After reaching 99%, allow at most 20 additional seconds.
-   xhr.timeout=Math.min(timeoutMs,progressDurationMs+20000);
+   // After reaching 99%, Nano Banana / Seedream get 30 seconds; other models get 20.
+   const post99WaitMs=/^(?:Nano Banana(?: 2)?|Seedream)$/i.test(modelName)?30000:20000;
+   xhr.timeout=Math.min(timeoutMs,progressDurationMs+post99WaitMs);
    xhr.send(body);
   });
 ;

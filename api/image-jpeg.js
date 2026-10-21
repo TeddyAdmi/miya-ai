@@ -1,7 +1,9 @@
 const sharp = require("sharp");
 
 module.exports = async function handler(req, res) {
-  res.setHeader("Cache-Control", "public, max-age=86400, s-maxage=86400");
+  // Never cache a transiently truncated provider response for a full day.
+  res.setHeader("Cache-Control", "no-store, no-cache, must-revalidate");
+  res.setHeader("Pragma", "no-cache");
   res.setHeader("Access-Control-Allow-Origin", "*");
 
   if (req.method !== "GET") {
@@ -95,7 +97,26 @@ module.exports = async function handler(req, res) {
       if (!input.length || input.length > 30 * 1024 * 1024) {
         return res.status(413).json({ ok: false, error: "IMAGE_TOO_LARGE" });
       }
-      res.setHeader("Content-Type", type.split(";")[0]);
+      // Do not return HTTP 200 when the upstream body was truncated.
+      const advertisedLength = Number(upstream.headers.get("content-length") || 0);
+      if (advertisedLength > 0 && advertisedLength !== input.length) {
+        return res.status(502).json({ ok: false, error: "UPSTREAM_IMAGE_TRUNCATED", expectedBytes: advertisedLength, receivedBytes: input.length });
+      }
+      const normalizedType = type.split(";")[0];
+      if (normalizedType === "image/png") {
+        const signature = Buffer.from([137, 80, 78, 71, 13, 10, 26, 10]);
+        const iend = input.lastIndexOf(Buffer.from("IEND"));
+        if (input.length < 20 || !input.subarray(0, 8).equals(signature) || iend < 8 || iend + 8 !== input.length) {
+          return res.status(502).json({ ok: false, error: "UPSTREAM_IMAGE_TRUNCATED", message: "Провайдер вернул неполный PNG; изображение не закэшировано." });
+        }
+      } else if (normalizedType === "image/jpeg" || normalizedType === "image/jpg") {
+        if (input.length < 4 || input[0] !== 0xff || input[1] !== 0xd8 || input[input.length - 2] !== 0xff || input[input.length - 1] !== 0xd9) {
+          return res.status(502).json({ ok: false, error: "UPSTREAM_IMAGE_TRUNCATED", message: "Провайдер вернул неполный JPEG; изображение не закэшировано." });
+        }
+      }
+      res.setHeader("Cache-Control", "no-store, no-cache, must-revalidate");
+      res.setHeader("X-Content-Type-Options", "nosniff");
+      res.setHeader("Content-Type", normalizedType);
       res.setHeader("Content-Length", String(input.length));
       res.setHeader("Content-Disposition", 'inline; filename="miya-image"');
       return res.status(200).send(input);
