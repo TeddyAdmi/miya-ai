@@ -203,8 +203,9 @@ async function handler(req, res) {
         });
         const raw = await response.text();
         let data = {};
-        try { data = raw ? JSON.parse(raw) : {}; } catch {}
-        const answer = String(data?.response || data?.text || data?.message || "").trim();
+        let parsedJson = false;
+        try { data = raw ? JSON.parse(raw) : {}; parsedJson = !!raw; } catch {}
+        const answer = String(data?.response || data?.text || data?.message || (!parsedJson ? raw : "")).trim();
         if(response.ok && answer){
           return {ok:true,text:answer,model:"GPT-5 Nano",provider:"CVRON",status:response.status,elapsedMs:Date.now()-started};
         }
@@ -276,174 +277,97 @@ async function handler(req, res) {
       if (!originalPrompt) {
         return res.status(400).json({ ok: false, error: "PROMPT_REQUIRED", message: "Сначала введи промпт." });
       }
-      // Each click receives a fresh creative brief; it steers the scene idea, not a fixed camera effect.
-      const variationHints = [
-        "придумай другую правдоподобную локацию, если пользователь не задал её явно",
-        "придумай новый состав участников и естественные различия между ними, если состав не задан",
-        "найди необычную, но жизненную организацию объектов и взаимодействий внутри одного кадра",
-        "сделай окружение самостоятельной частью идеи, а не пустым фоном",
-        "представь тот же смысл через другой момент наблюдения и иную пространственную расстановку",
-        "выбери новую комбинацию окружения, глубины, переднего плана и дальних деталей",
-        "придумай отличающуюся атмосферу места, подходящую действию и не противоречащую заданным условиям",
-        "измени визуальную идею целиком, а не только угол съёмки или набор прилагательных",
-        "если субъектов несколько, дай им разнообразные естественные позы и роли в общей сцене",
-        "найди свежие конкретные детали, которые зритель действительно сможет увидеть на изображении",
-        "представь другой вариант среды, расположения объектов и взаимосвязи планов",
-        "сделай кадр узнаваемо новым по месту, составу, композиции и характеру освещения"
-      ];
-      const variationHint = variationHints[Math.floor(Math.random() * variationHints.length)];
-      const creativeSeed = Math.random().toString(36).slice(2, 10) + "-" + Date.now().toString(36);
+
+      const creativeId = Math.random().toString(36).slice(2, 9) + "-" + Date.now().toString(36);
+      const systemPrompt = "Ты — креативный арт-директор и художник-концептуалист. Преврати короткую задумку в самостоятельную, насыщенную конкретикой сцену для одного статичного изображения. Сохрани все прямо заданные детали и главное действие. Всё, чего автор не уточнил, самостоятельно придумай заново: подходящие объекты и участников, их особенности, окружение, характерные предметы, взаимное расположение и контекст. Не используй заготовленные сцены или один стереотипный набор деталей; выбирай их по смыслу именно этой задумки. Каждый запрос рассматривай как новую творческую задачу. Опиши саму видимую сцену утвердительными фразами — не инструкцию другому ИИ. Не начинай с дословного повтора исходного запроса и не заменяй сцену общими словами о качестве. Не используй повелительные формулировки «создай», «выбери», «придумай», «добавь», «покажи». Один кадр, не последовательность событий. Русский язык, один абзац, примерно 50–100 слов, без заголовка и пояснений. Уникальный идентификатор этой попытки: " + creativeId + ". Не включай его в ответ.";
       const promptPayload = {
         messages: [
-          {
-            role: "system",
-            content: "Ты — креативный арт-директор и художник-концептуалист. Преврати короткую задумку в готовый промпт для одного статичного изображения: самостоятельно придумай конкретную, выразительную сцену, а не просто улучши формулировку. Сохраняй все прямо заданные детали и главное действие. Всё неуказанное придумай сам: конкретных участников и объекты, характерное окружение, их расположение и связанные с действием подробности. Не выбирай автоматически один и тот же стереотипный вариант; повторный запрос должен получать новую правдоподобную визуальную идею. Описывай видимые вещи утвердительными фразами — это должна быть сама сцена, не совет другому ИИ. Не повторяй дословно исходную фразу отдельным первым предложением. Не пиши инструкции вроде «создай», «выбери», «придумай», «добавь», «покажи». Не заменяй сцену общими словами о качестве. Один кадр, не последовательность событий. Только русский язык. Один абзац из 2–4 содержательных предложений, обычно около 50–100 слов. Без заголовка, пояснений, надписей на изображении, рамок и технических параметров, если их не просили." + " Свободное творческое направление этого запуска: " + variationHint + ". Случайный ключ нового варианта: " + creativeSeed + ". Не упоминай их в ответе."
-          },
-          { role: "user", content: "Преврати эту задумку в новую конкретную сцену для изображения. Сохрани явно заданные условия, сам выбери все остальные детали и верни только готовый промпт на русском языке.\n\nИСХОДНАЯ ЗАДУМКА:\n" + originalPrompt }
+          { role: "system", content: systemPrompt },
+          { role: "user", content: "Самостоятельно придумай оригинальную конкретную сцену по этой задумке. Сохрани заданное, сам придумай всё неуказанное. Верни только готовый промпт для изображения.\n\nЗАДУМКА:\n" + originalPrompt }
         ],
-        temperature: 1.12,
-        max_tokens: 900
+        temperature: 1.18,
+        max_tokens: 850
       };
-      // Do not use reasoning models for this task: some expose internal analysis as the answer.
-      const models = [
-        "nvidia/gpt-oss-20b",
-        "nvidia/nemotron-3.5-lightning"
-      ];
-      let improvedPrompt = "";
-      const candidateResults = await Promise.all(models.map(model => callBlockRun(model, promptPayload, 18000)));
-      for (const candidate of candidateResults) {
-        if (!candidate.ok || !candidate.text) continue;
-        let text = candidate.text.trim()
-          .replace(/^\s*```(?:\w+)?\s*/i, "")
-          .replace(/\s*```\s*$/, "")
-          .replace(/^(?:\s*(?:промпт\s+для\s+изображения|изображение|картинка|промпт|описание\s+изображения|описание|готовый\s+промпт)\s*[:：—–-]\s*)+/i, "")
-          .trim();
 
-        // Models may leak internal reasoning. Never return that text to the UI:
-        // extract only a clearly marked final prompt, otherwise use the last
-        // substantial Russian descriptive paragraph and reject reasoning dumps.
-        const russianScore = value => {
-          const cyrillic = (value.match(/[А-Яа-яЁё]/g) || []).length;
-          const letters = (value.match(/[A-Za-zА-Яа-яЁё]/g) || []).length;
-          return { cyrillic, ratio: letters ? cyrillic / letters : 0 };
-        };
-        const cleanPrompt = value => String(value || "")
+      const normalizeCandidate = (rawValue, provider) => {
+        let value = String(rawValue || "").trim()
           .replace(/^\s*\x60{3}(?:\w+)?\s*/i, "")
           .replace(/\s*\x60{3}\s*$/, "")
-          .replace(/^\s*(?:(?:final\s+)?(?:improved\s+)?prompt(?:\s*\([^)]*\))?|готовый\s+промпт|улучшенный\s+промпт|промпт)\s*[:：—–-]\s*/i, "")
-          .replace(/^\s*["'«]+|["'»]+\s*$/g, "")
+          .replace(/^\s*(?:(?:готовый|улучшенный|итоговый)\s+промпт|промпт\s+для\s+изображения|промпт|описание\s+изображения)\s*[:：—–-]\s*/i, "")
           .trim();
-        const isReasoning = /here(?:'s| is) a thinking process|chain of thought|let me think|analy[sz]e user input|deconstruct system instructions|step[- ]by[- ]step reasoning|ход рассуждени|внутренн(?:ие|их) рассуждени|internal reasoning|analysis of (?:the )?user|system instructions|preserve:|expand:|draft prompt|prompt \(internal\)|internal prompt|thinking process|reasoning:|(?:^|\n)\s*(?:[-*]\s*)?(?:original|need to|must stay|let'?s (?:craft|write|create)|i can|i should|the output should|adds only|avoid:|let me|we need to)\b|\b(?:weave in|stay in russian|without adding new stuff|not a prompt|just write|rather than|i need to be careful|these are descriptive enhancements)\b/i.test(text);
-        let extracted = "";
-        const marked = [...text.matchAll(/(?:final prompt|improved prompt|готовый промпт|улучшенный промпт|итоговый промпт)\s*(?:\([^)]*\))?\s*[:：—–-]\s*/gi)];
-        if (marked.length) {
-          const last = marked[marked.length - 1];
-          const tail = text.slice(last.index + last[0].length);
-          const nextHeading = tail.search(/\n\s*(?:\*{0,2}(?:analysis|reasoning|explanation|notes|вариант|пояснение)\b)/i);
-          extracted = cleanPrompt(nextHeading >= 0 ? tail.slice(0, nextHeading) : tail);
-        } else {
-          const paragraphs = text.split(/\n\s*\n+/).map(value => value.trim()).filter(Boolean);
-          const candidates = paragraphs.map(cleanPrompt).filter(value => {
-            const score = russianScore(value);
-            return score.cyrillic >= 20 && score.ratio >= 0.45 &&
-              !/^(?:here|below|certainly|sure|step\s*\d|analyze|deconstruct|role:|task:|preserve:|expand:|готово|конечно|вот улучшенный)/i.test(value);
-          });
-          if (candidates.length) extracted = candidates[candidates.length - 1];
-          else if (!isReasoning) extracted = cleanPrompt(text);
-        }
-        if (isReasoning) {
-          // Any reasoning marker invalidates the entire response. Never expose a mixed
-          // analysis/final answer; the next model or deterministic fallback will be used.
-          continue;
-        }
-        text = extracted || cleanPrompt(text);
-        // Remove a duplicated opening of the source text, while keeping a real generated continuation.
-        const sourceCoreForStrip = originalPrompt.replace(/[.!?]+$/g, "").trim();
-        if (sourceCoreForStrip && text.slice(0, sourceCoreForStrip.length).toLocaleLowerCase("ru-RU") === sourceCoreForStrip.toLocaleLowerCase("ru-RU") &&
-            /[.!?;:,—–]/.test(text.charAt(sourceCoreForStrip.length))) {
-          text = text.slice(sourceCoreForStrip.length).replace(/^[\s.!?;:,—–-]+/, "").trim();
-          if (text) text = text.charAt(0).toLocaleUpperCase("ru-RU") + text.slice(1);
-        }
-        // Do not invent an aspect ratio: preserve one only when the user supplied it.
-        const sourceSpecifiesRatio = /(?:соотношени[ея]\s+сторон|aspect\s+ratio|\b(?:16\s*:\s*9|9\s*:\s*16|1\s*:\s*1)\b)/i.test(originalPrompt);
-        if (!sourceSpecifiesRatio) {
-          text = text
-            .replace(/[,;]?\s*(?:соотношение\s+сторон|формат\s+кадра|aspect\s+ratio)\s*(?:[:：—–-]\s*)?(?:16\s*:\s*9|9\s*:\s*16|1\s*:\s*1|16\s+на\s+9|9\s+на\s+16|1\s+на\s+1)[^.!?\n]*(?:[.!?]|$)/gi, "")
-            .replace(/\s{2,}/g, " ")
-            .replace(/\s+([,.;!?])/g, "$1")
-            .trim();
-        }
-        const score = russianScore(text);
 
-        const conversational = /(?:^|\n)\s*(?:привет(?:ствую)?|здравствуйте|я\s+(?:gpt|модель|ассистент|miya)\b|буду ждать ваших вопросов|чем могу помочь|задайте мне вопрос|уточните,? пожалуйста|какой именно промпт|что именно вы хотите|here(?:'s| is)|below is|certainly|sure[,!]?)\b/i;
-        // Require concrete visual variation, not a plot/action sequence.
-        const normalizedSource = originalPrompt.toLocaleLowerCase("ru-RU").replace(/[.!?]+$/g, "").trim();
-        const normalizedOutput = text.toLocaleLowerCase("ru-RU");
-        const metaInstruction = /^(?:создай|выбери|придумай|добавь|покажи|опиши|представь|не ограничивайся)\b|(?:^|[.!?]\s+)(?:создай|выбери|придумай|добавь|покажи|опиши|представь|не ограничивайся)\b|если пользователь|если не указаны|конкретные детали должны|уникальный ключ варианта/i.test(text);
-        const normalizedForEquality = value => String(value || "").replace(/[\s.!?,;:—–-]+/g, " ").trim();
-        const repeatsSource = normalizedForEquality(normalizedOutput) === normalizedForEquality(normalizedSource);
-        const wordCount = text.split(/\s+/).filter(Boolean).length;
-        const addsVisualVariation = !repeatsSource &&
-          text.length >= Math.max(70, Math.min(230, originalPrompt.length * 0.55)) &&
-          wordCount >= Math.max(12, originalPrompt.split(/\s+/).filter(Boolean).length + 4);
-        if (text.length >= Math.max(18, originalPrompt.length * 0.7) &&
-            score.cyrillic >= 12 && score.ratio >= 0.72 &&
-            !/[A-Za-z]{3,}/.test(text.replace(/(?:Nano Banana|GPT Image)/gi, "")) &&
-            !conversational.test(text) && !metaInstruction && !repeatsSource && !/here(?:'s| is) a thinking process|chain of thought|system instructions|внутренн(?:ие|их) рассуждени/i.test(text) &&
-            addsVisualVariation) {
-          improvedPrompt = text;
-          break;
+        if (!value) return null;
+        if (/here(?:'s| is) a thinking process|chain of thought|let me think|system instructions|internal reasoning|внутренн(?:ие|их) рассуждени|ход рассуждени/i.test(value)) return null;
+
+        // Strip an echoed source only when it is repeated as a separate opening phrase.
+        const sourceCore = originalPrompt.replace(/[.!?]+$/g, "").trim();
+        if (sourceCore && value.slice(0, sourceCore.length).toLocaleLowerCase("ru-RU") === sourceCore.toLocaleLowerCase("ru-RU") &&
+            /[.!?;:,—–]/.test(value.charAt(sourceCore.length))) {
+          value = value.slice(sourceCore.length).replace(/^[\s.!?;:,—–-]+/, "").trim();
         }
-      }
-      if (!improvedPrompt) {
-        const rescuePrompt = [
-          "Ты — креативный арт-директор. По краткой задумке самостоятельно придумай оригинальную правдоподобную сцену для одной статичной картинки.",
-          "Сохрани прямо заданные детали и главное действие. Всё неуказанное выбери сам. Опиши конкретных участников, объекты, окружение и их расположение.",
-          "Ответь одним готовым русским абзацем из 2–4 предложений, примерно 50–100 слов. Не повторяй исходную фразу отдельным первым предложением. Не пиши инструкций, общих слов о качестве, заголовков и пояснений.",
-          "Случайный творческий ключ: " + creativeSeed,
-          "Исходная задумка: " + originalPrompt
-        ].join("\n\n");
-        const rescue = await callCvronGPT5Nano(rescuePrompt, 8000);
-        if (rescue && rescue.ok && rescue.text) {
-          let text = String(rescue.text).trim()
-            .replace(/^\s*\x60{3}(?:\w+)?\s*/i, "")
-            .replace(/\s*\x60{3}\s*$/, "")
-            .replace(/^\s*(?:готовый\s+промпт|улучшенный\s+промпт|промпт)\s*[:：—–-]\s*/i, "")
-            .replace(/\s+/g, " ")
-            .trim();
-          const sourceCore = originalPrompt.replace(/[.!?]+$/g, "").trim();
-          if (sourceCore && text.slice(0, sourceCore.length).toLocaleLowerCase("ru-RU") === sourceCore.toLocaleLowerCase("ru-RU") &&
-              /[.!?;:,—–]/.test(text.charAt(sourceCore.length))) {
-            text = text.slice(sourceCore.length).replace(/^[\s.!?;:,—–-]+/, "").trim();
-          }
-          const cyrillic = (text.match(/[А-Яа-яЁё]/g) || []).length;
-          const letters = (text.match(/[A-Za-zА-Яа-яЁё]/g) || []).length;
-          const normalized = value => String(value || "").replace(/[\s.!?,;:—–-]+/g, " ").trim().toLocaleLowerCase("ru-RU");
-          const meta = /^(?:создай|выбери|придумай|добавь|покажи|опиши|представь)\b|если пользователь|следует добавить|нужно добавить/i.test(text);
-          if (text.length >= 70 && text.split(/\s+/).length >= 12 && cyrillic >= 45 &&
-              letters > 0 && cyrillic / letters >= 0.72 && !meta &&
-              normalized(text) !== normalized(originalPrompt) &&
-              !/[A-Za-z]{3,}/.test(text.replace(/(?:Nano Banana|GPT Image)/gi, ""))) {
-            improvedPrompt = text;
-          } else {
-            console.warn("Miya image prompt rescue answer rejected", { status: rescue.status, elapsedMs: rescue.elapsedMs, length: text.length, cyrillic, ratio: letters ? cyrillic / letters : 0 });
-          }
-        } else {
-          console.warn("Miya image prompt providers did not return usable text", {
-            blockrun: candidateResults.map(item => ({ model: item.model, status: item.status, elapsedMs: item.elapsedMs, error: String(item.upstreamError || "").slice(0, 180) })),
-            rescue: rescue ? { status: rescue.status, elapsedMs: rescue.elapsedMs, error: String(rescue.upstreamError || "").slice(0, 180) } : null
-          });
+        value = value.replace(/^\s*(?:Вот (?:готовый |улучшенный )?промпт|Описание сцены)\s*[:—–-]\s*/i, "").trim();
+
+        const instructionOnly = /^(?:создай|выбери|придумай|добавь|покажи|опиши|сгенерируй|напиши|укажи|не ограничивайся|если пользователь|в этой сцене нужно|следует добавить|нужно добавить)(?=$|[\s,.:;—–])/i.test(value) ||
+          /(?:^|[.!?]\s+)(?:создай|выбери|придумай|добавь|покажи|опиши|не ограничивайся)(?=$|[\s,.:;—–])/i.test(value);
+        if (instructionOnly) return null;
+
+        const cyrillic = (value.match(/[А-Яа-яЁё]/g) || []).length;
+        const letters = (value.match(/[A-Za-zА-Яа-яЁё]/g) || []).length;
+        const wordCount = value.split(/\s+/).filter(Boolean).length;
+        const normalized = text => String(text || "").replace(/[\s.!?,;:—–-]+/g, " ").trim().toLocaleLowerCase("ru-RU");
+        if (value.length < 35 || wordCount < 7 || cyrillic < 20 || !letters || cyrillic / letters < 0.58) return null;
+        if (normalized(value) === normalized(originalPrompt)) return null;
+        return { text: value, provider, wordCount, length: value.length };
+      };
+
+      const cvronPrompt = systemPrompt + "\n\nЗАДУМКА ПОЛЬЗОВАТЕЛЯ:\n" + originalPrompt + "\n\nВерни только готовый промпт.";
+      const attempts = [
+        {
+          provider: "BlockRun / GPT-OSS",
+          promise: callBlockRun("nvidia/gpt-oss-20b", promptPayload, 18000)
+        },
+        {
+          provider: "BlockRun / Nemotron",
+          promise: callBlockRun("nvidia/nemotron-3.5-lightning", promptPayload, 18000)
+        },
+        {
+          provider: "CVRON / GPT-5 Nano",
+          promise: callCvronGPT5Nano(cvronPrompt, 18000)
         }
-      }
-      if (!improvedPrompt) {
-        console.warn("Miya image prompt generation failed validation", candidateResults.map(item => ({ model: item.model, status: item.status, elapsedMs: item.elapsedMs, error: String(item.upstreamError || "").slice(0, 180), responseLength: String(item.text || "").length })));
-        return res.status(502).json({
-          ok: false,
-          error: "IMAGE_PROMPT_CREATION_FAILED",
-          message: "Модели не вернули готовое описание сцены. Попробуй ещё раз."
+      ].map((attempt, index) => ({
+        index,
+        provider: attempt.provider,
+        promise: attempt.promise.then(result => ({ result, index, provider: attempt.provider }))
+      }));
+
+      // Providers race in parallel; a valid scene is returned as soon as one is ready.
+      // This avoids spending another full timeout on a second-stage rescue call.
+      while (attempts.length) {
+        const settled = await Promise.race(attempts.map(attempt => attempt.promise));
+        const position = attempts.findIndex(attempt => attempt.index === settled.index);
+        if (position >= 0) attempts.splice(position, 1);
+
+        const result = settled.result || {};
+        const rawText = String(result.text || "").trim();
+        const normalized = result.ok ? normalizeCandidate(rawText, settled.provider) : null;
+        if (normalized) {
+          return res.status(200).json({ ok: true, mode: "improve_image_prompt", text: normalized.text });
+        }
+
+        console.warn("Miya image prompt provider result rejected", {
+          provider: settled.provider,
+          status: result.status || null,
+          elapsedMs: result.elapsedMs || null,
+          error: String(result.upstreamError || "").slice(0, 160),
+          responseLength: rawText.length
         });
       }
-      return res.status(200).json({ ok: true, mode: "improve_image_prompt", text: improvedPrompt });
+
+      return res.status(502).json({
+        ok: false,
+        error: "IMAGE_PROMPT_CREATION_FAILED",
+        message: "Сервисы не вернули готовое описание сцены. Попробуй ещё раз."
+      });
     }
 
     if (visionImages.length) {
