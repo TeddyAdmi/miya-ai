@@ -4215,15 +4215,29 @@ body.light .miya-music-brand a{color:#7152dc!important}
 }
 
 
-/* Ratio selectors: keep the ratio label first and its outline format symbol after it.
-   Native select options display these symbols in both the closed field and the opened menu. */
+/* Restore the approved monitor, phone and square device icons. */
 #composerRatio,#videoRatio{
- padding-left:10px!important;
- padding-right:28px!important;
- background-image:linear-gradient(45deg,transparent 50%,#7690ad 50%),linear-gradient(135deg,#7690ad 50%,transparent 50%)!important;
- background-position:calc(100% - 11px) 50%,calc(100% - 7px) 50%!important;
- background-size:4px 4px,4px 4px!important;
+ padding-left:31px!important;
+ padding-right:18px!important;
+ background-image:
+   url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2389a1bd' stroke-width='1.7' stroke-linecap='round' stroke-linejoin='round'%3E%3Crect x='3' y='4' width='18' height='13' rx='2.2'/%3E%3Cpath d='M12 17v3m-4 0h8'/%3E%3C/svg%3E"),
+   linear-gradient(45deg,transparent 50%,#7690ad 50%),
+   linear-gradient(135deg,#7690ad 50%,transparent 50%)!important;
+ background-position:7px center,calc(100% - 8px) 50%,calc(100% - 4px) 50%!important;
+ background-size:17px 17px,4px 4px,4px 4px!important;
  background-repeat:no-repeat!important;
+}
+#composerRatio:has(option[value="9:16"]:checked),#videoRatio:has(option[value="9:16"]:checked){
+ background-image:
+   url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2389a1bd' stroke-width='1.7' stroke-linecap='round' stroke-linejoin='round'%3E%3Crect x='6.5' y='2' width='11' height='20' rx='2.5'/%3E%3Cpath d='M10 18.5h4'/%3E%3C/svg%3E"),
+   linear-gradient(45deg,transparent 50%,#7690ad 50%),
+   linear-gradient(135deg,#7690ad 50%,transparent 50%)!important;
+}
+#composerRatio:has(option[value="1:1"]:checked),#videoRatio:has(option[value="1:1"]:checked){
+ background-image:
+   url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2389a1bd' stroke-width='1.7' stroke-linecap='round' stroke-linejoin='round'%3E%3Crect x='4' y='4' width='16' height='16' rx='2.5'/%3E%3C/svg%3E"),
+   linear-gradient(45deg,transparent 50%,#7690ad 50%),
+   linear-gradient(135deg,#7690ad 50%,transparent 50%)!important;
 }
 #composerRatio option,#videoRatio option{font-family:Inter,system-ui,sans-serif}
 body.light #composerRatio,body.light #videoRatio{background-color:#f4f7fa!important}
