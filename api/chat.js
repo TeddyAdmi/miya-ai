@@ -354,149 +354,125 @@ async function handler(req, res) {
         return res.status(400).json({ ok: false, error: "PROMPT_REQUIRED", message: "Сначала введи промпт." });
       }
 
-      const creativeId = Math.random().toString(36).slice(2, 9) + "-" + Date.now().toString(36);
-      const systemPrompt = "Ты — художник-концептуалист. По короткой идее пользователя самостоятельно придумай цельную, выразительную сцену для одного статичного изображения. Сохрани смысл и все явно заданные условия; всё неуказанное реши сам, руководствуясь логикой идеи. При каждом новом запуске с тем же запросом находи новую самостоятельную трактовку: меняй само визуальное решение и содержание сцены, а не только ракурс или прилагательные. Все детали должны быть естественно связаны между собой. Не используй готовые сюжеты, повторяющиеся наборы деталей или заученные формулировки. Пиши грамотным естественным русским, одним содержательным абзацем примерно на 50–90 слов. Верни только видимую сцену — без анализа, пояснений, заголовка и технических параметров. Ключ творческого варианта: " + creativeId + ". Не упоминай ключ в ответе.";
+      // This button polishes the user's existing idea. It must not invent a new plot.
       const promptPayload = {
         messages: [
-          { role: "system", content: systemPrompt },
-          { role: "user", content: "Исходная идея:\n" + originalPrompt + "\nПридумай самостоятельный новый вариант и верни только готовое описание сцены." }
+          {
+            role: "system",
+            content: "Ты — профессиональный редактор промптов для генерации изображений. Улучши исходную задумку, сохранив её смысл и все прямо указанные детали. Не меняй сюжет и не подменяй идею своей. Сделай формулировку ясной, конкретной и визуально выразительной. Естественно усили композицию, главный акцент, свет, гармонию цветов, фактуры и важные детали — только там, где это подходит исходному замыслу. Изображение должно выглядеть красивым, ярким, сочным и профессионально проработанным, без чрезмерной резкости, искусственности и визуального шума. Не добавляй посторонние объекты, персонажей, надписи и технические параметры. Если задан художественный стиль, сохрани его. Верни только один готовый промпт на русском языке, одним абзацем, без заголовка, вступления и пояснений."
+          },
+          {
+            role: "user",
+            content: "Профессионально улучши этот промпт, не меняя исходную идею:\n\n" + originalPrompt
+          }
         ],
-        temperature: 1.0,
+        temperature: 0.35,
         max_tokens: 700
       };
 
-      let lastNormalizationReason = "EMPTY_RESPONSE";
-      const normalizeCandidate = (rawValue, provider) => {
-        let value = String(rawValue || "").trim()
+      const cleanEnhancedPrompt = raw => {
+        let value = String(raw || "").trim()
           .replace(/^\s*\x60{3}(?:\w+)?\s*/i, "")
           .replace(/\s*\x60{3}\s*$/, "")
           .replace(/<think\b[^>]*>[\s\S]*?<\/think>/gi, " ")
           .replace(/<analysis\b[^>]*>[\s\S]*?<\/analysis>/gi, " ")
           .replace(/<reasoning\b[^>]*>[\s\S]*?<\/reasoning>/gi, " ")
           .trim();
-        const reject = reason => { lastNormalizationReason = reason; return null; };
-        if (!value) return reject("EMPTY_TEXT");
+        if (!value) return "";
 
-        const metaLead = /^(?:пользователь\s+(?:просит|хочет|говорит|предлагает)|задача\s*[:：—-]|задание\s*[:：—-]|план\s*[:：—-]|анализ\s*[:：—-]|рассуждение\s*[:：—-]|нужно\s+(?:написать|описать|создать|превратить|придумать)|ответ\s+должен|требуется\s+(?:написать|описать|создать)|сначала\s+нужно|вот\s+как\s+нужно|the user (?:asks|wants)|we need to|let me think|analysis\s*:|reasoning\s*:|draft\s*:|task\s*:)/i;
-        const markers = [...value.matchAll(/(?:^|\n)\s*(?:финальный ответ|final answer|final prompt|improved prompt|готовый промпт|улучшенный промпт|итоговый промпт|итоговый вариант|финальный вариант|промпт для изображения|описание сцены|готовое описание|сцена|черновик|draft)\s*[:：—–-]\s*/gi)];
-        if (markers.length) {
-          const marker = markers[markers.length - 1];
+        const finalMarkers = [...value.matchAll(/(?:^|\n)\s*(?:финальный ответ|final answer|final prompt|improved prompt|готовый промпт|улучшенный промпт|итоговый промпт|промпт для изображения|готовое описание)\s*[:：—–-]\s*/gi)];
+        if (finalMarkers.length) {
+          const marker = finalMarkers[finalMarkers.length - 1];
           value = value.slice(marker.index + marker[0].length).trim();
           value = value.split(/\n\s*\n+/)[0].trim();
         } else {
           const paragraphs = value.split(/\n\s*\n+/).map(part => part.trim()).filter(Boolean);
-          if (paragraphs.length > 1) {
-            const candidates = paragraphs.filter(part =>
-              !metaLead.test(part) &&
-              !/^(?:analysis|reasoning|notes|explanation|task|requirements|draft|план|анализ|рассуждение|требования)\s*[:：—-]/i.test(part) &&
-              (/[А-Яа-яЁё]/.test(part) || !/[A-Za-z]{3,}/.test(part))
-            );
-            if (candidates.length) value = candidates[candidates.length - 1];
-          }
+          const sceneParagraphs = paragraphs.filter(part =>
+            !/^(?:analysis|reasoning|thoughts?|notes?|task|requirements|plan|the user|we need to|let me think|пользователь просит|пользователь хочет|задача\s*:|анализ\s*:|рассуждение\s*:|план\s*:|черновик\s*:|нужно написать|нужно описать|ответ должен)/i.test(part)
+          );
+          if (sceneParagraphs.length) value = sceneParagraphs.sort((a, b) => b.length - a.length)[0];
         }
 
         value = value
-          .replace(/^\s*(?:(?:готовый|улучшенный|итоговый|финальный)\s+промпт|промпт\s+для\s+изображения|промпт|описание\s+изображения|описание\s+сцены|готовое описание|сцена|финальный ответ|final answer|final prompt|draft)\s*[:：—–-]\s*/i, "")
+          .replace(/^\s*(?:(?:готовый|улучшенный|итоговый|финальный)\s+промпт|промпт для изображения|промпт|описание сцены)\s*[:：—–-]\s*/i, "")
           .replace(/^["'«]+|["'»]+$/g, "")
           .replace(/\s+/g, " ")
           .trim();
-        if (!value) return reject("EMPTY_AFTER_CLEANUP");
 
-        // If the provider returned planning text only, reject that text; don't mistake one meta phrase
-        // inside an otherwise valid scene for a reason to discard the entire answer.
-        if (metaLead.test(value)) return reject("PLANNING_TEXT_ONLY");
-        if (/^(?:as an ai|i cannot help|i am an ai|я не могу выполнить|я не могу создать|я должен объяснить)/i.test(value)) return reject("NOT_A_SCENE");
-
-        const wordCount = value.split(/\s+/).filter(Boolean).length;
+        // Reject only obvious meta answers; avoid picky length/word checks on real prompts.
+        if (/^(?:пользователь просит|пользователь хочет|задача\s*:|анализ\s*:|рассуждение\s*:|the user asks|let me think|as an ai|чем могу помочь|здравствуйте|приветствую)/i.test(value)) return "";
         const cyrillic = (value.match(/[А-Яа-яЁё]/g) || []).length;
-        const latin = (value.match(/[A-Za-z]/g) || []).length;
-        const normalized = text => String(text || "").replace(/[\s.!?,;:—–-]+/g, " ").trim().toLocaleLowerCase("ru-RU");
-        if (value.length < 24 || wordCount < 4 || cyrillic < 10) return reject("TOO_SHORT_OR_NOT_RUSSIAN");
-        if (latin > Math.max(35, cyrillic * 1.5)) return reject("NOT_RUSSIAN_ENOUGH");
-        if (normalized(value) === normalized(originalPrompt)) return reject("NO_EXPANSION");
-        if (/^(?:создай|выбери|придумай|добавь|покажи|опиши|сгенерируй|напиши|укажи|представь себе)(?=$|[\s,.:;—–])/i.test(value)) return reject("INSTRUCTION_NOT_SCENE");
-        if (value.length > 2000 || wordCount > 240) return reject("RESPONSE_TOO_LONG");
-        if (!/[.!?…]$/.test(value)) value += ".";
-        lastNormalizationReason = "";
-        return { text: value, provider, wordCount, length: value.length };
-      }
+        if (value.length < 12 || cyrillic < 6) return "";
+        const norm = text => String(text || "").replace(/[\s.!?,;:—–-]+/g, " ").trim().toLocaleLowerCase("ru-RU");
+        if (norm(value) === norm(originalPrompt)) return "";
+        return /[.!?…]$/.test(value) ? value : value + ".";
+      };
 
-      const cvronPrompt = systemPrompt + "\n\nЗАДУМКА ПОЛЬЗОВАТЕЛЯ:\n" + originalPrompt + "\n\nВерни только готовый промпт.";
       const attempts = [
+        {
+          provider: "BlockRun / Nemotron",
+          promise: callBlockRun("nvidia/nemotron-3.5-lightning", promptPayload, 15000)
+        },
+        {
+          provider: "BlockRun / GPT-OSS",
+          promise: callBlockRun("nvidia/gpt-oss-20b", promptPayload, 15000)
+        },
         {
           provider: "Cloudflare Workers AI / GPT-OSS 20B",
           promise: callCloudflarePrompt(promptPayload.messages, 10000)
         },
         {
-          provider: "BlockRun / GPT-OSS",
-          promise: callBlockRun("nvidia/gpt-oss-20b", promptPayload, 18000)
-        },
-        {
-          provider: "BlockRun / Nemotron",
-          promise: callBlockRun("nvidia/nemotron-3.5-lightning", promptPayload, 18000)
-        },
-        {
           provider: "CVRON / GPT-5 Nano",
-          promise: callCvronGPT5Nano(systemPrompt + "\n\nИсходная идея:\n" + originalPrompt + "\n\nВерни только готовое описание сцены.", 18000)
-        }      ].map((attempt, index) => ({
+          promise: callCvronGPT5Nano(
+            promptPayload.messages.map(message => message.role.toUpperCase() + ":\n" + message.content).join("\n\n"),
+            12000
+          )
+        }
+      ].map((attempt, index) => ({
         index,
         provider: attempt.provider,
         promise: attempt.promise.then(result => ({ result, index, provider: attempt.provider }))
       }));
 
-      // Providers race in parallel; a valid scene is returned as soon as one is ready.
-      const providerDiagnostics = [];
-      // This avoids spending another full timeout on a second-stage rescue call.
+      // Take the first useful model result; otherwise still return an improved prompt,
+      // so a temporarily unavailable free provider never breaks the button.
       while (attempts.length) {
         const settled = await Promise.race(attempts.map(attempt => attempt.promise));
         const position = attempts.findIndex(attempt => attempt.index === settled.index);
         if (position >= 0) attempts.splice(position, 1);
-
         const result = settled.result || {};
-        const rawText = String(result.text || "").trim();
-        const normalized = result.ok ? normalizeCandidate(rawText, settled.provider) : null;
-        const diagnostic = {
+        const candidate = result.ok ? cleanEnhancedPrompt(result.text) : "";
+        if (candidate) {
+          return res.status(200).json({
+            ok: true,
+            mode: "improve_image_prompt",
+            text: candidate
+          });
+        }
+        console.warn("Miya prompt enhancement provider unavailable or empty", {
           provider: settled.provider,
-          ok: !!result.ok,
           status: result.status || null,
           elapsedMs: result.elapsedMs || null,
-          error: String(typeof result.upstreamError === "string" ? result.upstreamError : (result.upstreamError?.message || result.upstreamError || "")).slice(0, 180),
-          responseLength: rawText.length,
-          rejected: result.ok && rawText ? (normalized ? null : lastNormalizationReason) : null
-        };
-        providerDiagnostics.push(diagnostic);
-        if (normalized) {
-          return res.status(200).json({ ok: true, mode: "improve_image_prompt", text: normalized.text });
-        }
-
-        console.warn("Miya image prompt provider result rejected", diagnostic);
+          error: String(typeof result.upstreamError === "string" ? result.upstreamError : (result.upstreamError?.message || result.upstreamError || "")).slice(0, 140),
+          responseLength: String(result.text || "").length
+        });
       }
 
-      // One more independent attempt is important for intermittently slow free providers.
-      // It uses the same abstract creative brief and contains no preset subjects or scene examples.
-      const rescuePrompt = systemPrompt + "\n\nИсходная идея пользователя:\n" + originalPrompt +
-        "\n\nПридумай новый, самостоятельный вариант сцены по этой идее. Сразу верни только один готовый русский абзац без рассуждений и заголовков.";
-      const rescue = await callCvronGPT5Nano(rescuePrompt, 12000);
-      const rescueRaw = String(rescue?.text || "").trim();
-      const rescueCandidate = rescue?.ok ? normalizeCandidate(rescueRaw, "CVRON / GPT-5 Nano (повторная попытка)") : null;
-      providerDiagnostics.push({
-        provider: "CVRON / GPT-5 Nano (повторная попытка)",
-        ok: !!rescue?.ok,
-        status: rescue?.status || null,
-        elapsedMs: rescue?.elapsedMs || null,
-        error: String(typeof rescue?.upstreamError === "string" ? rescue.upstreamError : (rescue?.upstreamError?.message || rescue?.upstreamError || "")).slice(0, 180),
-        responseLength: rescueRaw.length,
-        rejected: rescue?.ok && rescueRaw ? (rescueCandidate ? null : "RESPONSE_NOT_ACCEPTED") : null
+      // Safe local fallback: professionally polish the wording without changing the scene.
+      const source = originalPrompt.replace(/[.!?]+$/g, "").trim();
+      const stylePreserving = /(?:иллюстрац|аниме|мультфильм|живопись|акварел|масло|график|фэнтези|стилизован|рисунок|скетч|рендер|3d|3d-)/i.test(source);
+      const qualityTail = stylePreserving
+        ? " Цельная профессиональная композиция с ясным главным акцентом, выразительным светом, яркими и гармоничными цветами, аккуратно проработанными формами и чёткими важными деталями. Сохрани художественный стиль исходной задумки, без визуального шума и случайных артефактов."
+        : " Цельная профессиональная композиция с ясным главным акцентом, мягким объёмным светом, яркими и сочными, но гармоничными цветами, естественными тенями, выразительными фактурами и чётко проработанными важными деталями. Сохрани исходную задумку и естественный вид, без чрезмерной резкости, искусственности и визуального шума.";
+      const fallback = source + (/[.!?]$/.test(source) ? " " : ". ") + qualityTail;
+      console.warn("Miya prompt enhancement used local quality fallback", {
+        providerCount: 4,
+        fallbackLength: fallback.length
       });
-      if (rescueCandidate) {
-        return res.status(200).json({ ok: true, mode: "improve_image_prompt", text: rescueCandidate.text });
-      }
-
-      return res.status(502).json({
-        ok: false,
-        error: "IMAGE_PROMPT_CREATION_FAILED",
-        message: "Не удалось получить ответ от генераторов описания сцены.",
-        diagnostics: providerDiagnostics
+      return res.status(200).json({
+        ok: true,
+        mode: "improve_image_prompt",
+        text: fallback
       });
     }
 
