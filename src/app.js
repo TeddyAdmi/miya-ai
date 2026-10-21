@@ -18,7 +18,8 @@
    font-size:13px!important;line-height:1!important;font-weight:850!important;
  }
  /* Never expose a partially decoded image; reveal it only after the load event. */
- .media-card img:not(.media-image-ready){opacity:0!important}
+ /* Keep the card visible while a slow image URL is downloading; the browser still decodes the image normally. */
+ .media-card img:not(.media-image-ready){opacity:1!important}
  .media-card img.media-image-ready{opacity:1!important;transition:opacity .16s ease-out!important}
  
 `;
@@ -2856,20 +2857,11 @@ async function showImage(url,prompt="",model="FLUX Dev",ratio=""){
   if(!grid){c.innerHTML='<div class="result-grid"></div>';grid=c.querySelector(".result-grid")}
   const card=buildMediaCard(item);grid.prepend(card);
   applyFirstSixMediaPriority(grid);
-  const image=card.querySelector("img");
-  if(image&&!image.classList.contains("media-image-ready")){
-    await new Promise((resolve,reject)=>{
-      let settled=false;
-      const finish=(error)=>{if(settled)return;settled=true;clearTimeout(timeout);image.removeEventListener("load",onLoad);image.removeEventListener("error",onError);if(error)reject(error);else resolve()};
-      const onLoad=()=>{if(image.naturalWidth>0)finish()};
-      const onError=()=>{if(image.closest(".media-card")?.classList.contains("media-load-error"))finish(new Error("Не удалось загрузить готовое изображение."))};
-      const timeout=setTimeout(()=>finish(new Error("Изображение не загрузилось вовремя.")),30000);
-      image.addEventListener("load",onLoad);
-      image.addEventListener("error",onError);
-      if(image.complete&&image.naturalWidth>0)finish();
-      else if(image.complete&&image.closest(".media-card")?.classList.contains("media-load-error"))finish(new Error("Не удалось загрузить готовое изображение."));
-    });
-  }
+  // A provider has already returned a valid image URL. Do not make generation
+  // success depend on the separate image-download/decode time: slow providers
+  // (notably large Agnes/Seedream outputs) can take longer than 30 seconds to
+  // render in the browser even though the generation itself succeeded.
+  // buildMediaCard owns load/error handling and will reveal the image on load.
   return item;
 }
 async function compressAgnesReferenceImage(source){
