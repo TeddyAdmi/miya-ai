@@ -330,11 +330,11 @@ async function handler(req, res) {
       }
 
       const creativeId = Math.random().toString(36).slice(2, 9) + "-" + Date.now().toString(36);
-      const systemPrompt = "Ты — творческий арт-директор. По исходной задумке придумай цельную, конкретную сцену для одного статичного изображения. Сохрани её смысл и все заданные детали; всё остальное придумай сам, добавляя только то, что естественно связано с идеей. Не набивай кадр случайными предметами, не используй заготовленные сюжеты и не опирайся на прошлые запросы. Для короткой задумки выбери интересную, правдоподобную трактовку и раскрой её через видимые детали, окружение и действие — только когда это уместно. Пиши грамотным естественным русским, одним абзацем на 50–90 слов. Только готовое описание, без заголовков, объяснений и технических параметров. Вариант запуска: " + creativeId + ". Не упоминай этот маркер.";
+      const systemPrompt = "Ты — автор визуальных сцен. По идее пользователя каждый раз самостоятельно придумай новую, цельную и выразительную сцену для одного статичного изображения. Сохрани смысл идеи и всё, что задано явно; остальное придумай сам, исходя из логики идеи. Не используй готовые сюжеты, постоянные наборы предметов или заученные формулировки. Развивай краткую идею в конкретное описание видимой сцены, где детали естественно связаны друг с другом. Пиши грамотным естественным русским, одним абзацем примерно на 50–90 слов. Верни только описание сцены, без анализа, пояснений, заголовка и технических параметров. Код варианта: " + creativeId + ". Не выводи код в ответ.";
       const promptPayload = {
         messages: [
           { role: "system", content: systemPrompt },
-          { role: "user", content: "Идея: " + originalPrompt + "\nРаскрой её в самостоятельной, осмысленной сцене и верни только готовое описание." }
+          { role: "user", content: "Идея пользователя:\n" + originalPrompt + "\nНужна оригинальная трактовка. Результат — только готовое описание сцены." }
         ],
         temperature: 0.9,
         max_tokens: 650
@@ -347,36 +347,41 @@ async function handler(req, res) {
           .trim();
         if (!value) return null;
 
-        // Extract a labeled final draft when a provider mixes it with internal notes.
-        const finalMarkers = [...value.matchAll(/(?:^|\n)\s*(?:черновик|готовый промпт|улучшенный промпт|итоговый промпт|итоговый вариант|финальный вариант|финальный ответ|промпт для изображения|описание сцены)\s*[:：—–-]\s*/gi)];
+        const isMeta = text => /^(?:пользователь\s+(?:просит|хочет|говорит|предлагает)|задача\s*[:：—-]|задание\s*[:：—-]|план\s*[:：—-]|анализ\s*[:：—-]|рассуждение\s*[:：—-]|нужно\s+(?:написать|описать|создать|превратить|придумать)|ответ\s+должен|требуется\s+(?:написать|описать|создать)|сначала\s+нужно|вот\s+как\s+нужно)/i.test(String(text || "").trim());
+
+        // If a provider mixes commentary and its draft, prefer the explicitly marked draft.
+        const finalMarkers = [...value.matchAll(/(?:^|\n)\s*(?:готовый промпт|улучшенный промпт|итоговый промпт|итоговый вариант|финальный вариант|финальный ответ|промпт для изображения|описание сцены|черновик)\s*[:：—–-]\s*/gi)];
         if (finalMarkers.length) {
           const marker = finalMarkers[finalMarkers.length - 1];
           value = value.slice(marker.index + marker[0].length).trim();
           value = value.split(/\n\s*\n+/)[0].trim();
-        } else if (/^(?:пользователь\s+(?:просит|хочет|говорит)|задача\s*[:—-]|задание\s*[:—-]|нужно\s+(?:написать|описать|создать|превратить|придумать)|ответ\s+должен|план\s*[:—-]|анализ\s*[:—-]|рассуждение\s*[:—-])/i.test(value)) {
-          return null;
+        } else {
+          const paragraphs = value.split(/\n\s*\n+/).map(part => part.trim()).filter(Boolean);
+          if (paragraphs.length > 1 && isMeta(paragraphs[0])) {
+            const scene = paragraphs.find(part => !isMeta(part) && !/^(?:черновик|анализ|рассуждение|требования|план)\s*[:：—-]/i.test(part));
+            if (scene) value = scene;
+          }
         }
 
         value = value
-          .replace(/^\s*(?:(?:готовый|улучшенный|итоговый|финальный)\s+промпт|промпт\s+для\s+изображения|промпт|описание\s+изображения|черновик)\s*[:：—–-]\s*/i, "")
+          .replace(/^\s*(?:(?:готовый|улучшенный|итоговый|финальный)\s+промпт|промпт\s+для\s+изображения|промпт|описание\s+изображения|описание\s+сцены|черновик)\s*[:：—–-]\s*/i, "")
           .replace(/^["'«]+|["'»]+$/g, "")
           .replace(/\s+/g, " ")
           .trim();
         if (!value) return null;
 
-        // Never expose the provider's meta-instructions as the actual scene.
-        if (/(?:пользователь\s+(?:просит|хочет|предлагает)|нужно\s+(?:написать|описать|создать|превратить|придумать)|ответ\s+должен|требования\s*:|анализ\s*:|рассуждение\s*:|системная\s+инструкция|следует\s+(?:сформулировать|добавить)|необходимо\s+(?:написать|описать|сохранить))/i.test(value)) return null;
+        // Reject provider notes, not creative wording or scene details.
+        if (/(?:пользователь\s+(?:просит|хочет|предлагает)|ответ\s+должен|требования\s*:|системная\s+инструкция|как\s+я\s+могу\s+написать|мне\s+нужно\s+(?:написать|описать)|сначала\s+нужно\s+(?:написать|описать)|в\s+этом\s+ответе\s+я)/i.test(value)) return null;
 
-        // A brief idea such as "асфальт" can naturally begin the result too.
-        // Do not strip it: that used to damage otherwise good short-idea prompts.
         const wordCount = value.split(/\s+/).filter(Boolean).length;
         const cyrillic = (value.match(/[А-Яа-яЁё]/g) || []).length;
-        const letters = (value.match(/[A-Za-zА-Яа-яЁё]/g) || []).length;
+        const latin = (value.match(/[A-Za-z]/g) || []).length;
         const normalized = text => String(text || "").replace(/[\s.!?,;:—–-]+/g, " ").trim().toLocaleLowerCase("ru-RU");
-        if (value.length < 45 || wordCount < 7 || cyrillic < 25 || !letters || cyrillic / letters < 0.66) return null;
+        if (value.length < 24 || wordCount < 4 || cyrillic < 12) return null;
+        if (latin > cyrillic * 0.65) return null;
         if (normalized(value) === normalized(originalPrompt)) return null;
-        if (/^(?:создай|выбери|придумай|добавь|покажи|опиши|сгенерируй|напиши|укажи)(?=$|[\s,.:;—–])/i.test(value)) return null;
-        if (value.length > 1400 || wordCount > 180) return null;
+        if (/^(?:создай|выбери|придумай|добавь|покажи|опиши|сгенерируй|напиши|укажи|представь себе)(?=$|[\s,.:;—–])/i.test(value)) return null;
+        if (value.length > 1600 || wordCount > 200) return null;
         if (!/[.!?…]$/.test(value)) value += ".";
         return { text: value, provider, wordCount, length: value.length };
       }
