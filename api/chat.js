@@ -288,8 +288,8 @@ async function handler(req, res) {
             body: JSON.stringify({
               model: "@cf/openai/gpt-oss-20b",
               messages,
-              temperature: 0.68,
-              top_p: 0.88,
+              temperature: 0.86,
+              top_p: 0.9,
               max_tokens: 650,
               stream: false
             }),
@@ -330,13 +330,13 @@ async function handler(req, res) {
       }
 
       const creativeId = Math.random().toString(36).slice(2, 9) + "-" + Date.now().toString(36);
-      const systemPrompt = "Ты — креативный арт-директор и художник-концептуалист. Преврати короткую задумку в самостоятельную, насыщенную конкретикой сцену для одного статичного изображения. Сохрани все прямо заданные детали и главное действие. Всё, чего автор не уточнил, самостоятельно придумай заново: подходящие объекты и участников, их особенности, окружение, характерные предметы, взаимное расположение и контекст. Не используй заготовленные сцены или один стереотипный набор деталей; выбирай их по смыслу именно этой задумки. Каждый запрос рассматривай как новую творческую задачу. Опиши саму видимую сцену утвердительными фразами — не инструкцию другому ИИ. Не начинай с дословного повтора исходного запроса и не заменяй сцену общими словами о качестве. Не используй повелительные формулировки «создай», «выбери», «придумай», «добавь», «покажи». Пиши простым, грамотным, естественным русским языком. Не используй случайные поэтические метафоры, бессмысленные сочетания слов, придуманные слова или предметы, не связанные с исходной задумкой. Каждый объект должен находиться в логичном контексте, а каждое предложение должно быть понятным и грамматически правильным. Перед ответом молча проверь смысловую связность и естественность русского текста. Один кадр, не последовательность событий. Русский язык, один абзац, примерно 50–100 слов, без заголовка и пояснений. Уникальный идентификатор этой попытки: " + creativeId + ". Не включай его в ответ.";
+      const systemPrompt = "Ты — творческий арт-директор. По исходной задумке придумай цельную, конкретную сцену для одного статичного изображения. Сохрани её смысл и все заданные детали; всё остальное придумай сам, добавляя только то, что естественно связано с идеей. Не набивай кадр случайными предметами, не используй заготовленные сюжеты и не опирайся на прошлые запросы. Для короткой задумки выбери интересную, правдоподобную трактовку и раскрой её через видимые детали, окружение и действие — только когда это уместно. Пиши грамотным естественным русским, одним абзацем на 50–90 слов. Только готовое описание, без заголовков, объяснений и технических параметров. Вариант запуска: " + creativeId + ". Не упоминай этот маркер.";
       const promptPayload = {
         messages: [
           { role: "system", content: systemPrompt },
-          { role: "user", content: "Самостоятельно придумай оригинальную конкретную сцену по этой задумке. Сохрани заданное, сам придумай всё неуказанное. Верни только готовый промпт для изображения.\n\nЗАДУМКА:\n" + originalPrompt }
+          { role: "user", content: "Идея: " + originalPrompt + "\nРаскрой её в самостоятельной, осмысленной сцене и верни только готовое описание." }
         ],
-        temperature: 0.82,
+        temperature: 0.9,
         max_tokens: 650
       };
 
@@ -347,53 +347,37 @@ async function handler(req, res) {
           .trim();
         if (!value) return null;
 
-        // Some models put their planning or self-instructions in the same answer.
-        // If they label the actual draft, extract only that draft; never return the planning text.
+        // Extract a labeled final draft when a provider mixes it with internal notes.
         const finalMarkers = [...value.matchAll(/(?:^|\n)\s*(?:черновик|готовый промпт|улучшенный промпт|итоговый промпт|итоговый вариант|финальный вариант|финальный ответ|промпт для изображения|описание сцены)\s*[:：—–-]\s*/gi)];
         if (finalMarkers.length) {
           const marker = finalMarkers[finalMarkers.length - 1];
           value = value.slice(marker.index + marker[0].length).trim();
           value = value.split(/\n\s*\n+/)[0].trim();
-        } else {
-          // If there is no explicit final-draft marker, reject reasoning rather than leak it.
-          const planningLead = /^(?:пользователь\s+(?:просит|хочет|говорит|предлагает)|задача\s*[:—-]|задание\s*[:—-]|нужно\s+(?:написать|описать|создать|превратить|придумать|подготовить|выдать)|требуется\s+(?:написать|описать|создать)|ответ\s+должен|сначала\s+нужно|надо\s+(?:написать|описать|создать)|черновик\s*[:—-]|план\s*[:—-]|анализ\s*[:—-]|рассуждение\s*[:—-])/i;
-          if (planningLead.test(value)) return null;
+        } else if (/^(?:пользователь\s+(?:просит|хочет|говорит)|задача\s*[:—-]|задание\s*[:—-]|нужно\s+(?:написать|описать|создать|превратить|придумать)|ответ\s+должен|план\s*[:—-]|анализ\s*[:—-]|рассуждение\s*[:—-])/i.test(value)) {
+          return null;
         }
 
         value = value
-          .replace(/^\s*(?:(?:готовый|улучшенный|итоговый)\s+промпт|промпт\s+для\s+изображения|промпт|описание\s+изображения|черновик)\s*[:：—–-]\s*/i, "")
+          .replace(/^\s*(?:(?:готовый|улучшенный|итоговый|финальный)\s+промпт|промпт\s+для\s+изображения|промпт|описание\s+изображения|черновик)\s*[:：—–-]\s*/i, "")
           .replace(/^["'«]+|["'»]+$/g, "")
           .replace(/\s+/g, " ")
           .trim();
         if (!value) return null;
 
-        // Reject any remaining commentary about writing the prompt itself.
-        const metaContent = /(?:пользователь\s+(?:просит|хочет|предлагает)|нужно\s+(?:написать|описать|создать|превратить|придумать|подготовить)|ответ\s+должен|требования\s*:|детали\s*:|черновик\s*:|анализ\s*:|рассуждение\s*:|системная\s+инструкция|следует\s+(?:сформулировать|добавить)|просто\s+описание|необходимо\s+(?:написать|описать|сохранить))/i;
-        if (metaContent.test(value)) return null;
+        // Never expose the provider's meta-instructions as the actual scene.
+        if (/(?:пользователь\s+(?:просит|хочет|предлагает)|нужно\s+(?:написать|описать|создать|превратить|придумать)|ответ\s+должен|требования\s*:|анализ\s*:|рассуждение\s*:|системная\s+инструкция|следует\s+(?:сформулировать|добавить)|необходимо\s+(?:написать|описать|сохранить))/i.test(value)) return null;
 
-        const sourceCore = originalPrompt.replace(/[.!?]+$/g, "").trim();
-        if (sourceCore && value.slice(0, sourceCore.length).toLocaleLowerCase("ru-RU") === sourceCore.toLocaleLowerCase("ru-RU") &&
-            /[.!?;:,—–]/.test(value.charAt(sourceCore.length))) {
-          value = value.slice(sourceCore.length).replace(/^[\s.!?;:,—–-]+/, "").trim();
-        }
-
-        const instructionOnly = /^(?:создай|выбери|придумай|добавь|покажи|опиши|сгенерируй|напиши|укажи|не ограничивайся|если пользователь|в этой сцене нужно|следует добавить|нужно добавить)(?=$|[\s,.:;—–])/i.test(value) ||
-          /(?:^|[.!?]\s+)(?:создай|выбери|придумай|добавь|покажи|опиши|не ограничивайся)(?=$|[\s,.:;—–])/i.test(value);
-        if (instructionOnly) return null;
-
+        // A brief idea such as "асфальт" can naturally begin the result too.
+        // Do not strip it: that used to damage otherwise good short-idea prompts.
+        const wordCount = value.split(/\s+/).filter(Boolean).length;
         const cyrillic = (value.match(/[А-Яа-яЁё]/g) || []).length;
         const letters = (value.match(/[A-Za-zА-Яа-яЁё]/g) || []).length;
-        const wordCount = value.split(/\s+/).filter(Boolean).length;
         const normalized = text => String(text || "").replace(/[\s.!?,;:—–-]+/g, " ").trim().toLocaleLowerCase("ru-RU");
-        const latinWords = value.match(/\b[A-Za-z]{3,}\b/g) || [];
-        const sourceLatinWords = (originalPrompt.match(/\b[A-Za-z]{3,}\b/g) || []).map(word => word.toLowerCase());
-        const unexplainedLatin = latinWords.some(word => !sourceLatinWords.includes(word.toLowerCase()) && !/^(?:iphone|ipad|ipod|bmw|audi|mercedes|toyota|lego|nike|adidas)$/i.test(word));
-        if (value.length < 65 || wordCount < 10 || cyrillic < 40 || !letters || cyrillic / letters < 0.78) return null;
-        if (unexplainedLatin) return null;
-        if (!/[.!?…]$/.test(value)) return null;
+        if (value.length < 45 || wordCount < 7 || cyrillic < 25 || !letters || cyrillic / letters < 0.66) return null;
         if (normalized(value) === normalized(originalPrompt)) return null;
+        if (/^(?:создай|выбери|придумай|добавь|покажи|опиши|сгенерируй|напиши|укажи)(?=$|[\s,.:;—–])/i.test(value)) return null;
         if (value.length > 1400 || wordCount > 180) return null;
-
+        if (!/[.!?…]$/.test(value)) value += ".";
         return { text: value, provider, wordCount, length: value.length };
       }
 
@@ -413,7 +397,7 @@ async function handler(req, res) {
         },
         {
           provider: "CVRON / GPT-5 Nano",
-          promise: callCvronGPT5Nano(systemPrompt + "\\n\\nЗАДУМКА ПОЛЬЗОВАТЕЛЯ:\\n" + originalPrompt + "\\n\\nВерни только готовый промпт.", 15000)
+          promise: callCvronGPT5Nano(systemPrompt + "\n\nИдея пользователя:\n" + originalPrompt + "\n\nВерни только готовое описание.", 15000)
         }      ].map((attempt, index) => ({
         index,
         provider: attempt.provider,
