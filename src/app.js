@@ -5046,18 +5046,19 @@ async function improveImageComposerPrompt(){
  const button=$("#improve");
  if(!input||!button)return;
 
- // Continue from the most recent successful improvement, even if another UI
- // action accidentally restored the original seed text into the composer.
+ // Each click creates a fresh alternative from the first prompt in this editing
+ // session. Keep showing the latest candidate, but always send the unchanged seed
+ // until the user manually edits the text to start a new session.
  const visiblePrompt=String(input.value||"").trim();
- const previousLatest=String(input.dataset.improveLatestPrompt||"").trim();
  const previousSeed=String(input.dataset.improveSeedPrompt||"").trim();
+ const previousLatest=String(input.dataset.improveLatestPrompt||"").trim();
  let original=visiblePrompt;
- if(previousLatest&&(visiblePrompt===previousLatest||visiblePrompt===previousSeed)){
-  original=previousLatest;
-  if(visiblePrompt!==original){input.value=original;syncInput()}
+ if(previousSeed&&previousLatest&&(visiblePrompt===previousLatest||visiblePrompt===previousSeed)){
+  original=previousSeed;
  }else{
   input.dataset.improveSeedPrompt=visiblePrompt;
   input.dataset.improveLatestPrompt="";
+  original=visiblePrompt;
  }
  if(!original){toast("Сначала введи промпт");input.focus();return}
  if(button.dataset.improving==="1")return;
