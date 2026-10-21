@@ -3899,6 +3899,123 @@ async function generateFreeAIVideo(prompt){
  }finally{videoGenerationBusy=false;$("#composerSend").disabled=false}
 }
 
+const ANIMATE_ON_PROMPT_5 = "Create a 5-second video. Use the uploaded image as the actual video frame, not just a reference. Animate only a very slow, smooth enlargement of the entire image around its center. Keep the original composition and every detail unchanged in every frame. No generated movement, no altered faces, no invented details, no replacement images, no new scenes. One continuous shot with only a gentle zoom-in.";
+function animateOnPromptForDuration(seconds) {
+ const duration=Math.max(5,Math.min(20,Number(seconds)||5));
+ return ANIMATE_ON_PROMPT_5.replace(/^Create a 5-second video\./,"Create a "+duration+"-second video.");
+}
+let animateOnSavedControls=null;
+function configureAnimateOnControls(enabled) {
+ const duration=$("#videoDuration"),ratio=$("#videoRatio");
+ if(enabled) {
+  if(!animateOnSavedControls) animateOnSavedControls={
+   duration:duration?[...duration.options].map(o=>({value:o.value,label:o.textContent})):[],
+   durationValue:duration?.value||"5 сек",
+   ratio:ratio?[...ratio.options].map(o=>({value:o.value,label:o.textContent})):[],
+   ratioValue:ratio?.value||"16:9"
+  };
+  if(duration) {
+   duration.replaceChildren(...[5,10,15,20].map(n=>{const o=document.createElement("option");o.value=n+" сек";o.textContent=n+" сек";return o}));
+   duration.value="5 сек";
+  }
+  if(ratio) {
+   ratio.replaceChildren(...[["16:9","16:9"],["9:16","9:16"],["auto","Auto"]].map(([value,label])=>{const o=document.createElement("option");o.value=value;o.textContent=label;return o}));
+   ratio.value="16:9";
+  }
+ } else if(animateOnSavedControls) {
+  const saved=animateOnSavedControls;animateOnSavedControls=null;
+  if(duration) {
+   duration.replaceChildren(...saved.duration.map(item=>{const o=document.createElement("option");o.value=item.value;o.textContent=item.label;return o}));
+   duration.value=saved.durationValue;
+   if(!duration.value)duration.value="5 сек";
+  }
+  if(ratio) {
+   ratio.replaceChildren(...saved.ratio.map(item=>{const o=document.createElement("option");o.value=item.value;o.textContent=item.label;return o}));
+   ratio.value=saved.ratioValue;
+   if(!ratio.value)ratio.value="16:9";
+  }
+ }
+ updateVideoRatioVisibility();
+}
+function applyAnimateOnDefaultPrompt() {
+ const input=$("#composerInput");
+ if(!input)return;
+ const current=String(input.value||"").trim();
+ const duration=String($("#videoDuration")?.value||"5 сек").match(/[0-9]+/)?.[0]||5;
+ const isKnownDefault=[5,10,15,20].some(n=>current===animateOnPromptForDuration(n));
+ if(current && input.dataset.animateOnDefault!=="true" && !isKnownDefault)return;
+ input.value=animateOnPromptForDuration(duration);
+ input.dataset.animateOnDefault="true";
+ syncInput();
+}
+async function animateOnImageDataUrl(source) {
+ const value=String(source||"").trim();
+ if(!value)throw new Error("Сначала прикрепи изображение для Image to Video.");
+ if(/^data:image\/[^;,]+;base64,/i.test(value))return value;
+ const response=await fetch(value,{cache:"no-store",signal:AbortSignal.timeout(30000)});
+ if(!response.ok)throw new Error("Не удалось прочитать исходное изображение. Загрузи его через кнопку +.");
+ const blob=await response.blob();
+ if(!String(blob.type||"").startsWith("image/"))throw new Error("Для Animate On нужно изображение JPG, PNG или WebP.");
+ const dataUrl=await new Promise((resolve,reject)=>{
+  const reader=new FileReader();
+  reader.onload=()=>resolve(String(reader.result||""));
+  reader.onerror=()=>reject(new Error("Не удалось подготовить исходное изображение."));
+  reader.readAsDataURL(blob);
+ });
+ if(!dataUrl.startsWith("data:image/"))throw new Error("Не удалось подготовить исходное изображение.");
+ return dataUrl;
+}
+async function generateAnimateOnVideo(prompt) {
+ if(videoGenerationBusy){toast("Видео уже создаётся. Дождись завершения текущего запроса.");return}
+ const source=String(referenceImage||"").trim();
+ if(!source){const status=$("#composerStatus");if(status)status.textContent="Animate On · I2V · прикрепи изображение";toast("Для Animate On прикрепи изображение");return}
+ videoGenerationBusy=true;
+ showLoading();
+ const send=$("#composerSend");if(send)send.disabled=true;
+ const modelLabel="Animate On · I2V";
+ const stopProgress=startVideoProgress(modelLabel);
+ try {
+  const durationText=String($("#videoDuration")?.value||"5 сек");
+  const duration=Math.max(5,Math.min(20,Number(durationText.match(/[0-9]+/)?.[0]||5)));
+  const ratioText=String($("#videoRatio")?.value||"16:9");
+  const ratio=["auto","9:16","16:9"].includes(ratioText)?ratioText:"16:9";
+  const currentPrompt=String(prompt||"").trim();
+  const actionPrompt=[5,10,15,20].some(n=>currentPrompt===animateOnPromptForDuration(n))
+    ?animateOnPromptForDuration(duration)
+    :(currentPrompt||animateOnPromptForDuration(duration));
+  updateVideoProgress(modelLabel,4,"подготовка изображения…");
+  const imageBase64=await animateOnImageDataUrl(source);
+  updateVideoProgress(modelLabel,8,"отправка в Image to Video…");
+  const response=await fetch("https://ahm7xmakki.com/api/ptv",{
+   method:"POST",
+   headers:{"Content-Type":"application/json","Accept":"application/json"},
+   body:JSON.stringify({prompt:actionPrompt,ratio,duration,imageBase64}),
+   signal:AbortSignal.timeout(240000)
+  });
+  const raw=await response.text();
+  let data={};try{data=raw?JSON.parse(raw):{}}catch{}
+  if(!response.ok||data?.success!==true||!String(data?.videoUrl||"").trim()) {
+   throw new Error(String(data?.message||data?.error||raw||"Animate On не вернул видео").slice(0,500));
+  }
+  const videoUrl=String(data.videoUrl).trim();
+  updateVideoProgress(modelLabel,99,"видео получено…");
+  const item=saveMedia("video",videoUrl,actionPrompt,"Animate On · I2V · "+duration+" сек");
+  stopProgress(100,"готово");
+  updateVideoProgress(modelLabel,100,"готово");
+  removeGenerationLoading();renderVideoLibrary();if(item)scrollImagesToTop();
+  const status=$("#composerStatus");if(status)status.textContent="Animate On · Image to Video (I2V) · готово";
+  toast("Animate On: видео создано");
+ } catch(e) {
+  stopProgress(null,"ошибка");removeGenerationLoading();
+  if($("#composerProgress"))$("#composerProgress").textContent="";
+  const status=$("#composerStatus");if(status)status.textContent="Animate On · Image to Video (I2V) · ошибка";
+  toast("Animate On: "+(e?.message||"не удалось создать видео"));
+ } finally {
+  videoGenerationBusy=false;
+  if($("#composerSend"))$("#composerSend").disabled=false;
+ }
+}
+
 async function generateVideo(prompt){
  refreshLtxQuotaState();
  const selectedModel=String($("#videoModel")?.value||"LTX-2.3 Distilled");
@@ -3912,6 +4029,7 @@ async function generateVideo(prompt){
  }
  if(selectedModel==="NovAI CogVideoX-Flash") return generateNovaiVideo(prompt);
  if(selectedModel==="FreeAIVideo VIDEOX") return generateFreeAIVideo(prompt);
+ if(selectedModel==="Animate On") return generateAnimateOnVideo(prompt);
  if(selectedModel==="OmegaTech T2V") return generateOmegaT2V(prompt);
  if(selectedModel==="Agnes Video 2.5"||selectedModel==="Agnes Video 2.5 Flash"||selectedModel==="Agnes Video v2.0") return generateAgnesVideo(prompt);
  if(videoGenerationBusy){
@@ -4736,6 +4854,7 @@ function setMode(next,render=true){
    if(target==="chat")syncActiveChatTitle();
  }
  requestAnimationFrame(()=>$("#workspace")?.scrollTo({top:0,behavior:"auto"}));
+ if(target==="video" && String($("#videoModel")?.value||"")==="Animate On") applyAnimateOnDefaultPrompt();
  syncInput();
 }
 const clearImageWallBtn=$("#clearImageWall");
@@ -4773,6 +4892,11 @@ if(videoModelSelect)videoModelSelect.addEventListener("change",()=>{
  }
 });
 $("#composerInput").addEventListener("input",()=>{
+  const input=$("#composerInput");
+  if(input?.dataset.animateOnDefault==="true"){
+    const seconds=String($("#videoDuration")?.value||"5 сек").match(/[0-9]+/)?.[0]||5;
+    if(String(input.value||"").trim()!==animateOnPromptForDuration(seconds)) delete input.dataset.animateOnDefault;
+  }
   if(!speechStream){
     speechRecordingCount=0;
     speechCommittedText=$("#composerInput").value.trim();
@@ -4998,15 +5122,23 @@ $("#videoModel")?.addEventListener("change",()=>{
  const model=$("#videoModel").value;
  const duration=$("#videoDuration");
  if(duration) duration.value="5 сек";
+ const isAnimateOn=model==="Animate On";
+ configureAnimateOnControls(isAnimateOn);
+ if(isAnimateOn) applyAnimateOnDefaultPrompt();
  const progressEl=$("#composerProgress");
  const statusEl=$("#composerStatus");
  if(progressEl) progressEl.textContent="";
- if(statusEl) statusEl.textContent=model==="Agnes Video 2.5 Flash"
-   ? "Agnes Video 2.5 Flash · 720P · до 12 сек"
+ if(statusEl) statusEl.textContent=model==="Animate On"
+   ? "Animate On · Image to Video (I2V) · готов"
+   : model==="Agnes Video 2.5 Flash"
+     ? "Agnes Video 2.5 Flash · 720P · до 12 сек"
      : model==="Agnes Video v2.0"
        ? "Agnes Video v2.0 · legacy"
        : "LTX-2.3 Distilled · Free ZeroGPU";
  
+});
+$("#videoDuration")?.addEventListener("change",()=>{
+ if($("#videoModel")?.value==="Animate On" && $("#composerInput")?.dataset.animateOnDefault==="true") applyAnimateOnDefaultPrompt();
 });
 $("#videoTrash")?.addEventListener("click",()=>{
   $("#composerInput").value="";
