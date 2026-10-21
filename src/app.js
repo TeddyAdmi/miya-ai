@@ -2826,7 +2826,8 @@ function showLoading(){
   card.querySelector(".progress-model").textContent=imageModelLabel(selectedModel);
   grid.prepend(card);scrollImagesToTop();return;
  }
- const selectedVideoModel=$("#videoModel")?.value||"LTX-2.3 Distilled";
+ const selectedVideoModelRaw=$("#videoModel")?.value||"LTX-2.3 Distilled";
+ const selectedVideoModel=selectedVideoModelRaw==="Animate On"?"Animate · I2V":selectedVideoModelRaw;
  const items=getLibrary().filter(isStoredVideo);
  c.innerHTML='<div class="result-grid video-result-grid"></div>';
  const grid=c.querySelector(".result-grid");
@@ -3937,15 +3938,11 @@ function configureAnimateOnControls(enabled) {
  }
  updateVideoRatioVisibility();
 }
-function applyAnimateOnDefaultPrompt() {
+function clearAnimateOnVisiblePrompt() {
  const input=$("#composerInput");
  if(!input)return;
- const current=String(input.value||"").trim();
- const duration=String($("#videoDuration")?.value||"5 сек").match(/[0-9]+/)?.[0]||5;
- const isKnownDefault=[5,10,15,20].some(n=>current===animateOnPromptForDuration(n));
- if(current && input.dataset.animateOnDefault!=="true" && !isKnownDefault)return;
- input.value=animateOnPromptForDuration(duration);
- input.dataset.animateOnDefault="true";
+ input.value="";
+ delete input.dataset.animateOnDefault;
  syncInput();
 }
 async function animateOnImageDataUrl(source) {
@@ -3955,7 +3952,7 @@ async function animateOnImageDataUrl(source) {
  const response=await fetch(value,{cache:"no-store",signal:AbortSignal.timeout(30000)});
  if(!response.ok)throw new Error("Не удалось прочитать исходное изображение. Загрузи его через кнопку +.");
  const blob=await response.blob();
- if(!String(blob.type||"").startsWith("image/"))throw new Error("Для Animate On нужно изображение JPG, PNG или WebP.");
+ if(!String(blob.type||"").startsWith("image/"))throw new Error("Для Animate · I2V нужно изображение JPG, PNG или WebP.");
  const dataUrl=await new Promise((resolve,reject)=>{
   const reader=new FileReader();
   reader.onload=()=>resolve(String(reader.result||""));
@@ -3968,21 +3965,18 @@ async function animateOnImageDataUrl(source) {
 async function generateAnimateOnVideo(prompt) {
  if(videoGenerationBusy){toast("Видео уже создаётся. Дождись завершения текущего запроса.");return}
  const source=String(referenceImage||"").trim();
- if(!source){const status=$("#composerStatus");if(status)status.textContent="Animate On · I2V · прикрепи изображение";toast("Для Animate On прикрепи изображение");return}
+ if(!source){const status=$("#composerStatus");if(status)status.textContent="Animate · I2V · прикрепи изображение";toast("Для Animate · I2V прикрепи изображение");return}
  videoGenerationBusy=true;
  showLoading();
  const send=$("#composerSend");if(send)send.disabled=true;
- const modelLabel="Animate On · I2V";
+ const modelLabel="Animate · I2V";
  const stopProgress=startVideoProgress(modelLabel);
  try {
   const durationText=String($("#videoDuration")?.value||"5 сек");
   const duration=Math.max(5,Math.min(20,Number(durationText.match(/[0-9]+/)?.[0]||5)));
   const ratioText=String($("#videoRatio")?.value||"16:9");
   const ratio=["auto","9:16","16:9"].includes(ratioText)?ratioText:"16:9";
-  const currentPrompt=String(prompt||"").trim();
-  const actionPrompt=[5,10,15,20].some(n=>currentPrompt===animateOnPromptForDuration(n))
-    ?animateOnPromptForDuration(duration)
-    :(currentPrompt||animateOnPromptForDuration(duration));
+  const actionPrompt=animateOnPromptForDuration(duration);
   updateVideoProgress(modelLabel,4,"подготовка изображения…");
   const imageBase64=await animateOnImageDataUrl(source);
   updateVideoProgress(modelLabel,8,"отправка в Image to Video…");
@@ -3999,17 +3993,17 @@ async function generateAnimateOnVideo(prompt) {
   }
   const videoUrl=String(data.videoUrl).trim();
   updateVideoProgress(modelLabel,99,"видео получено…");
-  const item=saveMedia("video",videoUrl,actionPrompt,"Animate On · I2V · "+duration+" сек");
+  const item=saveMedia("video",videoUrl,actionPrompt,"Animate · I2V · "+duration+" сек");
   stopProgress(100,"готово");
   updateVideoProgress(modelLabel,100,"готово");
   removeGenerationLoading();renderVideoLibrary();if(item)scrollImagesToTop();
-  const status=$("#composerStatus");if(status)status.textContent="Animate On · Image to Video (I2V) · готово";
-  toast("Animate On: видео создано");
+  const status=$("#composerStatus");if(status)status.textContent="Animate · I2V · готово";
+  toast("Animate · I2V: видео создано");
  } catch(e) {
   stopProgress(null,"ошибка");removeGenerationLoading();
   if($("#composerProgress"))$("#composerProgress").textContent="";
-  const status=$("#composerStatus");if(status)status.textContent="Animate On · Image to Video (I2V) · ошибка";
-  toast("Animate On: "+(e?.message||"не удалось создать видео"));
+  const status=$("#composerStatus");if(status)status.textContent="Animate · I2V · ошибка";
+  toast("Animate · I2V: "+(e?.message||"не удалось создать видео"));
  } finally {
   videoGenerationBusy=false;
   if($("#composerSend"))$("#composerSend").disabled=false;
@@ -4803,7 +4797,7 @@ function setMode(next,render=true){
    composerSend.title=hint;
    composerSend.setAttribute("aria-label",hint);
  }
- const composerStatus=$("#composerStatus"); if(composerStatus) composerStatus.textContent=m.status; const composerMic=$("#composerMic"); if(composerMic){ composerMic.style.setProperty("display","grid","important"); composerMic.style.setProperty("visibility","visible","important"); composerMic.style.setProperty("opacity","1","important"); composerMic.setAttribute("aria-label","Начать голосовой ввод"); composerMic.title="Голосовой ввод"; }
+ const composerStatus=$("#composerStatus"); if(composerStatus) composerStatus.textContent=target==="video" && String($("#videoModel")?.value||"")==="Animate On" ? "Animate · I2V · готов" : m.status; const composerMic=$("#composerMic"); if(composerMic){ composerMic.style.setProperty("display","grid","important"); composerMic.style.setProperty("visibility","visible","important"); composerMic.style.setProperty("opacity","1","important"); composerMic.setAttribute("aria-label","Начать голосовой ввод"); composerMic.title="Голосовой ввод"; }
  const imageSettings=$(".image-settings"); if(imageSettings){ imageSettings.style.display=target==="images"?"flex":"none"; imageSettings.classList.toggle("show",target==="images"); }
  const voiceOptions=$("#voiceOptions"); if(voiceOptions){ voiceOptions.style.display=target==="voice"?"flex":"none"; voiceOptions.classList.toggle("show",target==="voice"); }
  const videoOptions=$("#videoOptions"); if(videoOptions){ videoOptions.style.display=target==="video"?"flex":"none"; videoOptions.classList.toggle("show",target==="video"); }
@@ -4854,7 +4848,7 @@ function setMode(next,render=true){
    if(target==="chat")syncActiveChatTitle();
  }
  requestAnimationFrame(()=>$("#workspace")?.scrollTo({top:0,behavior:"auto"}));
- if(target==="video" && String($("#videoModel")?.value||"")==="Animate On") applyAnimateOnDefaultPrompt();
+ 
  syncInput();
 }
 const clearImageWallBtn=$("#clearImageWall");
@@ -4888,15 +4882,11 @@ if(videoModelSelect)videoModelSelect.addEventListener("change",()=>{
  updateVideoRatioVisibility();
  resetVideoProgress();
  if(mode==="video"){
-   $("#composerStatus").textContent=videoModelSelect.value+" · готов";
+   const visibleModel=videoModelSelect.value==="Animate On"?"Animate · I2V":videoModelSelect.value;
+   $("#composerStatus").textContent=visibleModel+" · готов";
  }
 });
 $("#composerInput").addEventListener("input",()=>{
-  const input=$("#composerInput");
-  if(input?.dataset.animateOnDefault==="true"){
-    const seconds=String($("#videoDuration")?.value||"5 сек").match(/[0-9]+/)?.[0]||5;
-    if(String(input.value||"").trim()!==animateOnPromptForDuration(seconds)) delete input.dataset.animateOnDefault;
-  }
   if(!speechStream){
     speechRecordingCount=0;
     speechCommittedText=$("#composerInput").value.trim();
@@ -4933,7 +4923,8 @@ composerInput.addEventListener("paste",e=>{
 composerInput.addEventListener("keydown",e=>{if(e.key==="Enter"&&!e.shiftKey){e.preventDefault();$("#composerSend").click()}});
 $("#composerSend").addEventListener("click",async()=>{
  const value=$("#composerInput").value.trim();
- if(!value){
+ const animateI2V=mode==="video" && $("#videoModel")?.value==="Animate On";
+ if(!value && !animateI2V){
    toast(mode==="chat"?"Напиши сообщение":mode==="video"?"Опиши видео":"Опиши, что создать или изменить");return
  }
  if(mode==="images"){await generateImage(value);return}
@@ -5124,21 +5115,18 @@ $("#videoModel")?.addEventListener("change",()=>{
  if(duration) duration.value="5 сек";
  const isAnimateOn=model==="Animate On";
  configureAnimateOnControls(isAnimateOn);
- if(isAnimateOn) applyAnimateOnDefaultPrompt();
+ if(isAnimateOn) clearAnimateOnVisiblePrompt();
  const progressEl=$("#composerProgress");
  const statusEl=$("#composerStatus");
  if(progressEl) progressEl.textContent="";
  if(statusEl) statusEl.textContent=model==="Animate On"
-   ? "Animate On · Image to Video (I2V) · готов"
+   ? "Animate · I2V · готов"
    : model==="Agnes Video 2.5 Flash"
      ? "Agnes Video 2.5 Flash · 720P · до 12 сек"
      : model==="Agnes Video v2.0"
        ? "Agnes Video v2.0 · legacy"
        : "LTX-2.3 Distilled · Free ZeroGPU";
  
-});
-$("#videoDuration")?.addEventListener("change",()=>{
- if($("#videoModel")?.value==="Animate On" && $("#composerInput")?.dataset.animateOnDefault==="true") applyAnimateOnDefaultPrompt();
 });
 $("#videoTrash")?.addEventListener("click",()=>{
   $("#composerInput").value="";
@@ -5182,7 +5170,8 @@ async function attachReferenceFile(file){
       $("#composerRatio").value="auto";
       $("#composerStatus").textContent="Agnes Image · исходное изображение готово к редактированию";
     }else if(mode==="video"){
-      $("#composerStatus").textContent=String($("#videoModel")?.value||"LTX-2.3 Distilled")+" · изображение готово";
+      const selectedVideoModel=String($("#videoModel")?.value||"LTX-2.3 Distilled");
+      $("#composerStatus").textContent=(selectedVideoModel==="Animate On"?"Animate · I2V":selectedVideoModel)+" · изображение готово";
     }else{
       $("#composerStatus").textContent="Картинка прикреплена — можно спросить меня о ней.";
     }
