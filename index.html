@@ -161,12 +161,11 @@
 <style>
 /* Device icons belong inside the original ratio controls, not in a second selector. */
 #composerRatio,#videoRatio{
- padding-left:10px!important;
- padding-right:46px!important;
+ width:82px!important;min-width:82px!important;max-width:82px!important;flex:0 0 82px!important;
+ padding-left:8px!important;padding-right:29px!important;
  background-image:linear-gradient(45deg,transparent 50%,#7690ad 50%),linear-gradient(135deg,#7690ad 50%,transparent 50%)!important;
  background-position:calc(100% - 11px) 50%,calc(100% - 7px) 50%!important;
- background-size:4px 4px,4px 4px!important;
- background-repeat:no-repeat!important;
+ background-size:4px 4px,4px 4px!important;background-repeat:no-repeat!important;
 }
 #composerRatio:has(option[value="16:9"]:checked),#videoRatio:has(option[value="16:9"]:checked){
  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2389a1bd' stroke-width='1.65' stroke-linecap='round' stroke-linejoin='round'%3E%3Crect x='2.7' y='3.2' width='18.6' height='13.1' rx='2.2'/%3E%3Cpath d='M12 16.5v3.2M8.2 20h7.6'/%3E%3C/svg%3E"),linear-gradient(45deg,transparent 50%,#7690ad 50%),linear-gradient(135deg,#7690ad 50%,transparent 50%)!important;
@@ -175,9 +174,9 @@
  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2389a1bd' stroke-width='1.65' stroke-linecap='round' stroke-linejoin='round'%3E%3Crect x='6.3' y='1.8' width='11.4' height='20.4' rx='3'/%3E%3Cpath d='M10.2 4.3h3.6M10.5 19.1h3'/%3E%3C/svg%3E"),linear-gradient(45deg,transparent 50%,#7690ad 50%),linear-gradient(135deg,#7690ad 50%,transparent 50%)!important;
 }
 #composerRatio:has(option[value="1:1"]:checked),#videoRatio:has(option[value="1:1"]:checked){
- background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2389a1bd' stroke-width='1.65' stroke-linecap='round' stroke-linejoin='round'%3E%3Crect x='3.1' y='3.1' width='17.8' height='17.8' rx='3'/%3E%3C/svg%3E"),linear-gradient(45deg,transparent 50%,#7690ad 50%),linear-gradient(135deg,#7690ad 50%,transparent 50%)!important;
+ background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2389a1bd' stroke-width='1.65' stroke-linecap='round' stroke-linejoin='round'%3E%3Crect x='3.1' y='2.7' width='17.8' height='18.6' rx='3'/%3E%3Ccircle cx='12' cy='5.2' r='.65' fill='%2389a1bd' stroke='none'/%3E%3Cpath d='M9.2 18.5h5.6'/%3E%3C/svg%3E"),linear-gradient(45deg,transparent 50%,#7690ad 50%),linear-gradient(135deg,#7690ad 50%,transparent 50%)!important;
 }
-#composerRatio,#videoRatio{background-size:18px 18px,4px 4px,4px 4px!important;background-position:calc(100% - 27px) center,calc(100% - 11px) 50%,calc(100% - 7px) 50%!important}
+#composerRatio,#videoRatio{background-size:18px 18px,4px 4px,4px 4px!important;background-position:calc(100% - 32px) center,calc(100% - 11px) 50%,calc(100% - 7px) 50%!important}
 body.light #composerRatio,body.light #videoRatio{background-color:#f4f7fa!important}
 </style>
 
