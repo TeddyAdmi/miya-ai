@@ -111,7 +111,7 @@
           <option value="FLUX Dev">FLUX Dev · T2I</option>
           <option value="FLUX Kontext Dev">FLUX Kontext Dev · I2I</option>
         </select>
-        <select class="select-pill" id="composerRatio" aria-label="Соотношение сторон"><option value="auto">auto</option><option value="16:9" selected>16:9　▭</option><option value="9:16">9:16　▯</option><option value="1:1">1:1　▢</option></select>
+        <select class="select-pill" id="composerRatio" aria-label="Соотношение сторон"><option value="auto">auto</option><option value="16:9" selected>16:9</option><option value="9:16">9:16</option><option value="1:1">1:1</option></select>
         <select class="select-pill" id="composerQuality" aria-label="Качество изображения"><option value="1K">1K · Быстро</option><option value="2K" selected>2K · Высокое</option><option value="4K">4K · Максимум</option></select>
         <button class="improve composer-trash" id="improve" type="button" title="Улучшить промпт" aria-label="Улучшить промпт">
           <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m14 3-1.7 4.3L8 9l4.3 1.7L14 15l1.7-4.3L20 9l-4.3-1.7L14 3Z"/><path d="m6.5 13-.9 2.3L3 16.2l2.6.9.9 2.4.9-2.4 2.6-.9-2.6-.9L6.5 13Z"/><path d="m18.5 14-.6 1.6-1.7.6 1.7.6.6 1.7.6-1.7 1.7-.6-1.7-.6-.6-1.6Z"/></svg>
@@ -137,7 +137,7 @@
       <div class="video-options" id="videoOptions">
         <select class="select-pill" id="videoModel"><option selected>OmegaTech T2V</option><option>NovAI CogVideoX-Flash</option><option>Agnes Video 2.5 Flash</option><option>Agnes Video v2.0</option><option>LTX-2.3 Distilled</option><option value="Animate On" title="Image to Video (I2V)">Animate · I2V</option></select>
         <select class="select-pill" id="videoDuration"><option>4 сек</option><option selected>5 сек</option><option>6 сек</option><option>8 сек</option><option>10 сек</option><option>12 сек</option></select>
-        <select class="select-pill" id="videoRatio" aria-label="Соотношение сторон видео"><option value="16:9" selected>16:9　▭</option><option value="9:16">9:16　▯</option><option value="1:1">1:1　▢</option></select>
+        <select class="select-pill" id="videoRatio" aria-label="Соотношение сторон видео"><option value="16:9" selected>16:9</option><option value="9:16">9:16</option><option value="1:1">1:1</option></select>
         <button class="improve video-tool" id="videoImprove" type="button" title="Улучшить промпт" aria-label="Улучшить промпт"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m12 3 1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8L12 3Z"/><path d="M19 16l.9 2.1L22 19l-2.1.9L19 22l-.9-2.1L16 19l2.1-.9L19 16Z"/></svg></button>
         <button class="composer-copy video-tool" id="videoCopyPrompt" type="button" title="Копировать текст" aria-label="Копировать текст"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M15 9V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v7a2 2 0 0 0 2 2h3"/></svg></button>
         <button class="composer-paste video-tool" id="videoPastePrompt" type="button" title="Вставить" aria-label="Вставить"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 4.5h6a2 2 0 0 1 2 2V8H7V6.5a2 2 0 0 1 2-2Z"/><rect x="5" y="8" width="14" height="13" rx="2"/><path d="M9 12h6M9 16h4"/></svg></button>
@@ -158,6 +158,70 @@
     <button data-mode="voice"><span class="nav-icon icon-voice" aria-hidden="true"></span><small>Голос</small></button>
   </nav>
 </div>
+<style>
+/* Custom aspect-ratio menus with crisp inline device icons. */
+.ratio-device-select{position:relative;display:inline-flex;flex:0 1 auto;min-width:0;font:inherit}
+.ratio-device-select>.ratio-device-trigger{display:flex;align-items:center;justify-content:space-between;gap:10px;width:100%;min-width:76px;height:100%;min-height:31px;padding:5px 9px 5px 10px;border:1px solid var(--line);border-radius:9px;background:var(--surface);color:var(--text);font:700 12px/1 Inter,system-ui,sans-serif;white-space:nowrap}
+.ratio-device-select .ratio-device-current{display:inline-flex;align-items:center;gap:8px;min-width:0}
+.ratio-device-select .ratio-device-icon{display:block;width:19px;height:19px;flex:0 0 19px;fill:none;stroke:currentColor;stroke-width:1.65;stroke-linecap:round;stroke-linejoin:round;opacity:.9}
+.ratio-device-select .ratio-device-chevron{width:8px;height:8px;flex:0 0 8px;border-right:1.5px solid currentColor;border-bottom:1.5px solid currentColor;transform:rotate(45deg) translateY(-2px);opacity:.65}
+.ratio-device-select .ratio-device-menu{position:absolute;z-index:10020;left:0;top:calc(100% + 7px);min-width:100%;width:max-content;padding:5px;border:1px solid var(--line);border-radius:12px;background:var(--panel);box-shadow:0 12px 32px rgba(0,0,0,.24);display:none}
+.ratio-device-select.open .ratio-device-menu{display:grid;gap:2px}
+.ratio-device-select .ratio-device-option{display:flex;align-items:center;gap:10px;width:100%;min-height:36px;padding:7px 10px;border-radius:8px;background:transparent;color:var(--text);font:600 12px/1.2 Inter,system-ui,sans-serif;text-align:left;white-space:nowrap}
+.ratio-device-select .ratio-device-option:hover,.ratio-device-select .ratio-device-option[aria-selected="true"]{background:var(--surface2)}
+.ratio-device-select .ratio-device-option[aria-selected="true"]{color:var(--purple)}
+.ratio-device-select .ratio-device-native{display:none!important}
+body.light .ratio-device-select .ratio-device-menu{box-shadow:0 12px 32px rgba(25,42,65,.14)}
+@media(max-width:800px){.ratio-device-select>.ratio-device-trigger{gap:6px;padding-left:8px;padding-right:7px}.ratio-device-select .ratio-device-current{gap:6px}.ratio-device-select .ratio-device-icon{width:17px;height:17px;flex-basis:17px}}
+</style>
+<script>
+(function(){
+ const shapes={
+  "16:9":'<svg class="ratio-device-icon" viewBox="0 0 24 24" aria-hidden="true"><rect x="2.7" y="3.2" width="18.6" height="13.1" rx="2.2"/><path d="M12 16.5v3.2M8.2 20h7.6"/></svg>',
+  "9:16":'<svg class="ratio-device-icon" viewBox="0 0 24 24" aria-hidden="true"><rect x="6.3" y="1.8" width="11.4" height="20.4" rx="3"/><path d="M10.2 4.3h3.6M10.5 19.1h3"/></svg>',
+  "1:1":'<svg class="ratio-device-icon" viewBox="0 0 24 24" aria-hidden="true"><rect x="3.1" y="3.1" width="17.8" height="17.8" rx="3"/></svg>'
+ };
+ const labels={"16:9":"16:9","9:16":"9:16","1:1":"1:1",auto:"auto"};
+ function setup(select){
+  if(!select||select.dataset.ratioDeviceReady)return;
+  select.dataset.ratioDeviceReady="1";
+  const wrap=document.createElement("div");wrap.className="ratio-device-select";
+  const trigger=document.createElement("button");trigger.type="button";trigger.className="ratio-device-trigger";trigger.setAttribute("aria-haspopup","listbox");trigger.setAttribute("aria-expanded","false");trigger.setAttribute("aria-label",select.getAttribute("aria-label")||"Соотношение сторон");
+  const current=document.createElement("span");current.className="ratio-device-current";
+  const menu=document.createElement("div");menu.className="ratio-device-menu";menu.setAttribute("role","listbox");
+  function paint(){
+   const value=select.value;
+   current.innerHTML=(shapes[value]||"")+ '<span>'+ (labels[value]||value) +'</span>';
+   trigger.setAttribute("aria-label",(select.getAttribute("aria-label")||"Соотношение сторон")+": "+(labels[value]||value));
+   [...menu.querySelectorAll("button")].forEach(b=>b.setAttribute("aria-selected",String(b.dataset.value===value)));
+  }
+  trigger.append(current);
+  const chevron=document.createElement("span");chevron.className="ratio-device-chevron";trigger.append(chevron);
+  [...select.options].forEach(option=>{
+   const item=document.createElement("button");item.type="button";item.className="ratio-device-option";item.dataset.value=option.value;item.setAttribute("role","option");
+   item.innerHTML=(shapes[option.value]||"")+ '<span>'+ (labels[option.value]||option.textContent.trim()) +'</span>';
+   item.addEventListener("click",()=>{
+    select.value=option.value;select.dispatchEvent(new Event("change",{bubbles:true}));paint();wrap.classList.remove("open");trigger.setAttribute("aria-expanded","false");trigger.focus();
+   });
+   menu.append(item);
+  });
+  trigger.addEventListener("click",()=>{
+   const opening=!wrap.classList.contains("open");
+   document.querySelectorAll(".ratio-device-select.open").forEach(w=>{w.classList.remove("open");w.querySelector(".ratio-device-trigger")?.setAttribute("aria-expanded","false")});
+   if(opening){wrap.classList.add("open");trigger.setAttribute("aria-expanded","true")}
+  });
+  select.addEventListener("change",paint);
+  select.classList.add("ratio-device-native");
+  select.parentNode.insertBefore(wrap,select);wrap.append(trigger,menu);
+  paint();
+ }
+ function init(){setup(document.getElementById("composerRatio"));setup(document.getElementById("videoRatio"))}
+ if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",init,{once:true});else init();
+ document.addEventListener("click",event=>{if(!event.target.closest(".ratio-device-select"))document.querySelectorAll(".ratio-device-select.open").forEach(w=>{w.classList.remove("open");w.querySelector(".ratio-device-trigger")?.setAttribute("aria-expanded","false")})});
+ document.addEventListener("keydown",event=>{if(event.key==="Escape")document.querySelectorAll(".ratio-device-select.open").forEach(w=>{w.classList.remove("open");w.querySelector(".ratio-device-trigger")?.setAttribute("aria-expanded","false");w.querySelector(".ratio-device-trigger")?.focus()})});
+})();
+</script>
+
 <script type="module" src="/src/app.js"></script>
 </body>
 </html>
