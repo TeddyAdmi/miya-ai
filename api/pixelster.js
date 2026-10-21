@@ -12,11 +12,11 @@ async function handler(req,res){
       method:"POST",
       headers:{"Content-Type":"application/json","Accept":"application/json"},
       body:JSON.stringify({prompt,ratio:String(body.ratio||"16:9"),duration:Number(body.duration)||5,imageBase64}),
-      signal:AbortSignal.timeout(65000)
+      signal:AbortSignal.timeout(290000)
     });
     const raw=await upstream.text();
     let data={};try{data=raw?JSON.parse(raw):{}}catch{}
-    if(!upstream.ok||data?.success!==true||!String(data?.videoUrl||"").trim()){
+    if(!upstream.ok||data?.success===false||!String(data?.videoUrl||"").trim()){
       return res.status(upstream.status>=400&&upstream.status<600?upstream.status:502).json({
         ok:false,error:"ANIMATE_I2V_UPSTREAM_FAILED",
         message:String(data?.error||data?.message||raw||("Animate · I2V HTTP "+upstream.status)).slice(0,700),
