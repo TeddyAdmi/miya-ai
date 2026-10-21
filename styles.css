@@ -4241,3 +4241,7 @@ body.light .miya-music-brand a{color:#7152dc!important}
 }
 #composerRatio option,#videoRatio option{font-family:Inter,system-ui,sans-serif}
 body.light #composerRatio,body.light #videoRatio{background-color:#f4f7fa!important}
+
+/* Animate the green status indicator only while AI prompt enhancement is running. */
+.status-dot.status-dot-thinking{animation:miya-status-pulse .85s ease-in-out infinite;}
+@keyframes miya-status-pulse{0%,100%{opacity:1;transform:scale(1);box-shadow:0 0 7px #18d5a1}50%{opacity:.25;transform:scale(.72);box-shadow:0 0 1px #18d5a1}}

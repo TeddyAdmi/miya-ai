@@ -5053,7 +5053,9 @@ async function improveImageComposerPrompt(){
  button.setAttribute("aria-busy","true");
  button.title="AI улучшает промпт…";
  button.setAttribute("aria-label","AI улучшает промпт");
- if(status)status.textContent="AI улучшает промпт…";
+ if(status)status.textContent="AI улучшает промпт";
+ const statusDot=status?.parentElement?.querySelector(".status-dot");
+ statusDot?.classList.add("status-dot-thinking");
  try{
   const response=await fetch("/api/chat",{
    method:"POST",
@@ -5085,6 +5087,7 @@ async function improveImageComposerPrompt(){
   button.dataset.improving="0";
   button.title=previousTitle;
   button.setAttribute("aria-label","Улучшить промпт AI");
+  statusDot?.classList.remove("status-dot-thinking");
  }
 }
 $("#voiceGender")?.addEventListener("change",refreshVoiceSelects);
