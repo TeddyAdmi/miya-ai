@@ -475,16 +475,18 @@ module.exports = async function imageHandler(req, res) {
 
       const deadline = Date.now() + 84000;
       try {
+        const createForm = new FormData();
+        createForm.append("prompt", userPrompt);
+        createForm.append("aspectRatio", aspect);
         const createResponse = await fetch("https://nanobanana25.io/api/generate", {
           method:"POST",
           headers:{
-            "Content-Type":"application/json",
             "Accept":"application/json",
             "Origin":"https://nanobanana25.io",
             "Referer":"https://nanobanana25.io/"
           },
-          // Match the site's same-origin browser request and use its aspectRatio field.
-          body:JSON.stringify({prompt:userPrompt,aspectRatio:aspect}),
+          // Their public studio accepts the prompt as form data; let fetch set the multipart boundary.
+          body:createForm,
           cache:"no-store",
           signal:AbortSignal.timeout(18000)
         });
