@@ -477,8 +477,14 @@ module.exports = async function imageHandler(req, res) {
       try {
         const createResponse = await fetch("https://nanobanana25.io/api/generate", {
           method:"POST",
-          headers:{"Content-Type":"application/json","Accept":"application/json"},
-          body:JSON.stringify({prompt:userPrompt,aspect}),
+          headers:{
+            "Content-Type":"application/json",
+            "Accept":"application/json",
+            "Origin":"https://nanobanana25.io",
+            "Referer":"https://nanobanana25.io/"
+          },
+          // Match the site's same-origin browser request and use its aspectRatio field.
+          body:JSON.stringify({prompt:userPrompt,aspectRatio:aspect}),
           cache:"no-store",
           signal:AbortSignal.timeout(18000)
         });
@@ -488,11 +494,14 @@ module.exports = async function imageHandler(req, res) {
         try { task = createRaw ? JSON.parse(createRaw) : {}; } catch {}
 
         if (!createResponse.ok) {
+          const retryAfter = createResponse.headers.get("retry-after") || "";
           return res.status(502).json({
             ok:false,
             error:"NANOBANANA25_CREATE_HTTP",
             message:"Nano BananA не приняла запрос (HTTP " + createResponse.status + ").",
-            upstreamStatus:createResponse.status
+            upstreamStatus:createResponse.status,
+            upstreamBody:createRaw.slice(0,800),
+            retryAfter
           });
         }
 
