@@ -459,6 +459,141 @@ module.exports = async function imageHandler(req, res) {
     const provider = typeof body.provider === "string" ? body.provider.trim().toLowerCase() : "";
     const requestedModel = typeof body.model === "string" ? body.model.trim() : "";
 
+    if (provider === "nanobanana25") {
+      const userPrompt = typeof body.prompt === "string" ? body.prompt.trim() : "";
+      const allowedAspects = ["1:1", "16:9", "9:16"];
+      const aspect = allowedAspects.includes(String(body.ratio || "")) ? String(body.ratio) : "16:9";
+
+      if (requestedModel !== "Nano BananA") {
+        return res.status(400).json({
+          ok:false,
+          error:"NANOBANANA25_MODEL_UNSUPPORTED",
+          message:"Неизвестная модель Nano BananA."
+        });
+      }
+      if (!userPrompt) return res.status(400).json({ok:false,error:"PROMPT_REQUIRED"});
+
+      const deadline = Date.now() + 84000;
+      try {
+        const createResponse = await fetch("https://nanobanana25.io/api/generate", {
+          method:"POST",
+          headers:{"Content-Type":"application/json","Accept":"application/json"},
+          body:JSON.stringify({prompt:userPrompt,aspect}),
+          cache:"no-store",
+          signal:AbortSignal.timeout(18000)
+        });
+
+        const createRaw = await createResponse.text();
+        let task = {};
+        try { task = createRaw ? JSON.parse(createRaw) : {}; } catch {}
+
+        if (!createResponse.ok) {
+          return res.status(502).json({
+            ok:false,
+            error:"NANOBANANA25_CREATE_HTTP",
+            message:"Nano BananA не приняла запрос (HTTP " + createResponse.status + ").",
+            upstreamStatus:createResponse.status
+          });
+        }
+
+        const taskId = String(task.taskId || "").trim();
+        const taskToken = String(task.taskToken || "").trim();
+        if (!/^task_[A-Za-z0-9]+$/.test(taskId) || !taskToken) {
+          return res.status(502).json({
+            ok:false,
+            error:"NANOBANANA25_TASK_MISSING",
+            message:"Nano BananA не вернула необходимые данные задания."
+          });
+        }
+
+        let lastStatus = "submitted";
+        while (Date.now() < deadline) {
+          await new Promise(resolve => setTimeout(resolve, 2200));
+
+          let statusResponse;
+          try {
+            statusResponse = await fetch(
+              "https://nanobanana25.io/api/tasks/" + encodeURIComponent(taskId),
+              {
+                method:"GET",
+                headers:{"Accept":"application/json","x-task-token":taskToken},
+                cache:"no-store",
+                signal:AbortSignal.timeout(6500)
+              }
+            );
+          } catch {
+            continue;
+          }
+
+          const statusRaw = await statusResponse.text();
+          let job = {};
+          try { job = statusRaw ? JSON.parse(statusRaw) : {}; } catch {}
+
+          if (!statusResponse.ok) {
+            if (statusResponse.status === 429 || statusResponse.status >= 500) continue;
+            return res.status(502).json({
+              ok:false,
+              error:"NANOBANANA25_STATUS_HTTP",
+              message:"Не удалось проверить задание Nano BananA (HTTP " + statusResponse.status + ").",
+              upstreamStatus:statusResponse.status
+            });
+          }
+
+          lastStatus = String(job.status || lastStatus).toLowerCase();
+
+          if (["failed","error","cancelled","canceled"].includes(lastStatus)) {
+            return res.status(502).json({
+              ok:false,
+              error:"NANOBANANA25_GENERATION_FAILED",
+              message:String(job.errorMessage || "Nano BananA не смогла создать изображение.").slice(0,240)
+            });
+          }
+
+          if (lastStatus === "completed" && typeof job.imageUrl === "string") {
+            let imageUrl;
+            try { imageUrl = new URL(job.imageUrl); } catch {}
+            const validImageUrl = imageUrl &&
+              imageUrl.protocol === "https:" &&
+              (imageUrl.hostname.toLowerCase() === "getapib.org" ||
+               imageUrl.hostname.toLowerCase().endsWith(".getapib.org")) &&
+              /^\/f\/images\//.test(imageUrl.pathname);
+
+            if (!validImageUrl) {
+              return res.status(502).json({
+                ok:false,
+                error:"NANOBANANA25_IMAGE_URL_INVALID",
+                message:"Nano BananA вернула неподдерживаемый адрес изображения."
+              });
+            }
+
+            return res.status(200).json({
+              ok:true,
+              mode:"image",
+              status:"completed",
+              provider:"NanoBanana25",
+              model:"Nano BananA",
+              imageUrl:imageUrl.toString(),
+              imageUrls:[imageUrl.toString()],
+              count:1,
+              meta:{free:true,aspect,native:true,noCrop:true,edit:false,resolution:"1K"}
+            });
+          }
+        }
+
+        return res.status(504).json({
+          ok:false,
+          error:"NANOBANANA25_TIMEOUT",
+          message:"Nano BananA не вернула фотографию вовремя. Попробуй ещё раз."
+        });
+      } catch (error) {
+        return res.status(502).json({
+          ok:false,
+          error:"NANOBANANA25_HANDLER_ERROR",
+          message:"Не удалось связаться с Nano BananA: " + String(error?.message || "ошибка запроса").slice(0,180)
+        });
+      }
+    }
+
     if (provider === "imagefree") {
       const userPrompt = typeof body.prompt === "string" ? body.prompt.trim() : "";
       const allowedRatios = ["1:1", "3:4", "4:3", "16:9", "9:16", "2:3", "3:2", "21:9"];
@@ -981,6 +1116,7 @@ module.exports = async function imageHandler(req, res) {
         host==="ahm7xmakki.com" || host.endsWith(".ahm7xmakki.com") ||
         host==="sora.aritek.app" || host.endsWith(".aritek.app") ||
         host==="cvron.alwaysdata.net" ||
+        host==="getapib.org" || host.endsWith(".getapib.org") ||
         host==="modelscope.cn" || host.endsWith(".modelscope.cn") ||
         host.endsWith(".aliyuncs.com");
     };

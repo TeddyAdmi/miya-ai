@@ -66,10 +66,12 @@ module.exports = async function handler(req, res) {
       "cleverutil",
       "cleverutil.com",
       "overchat.s3.eu-north-1.amazonaws.com",
-      "pub-62e693a7058040f98bba94ed1d6f880b.r2.dev"
+      "pub-62e693a7058040f98bba94ed1d6f880b.r2.dev",
+      "getapib.org"
     ];
     const auraImageHost = host === "aurasoundai.ru" || host.endsWith(".aurasoundai.ru");
-    if (!allowed.includes(host) && !auraImageHost) {
+    const nanoBananaImageHost = host === "getapib.org" || host.endsWith(".getapib.org");
+    if (!allowed.includes(host) && !auraImageHost && !nanoBananaImageHost) {
       return res.status(403).json({ ok: false, error: "IMAGE_HOST_NOT_ALLOWED" });
     }
 
