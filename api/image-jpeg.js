@@ -1,5 +1,17 @@
 const sharp = require("sharp");
 
+// Generated image URLs are stable assets. Cache successful proxy responses so
+// wall previews, library restores, and the follow-up IndexedDB fetch don't
+// repeatedly download and re-encode the same image.
+function setSuccessfulImageCacheHeaders(res) {
+  res.removeHeader("Pragma");
+  res.setHeader("Cache-Control", "public, max-age=86400, stale-if-error=604800");
+  res.setHeader(
+    "Vercel-CDN-Cache-Control",
+    "public, s-maxage=604800, stale-while-revalidate=2592000, stale-if-error=2592000"
+  );
+}
+
 module.exports = async function handler(req, res) {
   // Never cache a transiently truncated provider response for a full day.
   res.setHeader("Cache-Control", "no-store, no-cache, must-revalidate");
@@ -116,7 +128,7 @@ module.exports = async function handler(req, res) {
           return res.status(502).json({ ok: false, error: "UPSTREAM_IMAGE_TRUNCATED", message: "Провайдер вернул неполный JPEG; изображение не закэшировано." });
         }
       }
-      res.setHeader("Cache-Control", "no-store, no-cache, must-revalidate");
+      setSuccessfulImageCacheHeaders(res);
       res.setHeader("X-Content-Type-Options", "nosniff");
       res.setHeader("Content-Type", normalizedType);
       res.setHeader("Content-Length", String(input.length));
@@ -146,6 +158,7 @@ module.exports = async function handler(req, res) {
       .jpeg({ quality: 94, mozjpeg: true })
       .toBuffer();
 
+    setSuccessfulImageCacheHeaders(res);
     res.setHeader("Content-Type", "image/jpeg");
     res.setHeader("Content-Length", String(jpeg.length));
     res.setHeader("Content-Disposition", 'inline; filename="miya-image.jpg"');
