@@ -4949,12 +4949,14 @@ if(videoModelSelect)videoModelSelect.addEventListener("change",()=>{
 });
 $("#composerInput").addEventListener("input",()=>{
   const promptInput=$("#composerInput");
-  const currentValue=String(promptInput.value||"").normalize("NFC").replace(/[\\u00a0\\u2007\\u202f]/g," ").replace(/\\s+/g," ").trim();
-  const latestValue=String(promptInput.dataset.improveLatestPrompt||"").normalize("NFC").replace(/[\\u00a0\\u2007\\u202f]/g," ").replace(/\\s+/g," ").trim();
+  const normalizePromptSessionText=value=>String(value||"").normalize("NFC").replace(/[\u00a0\u2007\u202f]/g," ").replace(/\s+/g," ").trim();
+  const currentValue=normalizePromptSessionText(promptInput.value);
+  const session=window.__miyaImagePromptSession;
+  const latestValue=normalizePromptSessionText(session?.latest||"");
 
-  // Some browser/editor events can fire even when the visible text is just the
-  // AI result. Preserve the seed in that case; reset only for a real text change.
+  // Only a real edit away from the current AI result begins a new source session.
   if(!latestValue||currentValue!==latestValue){
+    if(session){session.seed="";session.latest=""}
     delete promptInput.dataset.improveSeedPrompt;
     delete promptInput.dataset.improveLatestPrompt;
   }
@@ -5052,27 +5054,27 @@ async function improveImageComposerPrompt(){
  const button=$("#improve");
  if(!input||!button)return;
 
- // Each click creates a fresh alternative from the first prompt in this editing
- // session. Keep showing the latest candidate, but always send the unchanged seed
- // until the user manually edits the text to start a new session.
+ // The first text the user dictated or typed is the seed for every variant.
+ // Keep session state separate from the visible textarea, which is replaced by results.
  const visiblePrompt=String(input.value||"").trim();
- const previousSeed=String(input.dataset.improveSeedPrompt||"").trim();
- const previousLatest=String(input.dataset.improveLatestPrompt||"").trim();
- const normalizePromptSessionText=value=>String(value||"").normalize("NFC").replace(/[\\u00a0\\u2007\\u202f]/g," ").replace(/\\s+/g," ").trim();
+ const normalizePromptSessionText=value=>String(value||"").normalize("NFC").replace(/[\u00a0\u2007\u202f]/g," ").replace(/\s+/g," ").trim();
  const visibleKey=normalizePromptSessionText(visiblePrompt);
- const latestKey=normalizePromptSessionText(previousLatest);
- const seedKey=normalizePromptSessionText(previousSeed);
+ const session=window.__miyaImagePromptSession||(window.__miyaImagePromptSession={seed:"",latest:""});
+ const seedKey=normalizePromptSessionText(session.seed);
+ const latestKey=normalizePromptSessionText(session.latest);
  let original=visiblePrompt;
 
- // The seed is immutable while the composer still shows one of its outputs.
- // An input event only breaks the chain when the user actually changes the text.
- if(previousSeed&&(!previousLatest||visibleKey===latestKey||visibleKey===seedKey)){
-  original=previousSeed;
+ // A visible seed or one of its AI results belongs to the same session.
+ // Any genuinely different text starts a new session.
+ if(session.seed&&(visibleKey===seedKey||visibleKey===latestKey)){
+  original=session.seed;
  }else{
-  input.dataset.improveSeedPrompt=visiblePrompt;
-  input.dataset.improveLatestPrompt="";
+  session.seed=visiblePrompt;
+  session.latest="";
   original=visiblePrompt;
  }
+ input.dataset.improveSeedPrompt=session.seed;
+ input.dataset.improveLatestPrompt=session.latest;
  if(!original){toast("Сначала введи промпт");input.focus();return}
  if(button.dataset.improving==="1")return;
  const previousTitle=button.title||"Улучшить промпт AI";
@@ -5108,6 +5110,10 @@ async function improveImageComposerPrompt(){
    throw new Error("AI вернул слишком короткий промпт");
   }
   input.value=improved;
+  window.__miyaImagePromptSession=window.__miyaImagePromptSession||{seed:original,latest:""};
+  window.__miyaImagePromptSession.seed=original;
+  window.__miyaImagePromptSession.latest=improved;
+  input.dataset.improveSeedPrompt=original;
   input.dataset.improveLatestPrompt=improved;
   syncInput();
   if(status)status.textContent="Промпт улучшен с помощью AI";

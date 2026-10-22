@@ -397,8 +397,12 @@ async function handler(req, res) {
           .trim();
         if (!value) return "";
 
-        // Some providers return their hidden task analysis as if it were the prompt.
-        if (/^\s*(?:(?:\d+[.)]\s*)|[-*]\s*)?(?:\*\*|#+\s*)?(?:analyze user input|analysis of user|user wants me to|constraints|requirements|step-by-step|chain of thought|let me think|we need to|the user wants|task|пользователь хочет|пользователь просит|разбор запроса|анализ запроса|требования|рассуждения)/i.test(value) || /(?:chain of thought|user wants me to|analysis of user input|пользователь просит меня|разберём запрос|рассуждения модели)/i.test(value)) return "";
+        // Reject exposed chain-of-thought, numbered planning, and brainstorming instead of returning it as a prompt.
+        if (
+          /^\s*(?:(?:\d+[.)]\s*)|[-*]\s*)?(?:\*\*|#+\s*)?(?:analyze user input|analysis of user|brainstorming(?:\s+specific visualization)?|specific visualization|user wants me to|constraints|requirements|step-by-step|chain of thought|let me think|we need to|the user wants|task|plan|analysis|reasoning|thinking|пользователь хочет|пользователь просит|разбор запроса|анализ запроса|требования|рассуждения|план)/i.test(value) ||
+          /(?:chain of thought|user wants me to|analysis of user input|пользователь просит меня|разбер[её]м запрос|рассуждения модели|let['’]s envision|maybe:\s|i['’]ll assume|the phrase.{0,100}could mean|brainstorming specific visualization|analyze user input)/i.test(value) ||
+          /^\s*(?:\d+[.)]\s*)?\*\*[^*]{0,80}(?:analysis|brainstorm|visualization|reasoning|plan|requirements|task|рассуждени|анализ|план)[^*]*\*\*\s*:/i.test(value)
+        ) return "";
 
         const finalMarkers = [...value.matchAll(/(?:^|\n)\s*(?:финальный ответ|final answer|final prompt|improved prompt|готовый промпт|улучшенный промпт|итоговый промпт|промпт для изображения|готовое описание)\s*[:：—–-]\s*/gi)];
         if (finalMarkers.length) {
