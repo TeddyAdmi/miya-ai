@@ -912,7 +912,7 @@ module.exports = async function imageHandler(req, res) {
           },
           body:JSON.stringify({bg:"",mode:"generate",prompt:imageSmithPrompt,shape,transparent:false}),
           cache:"no-store",
-          signal:AbortSignal.timeout(100000)
+          signal:AbortSignal.timeout(25000)
         });
         const raw = await upstream.text();
         let data = {};
@@ -952,9 +952,13 @@ module.exports = async function imageHandler(req, res) {
           meta:{free:true,shape,requestedRatio:imageSmithRatio,native:true,noCrop:true,transparent:false}
         });
       } catch (error) {
+        const timedOut = error?.name === "TimeoutError" || error?.name === "AbortError" || /timed? ?out|abort/i.test(String(error?.message||""));
         return res.status(502).json({
-          ok:false,error:"IMAGESMITH_HANDLER_ERROR",
-          message:"Не удалось связаться с ImageSmith: " + String(error?.message||error||"ошибка запроса").slice(0,180)
+          ok:false,
+          error:timedOut ? "IMAGESMITH_UPSTREAM_TIMEOUT" : "IMAGESMITH_HANDLER_ERROR",
+          message:timedOut
+            ? "ImageSmith не ответил за 25 секунд. Возможно, он требует браузерную сессию или временно недоступен."
+            : "Не удалось связаться с ImageSmith: " + String(error?.message||error||"ошибка запроса").slice(0,180)
         });
       }
     }
