@@ -912,7 +912,7 @@ module.exports = async function imageHandler(req, res) {
           },
           body:JSON.stringify({bg:"",mode:"generate",prompt:imageSmithPrompt,shape,transparent:false}),
           cache:"no-store",
-          signal:AbortSignal.timeout(90000)
+          signal:AbortSignal.timeout(65000)
         });
         const raw = await upstream.text();
         let data = {};
@@ -957,7 +957,7 @@ module.exports = async function imageHandler(req, res) {
           ok:false,
           error:timedOut ? "IMAGESMITH_UPSTREAM_TIMEOUT" : "IMAGESMITH_HANDLER_ERROR",
           message:timedOut
-            ? "ImageSmith не ответил за 25 секунд. Возможно, он требует браузерную сессию или временно недоступен."
+            ? "ImageSmith не ответил за 65 секунд. Возможно, сервис временно недоступен."
             : "Не удалось связаться с ImageSmith: " + String(error?.message||error||"ошибка запроса").slice(0,180)
         });
       }

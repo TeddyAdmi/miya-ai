@@ -831,21 +831,37 @@ async function getCachedMedia(id){
   return await new Promise((resolve,reject)=>{const tx=db.transaction("media","readonly");const r=tx.objectStore("media").get(id);r.onsuccess=()=>resolve(r.result||null);r.onerror=()=>reject(r.error)});
  }catch{return null}
 }
+async function compactInlineImageLibrary(){
+ const items=getLibrary();let changed=false;
+ for(const item of items){
+  if(item?.type!=="image"||!/^data:image\//i.test(String(item.url||"")))continue;
+  try{
+   if(await cacheMedia(item.id,item.url,"image")){
+    item.url="miya-cache://"+item.id;changed=true;
+   }
+  }catch{}
+ }
+ if(changed){
+  try{localStorage.setItem(LIB_KEY,JSON.stringify(items.slice(0,500)))}catch{
+   try{localStorage.setItem(LIB_KEY,JSON.stringify(items.slice(0,100)))}catch{}
+  }
+ }
+}
 function saveMedia(type,url,prompt="",model="",format=""){
  if(!url)return;
  const rawUrl=String(url||"").trim();
  if(type==="image"&&isInvalidImageToolSource(rawUrl))return;
  const id=type+"-"+Date.now()+"-"+Math.random().toString(36).slice(2);
- const isAgnesImage=type==="image"&&/^Agnes Image/i.test(String(model||""));
- const normalizedUrl=isAgnesImage?"/api/image-jpeg?url="+encodeURIComponent(rawUrl)+"&raw=1":(type==="image"?jpegImageUrl(rawUrl):rawUrl);
+ const isInlineImage=type==="image"&&/^data:image\//i.test(rawUrl);
+ const isAgnesImage=type==="image"&&!isInlineImage&&/^Agnes Image/i.test(String(model||""));
+ const normalizedUrl=isInlineImage?"miya-cache://"+id:(isAgnesImage?"/api/image-jpeg?url="+encodeURIComponent(rawUrl)+"&raw=1":(type==="image"?jpegImageUrl(rawUrl):rawUrl));
  const item={id,type,url:normalizedUrl,prompt:String(prompt||""),model:String(model||((type==="image")?"FLUX Dev":"LTX")),format:String(format||""),createdAt:Date.now()};
  const items=getLibrary();items.unshift(item);
- try{localStorage.setItem(LIB_KEY,JSON.stringify(items.slice(0,500)))}catch{
-   try{localStorage.setItem(LIB_KEY,JSON.stringify(items.slice(0,100)))}catch{}
+ let saved=false;
+ try{localStorage.setItem(LIB_KEY,JSON.stringify(items.slice(0,500)));saved=true}catch{
+  try{localStorage.setItem(LIB_KEY,JSON.stringify(items.slice(0,100)));saved=true}catch{}
  }
- // For images, let the visible <img> perform the first download. Starting a second
- // fetch here competes with the card preview and can delay the first visible paint.
- // buildMediaCard caches the image after its load event; non-image media still caches here.
+ if(!saved)return;
  if(type!=="image")cacheMedia(id,normalizedUrl,type);
  return item;
 }
@@ -2844,18 +2860,25 @@ function showLoading(){
 async function showImage(url,prompt="",model="FLUX Dev",ratio=""){
   const rawUrl=String(url||"").trim();
   if(!rawUrl)throw new Error("Сервер не вернул ссылку на изображение.");
-  const displayUrl=rawUrl.startsWith("/api/image-jpeg?") || /^data:image\//i.test(rawUrl)
+  const isInlineImage=/^data:image\//i.test(rawUrl);
+  if(isInlineImage)await compactInlineImageLibrary();
+  const displayUrl=rawUrl.startsWith("/api/image-jpeg?") || isInlineImage
     ? rawUrl
-    : (ratio&&/^\\d+:\\d+$/.test(String(ratio))
+    : (ratio&&/^\d+:\d+$/.test(String(ratio))
        ? "/api/image-jpeg?url="+encodeURIComponent(rawUrl)+"&ratio="+encodeURIComponent(String(ratio))
-
        : rawUrl);
 
-  // Render immediately, but let the shared card loader choose the normalized
-  // proxy/direct URL and its fallbacks. An unverified previewUrl can bypass the
-  // working same-origin proxy and leave FLUX cards blank.
+  // Keep image bytes in IndexedDB and only small metadata in localStorage.
+  // This makes the image survive section switches and restores the wall/library arrows.
   const item=saveMedia("image",displayUrl,prompt,model);
   if(!item)throw new Error("Не удалось сохранить готовое изображение.");
+  if(isInlineImage){
+   const cached=await cacheMedia(item.id,rawUrl,"image");
+   if(!cached){
+    try{localStorage.setItem(LIB_KEY,JSON.stringify(getLibrary().filter(x=>x.id!==item.id)))}catch{}
+    throw new Error("Не удалось сохранить изображение в памяти браузера.");
+   }
+  }
   const c=$("#canvas");let grid=c.querySelector(".result-grid");
   if(!grid){c.innerHTML='<div class="result-grid"></div>';grid=c.querySelector(".result-grid")}
   const card=buildMediaCard(item);grid.prepend(card);
@@ -3005,8 +3028,8 @@ async function generateImage(prompt){
  const percent=ring?.querySelector(".progress-percent");
  const modelName=selectedModel||"FLUX Dev";
  const displayModel=imageModelLabel(modelName);
- const timeoutMs=/^(?:Nano Banana|Seedream|Z-Image Turbo \(ImageFree\)|ImageSmith)$/.test(modelName)?180000:120000;
- const progressDurationMs=useNanoBananA?65000:(useImageSmith?90000:(useImageFree?70000:(/^FLUX Dev$/i.test(modelName)?50000:40000)));
+ const timeoutMs=(useImageSmith||useNanoBananA)?70000:(/^(?:Nano Banana|Seedream|Z-Image Turbo \(ImageFree\)|ImageSmith)$/.test(modelName)?180000:120000);
+ const progressDurationMs=(useNanoBananA||useImageSmith)?40000:(useImageFree?70000:(/^FLUX Dev$/i.test(modelName)?50000:40000));
  const usesReferenceImage=Boolean(referenceImage);
  const hasFileUpload=Boolean(referenceImage);
  const composerProgress=$("#composerProgress");
@@ -3096,8 +3119,8 @@ async function generateImage(prompt){
     }
    };
    // After reaching 99%, Nano Banana / Seedream get 30 seconds; other models get 20.
-   const post99WaitMs=/^(?:Nano Banana(?: 2)?|Seedream)$/i.test(modelName)?30000:20000;
-   xhr.timeout=useImageSmith?115000:Math.min(timeoutMs,progressDurationMs+post99WaitMs);
+   const post99WaitMs=(useNanoBananA||useImageSmith||/^(?:Nano Banana(?: 2)?|Seedream)$/i.test(modelName))?30000:20000;
+   xhr.timeout=(useImageSmith||useNanoBananA)?70000:Math.min(timeoutMs,progressDurationMs+post99WaitMs);
    xhr.send(body);
   });
 ;
@@ -3193,7 +3216,7 @@ async function generateImage(prompt){
    const notice="Подождите "+minutes+" "+unit;
    $("#composerStatus").textContent=notice;toast(notice);return;
   }
-  const waitFromMessage=String(e?.message||"").match(/try again in about\\s+(\\d+)\\s*(?:min|mins|minutes?)\\b/i);
+  const waitFromMessage=String(e?.message||"").match(/try again in about\s+(\d+)\s*(?:min|mins|minutes?)\b/i);
   if(useImageSmith&&waitFromMessage){
    const minutes=Number(waitFromMessage[1]);
    if(minutes>0){
@@ -3206,7 +3229,7 @@ async function generateImage(prompt){
   if(moderationBlocked){const notice="Промпт отклонён модерацией. Измените формулировку запроса и попробуйте снова.";$("#composerStatus").textContent=notice;toast(notice);return;}
   const timedOut=e?.message==="Сервер генерации не ответил вовремя";
   if(timedOut){
-   const seconds=Math.round(Math.min(timeoutMs,progressDurationMs+20000)/1000);
+   const seconds=Math.round(Math.min(timeoutMs,progressDurationMs+((useImageSmith||useNanoBananA)?30000:20000))/1000);
    toast("Изображение не появилось за "+seconds+" секунд. Попробуй ещё раз или выбери другую модель.");
    $("#composerStatus").textContent=displayModel+" · время вышло";
   }else{
