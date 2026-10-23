@@ -2989,7 +2989,7 @@ async function generateImage(prompt){
  const useAgnesImage=/^Agnes Image/i.test(selectedModel);
  const useImageFree=/^Z-Image Turbo \(ImageFree\)$/i.test(selectedModel);
  const useNanoBananA=selectedModel==="Nano BananA";
- const useImageSmith=selectedModel==="ImageSmith";
+ const useImageSmith=/^(?:ImageSmith|GPT Image 2\.5\s*[·-]\s*T2I)$/i.test(selectedModel);
  const useAuraImage=!useNanoBananA&&/^(?:Nano Banana|Seedream)$/i.test(selectedModel);
  // Existing-image edits stay on the established Agnes editing route.
  if(referenceImage && (useImageFree || useNanoBananA || useImageSmith)){
@@ -3187,6 +3187,21 @@ async function generateImage(prompt){
   if(fakeTimer){clearInterval(fakeTimer);fakeTimer=null;}
   $("#canvas .generation-loading")?.remove();
   if(composerProgress)composerProgress.textContent="";
+  if(e?.code==="IMAGESMITH_RATE_LIMIT"&&Number.isFinite(e.retryAfterMinutes)&&e.retryAfterMinutes>0){
+   const minutes=e.retryAfterMinutes;
+   const unit=minutes%10===1&&minutes%100!==11?"минуту":minutes%10>=2&&minutes%10<=4&&!(minutes%100>=12&&minutes%100<=14)?"минуты":"минут";
+   const notice="Подождите "+minutes+" "+unit;
+   $("#composerStatus").textContent=notice;toast(notice);return;
+  }
+  const waitFromMessage=String(e?.message||"").match(/try again in about\\s+(\\d+)\\s*(?:min|mins|minutes?)\\b/i);
+  if(useImageSmith&&waitFromMessage){
+   const minutes=Number(waitFromMessage[1]);
+   if(minutes>0){
+    const unit=minutes%10===1&&minutes%100!==11?"минуту":minutes%10>=2&&minutes%10<=4&&!(minutes%100>=12&&minutes%100<=14)?"минуты":"минут";
+    const notice="Подождите "+minutes+" "+unit;
+    $("#composerStatus").textContent=notice;toast(notice);return;
+   }
+  }
   const moderationBlocked=e?.code==="PROMPT_MODERATION_BLOCKED"||e?.status===403||/PROMPT_MODERATION_BLOCKED|промпт отклон[её]н модерацией/i.test(String(e?.message||""));
   if(moderationBlocked){const notice="Промпт отклонён модерацией. Измените формулировку запроса и попробуйте снова.";$("#composerStatus").textContent=notice;toast(notice);return;}
   const timedOut=e?.message==="Сервер генерации не ответил вовремя";
