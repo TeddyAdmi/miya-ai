@@ -891,6 +891,74 @@ module.exports = async function imageHandler(req, res) {
       }
     }
 
+    if (provider === "imagesmith") {
+      const imageSmithPrompt = typeof body.prompt === "string" ? body.prompt.trim() : "";
+      const imageSmithRatio = ["1:1","3:4","4:3","16:9","9:16","2:3","3:2","21:9"].includes(String(body.ratio || ""))
+        ? String(body.ratio) : "16:9";
+      if (requestedModel !== "ImageSmith") {
+        return res.status(400).json({ok:false,error:"IMAGESMITH_MODEL_UNSUPPORTED",message:"Неизвестная модель ImageSmith."});
+      }
+      if (!imageSmithPrompt) return res.status(400).json({ok:false,error:"PROMPT_REQUIRED"});
+      const shape = imageSmithRatio === "1:1" ? "square"
+        : ["9:16","2:3","3:4"].includes(imageSmithRatio) ? "portrait" : "landscape";
+      try {
+        const upstream = await fetch("https://aiimagesmith.com/api/image", {
+          method:"POST",
+          headers:{
+            "Content-Type":"application/json",
+            "Accept":"application/json",
+            "Origin":"https://aiimagesmith.com",
+            "Referer":"https://aiimagesmith.com/"
+          },
+          body:JSON.stringify({bg:"",mode:"generate",prompt:imageSmithPrompt,shape,transparent:false}),
+          cache:"no-store",
+          signal:AbortSignal.timeout(100000)
+        });
+        const raw = await upstream.text();
+        let data = {};
+        try { data = raw ? JSON.parse(raw) : {}; } catch {}
+        if (!upstream.ok) {
+          return res.status(502).json({
+            ok:false,error:"IMAGESMITH_UPSTREAM_HTTP",
+            message:"ImageSmith вернул HTTP " + upstream.status + ".",
+            upstreamStatus:upstream.status,
+            upstreamBody:raw.slice(0,700)
+          });
+        }
+        const imageData = typeof data.image === "string" ? data.image
+          : typeof data.data?.image === "string" ? data.data.image : "";
+        const match = imageData.match(/^data:image\/(png|jpeg|jpg|webp);base64,([A-Za-z0-9+/=\r\n]+)$/i);
+        if (!match) {
+          return res.status(502).json({
+            ok:false,error:"IMAGESMITH_IMAGE_MISSING",
+            message:"ImageSmith не вернул фотографию в ожидаемом формате.",
+            upstreamBody:raw.slice(0,700)
+          });
+        }
+        const sourceBytes = Buffer.from(match[2].replace(/\s/g,""),"base64");
+        if (!sourceBytes.length || sourceBytes.length > 15 * 1024 * 1024) {
+          return res.status(413).json({ok:false,error:"IMAGESMITH_IMAGE_SIZE",message:"ImageSmith вернул пустое или слишком большое изображение."});
+        }
+        // Convert the PNG data URL to a compact JPEG data URL so the response
+        // fits comfortably within serverless response limits and the existing wall can display it.
+        const jpeg = await sharp(sourceBytes).rotate().jpeg({quality:90,mozjpeg:true}).toBuffer();
+        if (!jpeg.length || jpeg.length > 3 * 1024 * 1024) {
+          return res.status(413).json({ok:false,error:"IMAGESMITH_IMAGE_TOO_LARGE",message:"Фотография ImageSmith слишком большая для передачи в студию."});
+        }
+        const resultUrl = "data:image/jpeg;base64," + jpeg.toString("base64");
+        return res.status(200).json({
+          ok:true,mode:"image",status:"completed",provider:"ImageSmith",model:"ImageSmith",
+          imageUrl:resultUrl,imageUrls:[resultUrl],count:1,
+          meta:{free:true,shape,requestedRatio:imageSmithRatio,native:true,noCrop:true,transparent:false}
+        });
+      } catch (error) {
+        return res.status(502).json({
+          ok:false,error:"IMAGESMITH_HANDLER_ERROR",
+          message:"Не удалось связаться с ImageSmith: " + String(error?.message||error||"ошибка запроса").slice(0,180)
+        });
+      }
+    }
+
     if (provider === "cvron") {
       const cvronModels = {
         "Nano Banana 2": "https://cvron.alwaysdata.net/cvronai/nanobanana2.php",
