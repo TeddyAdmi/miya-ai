@@ -2968,7 +2968,13 @@ async function generateAgnesImage(prompt){
    if(progressTimer){clearInterval(progressTimer);progressTimer=null;}
    $("#canvas .generation-loading")?.remove();
    if(composerProgress)composerProgress.textContent="";
-   const moderationBlocked=e?.code==="PROMPT_MODERATION_BLOCKED"||e?.status===403||/PROMPT_MODERATION_BLOCKED|промпт отклон[её]н модерацией/i.test(String(e?.message||""));
+   if(e?.code==="IMAGESMITH_RATE_LIMIT"&&Number.isFinite(e.retryAfterMinutes)&&e.retryAfterMinutes>0){
+   const minutes=e.retryAfterMinutes;
+   const unit=minutes%10===1&&minutes%100!==11?"минуту":minutes%10>=2&&minutes%10<=4&&!(minutes%100>=12&&minutes%100<=14)?"минуты":"минут";
+   const notice="Лимит генерации достигнут. Попробуйте снова через "+minutes+" "+unit+".";
+   $("#composerStatus").textContent=notice;toast(notice);return;
+  }
+  const moderationBlocked=e?.code==="PROMPT_MODERATION_BLOCKED"||e?.status===403||/PROMPT_MODERATION_BLOCKED|промпт отклон[её]н модерацией/i.test(String(e?.message||""));
    if(moderationBlocked){const notice="Промпт отклонён модерацией. Измените формулировку запроса и попробуйте снова.";if($("#composerStatus"))$("#composerStatus").textContent=notice;toast(notice);}
    else{if($("#composerStatus"))$("#composerStatus").textContent=displayModel+" · ошибка";toast("Agnes Image: "+(e?.message||"не удалось создать изображение"));}
  }finally{
@@ -3079,7 +3085,14 @@ async function generateImage(prompt){
        const rawUpstream=String(result.upstreamBody).replace(/\\s+/g," ").trim();
        if(rawUpstream) detail += " · "+rawUpstream.slice(0,220);
       }
-      const requestError=new Error(detail);requestError.code=result.error||"";requestError.status=xhr.status;reject(requestError);
+      const requestError=new Error(detail);requestError.code=result.error||"";requestError.status=xhr.status;
+      if(result.error==="IMAGESMITH_UPSTREAM_HTTP"&&Number(result.upstreamStatus)===429){
+       let upstreamMessage="";
+       try{const upstreamData=JSON.parse(String(result.upstreamBody||""));upstreamMessage=String(upstreamData.message||upstreamData.statusMessage||"");}catch{}
+       const waitMatch=upstreamMessage.match(/try again in about\s+(\d+)\s*(?:min|mins|minutes?)\b/i);
+       if(waitMatch){requestError.code="IMAGESMITH_RATE_LIMIT";requestError.retryAfterMinutes=Number(waitMatch[1]);}
+      }
+      reject(requestError);
     }
    };
    // After reaching 99%, Nano Banana / Seedream get 30 seconds; other models get 20.
