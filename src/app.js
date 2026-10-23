@@ -2844,7 +2844,7 @@ function showLoading(){
 async function showImage(url,prompt="",model="FLUX Dev",ratio=""){
   const rawUrl=String(url||"").trim();
   if(!rawUrl)throw new Error("Сервер не вернул ссылку на изображение.");
-  const displayUrl=rawUrl.startsWith("/api/image-jpeg?")
+  const displayUrl=rawUrl.startsWith("/api/image-jpeg?") || /^data:image\//i.test(rawUrl)
     ? rawUrl
     : (ratio&&/^\\d+:\\d+$/.test(String(ratio))
        ? "/api/image-jpeg?url="+encodeURIComponent(rawUrl)+"&ratio="+encodeURIComponent(String(ratio))
