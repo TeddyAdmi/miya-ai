@@ -3213,7 +3213,7 @@ async function generateImage(prompt){
   if(e?.code==="IMAGESMITH_RATE_LIMIT"&&Number.isFinite(e.retryAfterMinutes)&&e.retryAfterMinutes>0){
    const minutes=e.retryAfterMinutes;
    const unit=minutes%10===1&&minutes%100!==11?"минуту":minutes%10>=2&&minutes%10<=4&&!(minutes%100>=12&&minutes%100<=14)?"минуты":"минут";
-   const notice="Подождите "+minutes+" "+unit;
+   const notice=displayModel+" — подождите "+minutes+" "+unit;
    $("#composerStatus").textContent=notice;toast(notice);return;
   }
   const waitFromMessage=String(e?.message||"").match(/try again in about\s+(\d+)\s*(?:min|mins|minutes?)\b/i);
@@ -3221,7 +3221,7 @@ async function generateImage(prompt){
    const minutes=Number(waitFromMessage[1]);
    if(minutes>0){
     const unit=minutes%10===1&&minutes%100!==11?"минуту":minutes%10>=2&&minutes%10<=4&&!(minutes%100>=12&&minutes%100<=14)?"минуты":"минут";
-    const notice="Подождите "+minutes+" "+unit;
+    const notice=displayModel+" — подождите "+minutes+" "+unit;
     $("#composerStatus").textContent=notice;toast(notice);return;
    }
   }
