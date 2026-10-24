@@ -504,7 +504,7 @@ module.exports = async function imageHandler(req, res) {
               clientRequestId:require("crypto").randomUUID()
             }),
             cache:"no-store",
-            signal:AbortSignal.timeout(18000)
+            signal:AbortSignal.timeout(28000)
           });
           const createRaw = await createResponse.text();
           let created = {};
@@ -519,6 +519,17 @@ module.exports = async function imageHandler(req, res) {
             });
           }
           currentTaskId = String(created.data.taskId);
+          // Return the task ID immediately; status polling happens in separate requests.
+          // This prevents a slow first status lookup from turning a successful task creation into HTTP 502.
+          return res.status(200).json({
+            ok:true,
+            mode:"image",
+            status:"processing",
+            provider:"Cinel",
+            model:"Kolors",
+            taskId:currentTaskId,
+            meta:{free:true,modelId:"kolors",ratio}
+          });
         }
 
         const statusResponse = await fetch("https://cinel.ai/api/cinel/preview-task?taskId=" + encodeURIComponent(currentTaskId), {
