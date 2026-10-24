@@ -2941,7 +2941,7 @@ async function generateAgnesImage(prompt){
  let progressTimer=null;
  const progressStartedAt=Date.now();
  const setProgress=p=>{
-   const v=Math.max(1,Math.min(99,Math.round(p)));
+   const v=Math.max(0,Math.min(99,Math.round(p)));
    if(ring){ring.classList.remove("is-active");ring.style.setProperty("--progress",v+"%");}
    const bar=loader?.querySelector(".generation-progress-bar span");if(bar)bar.style.width=v+"%";
    if(percent)percent.textContent=v+"%";
@@ -2950,12 +2950,12 @@ async function generateAgnesImage(prompt){
  };
  const updateProgress=()=>{
    const elapsed=Math.max(0,Date.now()-progressStartedAt);
-   setProgress(1+Math.min(98,elapsed/55000*98));
+   setProgress(Math.min(99,elapsed/40000*99));
  };
- setProgress(1);
- progressTimer=setInterval(updateProgress,1000);
+ setProgress(0);
+ progressTimer=setInterval(updateProgress,400);
  try{
-   $("#composerStatus").textContent=displayModel+" · Создание изображения · 1%";
+   $("#composerStatus").textContent=displayModel+" · Создание изображения · 0%";
    const ratioChoice=String($("#composerRatio")?.value||"auto");
    let selectedRatio=["1:1","3:4","4:3","16:9","9:16","2:3","3:2","21:9"].includes(ratioChoice)?ratioChoice:"16:9";
    if(ratioChoice==="auto"&&referenceImage){
@@ -2981,7 +2981,7 @@ async function generateAgnesImage(prompt){
      method:"POST",
      headers:{"Content-Type":"application/json","Accept":"application/json"},
      body:JSON.stringify({prompt:agnesPrompt,ratio,quality,n:requestedCount,imageBase64:await compressAgnesReferenceImage(referenceImage||"")}),
-     signal:AbortSignal.timeout(60000)
+     signal:AbortSignal.timeout(70000)
    });
    const raw=await response.text();let data={};try{data=raw?JSON.parse(raw):{}}catch{}
    if(!response.ok||!data.imageUrl){const error=new Error(String(data.message||data.error||raw||"Agnes Image не вернул изображение").slice(0,500));error.code=data.error||"";error.status=response.status;throw error;}
@@ -3048,15 +3048,15 @@ async function generateImage(prompt){
  const percent=ring?.querySelector(".progress-percent");
  const modelName=selectedModel||"FLUX Dev";
  const displayModel=imageModelLabel(modelName);
- const timeoutMs=useCinel?180000:(useQwenImage21?85000:((useImageSmith||useNanoBananA)?70000:(/^(?:Nano Banana|Seedream|Z-Image Turbo \\(ImageFree\\)|ImageSmith)$/.test(modelName)?180000:120000)));
- const progressDurationMs=useCinel?40000:((useNanoBananA||useImageSmith||useQwenImage21)?40000:(useImageFree?70000:(/^FLUX Dev$/i.test(modelName)?50000:40000)));
+ const timeoutMs=70000;
+ const progressDurationMs=40000;
  const usesReferenceImage=Boolean(referenceImage);
  const hasFileUpload=Boolean(referenceImage);
  const composerProgress=$("#composerProgress");
  let fakeTimer=null;
  const progressStartedAt=Date.now();
  const setProgress=(p)=>{
-  const value=Math.max(1,Math.min(100,Math.round(p)));
+  const value=Math.max(0,Math.min(100,Math.round(p)));
   if(ring){ring.classList.remove("is-active");ring.style.setProperty("--progress",value+"%");}
   const bar=loader?.querySelector(".generation-progress-bar span");if(bar)bar.style.width=value+"%";
   if(percent)percent.textContent=value+"%";
@@ -3065,12 +3065,12 @@ async function generateImage(prompt){
  };
  const updateProgress=()=>{
   const elapsed=Math.max(0,Date.now()-progressStartedAt);
-  setProgress(1+Math.min(98,elapsed/progressDurationMs*98));
+  setProgress(Math.min(99,elapsed/40000*99));
  };
- setProgress(1);
- // Kolors progress is clock-based: reach 99% in 40 seconds, with smooth integer updates.
-  fakeTimer=setInterval(updateProgress,useCinel?250:1000);
- $("#composerStatus").textContent=hasFileUpload?displayModel+" · загрузка файла…":displayModel+" · Создание изображения · 1%";
+ setProgress(0);
+ // All image models share one clock: 0→99% in 40 seconds, then wait up to 30 seconds.
+  fakeTimer=setInterval(updateProgress,400);
+ $("#composerStatus").textContent=hasFileUpload?displayModel+" · загрузка файла…":displayModel+" · Создание изображения · 0%";
  try{
   const payload={
    prompt,
@@ -3143,10 +3143,9 @@ async function generateImage(prompt){
       reject(requestError);
     }
    };
-   // After reaching 99%, Nano Banana / Seedream get 30 seconds; other models get 20.
-   const post99WaitMs=(useCinel||useNanoBananA||useImageSmith||useQwenImage21||/^(?:Nano Banana(?: 2)?|Seedream)$/i.test(modelName))?30000:20000;
-   // Kolors: hard cap 70 seconds from click = 40 seconds to 99% + 30 seconds waiting.
-    xhr.timeout=useCinel?Math.max(1,progressStartedAt+70000-Date.now()):((useImageSmith||useNanoBananA)?70000:(useQwenImage21?115000:Math.min(timeoutMs,progressDurationMs+post99WaitMs)));
+   // All image models: hard cap 70 seconds from click = 40 seconds to 99% + 30 seconds waiting.
+   const post99WaitMs=30000;
+   xhr.timeout=Math.max(1,progressStartedAt+40000+post99WaitMs-Date.now());
    xhr.send(body);
   });
 ;
@@ -3170,10 +3169,10 @@ async function generateImage(prompt){
    if(!completed&&!taskId)throw new Error("Aura не вернула номер задания");
    // Keep generation asynchronous: Vercel functions can return the task ID quickly,
    // while the browser polls status without holding one serverless invocation open.
-   const deadline=progressStartedAt+progressDurationMs+30000;
+   const deadline=progressStartedAt+70000;
    while(!completed&&Date.now()<deadline){
     await new Promise(resolve=>setTimeout(resolve,1600));
-    const status=await requestAuraJson({mode:"image",provider:"aura",model:modelName,action:"status",taskId},10000);
+    const status=await requestAuraJson({mode:"image",provider:"aura",model:modelName,action:"status",taskId},Math.min(10000,Math.max(1,deadline-Date.now())));
     if(status.status==="completed"&&/^https?:\/\//i.test(String(status.imageUrl||""))){completed=status;break}
     if(["failed","error","cancelled","canceled"].includes(String(status.status||"").toLowerCase()))throw new Error(String(status.message||"Aura не смогла создать изображение"));
    }
@@ -3193,12 +3192,12 @@ async function generateImage(prompt){
    const started=await requestImageFreeJson({...basePayload,action:"start"},25000);
    const taskId=String(started.taskId||"").trim();
    if(!taskId)throw new Error("Z-Image Turbo не вернул номер задания");
-   // Match the progress clock: allow only 20 seconds after reaching 99%.
-   const deadline=progressStartedAt+progressDurationMs+20000;
+   // Same 70-second total deadline as every other image model.
+   const deadline=progressStartedAt+70000;
    let completed=null;
    while(Date.now()<deadline){
     await new Promise(resolve=>setTimeout(resolve,1600));
-    const status=await requestImageFreeJson({mode:"image",provider:"imagefree",model:modelName,ratio:selectedRatio,action:"status",taskId},12000);
+    const status=await requestImageFreeJson({mode:"image",provider:"imagefree",model:modelName,ratio:selectedRatio,action:"status",taskId},Math.min(12000,Math.max(1,deadline-Date.now())));
     if(status.status==="completed"&&status.imageUrl){completed=status;break}
     if(["failed","error","cancelled","canceled"].includes(String(status.status||"").toLowerCase()))throw new Error(String(status.message||"Z-Image Turbo завершилась ошибкой"));
     // The shared progress timer is the only writer of numeric progress.
