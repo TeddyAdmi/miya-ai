@@ -1037,11 +1037,21 @@ function confirmDeleteMedia(item,card){
  requestAnimationFrame(()=>modal.querySelector(".delete-confirm-cancel")?.focus());
 }
 async function deleteMedia(item,card){
+ const viewer=$("#imageViewerModal");
+ const keepImageViewerOpen=!!(viewer?.classList.contains("open")&&viewer.dataset.viewerItemId===item.id&&item.type==="image");
+ const imagesBefore=getLibrary().filter(x=>x.type==="image");
+ const deletedImageIndex=imagesBefore.findIndex(x=>x.id===item.id);
  const items=getLibrary().filter(x=>x.id!==item.id);
  try{localStorage.setItem(LIB_KEY,JSON.stringify(items))}catch{}
  try{const db=await openMediaDB();if(db){await new Promise((resolve,reject)=>{const tx=db.transaction("media","readwrite");tx.objectStore("media").delete(item.id);tx.oncomplete=resolve;tx.onerror=()=>reject(tx.error)})}}catch{}
  card?.remove();
  if(mode==="images")renderImageLibrary();
+ if(keepImageViewerOpen&&viewer?.classList.contains("open")){
+  const remaining=getLibrary().filter(x=>x.type==="image");
+  const next=remaining.length?remaining[Math.min(Math.max(deletedImageIndex,0),remaining.length-1)]:null;
+  if(next&&typeof viewer.__showViewerItem==="function")viewer.__showViewerItem(next);
+  else closeImageViewer();
+ }
 }
 function showPrompt(item){
  let modal=$("#mediaPromptModal");
@@ -1126,7 +1136,6 @@ function openImageViewer(item){
   modal.querySelector(".image-viewer-delete").onclick=()=>{
     const current=getLibrary().find(x=>x.id===modal.dataset.viewerItemId);
     if(!current)return;
-    closeImageViewer();
     const card=document.querySelector('.media-card[data-media-id="'+current.id+'"]');
     confirmDeleteMedia(current,card);
   };
@@ -1161,6 +1170,7 @@ function openImageViewer(item){
     updateViewerNav();
   };
   modal.__updateViewerNav=updateViewerNav;
+  modal.__showViewerItem=showViewerItem;
   const moveViewer=(direction)=>{
     const items=getViewerItems();
     const index=items.findIndex(x=>x.id===modal.dataset.viewerItemId);
