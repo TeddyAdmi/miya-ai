@@ -930,15 +930,55 @@ module.exports = async function imageHandler(req, res) {
           result.output, result.data?.url, result.data?.image, result.data?.imageUrl, result.data?.image_url,
           result.data?.imageData, result.result?.url, result.result?.image, result.result?.imageUrl
         ].find(value => typeof value === "string" && value.trim());
-        const match = String(imageValue || "").match(/^data:image\/(png|jpeg|jpg|webp);base64,([A-Za-z0-9+/=\r\n]+)$/i);
-        if (!match) {
+        let sourceBytes;
+        const dataMatch = String(imageValue || "").match(/^data:image\/(png|jpeg|jpg|webp);base64,([A-Za-z0-9+/=\r\n]+)$/i);
+        if (dataMatch) {
+          sourceBytes = Buffer.from(dataMatch[2].replace(/\s/g,""),"base64");
+        } else if (typeof imageValue === "string" && /^https:\/\//i.test(imageValue)) {
+          // Clipaist sometimes returns a cached result as a hosted image URL
+          // (platform-outputs.agnes-ai.space) instead of a data URL.
+          // Only fetch its known output host; never follow arbitrary URLs from upstream.
+          let parsedImageUrl;
+          try { parsedImageUrl = new URL(imageValue); } catch {}
+          if (!parsedImageUrl || parsedImageUrl.protocol !== "https:" || parsedImageUrl.hostname !== "platform-outputs.agnes-ai.space") {
+            return res.status(502).json({
+              ok:false,error:"QWEN21_IMAGE_URL_UNSUPPORTED",
+              message:"Clipaist вернул неподдерживаемый адрес изображения.",
+              upstreamBody:raw.slice(0,700)
+            });
+          }
+          const imageResponse = await fetch(parsedImageUrl.toString(), {
+            headers:{Accept:"image/*"},
+            cache:"no-store",
+            redirect:"error",
+            signal:AbortSignal.timeout(20000)
+          });
+          if (!imageResponse.ok) {
+            return res.status(502).json({
+              ok:false,error:"QWEN21_IMAGE_DOWNLOAD_FAILED",
+              message:"Не удалось получить готовое изображение Qwen из Clipaist.",
+              upstreamStatus:imageResponse.status
+            });
+          }
+          const contentType = imageResponse.headers.get("content-type") || "";
+          if (!/^image\/(png|jpeg|jpg|webp)(;|$)/i.test(contentType)) {
+            return res.status(502).json({
+              ok:false,error:"QWEN21_IMAGE_CONTENT_TYPE",
+              message:"Clipaist вернул ссылку, но по ней нет файла изображения."
+            });
+          }
+          const contentLength = Number(imageResponse.headers.get("content-length") || 0);
+          if (contentLength > 15 * 1024 * 1024) {
+            return res.status(413).json({ok:false,error:"QWEN21_IMAGE_SIZE",message:"Qwen Image 2.1 вернул слишком большое изображение."});
+          }
+          sourceBytes = Buffer.from(await imageResponse.arrayBuffer());
+        } else {
           return res.status(502).json({
             ok:false,error:"QWEN21_IMAGE_MISSING",
             message:"Clipaist не вернул готовое изображение в ожидаемом формате.",
             upstreamBody:raw.slice(0,700)
           });
         }
-        const sourceBytes = Buffer.from(match[2].replace(/\s/g,""),"base64");
         if (!sourceBytes.length || sourceBytes.length > 15 * 1024 * 1024) {
           return res.status(413).json({ok:false,error:"QWEN21_IMAGE_SIZE",message:"Qwen Image 2.1 вернул пустое или слишком большое изображение."});
         }
@@ -958,7 +998,7 @@ module.exports = async function imageHandler(req, res) {
           ok:false,
           error:timedOut ? "QWEN21_UPSTREAM_TIMEOUT" : "QWEN21_HANDLER_ERROR",
           message:timedOut
-            ? "Clipaist не вернул Qwen Image 2.1 за 65 секунд. Попробуй ещё раз."
+            ? "Clipaist не вернул Qwen Image 2.1 за 100 секунд. Попробуй ещё раз."
             : "Не удалось связаться с Clipaist: " + String(error?.message||error||"ошибка запроса").slice(0,180)
         });
       }
