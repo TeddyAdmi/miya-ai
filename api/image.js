@@ -926,9 +926,9 @@ module.exports = async function imageHandler(req, res) {
           });
         }
         const imageValue = [
-          result.image, result.imageUrl, result.image_url, result.imageData, result.image_data,
-          result.output, result.data?.image, result.data?.imageUrl, result.data?.image_url,
-          result.data?.imageData, result.result?.image, result.result?.imageUrl
+          result.url, result.image, result.imageUrl, result.image_url, result.imageData, result.image_data,
+          result.output, result.data?.url, result.data?.image, result.data?.imageUrl, result.data?.image_url,
+          result.data?.imageData, result.result?.url, result.result?.image, result.result?.imageUrl
         ].find(value => typeof value === "string" && value.trim());
         const match = String(imageValue || "").match(/^data:image\/(png|jpeg|jpg|webp);base64,([A-Za-z0-9+/=\r\n]+)$/i);
         if (!match) {
