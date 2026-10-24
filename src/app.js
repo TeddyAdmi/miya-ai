@@ -3123,7 +3123,7 @@ async function generateImage(prompt){
    };
    // After reaching 99%, Nano Banana / Seedream get 30 seconds; other models get 20.
    const post99WaitMs=(useNanoBananA||useImageSmith||useQwenImage21||/^(?:Nano Banana(?: 2)?|Seedream)$/i.test(modelName))?30000:20000;
-   xhr.timeout=(useImageSmith||useNanoBananA)?70000:Math.min(timeoutMs,progressDurationMs+post99WaitMs);
+   xhr.timeout=(useImageSmith||useNanoBananA)?70000:(useQwenImage21?85000:Math.min(timeoutMs,progressDurationMs+post99WaitMs));
    xhr.send(body);
   });
 ;
