@@ -504,7 +504,7 @@ module.exports = async function imageHandler(req, res) {
               clientRequestId:require("crypto").randomUUID()
             }),
             cache:"no-store",
-            signal:AbortSignal.timeout(28000)
+            signal:AbortSignal.timeout(21000)
           });
           const createRaw = await createResponse.text();
           let created = {};
