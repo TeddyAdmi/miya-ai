@@ -3017,7 +3017,7 @@ async function generateAgnesImage(prompt){
   }
   const moderationBlocked=e?.code==="PROMPT_MODERATION_BLOCKED"||e?.status===403||/PROMPT_MODERATION_BLOCKED|промпт отклон[её]н модерацией/i.test(String(e?.message||""));
    if(moderationBlocked){const notice="Промпт отклонён модерацией. Измените формулировку запроса и попробуйте снова.";if($("#composerStatus"))$("#composerStatus").textContent=notice;toast(notice);}
-   else{if($("#composerStatus"))$("#composerStatus").textContent=displayModel+" · ошибка";toast("Agnes 2.5: "+(e?.message||"не удалось создать изображение"));}
+   else{const notice="Подождите минуту и попробуйте снова.";if($("#composerStatus"))$("#composerStatus").textContent=notice;toast(notice);}
  }finally{
    if(progressTimer){clearInterval(progressTimer);progressTimer=null;}
    $("#composerSend").disabled=false;
@@ -3049,7 +3049,7 @@ async function generateImage(prompt){
  const modelName=selectedModel||"FLUX Dev";
  const displayModel=imageModelLabel(modelName);
  const timeoutMs=useCinel?180000:(useQwenImage21?85000:((useImageSmith||useNanoBananA)?70000:(/^(?:Nano Banana|Seedream|Z-Image Turbo \\(ImageFree\\)|ImageSmith)$/.test(modelName)?180000:120000)));
- const progressDurationMs=useCinel?80000:((useNanoBananA||useImageSmith||useQwenImage21)?40000:(useImageFree?70000:(/^FLUX Dev$/i.test(modelName)?50000:40000)));
+ const progressDurationMs=useCinel?40000:((useNanoBananA||useImageSmith||useQwenImage21)?40000:(useImageFree?70000:(/^FLUX Dev$/i.test(modelName)?50000:40000)));
  const usesReferenceImage=Boolean(referenceImage);
  const hasFileUpload=Boolean(referenceImage);
  const composerProgress=$("#composerProgress");
@@ -3143,8 +3143,8 @@ async function generateImage(prompt){
     }
    };
    // After reaching 99%, Nano Banana / Seedream get 30 seconds; other models get 20.
-   const post99WaitMs=(useNanoBananA||useImageSmith||useQwenImage21||/^(?:Nano Banana(?: 2)?|Seedream)$/i.test(modelName))?30000:20000;
-   xhr.timeout=(useImageSmith||useNanoBananA)?70000:(useQwenImage21?115000:Math.min(timeoutMs,progressDurationMs+post99WaitMs));
+   const post99WaitMs=(useCinel||useNanoBananA||useImageSmith||useQwenImage21||/^(?:Nano Banana(?: 2)?|Seedream)$/i.test(modelName))?30000:20000;
+   xhr.timeout=(useCinel||useImageSmith||useNanoBananA)?70000:(useQwenImage21?115000:Math.min(timeoutMs,progressDurationMs+post99WaitMs));
    xhr.send(body);
   });
 ;
@@ -3175,7 +3175,7 @@ async function generateImage(prompt){
     if(status.status==="completed"&&/^https?:\/\//i.test(String(status.imageUrl||""))){completed=status;break}
     if(["failed","error","cancelled","canceled"].includes(String(status.status||"").toLowerCase()))throw new Error(String(status.message||"Aura не смогла создать изображение"));
    }
-   if(!completed)throw new Error("Aura не вернула изображение за 30 секунд после достижения 99%");
+   if(!completed)throw new Error("Подождите минуту и попробуйте снова.");
    data=completed;
   }else if(useImageFree){
    const requestImageFreeJson=async(payload,timeoutMs)=>{
@@ -3205,7 +3205,7 @@ async function generateImage(prompt){
       $("#composerStatus").textContent=displayModel+" · Создание изображения · "+current+"%";
     }
    }
-   if(!completed)throw new Error("Z-Image Turbo не вернула изображение за 70 секунд");
+   if(!completed)throw new Error("Подождите минуту и попробуйте снова.");
    data=completed;
   }else{
    data=await requestThroughMiyaApi();
@@ -3252,14 +3252,9 @@ async function generateImage(prompt){
   const moderationBlocked=e?.code==="PROMPT_MODERATION_BLOCKED"||e?.status===403||/PROMPT_MODERATION_BLOCKED|промпт отклон[её]н модерацией/i.test(String(e?.message||""));
   if(moderationBlocked){const notice="Промпт отклонён модерацией. Измените формулировку запроса и попробуйте снова.";$("#composerStatus").textContent=notice;toast(notice);return;}
   const timedOut=e?.message==="Сервер генерации не ответил вовремя";
-  if(timedOut){
-   const seconds=Math.round(Math.min(timeoutMs,progressDurationMs+((useImageSmith||useNanoBananA)?30000:20000))/1000);
-   toast("Изображение не появилось за "+seconds+" секунд. Попробуй ещё раз или выбери другую модель.");
-   $("#composerStatus").textContent=displayModel+" · время вышло";
-  }else{
-   toast(e.message||"Ошибка генерации");
-   $("#composerStatus").textContent=displayModel+" · ошибка";
-  }
+  const notice="Подождите минуту и попробуйте снова.";
+  toast(notice);
+  $("#composerStatus").textContent=notice;
  }finally{
   $("#composerSend").disabled=false;
   if(fakeTimer){clearInterval(fakeTimer);fakeTimer=null;}
