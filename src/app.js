@@ -1021,7 +1021,7 @@ function confirmDeleteMedia(item,card){
   modal.querySelector(".delete-confirm-submit").onclick=()=>{
     const target=modal.__deleteTarget;
     close();
-    if(target)deleteMedia(target.item,target.card);
+    if(target)deleteMedia(target.item,target.card,target.viewerContext);
   };
  }
  modal.__deleteTarget={item,card};
@@ -1036,21 +1036,25 @@ function confirmDeleteMedia(item,card){
  modal.classList.add("open");
  requestAnimationFrame(()=>modal.querySelector(".delete-confirm-cancel")?.focus());
 }
-async function deleteMedia(item,card){
+async function deleteMedia(item,card,viewerContext=null){
  const viewer=$("#imageViewerModal");
- const keepImageViewerOpen=!!(viewer?.classList.contains("open")&&viewer.dataset.viewerItemId===item.id&&item.type==="image");
+ const keepImageViewerOpen=!!(viewerContext?.wasOpen&&item.type==="image");
  const imagesBefore=getLibrary().filter(x=>x.type==="image");
- const deletedImageIndex=imagesBefore.findIndex(x=>x.id===item.id);
+ const deletedImageIndex=Number.isInteger(viewerContext?.index)?viewerContext.index:imagesBefore.findIndex(x=>x.id===item.id);
  const items=getLibrary().filter(x=>x.id!==item.id);
  try{localStorage.setItem(LIB_KEY,JSON.stringify(items))}catch{}
  try{const db=await openMediaDB();if(db){await new Promise((resolve,reject)=>{const tx=db.transaction("media","readwrite");tx.objectStore("media").delete(item.id);tx.oncomplete=resolve;tx.onerror=()=>reject(tx.error)})}}catch{}
  card?.remove();
  if(mode==="images")renderImageLibrary();
- if(keepImageViewerOpen&&viewer?.classList.contains("open")){
+ if(keepImageViewerOpen){
   const remaining=getLibrary().filter(x=>x.type==="image");
   const next=remaining.length?remaining[Math.min(Math.max(deletedImageIndex,0),remaining.length-1)]:null;
-  if(next&&typeof viewer.__showViewerItem==="function")viewer.__showViewerItem(next);
-  else closeImageViewer();
+  if(next&&typeof viewer?.__showViewerItem==="function"){
+   viewer.dataset.viewerItemId=next.id;
+   viewer.classList.add("open");
+   document.body.classList.add("image-viewer-open");
+   viewer.__showViewerItem(next);
+  }else closeImageViewer();
  }
 }
 function showPrompt(item){
