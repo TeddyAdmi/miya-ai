@@ -71,7 +71,10 @@ module.exports = async function handler(req, res) {
     ];
     const auraImageHost = host === "aurasoundai.ru" || host.endsWith(".aurasoundai.ru");
     const nanoBananaImageHost = host === "getapib.org" || host.endsWith(".getapib.org");
-    if (!allowed.includes(host) && !auraImageHost && !nanoBananaImageHost) {
+    // Cinel returns completed Kolors images through this same-origin share endpoint.
+    // Allow only that exact host + path, rather than opening the proxy to all of cinel.ai.
+    const cinelShareImageHost = host === "cinel.ai" && target.pathname === "/api/cinel/share";
+    if (!allowed.includes(host) && !auraImageHost && !nanoBananaImageHost && !cinelShareImageHost) {
       return res.status(403).json({ ok: false, error: "IMAGE_HOST_NOT_ALLOWED" });
     }
 
