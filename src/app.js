@@ -2940,6 +2940,7 @@ async function generateAgnesImage(prompt){
  const composerProgress=$("#composerProgress");
  let progressTimer=null;
  const progressStartedAt=Date.now();
+ const generationDeadline=progressStartedAt+70000;
  const setProgress=p=>{
    const v=Math.max(0,Math.min(99,Math.round(p)));
    if(ring){ring.classList.remove("is-active");ring.style.setProperty("--progress",v+"%");}
@@ -2981,7 +2982,7 @@ async function generateAgnesImage(prompt){
      method:"POST",
      headers:{"Content-Type":"application/json","Accept":"application/json"},
      body:JSON.stringify({prompt:agnesPrompt,ratio,quality,n:requestedCount,imageBase64:await compressAgnesReferenceImage(referenceImage||"")}),
-     signal:AbortSignal.timeout(70000)
+     signal:AbortSignal.timeout(Math.max(1,generationDeadline-Date.now()))
    });
    const raw=await response.text();let data={};try{data=raw?JSON.parse(raw):{}}catch{}
    if(!response.ok||!data.imageUrl){const error=new Error(String(data.message||data.error||raw||"Agnes Image не вернул изображение").slice(0,500));error.code=data.error||"";error.status=response.status;throw error;}
