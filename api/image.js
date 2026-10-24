@@ -911,7 +911,7 @@ module.exports = async function imageHandler(req, res) {
           },
           body:JSON.stringify({prompt:qwenPrompt,size:qwenSize,ratio:qwenRatio}),
           cache:"no-store",
-          signal:AbortSignal.timeout(65000)
+          signal:AbortSignal.timeout(100000)
         });
         const raw = await upstream.text();
         let result = {};
