@@ -909,7 +909,7 @@ module.exports = async function imageHandler(req, res) {
             "Origin":"https://clipaist.com",
             "Referer":"https://clipaist.com/"
           },
-          body:JSON.stringify({prompt:qwenPrompt,size:qwenSize,ratio:qwenRatio}),
+          body:JSON.stringify({model:"Qwen/Qwen-Image-2.1",prompt:qwenPrompt,size:qwenSize,ratio:qwenRatio}),
           cache:"no-store",
           signal:AbortSignal.timeout(100000)
         });
@@ -923,6 +923,15 @@ module.exports = async function imageHandler(req, res) {
             ok:false,error:status === 429 ? "QWEN21_RATE_LIMIT" : "QWEN21_UPSTREAM_HTTP",
             message:limitMessage,upstreamStatus:status,upstreamBody:raw.slice(0,700),
             retryAfter:upstream.headers.get("retry-after") || ""
+          });
+        }
+        const upstreamModelValue = result.model || result.data?.model || result.meta?.model || result.upstreamModel || result.data?.upstreamModel || "";
+        const upstreamModel = typeof upstreamModelValue === "string" ? upstreamModelValue.trim() : "";
+        if (!upstreamModel || !/qwen.*image|qwen\\/qwen-image/i.test(upstreamModel)) {
+          return res.status(502).json({
+            ok:false,error:"QWEN21_MODEL_UNCONFIRMED",
+            message:"Clipaist не подтвердил, что изображение создано Qwen Image 2.1. Результат не будет показан как Qwen.",
+            upstreamModel:upstreamModel || null
           });
         }
         const imageValue = [
@@ -940,11 +949,18 @@ module.exports = async function imageHandler(req, res) {
           // Only fetch its known output host; never follow arbitrary URLs from upstream.
           let parsedImageUrl;
           try { parsedImageUrl = new URL(imageValue); } catch {}
-          if (!parsedImageUrl || parsedImageUrl.protocol !== "https:" || parsedImageUrl.hostname !== "platform-outputs.agnes-ai.space") {
+          if (!parsedImageUrl || parsedImageUrl.protocol !== "https:") {
             return res.status(502).json({
               ok:false,error:"QWEN21_IMAGE_URL_UNSUPPORTED",
-              message:"Clipaist вернул неподдерживаемый адрес изображения.",
-              upstreamBody:raw.slice(0,700)
+              message:"Clipaist вернул неподдерживаемый адрес изображения."
+            });
+          }
+          if (parsedImageUrl.hostname.toLowerCase() === "platform-outputs.agnes-ai.space" || /(^|\\.)agnes-ai\\.space$/i.test(parsedImageUrl.hostname)) {
+            return res.status(502).json({
+              ok:false,error:"QWEN21_WRONG_IMAGE_HOST",
+              message:"Clipaist вернул файл с домена Agnes, а не подтверждённый результат Qwen. Файл отклонён.",
+              outputHost:parsedImageUrl.hostname,
+              outputPath:parsedImageUrl.pathname
             });
           }
           const imageResponse = await fetch(parsedImageUrl.toString(), {
@@ -990,7 +1006,7 @@ module.exports = async function imageHandler(req, res) {
         return res.status(200).json({
           ok:true,mode:"image",status:"completed",provider:"Clipaist",model:"Qwen Image 2.1 · T2I",
           imageUrl,imageUrls:[imageUrl],count:1,
-          meta:{free:true,ratio:qwenRatio,requestedSize:qwenSize,upstreamModel:String(result.model || result.data?.model || "Qwen/Qwen-Image-2.1")}
+          meta:{free:true,ratio:qwenRatio,requestedSize:qwenSize,upstreamModel}
         });
       } catch (error) {
         const timedOut = error?.name === "TimeoutError" || error?.name === "AbortError" || /timed? ?out|abort/i.test(String(error?.message||""));
