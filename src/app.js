@@ -3068,7 +3068,8 @@ async function generateImage(prompt){
   setProgress(1+Math.min(98,elapsed/progressDurationMs*98));
  };
  setProgress(1);
- fakeTimer=setInterval(updateProgress,1000);
+ // Kolors progress is clock-based: reach 99% in 40 seconds, with smooth integer updates.
+  fakeTimer=setInterval(updateProgress,useCinel?250:1000);
  $("#composerStatus").textContent=hasFileUpload?displayModel+" · загрузка файла…":displayModel+" · Создание изображения · 1%";
  try{
   const payload={
@@ -3144,7 +3145,8 @@ async function generateImage(prompt){
    };
    // After reaching 99%, Nano Banana / Seedream get 30 seconds; other models get 20.
    const post99WaitMs=(useCinel||useNanoBananA||useImageSmith||useQwenImage21||/^(?:Nano Banana(?: 2)?|Seedream)$/i.test(modelName))?30000:20000;
-   xhr.timeout=(useCinel||useImageSmith||useNanoBananA)?70000:(useQwenImage21?115000:Math.min(timeoutMs,progressDurationMs+post99WaitMs));
+   // Kolors: hard cap 70 seconds from click = 40 seconds to 99% + 30 seconds waiting.
+    xhr.timeout=useCinel?Math.max(1,progressStartedAt+70000-Date.now()):((useImageSmith||useNanoBananA)?70000:(useQwenImage21?115000:Math.min(timeoutMs,progressDurationMs+post99WaitMs)));
    xhr.send(body);
   });
 ;
