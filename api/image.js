@@ -927,7 +927,7 @@ module.exports = async function imageHandler(req, res) {
         }
         const upstreamModelValue = result.model || result.data?.model || result.meta?.model || result.upstreamModel || result.data?.upstreamModel || "";
         const upstreamModel = typeof upstreamModelValue === "string" ? upstreamModelValue.trim() : "";
-        if (!upstreamModel || !/qwen.*image|qwen\\/qwen-image/i.test(upstreamModel)) {
+        if (!upstreamModel || !/qwen.*image/i.test(upstreamModel) && !upstreamModel.toLowerCase().includes("qwen/qwen-image")) {
           return res.status(502).json({
             ok:false,error:"QWEN21_MODEL_UNCONFIRMED",
             message:"Clipaist не подтвердил, что изображение создано Qwen Image 2.1. Результат не будет показан как Qwen.",
@@ -955,7 +955,7 @@ module.exports = async function imageHandler(req, res) {
               message:"Clipaist вернул неподдерживаемый адрес изображения."
             });
           }
-          if (parsedImageUrl.hostname.toLowerCase() === "platform-outputs.agnes-ai.space" || /(^|\\.)agnes-ai\\.space$/i.test(parsedImageUrl.hostname)) {
+          if (parsedImageUrl.hostname.toLowerCase() === "platform-outputs.agnes-ai.space" || parsedImageUrl.hostname.toLowerCase().endsWith(".agnes-ai.space")) {
             return res.status(502).json({
               ok:false,error:"QWEN21_WRONG_IMAGE_HOST",
               message:"Clipaist вернул файл с домена Agnes, а не подтверждённый результат Qwen. Файл отклонён.",
