@@ -459,6 +459,126 @@ module.exports = async function imageHandler(req, res) {
     const provider = typeof body.provider === "string" ? body.provider.trim().toLowerCase() : "";
     const requestedModel = typeof body.model === "string" ? body.model.trim() : "";
 
+    if (provider === "cinel") {
+      const userPrompt = typeof body.prompt === "string" ? body.prompt.trim() : "";
+      const allowedRatios = ["1:1","16:9","9:16","4:3","3:4","3:2","2:3","21:9"];
+      const ratio = allowedRatios.includes(String(body.ratio || "")) ? String(body.ratio) : "16:9";
+      if (requestedModel !== "Kolors") {
+        return res.status(400).json({ok:false,error:"CINEL_MODEL_UNSUPPORTED",message:"Неизвестная модель Kolors."});
+      }
+      if (!userPrompt) return res.status(400).json({ok:false,error:"PROMPT_REQUIRED"});
+      try {
+        const createResponse = await fetch("https://cinel.ai/api/cinel/preview-task", {
+          method:"POST",
+          headers:{
+            "Content-Type":"application/json",
+            "Accept":"application/json",
+            "Origin":"https://cinel.ai",
+            "Referer":"https://cinel.ai/free-ai-text-to-image-generator"
+          },
+          body:JSON.stringify({
+            prompt:userPrompt,
+            aiEnhance:false,
+            mediaType:"image",
+            modelId:"kolors",
+            toolSlug:"text-to-image",
+            ratio,
+            outputCount:1,
+            resolution:"1K",
+            quality:"Low",
+            duration:"5s",
+            sound:false,
+            videoMode:"standard",
+            styleMode:"normal",
+            webSearch:false,
+            clientRequestId:require("crypto").randomUUID()
+          }),
+          cache:"no-store",
+          signal:AbortSignal.timeout(90000)
+        });
+        const createRaw = await createResponse.text();
+        let created = {};
+        try { created = createRaw ? JSON.parse(createRaw) : {}; } catch {}
+        if (!createResponse.ok || Number(created?.code) !== 0 || !created?.data?.taskId) {
+          return res.status(502).json({
+            ok:false,
+            error:"CINEL_CREATE_FAILED",
+            message:"Cinel не принял задачу генерации.",
+            upstreamStatus:createResponse.status,
+            upstreamBody:createRaw.slice(0,800)
+          });
+        }
+        const taskId = String(created.data.taskId);
+        const deadline = Date.now() + 95000;
+        let taskData = created.data;
+        while (Date.now() < deadline) {
+          const statusResponse = await fetch("https://cinel.ai/api/cinel/preview-task?taskId=" + encodeURIComponent(taskId), {
+            headers:{
+              "Accept":"application/json",
+              "Origin":"https://cinel.ai",
+              "Referer":"https://cinel.ai/free-ai-text-to-image-generator"
+            },
+            cache:"no-store",
+            signal:AbortSignal.timeout(12000)
+          });
+          const statusRaw = await statusResponse.text();
+          let statusPayload = {};
+          try { statusPayload = statusRaw ? JSON.parse(statusRaw) : {}; } catch {}
+          if (!statusResponse.ok || Number(statusPayload?.code) !== 0) {
+            return res.status(502).json({
+              ok:false,
+              error:"CINEL_STATUS_FAILED",
+              message:"Не удалось проверить статус Kolors.",
+              upstreamStatus:statusResponse.status,
+              upstreamBody:statusRaw.slice(0,600)
+            });
+          }
+          taskData = statusPayload.data || {};
+          const status = String(taskData.status || "").toLowerCase();
+          if (status === "success") {
+            const outputPath = String(taskData.outputUrl || taskData.outputUrls?.[0] || "");
+            let outputUrl = "";
+            try {
+              const parsed = new URL(outputPath, "https://cinel.ai");
+              if (parsed.protocol === "https:" && parsed.hostname === "cinel.ai" && parsed.pathname === "/api/cinel/share") {
+                outputUrl = parsed.toString();
+              }
+            } catch {}
+            if (!outputUrl) {
+              return res.status(502).json({ok:false,error:"CINEL_OUTPUT_URL_MISSING",message:"Cinel завершил задачу, но не вернул ссылку на изображение."});
+            }
+            return res.status(200).json({
+              ok:true,
+              mode:"image",
+              status:"completed",
+              provider:"Cinel",
+              model:"Kolors",
+              imageUrl:outputUrl,
+              imageUrls:[outputUrl],
+              count:1,
+              meta:{free:true,modelId:"kolors",ratio}
+            });
+          }
+          if (["error","failed","cancelled","canceled"].includes(status)) {
+            return res.status(502).json({
+              ok:false,
+              error:"CINEL_GENERATION_FAILED",
+              message:"Cinel не смог создать изображение.",
+              upstreamBody:JSON.stringify(taskData).slice(0,800)
+            });
+          }
+          await new Promise(resolve => setTimeout(resolve, 1800));
+        }
+        return res.status(504).json({ok:false,error:"CINEL_TIMEOUT",message:"Kolors не завершил генерацию вовремя. Попробуй ещё раз."});
+      } catch (error) {
+        return res.status(502).json({
+          ok:false,
+          error:"CINEL_HANDLER_ERROR",
+          message:String(error?.message || error || "Ошибка обращения к Cinel").slice(0,300)
+        });
+      }
+    }
+
     if (provider === "nanobanana25") {
       const userPrompt = typeof body.prompt === "string" ? body.prompt.trim() : "";
       const allowedAspects = ["1:1", "16:9", "9:16"];

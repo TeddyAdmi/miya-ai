@@ -886,6 +886,7 @@ function imageModelLabel(model){
  const name=String(model||"").trim();
  if(name==="Nano BananA")return "Nano BananA · T2I";
  if(name==="ImageSmith")return "GPT Image 2.5 · T2I";
+ if(name==="Kolors")return "Kolors · T2I";
  if(/^Nano Banana$/i.test(name))return "Nano Banana · T2I";
  if(/^Seedream$/i.test(name))return "Seedream · T2I";
  
@@ -3031,9 +3032,10 @@ async function generateImage(prompt){
  const useQwenImage21=selectedModel==="Qwen Image 2.1 · T2I";
  const useNanoBananA=selectedModel==="Nano BananA";
  const useImageSmith=/^(?:ImageSmith|GPT Image 2\.5\s*[·-]\s*T2I)$/i.test(selectedModel);
+ const useCinel=selectedModel==="Kolors";
  const useAuraImage=!useNanoBananA&&/^(?:Nano Banana|Seedream)$/i.test(selectedModel);
  // Existing-image edits stay on the established Agnes editing route.
- if(referenceImage && (useImageFree || useQwenImage21 || useNanoBananA || useImageSmith)){
+ if(referenceImage && (useImageFree || useQwenImage21 || useNanoBananA || useImageSmith || useCinel)){
   $("#composerModel").value="Agnes Image 2.5 Flash";
   return generateAgnesImage(prompt);
  }
@@ -3046,8 +3048,8 @@ async function generateImage(prompt){
  const percent=ring?.querySelector(".progress-percent");
  const modelName=selectedModel||"FLUX Dev";
  const displayModel=imageModelLabel(modelName);
- const timeoutMs=useQwenImage21?85000:((useImageSmith||useNanoBananA)?70000:(/^(?:Nano Banana|Seedream|Z-Image Turbo \\(ImageFree\\)|ImageSmith)$/.test(modelName)?180000:120000));
- const progressDurationMs=(useNanoBananA||useImageSmith||useQwenImage21)?40000:(useImageFree?70000:(/^FLUX Dev$/i.test(modelName)?50000:40000));
+ const timeoutMs=useCinel?180000:(useQwenImage21?85000:((useImageSmith||useNanoBananA)?70000:(/^(?:Nano Banana|Seedream|Z-Image Turbo \\(ImageFree\\)|ImageSmith)$/.test(modelName)?180000:120000)));
+ const progressDurationMs=useCinel?80000:((useNanoBananA||useImageSmith||useQwenImage21)?40000:(useImageFree?70000:(/^FLUX Dev$/i.test(modelName)?50000:40000)));
  const usesReferenceImage=Boolean(referenceImage);
  const hasFileUpload=Boolean(referenceImage);
  const composerProgress=$("#composerProgress");
@@ -3092,6 +3094,8 @@ async function generateImage(prompt){
        ? JSON.stringify({mode:"image",provider:"nanobanana25",prompt,model:modelName,ratio:selectedRatio})
        : useImageSmith
        ? JSON.stringify({mode:"image",provider:"imagesmith",prompt,model:modelName,ratio:selectedRatio})
+       : useCinel
+       ? JSON.stringify({mode:"image",provider:"cinel",prompt,model:modelName,ratio:selectedRatio})
        : useQwenImage21
        ? JSON.stringify({mode:"image",provider:"qwen21",prompt,model:modelName,ratio:selectedRatio,quality:selectedQuality})
        : useAuraImage
