@@ -3191,7 +3191,7 @@ async function generateImage(prompt){
    };
    const basePayload=JSON.parse(body);
    const deadline=progressStartedAt+70000;
-   const started=await requestCinelJson({...basePayload,action:"start"},Math.min(22000,Math.max(1,deadline-Date.now())));
+   const started=await requestCinelJson({...basePayload,action:"start"},Math.min(30000,Math.max(1,deadline-Date.now())));
    let completed=started.status==="completed"&&started.imageUrl?started:null;
    const taskId=String(started.taskId||"").trim();
    if(!completed&&!taskId)throw new Error("Kolors не вернул номер задания");
