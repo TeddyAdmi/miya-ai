@@ -1024,7 +1024,10 @@ function confirmDeleteMedia(item,card){
     if(target)deleteMedia(target.item,target.card,target.viewerContext);
   };
  }
- modal.__deleteTarget={item,card};
+ const imageViewer=$("#imageViewerModal");
+ const viewerWasOpen=!!(item.type==="image"&&imageViewer?.classList.contains("open")&&imageViewer.dataset.viewerItemId===item.id);
+ const viewerItems=getLibrary().filter(x=>x.type==="image");
+ modal.__deleteTarget={item,card,viewerContext:viewerWasOpen?{wasOpen:true,index:viewerItems.findIndex(x=>x.id===item.id)}:null};
  if(!modal.classList.contains("open")){
    const composer=$("#composer");
    if(composer){
