@@ -3018,7 +3018,7 @@ async function generateAgnesImage(prompt){
   }
   const moderationBlocked=e?.code==="PROMPT_MODERATION_BLOCKED"||e?.status===403||/PROMPT_MODERATION_BLOCKED|промпт отклон[её]н модерацией/i.test(String(e?.message||""));
    if(moderationBlocked){const notice="Промпт отклонён модерацией. Измените формулировку запроса и попробуйте снова.";if($("#composerStatus"))$("#composerStatus").textContent=notice;toast(notice);}
-   else{const notice="Подождите минуту и попробуйте снова.";if($("#composerStatus"))$("#composerStatus").textContent=notice;toast(notice);}
+   else{const notice=displayModel+" · Подождите минуту";if($("#composerStatus"))$("#composerStatus").textContent=notice;toast(notice);}
  }finally{
    if(progressTimer){clearInterval(progressTimer);progressTimer=null;}
    $("#composerSend").disabled=false;
@@ -3254,7 +3254,7 @@ async function generateImage(prompt){
   const moderationBlocked=e?.code==="PROMPT_MODERATION_BLOCKED"||e?.status===403||/PROMPT_MODERATION_BLOCKED|промпт отклон[её]н модерацией/i.test(String(e?.message||""));
   if(moderationBlocked){const notice="Промпт отклонён модерацией. Измените формулировку запроса и попробуйте снова.";$("#composerStatus").textContent=notice;toast(notice);return;}
   const timedOut=e?.message==="Сервер генерации не ответил вовремя";
-  const notice="Подождите минуту и попробуйте снова.";
+  const notice=displayModel+" · Подождите минуту";
   toast(notice);
   $("#composerStatus").textContent=notice;
  }finally{
