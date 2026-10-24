@@ -891,6 +891,79 @@ module.exports = async function imageHandler(req, res) {
       }
     }
 
+    if (provider === "qwen21") {
+      const qwenPrompt = typeof body.prompt === "string" ? body.prompt.trim() : "";
+      const qwenRatio = ["1:1","3:4","4:3","16:9","9:16","2:3","3:2"].includes(String(body.ratio || ""))
+        ? String(body.ratio) : "16:9";
+      const qwenSize = ["1K","2K","4K"].includes(String(body.quality || "")) ? String(body.quality) : "4K";
+      if (requestedModel !== "Qwen Image 2.1 · T2I") {
+        return res.status(400).json({ok:false,error:"QWEN21_MODEL_UNSUPPORTED",message:"Неизвестная модель Qwen Image 2.1."});
+      }
+      if (!qwenPrompt) return res.status(400).json({ok:false,error:"PROMPT_REQUIRED"});
+      try {
+        const upstream = await fetch("https://clipaist.com/api/tti/generate", {
+          method:"POST",
+          headers:{
+            "Content-Type":"application/json",
+            "Accept":"application/json",
+            "Origin":"https://clipaist.com",
+            "Referer":"https://clipaist.com/"
+          },
+          body:JSON.stringify({prompt:qwenPrompt,size:qwenSize,ratio:qwenRatio}),
+          cache:"no-store",
+          signal:AbortSignal.timeout(65000)
+        });
+        const raw = await upstream.text();
+        let result = {};
+        try { result = raw ? JSON.parse(raw) : {}; } catch {}
+        if (!upstream.ok) {
+          const status = upstream.status;
+          const limitMessage = status === 429 ? "Clipaist достиг лимита генераций. Подожди, пока лимит обновится." : "Clipaist вернул HTTP " + status + ".";
+          return res.status(status === 429 ? 429 : 502).json({
+            ok:false,error:status === 429 ? "QWEN21_RATE_LIMIT" : "QWEN21_UPSTREAM_HTTP",
+            message:limitMessage,upstreamStatus:status,upstreamBody:raw.slice(0,700),
+            retryAfter:upstream.headers.get("retry-after") || ""
+          });
+        }
+        const imageValue = [
+          result.image, result.imageUrl, result.image_url, result.imageData, result.image_data,
+          result.output, result.data?.image, result.data?.imageUrl, result.data?.image_url,
+          result.data?.imageData, result.result?.image, result.result?.imageUrl
+        ].find(value => typeof value === "string" && value.trim());
+        const match = String(imageValue || "").match(/^data:image\/(png|jpeg|jpg|webp);base64,([A-Za-z0-9+/=\r\n]+)$/i);
+        if (!match) {
+          return res.status(502).json({
+            ok:false,error:"QWEN21_IMAGE_MISSING",
+            message:"Clipaist не вернул готовое изображение в ожидаемом формате.",
+            upstreamBody:raw.slice(0,700)
+          });
+        }
+        const sourceBytes = Buffer.from(match[2].replace(/\s/g,""),"base64");
+        if (!sourceBytes.length || sourceBytes.length > 15 * 1024 * 1024) {
+          return res.status(413).json({ok:false,error:"QWEN21_IMAGE_SIZE",message:"Qwen Image 2.1 вернул пустое или слишком большое изображение."});
+        }
+        const jpeg = await sharp(sourceBytes).rotate().jpeg({quality:90,mozjpeg:true}).toBuffer();
+        if (!jpeg.length || jpeg.length > 3 * 1024 * 1024) {
+          return res.status(413).json({ok:false,error:"QWEN21_IMAGE_TOO_LARGE",message:"Фотография Qwen Image 2.1 слишком большая для передачи в студию."});
+        }
+        const imageUrl = "data:image/jpeg;base64," + jpeg.toString("base64");
+        return res.status(200).json({
+          ok:true,mode:"image",status:"completed",provider:"Clipaist",model:"Qwen Image 2.1 · T2I",
+          imageUrl,imageUrls:[imageUrl],count:1,
+          meta:{free:true,ratio:qwenRatio,requestedSize:qwenSize,upstreamModel:String(result.model || result.data?.model || "Qwen/Qwen-Image-2.1")}
+        });
+      } catch (error) {
+        const timedOut = error?.name === "TimeoutError" || error?.name === "AbortError" || /timed? ?out|abort/i.test(String(error?.message||""));
+        return res.status(502).json({
+          ok:false,
+          error:timedOut ? "QWEN21_UPSTREAM_TIMEOUT" : "QWEN21_HANDLER_ERROR",
+          message:timedOut
+            ? "Clipaist не вернул Qwen Image 2.1 за 65 секунд. Попробуй ещё раз."
+            : "Не удалось связаться с Clipaist: " + String(error?.message||error||"ошибка запроса").slice(0,180)
+        });
+      }
+    }
+
     if (provider === "imagesmith") {
       const imageSmithPrompt = typeof body.prompt === "string" ? body.prompt.trim() : "";
       const imageSmithRatio = ["1:1","3:4","4:3","16:9","9:16","2:3","3:2","21:9"].includes(String(body.ratio || ""))
