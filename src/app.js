@@ -3179,6 +3179,30 @@ async function generateImage(prompt){
    }
    if(!completed)throw new Error("Подождите минуту и попробуйте снова.");
    data=completed;
+  }else if(useCinel){
+   const requestCinelJson=async(payload,timeoutMs)=>{
+    const response=await fetch("/api/image",{
+     method:"POST",headers:{"Content-Type":"application/json","Accept":"application/json"},
+     body:JSON.stringify(payload),cache:"no-store",signal:AbortSignal.timeout(timeoutMs)
+    });
+    const raw=await response.text();let result={};try{result=raw?JSON.parse(raw):{}}catch{}
+    if(!response.ok||result.ok===false)throw new Error(String(result.message||result.error||raw||("Kolors HTTP "+response.status)).slice(0,400));
+    return result;
+   };
+   const basePayload=JSON.parse(body);
+   const deadline=progressStartedAt+70000;
+   const started=await requestCinelJson({...basePayload,action:"start"},Math.min(22000,Math.max(1,deadline-Date.now())));
+   let completed=started.status==="completed"&&started.imageUrl?started:null;
+   const taskId=String(started.taskId||"").trim();
+   if(!completed&&!taskId)throw new Error("Kolors не вернул номер задания");
+   while(!completed&&Date.now()<deadline){
+    await new Promise(resolve=>setTimeout(resolve,1400));
+    const status=await requestCinelJson({mode:"image",provider:"cinel",model:modelName,ratio:selectedRatio,action:"status",taskId},Math.min(11000,Math.max(1,deadline-Date.now())));
+    if(status.status==="completed"&&status.imageUrl){completed=status;break}
+    if(["failed","error","cancelled","canceled"].includes(String(status.status||"").toLowerCase()))throw new Error(String(status.message||"Kolors не смог создать изображение"));
+   }
+   if(!completed)throw new Error("Подождите минуту и попробуйте снова.");
+   data=completed;
   }else if(useImageFree){
    const requestImageFreeJson=async(payload,timeoutMs)=>{
     const response=await fetch("/api/image",{
