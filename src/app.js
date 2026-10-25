@@ -3191,7 +3191,7 @@ async function generateImage(prompt){
    };
    const basePayload=JSON.parse(body);
    const deadline=progressStartedAt+70000;
-   const started=await requestCinelJson({...basePayload,action:"start"},Math.min(30000,Math.max(1,deadline-Date.now())));
+   const started=await requestCinelJson({...basePayload,action:"start"},Math.min(58000,Math.max(1,deadline-Date.now())));
    let completed=started.status==="completed"&&started.imageUrl?started:null;
    const taskId=String(started.taskId||"").trim();
    if(!completed&&!taskId)throw new Error("Kolors не вернул номер задания");
@@ -3260,6 +3260,7 @@ async function generateImage(prompt){
   if(fakeTimer){clearInterval(fakeTimer);fakeTimer=null;}
   $("#canvas .generation-loading")?.remove();
   if(composerProgress)composerProgress.textContent="";
+  if(useCinel){const notice="Подождите минуту";toast(notice);$("#composerStatus").textContent=notice;return;}
   if(e?.code==="IMAGESMITH_RATE_LIMIT"&&Number.isFinite(e.retryAfterMinutes)&&e.retryAfterMinutes>0){
    const minutes=e.retryAfterMinutes;
    const unit=minutes%10===1&&minutes%100!==11?"минуту":minutes%10>=2&&minutes%10<=4&&!(minutes%100>=12&&minutes%100<=14)?"минуты":"минут";
