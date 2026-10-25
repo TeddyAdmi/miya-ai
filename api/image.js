@@ -1123,6 +1123,7 @@ module.exports = async function imageHandler(req, res) {
       // inside the studio's shared 70-second generation window. A second upstream
       // attempt must never leave the browser waiting until its XHR is aborted.
       const qwenStartedAt = Date.now();
+      const qwenSeed = Math.floor(Math.random() * 2147483647);
       const qwenDeadlineMs = 64000;
       const qwenRemainingMs = () => Math.max(0, qwenDeadlineMs - (Date.now() - qwenStartedAt));
       let qwenQuota = null;
@@ -1167,8 +1168,9 @@ module.exports = async function imageHandler(req, res) {
             "Origin":"https://clipaist.com",
             "Referer":"https://clipaist.com/"
           },
-          // Use the exact visible prompt and a fresh no-store request for each generation.
-          body:JSON.stringify({model:"Qwen/Qwen-Image-2.1",prompt:qwenPrompt,size:qwenSize,ratio:qwenRatio}),
+          // Preserve the exact visible prompt. A fresh seed distinguishes this generation
+          // from Clipaist's stale cached result without injecting hidden characters.
+          body:JSON.stringify({model:"Qwen/Qwen-Image-2.1",prompt:qwenPrompt,size:qwenSize,ratio:qwenRatio,seed:qwenSeed}),
           cache:"no-store",
           // Leave 15 seconds inside the shared 70-second browser deadline for a structured response.
           signal:AbortSignal.timeout(55000)
@@ -1196,14 +1198,13 @@ module.exports = async function imageHandler(req, res) {
         const isConfirmedQwen = value => !!value && (/qwen.*image/i.test(value) || value.toLowerCase().includes("qwen/qwen-image"));
 
         // Clipaist has returned cached Agnes-hosted images with no model metadata.
-        // If that exact stale-cache signature appears, make one bounded retry with
-        // invisible separators so the visible user prompt remains unchanged.
+        // Retry once with a different seed, keeping the user's prompt byte-for-byte unchanged.
         // Never accept the cached image unless the retry explicitly confirms Qwen.
         let qwenCacheRetryAttempted = false;
         if (!isConfirmedQwen(upstreamModel) && result.cached === true) {
           qwenCacheRetryAttempted = true;
           try {
-            const cacheBustPrompt = qwenPrompt + String.fromCharCode(8291).repeat(1 + (Date.now() % 17));
+            const retrySeed = Math.floor(Math.random() * 2147483647);
             const retryResponse = await fetch("https://clipaist.com/api/tti/generate", {
               method:"POST",
               headers:{
@@ -1212,7 +1213,7 @@ module.exports = async function imageHandler(req, res) {
                 "Origin":"https://clipaist.com",
                 "Referer":"https://clipaist.com/"
               },
-              body:JSON.stringify({model:"Qwen/Qwen-Image-2.1",prompt:cacheBustPrompt,size:qwenSize,ratio:qwenRatio}),
+              body:JSON.stringify({model:"Qwen/Qwen-Image-2.1",prompt:qwenPrompt,size:qwenSize,ratio:qwenRatio,seed:retrySeed}),
               cache:"no-store",
               // Use only the time remaining before the browser's shared deadline.
               signal:AbortSignal.timeout(Math.max(1000, Math.min(25000, qwenRemainingMs() - 1500)))
