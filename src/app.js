@@ -2909,7 +2909,7 @@ function showLoading(){
   grid.prepend(card);scrollImagesToTop();return;
  }
  const selectedVideoModelRaw=$("#videoModel")?.value||"LTX-2.3 Distilled";
- const selectedVideoModel=selectedVideoModelRaw==="Animate On"?"Animate · I2V":selectedVideoModelRaw;
+ const selectedVideoModel=selectedVideoModelRaw;
  const items=getLibrary().filter(isStoredVideo);
  c.innerHTML='<div class="result-grid video-result-grid"></div>';
  const grid=c.querySelector(".result-grid");
@@ -4102,111 +4102,6 @@ async function generateFreeAIVideo(prompt){
  }finally{videoGenerationBusy=false;$("#composerSend").disabled=false}
 }
 
-let animateOnSavedControls=null;
-function configureAnimateOnControls(enabled) {
- const duration=$("#videoDuration"),ratio=$("#videoRatio");
- if(enabled) {
-  if(!animateOnSavedControls) animateOnSavedControls={
-   duration:duration?[...duration.options].map(o=>({value:o.value,label:o.textContent})):[],
-   durationValue:duration?.value||"5 сек",
-   ratio:ratio?[...ratio.options].map(o=>({value:o.value,label:o.textContent})):[],
-   ratioValue:ratio?.value||"16:9"
-  };
-  if(duration) {
-   duration.replaceChildren(...[5,10,15,20].map(n=>{const o=document.createElement("option");o.value=n+" сек";o.textContent=n+" сек";return o}));
-   duration.value="5 сек";
-  }
-  if(ratio) {
-   ratio.replaceChildren(...[["16:9","16:9"],["9:16","9:16"],["auto","Auto"]].map(([value,label])=>{const o=document.createElement("option");o.value=value;o.textContent=label;return o}));
-   ratio.value="16:9";
-  }
- } else if(animateOnSavedControls) {
-  const saved=animateOnSavedControls;animateOnSavedControls=null;
-  if(duration) {
-   duration.replaceChildren(...saved.duration.map(item=>{const o=document.createElement("option");o.value=item.value;o.textContent=item.label;return o}));
-   duration.value=saved.durationValue;
-   if(!duration.value)duration.value="5 сек";
-  }
-  if(ratio) {
-   ratio.replaceChildren(...saved.ratio.map(item=>{const o=document.createElement("option");o.value=item.value;o.textContent=item.label;return o}));
-   ratio.value=saved.ratioValue;
-   if(!ratio.value)ratio.value="16:9";
-  }
- }
- updateVideoRatioVisibility();
-}
-function clearAnimateOnVisiblePrompt() {
- const input=$("#composerInput");
- if(!input)return;
- input.value="";
- delete input.dataset.animateOnDefault;
- syncInput();
-}
-async function animateOnImageDataUrl(source) {
- const value=String(source||"").trim();
- if(!value)throw new Error("Сначала прикрепи изображение для Image to Video.");
- if(/^data:image\/[^;,]+;base64,/i.test(value))return value;
- const response=await fetch(value,{cache:"no-store",signal:AbortSignal.timeout(30000)});
- if(!response.ok)throw new Error("Не удалось прочитать исходное изображение. Загрузи его через кнопку +.");
- const blob=await response.blob();
- if(!String(blob.type||"").startsWith("image/"))throw new Error("Для Animate · I2V нужно изображение JPG, PNG или WebP.");
- const dataUrl=await new Promise((resolve,reject)=>{
-  const reader=new FileReader();
-  reader.onload=()=>resolve(String(reader.result||""));
-  reader.onerror=()=>reject(new Error("Не удалось подготовить исходное изображение."));
-  reader.readAsDataURL(blob);
- });
- if(!dataUrl.startsWith("data:image/"))throw new Error("Не удалось подготовить исходное изображение.");
- return dataUrl;
-}
-async function generateAnimateOnVideo(prompt) {
- if(videoGenerationBusy){toast("Видео уже создаётся. Дождись завершения текущего запроса.");return}
- const source=String(referenceImage||"").trim();
- if(!source){const status=$("#composerStatus");if(status)status.textContent="Animate · I2V · прикрепи изображение";toast("Для Animate · I2V прикрепи изображение");return}
- videoGenerationBusy=true;
- showLoading();
- const send=$("#composerSend");if(send)send.disabled=true;
- const modelLabel="Animate · I2V";
- const stopProgress=startVideoProgress(modelLabel);
- try {
-  const durationText=String($("#videoDuration")?.value||"5 сек");
-  const duration=Math.max(5,Math.min(20,Number(durationText.match(/[0-9]+/)?.[0]||5)));
-  const ratioText=String($("#videoRatio")?.value||"16:9");
-  const ratio=["auto","9:16","16:9"].includes(ratioText)?ratioText:"16:9";
-  updateVideoProgress(modelLabel,4,"подготовка изображения…");
-  const imageBase64=await animateOnImageDataUrl(source);
-  updateVideoProgress(modelLabel,8,"отправка в Image to Video…");
-  const response=await fetch("/api/pixelster",{
-   method:"POST",
-   headers:{"Content-Type":"application/json","Accept":"application/json"},
-   body:JSON.stringify({prompt:"Animate the uploaded image.",ratio,duration,options:{imageBase64}}),
-   signal:AbortSignal.timeout(290000)
-  });
-  const raw=await response.text();
-  let data={};try{data=raw?JSON.parse(raw):{}}catch{}
-  if(!response.ok||data?.ok===false||!String(data?.videoUrl||"").trim()) {
-   const detail=String(data?.message||data?.error||raw||"Animate · I2V не вернул видео");
-   throw new Error((data?.upstreamStatus?"Сервис видео HTTP "+data.upstreamStatus+": ":"")+detail.slice(0,500));
-  }
-  const videoUrl=String(data.videoUrl).trim();
-  updateVideoProgress(modelLabel,99,"видео получено…");
-  const item=saveMedia("video",videoUrl,"Animate the uploaded image.","Animate · I2V · "+duration+" сек");
-  stopProgress(100,"готово");
-  updateVideoProgress(modelLabel,100,"готово");
-  removeGenerationLoading();renderVideoLibrary();if(item)scrollImagesToTop();
-  const status=$("#composerStatus");if(status)status.textContent="Animate · I2V · готово";
-  toast("Animate · I2V: видео создано");
- } catch(e) {
-  stopProgress(null,"ошибка");removeGenerationLoading();
-  if($("#composerProgress"))$("#composerProgress").textContent="";
-  const status=$("#composerStatus");if(status)status.textContent="Animate · I2V · ошибка";
-  toast("Animate · I2V: "+(e?.message||"не удалось создать видео"));
- } finally {
-  videoGenerationBusy=false;
-  if($("#composerSend"))$("#composerSend").disabled=false;
- }
-}
-
 async function generateVideo(prompt){
  refreshLtxQuotaState();
  const selectedModel=String($("#videoModel")?.value||"LTX-2.3 Distilled");
@@ -4220,7 +4115,6 @@ async function generateVideo(prompt){
  }
  if(selectedModel==="NovAI CogVideoX-Flash") return generateNovaiVideo(prompt);
  if(selectedModel==="FreeAIVideo VIDEOX") return generateFreeAIVideo(prompt);
- if(selectedModel==="Animate On") return generateAnimateOnVideo(prompt);
  if(selectedModel==="OmegaTech T2V") return generateOmegaT2V(prompt);
  if(selectedModel==="Agnes Video 2.5"||selectedModel==="Agnes Video 2.5 Flash"||selectedModel==="Agnes Video v2.0") return generateAgnesVideo(prompt);
  if(videoGenerationBusy){
@@ -4994,7 +4888,7 @@ function setMode(next,render=true){
    composerSend.title=hint;
    composerSend.setAttribute("aria-label",hint);
  }
- const composerStatus=$("#composerStatus"); if(composerStatus) composerStatus.textContent=target==="video" && String($("#videoModel")?.value||"")==="Animate On" ? "Animate · I2V · готов" : m.status; const composerMic=$("#composerMic"); if(composerMic){ composerMic.style.setProperty("display","grid","important"); composerMic.style.setProperty("visibility","visible","important"); composerMic.style.setProperty("opacity","1","important"); composerMic.setAttribute("aria-label","Начать голосовой ввод"); composerMic.title="Голосовой ввод"; }
+ const composerStatus=$("#composerStatus"); if(composerStatus) composerStatus.textContent=m.status; const composerMic=$("#composerMic"); if(composerMic){ composerMic.style.setProperty("display","grid","important"); composerMic.style.setProperty("visibility","visible","important"); composerMic.style.setProperty("opacity","1","important"); composerMic.setAttribute("aria-label","Начать голосовой ввод"); composerMic.title="Голосовой ввод"; }
  const imageSettings=$(".image-settings"); if(imageSettings){ imageSettings.style.display=target==="images"?"flex":"none"; imageSettings.classList.toggle("show",target==="images"); }
  const voiceOptions=$("#voiceOptions"); if(voiceOptions){ voiceOptions.style.display=target==="voice"?"flex":"none"; voiceOptions.classList.toggle("show",target==="voice"); }
  const videoOptions=$("#videoOptions"); if(videoOptions){ videoOptions.style.display=target==="video"?"flex":"none"; videoOptions.classList.toggle("show",target==="video"); }
@@ -5079,7 +4973,7 @@ if(videoModelSelect)videoModelSelect.addEventListener("change",()=>{
  updateVideoRatioVisibility();
  resetVideoProgress();
  if(mode==="video"){
-   const visibleModel=videoModelSelect.value==="Animate On"?"Animate · I2V":videoModelSelect.value;
+   const visibleModel=videoModelSelect.value;
    $("#composerStatus").textContent=visibleModel+" · готов";
  }
 });
@@ -5132,8 +5026,7 @@ composerInput.addEventListener("paste",e=>{
 composerInput.addEventListener("keydown",e=>{if(e.key==="Enter"&&!e.shiftKey){e.preventDefault();$("#composerSend").click()}});
 $("#composerSend").addEventListener("click",async()=>{
  const value=$("#composerInput").value.trim();
- const animateI2V=mode==="video" && $("#videoModel")?.value==="Animate On";
- if(!value && !animateI2V){
+ if(!value){
    toast(mode==="chat"?"Напиши сообщение":mode==="video"?"Опиши видео":"Опиши, что создать или изменить");return
  }
  if(mode==="images"){await generateImage(value);return}
@@ -5338,15 +5231,10 @@ $("#videoModel")?.addEventListener("change",()=>{
  const model=$("#videoModel").value;
  const duration=$("#videoDuration");
  if(duration) duration.value="5 сек";
- const isAnimateOn=model==="Animate On";
- configureAnimateOnControls(isAnimateOn);
- if(isAnimateOn) clearAnimateOnVisiblePrompt();
  const progressEl=$("#composerProgress");
  const statusEl=$("#composerStatus");
  if(progressEl) progressEl.textContent="";
- if(statusEl) statusEl.textContent=model==="Animate On"
-   ? "Animate · I2V · готов"
-   : model==="Agnes Video 2.5 Flash"
+ if(statusEl) statusEl.textContent=model==="Agnes Video 2.5 Flash"
      ? "Agnes Video 2.5 Flash · 720P · до 12 сек"
      : model==="Agnes Video v2.0"
        ? "Agnes Video v2.0 · legacy"
@@ -5396,7 +5284,7 @@ async function attachReferenceFile(file){
       $("#composerStatus").textContent="Agnes 2.5 · исходное изображение готово к редактированию";
     }else if(mode==="video"){
       const selectedVideoModel=String($("#videoModel")?.value||"LTX-2.3 Distilled");
-      $("#composerStatus").textContent=(selectedVideoModel==="Animate On"?"Animate · I2V":selectedVideoModel)+" · изображение готово";
+      $("#composerStatus").textContent=selectedVideoModel+" · изображение готово";
     }else{
       $("#composerStatus").textContent="Картинка прикреплена — можно спросить меня о ней.";
     }

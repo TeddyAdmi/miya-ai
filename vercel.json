@@ -26,9 +26,6 @@
     },
     "api/omegatech-video.js": {
       "maxDuration": 60
-    },
-    "api/pixelster.js": {
-      "maxDuration": 300
     }
   }
 }
