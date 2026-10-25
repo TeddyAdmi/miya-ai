@@ -1119,7 +1119,40 @@ module.exports = async function imageHandler(req, res) {
         return res.status(400).json({ok:false,error:"QWEN21_MODEL_UNSUPPORTED",message:"Неизвестная модель Qwen Image 2.1."});
       }
       if (!qwenPrompt) return res.status(400).json({ok:false,error:"PROMPT_REQUIRED"});
+      let qwenQuota = null;
       try {
+        // Clipaist documents a 15-images-per-network daily limit. Check it before
+        // starting a long synchronous generation request, otherwise an exhausted
+        // quota can look like a 55-65 second timeout in the studio.
+        try {
+          const availability = await fetch("https://clipaist.com/api/tti/availability", {
+            method:"GET",
+            headers:{
+              "Accept":"application/json",
+              "Origin":"https://clipaist.com",
+              "Referer":"https://clipaist.com/"
+            },
+            cache:"no-store",
+            signal:AbortSignal.timeout(5000)
+          });
+          if (availability.ok) {
+            const availabilityRaw = await availability.text();
+            let availabilityData = {};
+            try { availabilityData = availabilityRaw ? JSON.parse(availabilityRaw) : {}; } catch {}
+            const used = Number(availabilityData.used);
+            const limit = Number(availabilityData.limit);
+            if (Number.isFinite(used) && Number.isFinite(limit) && limit > 0) {
+              qwenQuota = {used,limit};
+              if (used >= limit) {
+                return res.status(429).json({
+                  ok:false,error:"QWEN21_RATE_LIMIT",
+                  message:"Лимит Clipaist исчерпан: " + used + "/" + limit + " изображений на сеть за сутки. Это ограничение сервиса, не формата изображения.",
+                  upstreamStatus:429,used,limit
+                });
+              }
+            }
+          }
+        } catch {}
         const upstream = await fetch("https://clipaist.com/api/tti/generate", {
           method:"POST",
           headers:{
@@ -1276,7 +1309,8 @@ module.exports = async function imageHandler(req, res) {
           error:timedOut ? "QWEN21_UPSTREAM_TIMEOUT" : "QWEN21_HANDLER_ERROR",
           message:timedOut
             ? "Clipaist не вернул Qwen Image 2.1 за 65 секунд. Очередь генерации могла зависнуть; попробуй ещё раз позже."
-            : "Не удалось связаться с Clipaist: " + String(error?.message||error||"ошибка запроса").slice(0,180)
+            : "Не удалось связаться с Clipaist: " + String(error?.message||error||"ошибка запроса").slice(0,180),
+          ...(qwenQuota ? {upstreamQuota:qwenQuota} : {})
         });
       }
     }
