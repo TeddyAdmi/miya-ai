@@ -1093,7 +1093,24 @@ module.exports = async function imageHandler(req, res) {
                 dataUpstreamModel:safeModelValue(result.data?.upstreamModel),
                 status:safeModelValue(result.status),
                 message:safeModelValue(result.message)
-              }
+              },
+              taskIdPresent:typeof result.taskId === "string" && !!result.taskId.trim(),
+              cached:typeof result.cached === "boolean" ? result.cached : null,
+              urlInfo:(() => {
+                const value = typeof result.url === "string" ? result.url : "";
+                if (!value) return {present:false,host:null,path:null,looksLikeImage:false};
+                try {
+                  const parsed = new URL(value);
+                  return {
+                    present:true,
+                    host:parsed.hostname.slice(0,180),
+                    path:parsed.pathname.slice(0,240),
+                    looksLikeImage:/\\.(png|jpe?g|webp|avif)(;|$)/i.test(parsed.pathname) || /image|output|result|download/i.test(parsed.pathname)
+                  };
+                } catch {
+                  return {present:true,host:null,path:null,looksLikeImage:/^data:image\\//i.test(value)};
+                }
+              })()
             }
           });
         }
