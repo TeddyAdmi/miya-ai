@@ -1065,13 +1065,17 @@ module.exports = async function imageHandler(req, res) {
             const availabilityRaw = await availability.text();
             let availabilityData = {};
             try { availabilityData = availabilityRaw ? JSON.parse(availabilityRaw) : {}; } catch {}
-            if (availabilityData.available === false) {
-              const retryAfter = Number(availabilityData.retryAfter || 0);
+            const used = Number(availabilityData.used);
+            const limit = Number(availabilityData.limit);
+            // "available:false" can also mean a temporary cooldown/queue wait.
+            // Block only when the API explicitly reports a numeric exhausted daily quota.
+            if (Number.isFinite(used) && Number.isFinite(limit) && limit > 0 && used >= limit) {
+              const retryValue = Number(availabilityData.retryAfter || 0);
+              const retryAfter = Number.isFinite(retryValue) && retryValue > 0 ? retryValue : 0;
               return res.status(429).json({
                 ok:false,error:"QWEN21_RATE_LIMIT",
-                message:"Clipaist исчерпал дневный лимит генераций (" + String(availabilityData.used ?? "?") + "/" + String(availabilityData.limit ?? "?") + ").",
-                upstreamStatus:429,used:availabilityData.used ?? null,limit:availabilityData.limit ?? null,
-                retryAfter:Number.isFinite(retryAfter) ? retryAfter : 0
+                message:"Clipaist исчерпал дневный лимит генераций (" + used + "/" + limit + ").",
+                upstreamStatus:429,used,limit,retryAfter
               });
             }
           }
