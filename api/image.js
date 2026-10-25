@@ -1119,6 +1119,12 @@ module.exports = async function imageHandler(req, res) {
         return res.status(400).json({ok:false,error:"QWEN21_MODEL_UNSUPPORTED",message:"Неизвестная модель Qwen Image 2.1."});
       }
       if (!qwenPrompt) return res.status(400).json({ok:false,error:"PROMPT_REQUIRED"});
+      // Keep the whole Qwen request (including cache retry and image download)
+      // inside the studio's shared 70-second generation window. A second upstream
+      // attempt must never leave the browser waiting until its XHR is aborted.
+      const qwenStartedAt = Date.now();
+      const qwenDeadlineMs = 64000;
+      const qwenRemainingMs = () => Math.max(0, qwenDeadlineMs - (Date.now() - qwenStartedAt));
       let qwenQuota = null;
       try {
         // Clipaist documents a 15-images-per-network daily limit. Check it before
@@ -1208,7 +1214,8 @@ module.exports = async function imageHandler(req, res) {
               },
               body:JSON.stringify({model:"Qwen/Qwen-Image-2.1",prompt:cacheBustPrompt,size:qwenSize,ratio:qwenRatio}),
               cache:"no-store",
-              signal:AbortSignal.timeout(25000)
+              // Use only the time remaining before the browser's shared deadline.
+              signal:AbortSignal.timeout(Math.max(1000, Math.min(25000, qwenRemainingMs() - 1500)))
             });
             const retryRaw = await retryResponse.text();
             let retryResult = {};
@@ -1294,11 +1301,18 @@ module.exports = async function imageHandler(req, res) {
               outputPath:parsedImageUrl.pathname
             });
           }
+          const imageTimeLeft = qwenRemainingMs();
+          if (imageTimeLeft <= 1500) {
+            return res.status(502).json({
+              ok:false,error:"QWEN21_DEADLINE_EXCEEDED",
+              message:"Clipaist слишком долго отвечал, чтобы безопасно получить изображение в пределах общего времени генерации."
+            });
+          }
           const imageResponse = await fetch(parsedImageUrl.toString(), {
             headers:{Accept:"image/*"},
             cache:"no-store",
             redirect:"error",
-            signal:AbortSignal.timeout(20000)
+            signal:AbortSignal.timeout(Math.min(20000, imageTimeLeft - 1000))
           });
           if (!imageResponse.ok) {
             return res.status(502).json({
