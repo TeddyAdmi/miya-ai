@@ -1407,7 +1407,7 @@ module.exports = async function imageHandler(req, res) {
         method: "POST",
         headers: { "Content-Type": "application/json", "Accept": "application/json" },
         body: JSON.stringify({ prompt, ratio }),
-        signal: AbortSignal.timeout(69000)
+        signal: AbortSignal.timeout(25000)
       });
 
       const raw = await upstream.text();
@@ -1591,11 +1591,11 @@ module.exports = async function imageHandler(req, res) {
       meta: { free: true, endpoint: "/api/pti", edit: true }
     });
   } catch (error) {
-    if (error?.name === "AbortError") {
+    if (error?.name === "AbortError" || error?.name === "TimeoutError") {
       return res.status(504).json({
         ok: false,
         error: "FLUX_TIMEOUT",
-        message: "AHM7 не завершил запрос в течение 69 секунд."
+        message: "AHM7 не завершил запрос в течение 25 секунд."
       });
     }
 

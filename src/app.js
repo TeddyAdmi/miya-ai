@@ -867,20 +867,50 @@ function saveMedia(type,url,prompt="",model="",format=""){
 }
 
 const mediaObjectUrls=new Map();
+const mediaResolvePromises=new Map();
 async function resolveMediaUrl(item){
  if(!item?.url)return "";
  const id=String(item.id||"");
  const existing=mediaObjectUrls.get(id);
  if(existing)return existing;
- try{
-  const cached=await getCachedMedia(item.id);
-  if(cached?.blob){
-   const objectUrl=URL.createObjectURL(cached.blob);
-   mediaObjectUrls.set(id,objectUrl);
-   return objectUrl;
+ if(mediaResolvePromises.has(id))return mediaResolvePromises.get(id);
+ const pending=(async()=>{
+  try{
+   const cached=await getCachedMedia(item.id);
+   if(cached?.blob){
+    const objectUrl=URL.createObjectURL(cached.blob);
+    mediaObjectUrls.set(id,objectUrl);
+    return objectUrl;
+   }
+  }catch{}
+  // Fetch an image once, persist its bytes, and display that same Blob.
+  // This avoids the old second fetch from the <img> load handler, which
+  // re-ran /api/image-jpeg and Sharp conversion on every wall visit.
+  if(item.type==="image"&&!/^miya-cache:\/\//i.test(String(item.url||""))){
+   try{
+    const response=await fetch(String(item.url),{mode:"cors",cache:"force-cache"});
+    if(response.ok){
+     const blob=await response.blob();
+     if(blob.size){
+      try{
+       const db=await openMediaDB();
+       if(db)await new Promise((resolve,reject)=>{
+        const tx=db.transaction("media","readwrite");
+        tx.objectStore("media").put({id:item.id,blob,url:String(item.url),createdAt:Number(item.createdAt)||Date.now(),type:"image"});
+        tx.oncomplete=resolve;tx.onerror=()=>reject(tx.error);
+       });
+      }catch{}
+      const objectUrl=URL.createObjectURL(blob);
+      mediaObjectUrls.set(id,objectUrl);
+      return objectUrl;
+     }
+    }
+   }catch{}
   }
- }catch{}
- return item.url;
+  return item.url;
+ })();
+ mediaResolvePromises.set(id,pending);
+ try{return await pending}finally{mediaResolvePromises.delete(id)}
 }
 function imageModelLabel(model){
  const name=String(model||"").trim();
@@ -1456,7 +1486,7 @@ function toggleUpscalePanel(item,card){
  return panel;
 }
 function buildMediaCard(item,{video=false}={}){
- const card=document.createElement("div");card.className="media-card";
+ const card=document.createElement("div");card.className="media-card";card.dataset.mediaId=String(item?.id||"");
  let media=null,mediaFailed=false;
  const handleMediaFailure=()=>{
    if(mediaFailed)return;
@@ -1641,9 +1671,24 @@ function renderImageLibrary(){
    showEmpty();
    return;
  }
- c.innerHTML='<div class="result-grid"></div>';
- const grid=c.querySelector(".result-grid");
- items.forEach(item=>grid.appendChild(buildMediaCard(item)));
+ // Keep existing cards mounted; reconcile by stable media ID instead of
+ // destroying every image whenever the wall is rendered again.
+ let grid=c.querySelector(":scope > .result-grid");
+ if(!grid){
+  c.innerHTML='<div class="result-grid"></div>';
+  grid=c.querySelector(".result-grid");
+ }
+ const existing=new Map([...grid.querySelectorAll(":scope > .media-card[data-media-id]")].map(card=>[card.dataset.mediaId,card]));
+ const wanted=new Set(items.map(item=>String(item.id)));
+ for(const [id,card] of existing){if(!wanted.has(id)){card.remove();existing.delete(id)}}
+ let anchor=grid.firstElementChild;
+ for(const item of items){
+  const id=String(item.id);
+  let card=existing.get(id);
+  if(!card)card=buildMediaCard(item);
+  if(card!==anchor)grid.insertBefore(card,anchor);
+  anchor=card.nextElementSibling;
+ }
  applyFirstSixMediaPriority(grid);
 }
 let voiceCatalog=[];let voiceAudioParts=[];let voiceAudioItem=null;
