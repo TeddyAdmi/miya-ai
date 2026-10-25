@@ -1161,11 +1161,10 @@ module.exports = async function imageHandler(req, res) {
             "Origin":"https://clipaist.com",
             "Referer":"https://clipaist.com/"
           },
-          // The upstream repeatedly returns a stale cached Agnes URL for the same prompt.
-          // Add only invisible separators to make this request unique without changing the visible prompt.
+          // Use the exact visible prompt and a fresh no-store request for each generation.
           body:JSON.stringify({model:"Qwen/Qwen-Image-2.1",prompt:qwenPrompt,size:qwenSize,ratio:qwenRatio}),
           cache:"no-store",
-          signal:AbortSignal.timeout(55000)
+          signal:AbortSignal.timeout(65000)
         });
         let raw = await upstream.text();
         let result = {};
