@@ -1197,7 +1197,7 @@ module.exports = async function imageHandler(req, res) {
         if (!isConfirmedQwen(upstreamModel) && result.cached === true) {
           qwenCacheRetryAttempted = true;
           try {
-            const cacheBustPrompt = qwenPrompt + "\\u2063".repeat(1 + (Date.now() % 17));
+            const cacheBustPrompt = qwenPrompt + String.fromCharCode(8291).repeat(1 + (Date.now() % 17));
             const retryResponse = await fetch("https://clipaist.com/api/tti/generate", {
               method:"POST",
               headers:{
