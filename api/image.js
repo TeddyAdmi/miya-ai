@@ -1164,7 +1164,8 @@ module.exports = async function imageHandler(req, res) {
           // Use the exact visible prompt and a fresh no-store request for each generation.
           body:JSON.stringify({model:"Qwen/Qwen-Image-2.1",prompt:qwenPrompt,size:qwenSize,ratio:qwenRatio}),
           cache:"no-store",
-          signal:AbortSignal.timeout(65000)
+          // Leave 15 seconds inside the shared 70-second browser deadline for a structured response.
+          signal:AbortSignal.timeout(55000)
         });
         let raw = await upstream.text();
         let result = {};
@@ -1307,7 +1308,7 @@ module.exports = async function imageHandler(req, res) {
           ok:false,
           error:timedOut ? "QWEN21_UPSTREAM_TIMEOUT" : "QWEN21_HANDLER_ERROR",
           message:timedOut
-            ? "Clipaist не вернул Qwen Image 2.1 за 65 секунд. Очередь генерации могла зависнуть; попробуй ещё раз позже."
+            ? "Clipaist не вернул Qwen Image 2.1 за 55 секунд. Очередь генерации могла зависнуть; попробуй ещё раз позже."
             : "Не удалось связаться с Clipaist: " + String(error?.message||error||"ошибка запроса").slice(0,180),
           ...(qwenQuota ? {upstreamQuota:qwenQuota} : {})
         });
