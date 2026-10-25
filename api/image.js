@@ -1075,10 +1075,26 @@ module.exports = async function imageHandler(req, res) {
         const upstreamModelValue = result.model || result.data?.model || result.meta?.model || result.upstreamModel || result.data?.upstreamModel || "";
         const upstreamModel = typeof upstreamModelValue === "string" ? upstreamModelValue.trim() : "";
         if (!upstreamModel || !/qwen.*image/i.test(upstreamModel) && !upstreamModel.toLowerCase().includes("qwen/qwen-image")) {
+          const safeModelValue = value => typeof value === "string" ? value.slice(0,120) : value == null ? null : typeof value;
           return res.status(502).json({
             ok:false,error:"QWEN21_MODEL_UNCONFIRMED",
             message:"Clipaist не подтвердил, что изображение создано Qwen Image 2.1. Результат не будет показан как Qwen.",
-            upstreamModel:upstreamModel || null
+            upstreamModel:upstreamModel || null,
+            upstreamDiagnostics:{
+              topLevelKeys:Object.keys(result).slice(0,40),
+              dataKeys:result.data && typeof result.data === "object" ? Object.keys(result.data).slice(0,40) : [],
+              metaKeys:result.meta && typeof result.meta === "object" ? Object.keys(result.meta).slice(0,40) : [],
+              resultKeys:result.result && typeof result.result === "object" ? Object.keys(result.result).slice(0,40) : [],
+              modelFields:{
+                model:safeModelValue(result.model),
+                dataModel:safeModelValue(result.data?.model),
+                metaModel:safeModelValue(result.meta?.model),
+                upstreamModel:safeModelValue(result.upstreamModel),
+                dataUpstreamModel:safeModelValue(result.data?.upstreamModel),
+                status:safeModelValue(result.status),
+                message:safeModelValue(result.message)
+              }
+            }
           });
         }
         const imageValue = [
