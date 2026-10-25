@@ -1048,6 +1048,34 @@ module.exports = async function imageHandler(req, res) {
       }
       if (!qwenPrompt) return res.status(400).json({ok:false,error:"PROMPT_REQUIRED"});
       try {
+        // Match the verified Clipaist browser flow: check the daily allowance before generating.
+        // If availability itself fails, still attempt generation; the generate endpoint remains authoritative.
+        try {
+          const availability = await fetch("https://clipaist.com/api/tti/availability", {
+            method:"GET",
+            headers:{
+              "Accept":"application/json",
+              "Origin":"https://clipaist.com",
+              "Referer":"https://clipaist.com/"
+            },
+            cache:"no-store",
+            signal:AbortSignal.timeout(8000)
+          });
+          if (availability.ok) {
+            const availabilityRaw = await availability.text();
+            let availabilityData = {};
+            try { availabilityData = availabilityRaw ? JSON.parse(availabilityRaw) : {}; } catch {}
+            if (availabilityData.available === false) {
+              const retryAfter = Number(availabilityData.retryAfter || 0);
+              return res.status(429).json({
+                ok:false,error:"QWEN21_RATE_LIMIT",
+                message:"Clipaist исчерпал дневный лимит генераций (" + String(availabilityData.used ?? "?") + "/" + String(availabilityData.limit ?? "?") + ").",
+                upstreamStatus:429,used:availabilityData.used ?? null,limit:availabilityData.limit ?? null,
+                retryAfter:Number.isFinite(retryAfter) ? retryAfter : 0
+              });
+            }
+          }
+        } catch {}
         const upstream = await fetch("https://clipaist.com/api/tti/generate", {
           method:"POST",
           headers:{
@@ -1065,11 +1093,17 @@ module.exports = async function imageHandler(req, res) {
         try { result = raw ? JSON.parse(raw) : {}; } catch {}
         if (!upstream.ok) {
           const status = upstream.status;
-          const limitMessage = status === 429 ? "Clipaist достиг лимита генераций. Подожди, пока лимит обновится." : "Clipaist вернул HTTP " + status + ".";
+          const upstreamRetry = Number(result?.data?.retryAfter ?? result?.retryAfter ?? upstream.headers.get("retry-after") ?? 0);
+          const retryAfter = Number.isFinite(upstreamRetry) && upstreamRetry > 0 ? upstreamRetry : 0;
+          const isBusyQueue = result?.data?.code === "queue_full" || /queue is busy/i.test(String(result?.message || result?.statusMessage || ""));
+          const limitMessage = status === 429
+            ? "Clipaist достиг лимита генераций. Подожди, пока лимит обновится."
+            : isBusyQueue
+              ? "Очередь Clipaist сейчас перегружена." + (retryAfter ? " Попробуй снова через " + retryAfter + " секунд." : " Попробуй снова немного позже.")
+              : "Clipaist вернул HTTP " + status + ".";
           return res.status(status === 429 ? 429 : 502).json({
-            ok:false,error:status === 429 ? "QWEN21_RATE_LIMIT" : "QWEN21_UPSTREAM_HTTP",
-            message:limitMessage,upstreamStatus:status,upstreamBody:raw.slice(0,700),
-            retryAfter:upstream.headers.get("retry-after") || ""
+            ok:false,error:status === 429 ? "QWEN21_RATE_LIMIT" : isBusyQueue ? "QWEN21_QUEUE_BUSY" : "QWEN21_UPSTREAM_HTTP",
+            message:limitMessage,upstreamStatus:status,upstreamBody:raw.slice(0,700),retryAfter
           });
         }
         const upstreamModelValue = result.model || result.data?.model || result.meta?.model || result.upstreamModel || result.data?.upstreamModel || "";
