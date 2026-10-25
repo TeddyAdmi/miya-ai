@@ -1120,38 +1120,6 @@ module.exports = async function imageHandler(req, res) {
       }
       if (!qwenPrompt) return res.status(400).json({ok:false,error:"PROMPT_REQUIRED"});
       try {
-        // Match the verified Clipaist browser flow: check the daily allowance before generating.
-        // If availability itself fails, still attempt generation; the generate endpoint remains authoritative.
-        try {
-          const availability = await fetch("https://clipaist.com/api/tti/availability", {
-            method:"GET",
-            headers:{
-              "Accept":"application/json",
-              "Origin":"https://clipaist.com",
-              "Referer":"https://clipaist.com/"
-            },
-            cache:"no-store",
-            signal:AbortSignal.timeout(8000)
-          });
-          if (availability.ok) {
-            const availabilityRaw = await availability.text();
-            let availabilityData = {};
-            try { availabilityData = availabilityRaw ? JSON.parse(availabilityRaw) : {}; } catch {}
-            const used = Number(availabilityData.used);
-            const limit = Number(availabilityData.limit);
-            // "available:false" can also mean a temporary cooldown/queue wait.
-            // Block only when the API explicitly reports a numeric exhausted daily quota.
-            if (Number.isFinite(used) && Number.isFinite(limit) && limit > 0 && used >= limit) {
-              const retryValue = Number(availabilityData.retryAfter || 0);
-              const retryAfter = Number.isFinite(retryValue) && retryValue > 0 ? retryValue : 0;
-              return res.status(429).json({
-                ok:false,error:"QWEN21_RATE_LIMIT",
-                message:"Clipaist исчерпал дневный лимит генераций (" + used + "/" + limit + ").",
-                upstreamStatus:429,used,limit,retryAfter
-              });
-            }
-          }
-        } catch {}
         const upstream = await fetch("https://clipaist.com/api/tti/generate", {
           method:"POST",
           headers:{
@@ -1162,7 +1130,7 @@ module.exports = async function imageHandler(req, res) {
           },
           // The upstream repeatedly returns a stale cached Agnes URL for the same prompt.
           // Add only invisible separators to make this request unique without changing the visible prompt.
-          body:JSON.stringify({model:"Qwen/Qwen-Image-2.1",prompt:qwenPrompt + "\u2063".repeat(1 + (Date.now() % 31)),size:qwenSize,ratio:qwenRatio}),
+          body:JSON.stringify({model:"Qwen/Qwen-Image-2.1",prompt:qwenPrompt,size:qwenSize,ratio:qwenRatio}),
           cache:"no-store",
           signal:AbortSignal.timeout(55000)
         });
