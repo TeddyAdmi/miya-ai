@@ -519,16 +519,88 @@ module.exports = async function imageHandler(req, res) {
             });
           }
           currentTaskId = String(created.data.taskId);
-          // Return the task ID immediately; status polling happens in separate requests.
-          // This prevents a slow first status lookup from turning a successful task creation into HTTP 502.
-          return res.status(200).json({
-            ok:true,
-            mode:"image",
-            status:"processing",
-            provider:"Cinel",
-            model:"Kolors",
-            taskId:currentTaskId,
-            meta:{free:true,modelId:"kolors",ratio}
+          // Keep polling on the server after creation. Cinel's status endpoint can
+          // occasionally stall; retry transient timeouts instead of losing a valid task.
+          const pollDeadline = Date.now() + 22000;
+          let lastPollError = "";
+          while (Date.now() < pollDeadline) {
+            try {
+              const remaining = Math.max(1000, pollDeadline - Date.now());
+              const statusResponse = await fetch("https://cinel.ai/api/cinel/preview-task?taskId=" + encodeURIComponent(currentTaskId), {
+                headers:{
+                  "Accept":"application/json",
+                  "Origin":"https://cinel.ai",
+                  "Referer":"https://cinel.ai/free-ai-text-to-image-generator"
+                },
+                cache:"no-store",
+                signal:AbortSignal.timeout(Math.min(8000, remaining))
+              });
+              const statusRaw = await statusResponse.text();
+              let statusPayload = {};
+              try { statusPayload = statusRaw ? JSON.parse(statusRaw) : {}; } catch {}
+              if (!statusResponse.ok || Number(statusPayload?.code) !== 0) {
+                return res.status(502).json({
+                  ok:false,
+                  error:"CINEL_STATUS_FAILED",
+                  message:"Не удалось проверить статус Kolors.",
+                  upstreamStatus:statusResponse.status,
+                  upstreamBody:statusRaw.slice(0,600)
+                });
+              }
+              const taskData = statusPayload.data || {};
+              const status = String(taskData.status || "").toLowerCase();
+              if (status === "success") {
+                const outputPath = String(taskData.outputUrl || taskData.outputUrls?.[0] || "");
+                let outputUrl = "";
+                try {
+                  const parsed = new URL(outputPath, "https://cinel.ai");
+                  if (parsed.protocol === "https:" && parsed.hostname === "cinel.ai" && parsed.pathname === "/api/cinel/share") {
+                    outputUrl = parsed.toString();
+                  }
+                } catch {}
+                if (!outputUrl) {
+                  return res.status(502).json({ok:false,error:"CINEL_OUTPUT_URL_MISSING",message:"Cinel завершил задачу, но не вернул ссылку на изображение."});
+                }
+                return res.status(200).json({
+                  ok:true,
+                  mode:"image",
+                  status:"completed",
+                  provider:"Cinel",
+                  model:"Kolors",
+                  taskId:currentTaskId,
+                  imageUrl:outputUrl,
+                  imageUrls:[outputUrl],
+                  count:1,
+                  meta:{free:true,modelId:"kolors",ratio}
+                });
+              }
+              if (["error","failed","cancelled","canceled"].includes(status)) {
+                return res.status(502).json({
+                  ok:false,
+                  error:"CINEL_GENERATION_FAILED",
+                  message:"Cinel не смог создать изображение.",
+                  upstreamBody:JSON.stringify(taskData).slice(0,800)
+                });
+              }
+              lastPollError = "";
+            } catch (pollError) {
+              if (!["TimeoutError","AbortError"].includes(String(pollError?.name || ""))) {
+                return res.status(502).json({
+                  ok:false,
+                  error:"CINEL_STATUS_FAILED",
+                  message:"Не удалось проверить статус Kolors."
+                });
+              }
+              lastPollError = String(pollError?.message || pollError);
+            }
+            await new Promise(resolve => setTimeout(resolve, 900));
+          }
+          return res.status(504).json({
+            ok:false,
+            error:"CINEL_STATUS_TIMEOUT",
+            message:"Подождите минуту.",
+            retryable:true,
+            timedOutStatusCheck:Boolean(lastPollError)
           });
         }
 
