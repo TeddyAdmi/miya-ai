@@ -504,7 +504,7 @@ module.exports = async function imageHandler(req, res) {
               clientRequestId:require("crypto").randomUUID()
             }),
             cache:"no-store",
-            signal:AbortSignal.timeout(55000)
+            signal:AbortSignal.timeout(65000)
           });
           const createRaw = await createResponse.text();
           let created = {};
@@ -1275,7 +1275,7 @@ module.exports = async function imageHandler(req, res) {
           ok:false,
           error:timedOut ? "QWEN21_UPSTREAM_TIMEOUT" : "QWEN21_HANDLER_ERROR",
           message:timedOut
-            ? "Clipaist не вернул Qwen Image 2.1 за 100 секунд. Попробуй ещё раз."
+            ? "Clipaist не вернул Qwen Image 2.1 за 65 секунд. Очередь генерации могла зависнуть; попробуй ещё раз позже."
             : "Не удалось связаться с Clipaist: " + String(error?.message||error||"ошибка запроса").slice(0,180)
         });
       }
