@@ -1188,6 +1188,42 @@ module.exports = async function imageHandler(req, res) {
         let upstreamModelValue = result.model || result.data?.model || result.meta?.model || result.upstreamModel || result.data?.upstreamModel || "";
         let upstreamModel = typeof upstreamModelValue === "string" ? upstreamModelValue.trim() : "";
         const isConfirmedQwen = value => !!value && (/qwen.*image/i.test(value) || value.toLowerCase().includes("qwen/qwen-image"));
+
+        // Clipaist has returned cached Agnes-hosted images with no model metadata.
+        // If that exact stale-cache signature appears, make one bounded retry with
+        // invisible separators so the visible user prompt remains unchanged.
+        // Never accept the cached image unless the retry explicitly confirms Qwen.
+        let qwenCacheRetryAttempted = false;
+        if (!isConfirmedQwen(upstreamModel) && result.cached === true) {
+          qwenCacheRetryAttempted = true;
+          try {
+            const cacheBustPrompt = qwenPrompt + "\\u2063".repeat(1 + (Date.now() % 17));
+            const retryResponse = await fetch("https://clipaist.com/api/tti/generate", {
+              method:"POST",
+              headers:{
+                "Content-Type":"application/json",
+                "Accept":"application/json",
+                "Origin":"https://clipaist.com",
+                "Referer":"https://clipaist.com/"
+              },
+              body:JSON.stringify({model:"Qwen/Qwen-Image-2.1",prompt:cacheBustPrompt,size:qwenSize,ratio:qwenRatio}),
+              cache:"no-store",
+              signal:AbortSignal.timeout(25000)
+            });
+            const retryRaw = await retryResponse.text();
+            let retryResult = {};
+            try { retryResult = retryRaw ? JSON.parse(retryRaw) : {}; } catch {}
+            const retryModelValue = retryResult.model || retryResult.data?.model || retryResult.meta?.model || retryResult.upstreamModel || retryResult.data?.upstreamModel || "";
+            const retryModel = typeof retryModelValue === "string" ? retryModelValue.trim() : "";
+            if (retryResponse.ok && isConfirmedQwen(retryModel)) {
+              result = retryResult;
+              raw = retryRaw;
+              upstreamModelValue = retryModelValue;
+              upstreamModel = retryModel;
+            }
+          } catch {}
+        }
+
         if (!isConfirmedQwen(upstreamModel)) {
           const safeModelValue = value => typeof value === "string" ? value.slice(0,120) : value == null ? null : typeof value;
           return res.status(502).json({
@@ -1210,6 +1246,7 @@ module.exports = async function imageHandler(req, res) {
               },
               taskIdPresent:typeof result.taskId === "string" && !!result.taskId.trim(),
               cached:typeof result.cached === "boolean" ? result.cached : null,
+              cacheRetryAttempted:qwenCacheRetryAttempted,
               urlInfo:(() => {
                 const value = typeof result.url === "string" ? result.url : "";
                 if (!value) return {present:false,host:null,path:null,looksLikeImage:false};
