@@ -1164,7 +1164,7 @@ module.exports = async function imageHandler(req, res) {
           // Add only invisible separators to make this request unique without changing the visible prompt.
           body:JSON.stringify({model:"Qwen/Qwen-Image-2.1",prompt:qwenPrompt + "\u2063".repeat(1 + (Date.now() % 31)),size:qwenSize,ratio:qwenRatio}),
           cache:"no-store",
-          signal:AbortSignal.timeout(65000)
+          signal:AbortSignal.timeout(55000)
         });
         let raw = await upstream.text();
         let result = {};
