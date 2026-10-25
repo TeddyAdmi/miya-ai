@@ -1119,7 +1119,6 @@ module.exports = async function imageHandler(req, res) {
         return res.status(400).json({ok:false,error:"QWEN21_MODEL_UNSUPPORTED",message:"Неизвестная модель Qwen Image 2.1."});
       }
       if (!qwenPrompt) return res.status(400).json({ok:false,error:"PROMPT_REQUIRED"});
-      const qwenRequestStartedAt = Date.now();
       try {
         // Match the verified Clipaist browser flow: check the daily allowance before generating.
         // If availability itself fails, still attempt generation; the generate endpoint remains authoritative.
@@ -1161,9 +1160,11 @@ module.exports = async function imageHandler(req, res) {
             "Origin":"https://clipaist.com",
             "Referer":"https://clipaist.com/"
           },
-          body:JSON.stringify({model:"Qwen/Qwen-Image-2.1",prompt:qwenPrompt,size:qwenSize,ratio:qwenRatio}),
+          // The upstream repeatedly returns a stale cached Agnes URL for the same prompt.
+          // Add only invisible separators to make this request unique without changing the visible prompt.
+          body:JSON.stringify({model:"Qwen/Qwen-Image-2.1",prompt:qwenPrompt + "\u2063".repeat(1 + (Date.now() % 31)),size:qwenSize,ratio:qwenRatio}),
           cache:"no-store",
-          signal:AbortSignal.timeout(100000)
+          signal:AbortSignal.timeout(65000)
         });
         let raw = await upstream.text();
         let result = {};
@@ -1186,37 +1187,6 @@ module.exports = async function imageHandler(req, res) {
         let upstreamModelValue = result.model || result.data?.model || result.meta?.model || result.upstreamModel || result.data?.upstreamModel || "";
         let upstreamModel = typeof upstreamModelValue === "string" ? upstreamModelValue.trim() : "";
         const isConfirmedQwen = value => !!value && (/qwen.*image/i.test(value) || value.toLowerCase().includes("qwen/qwen-image"));
-        // Clipaist can return a stale cached result from Agnes with no model metadata.
-        // Retry that specific case once with an invisible prompt cache-buster, rather than
-        // accepting an unverified image or failing every repeat of the same prompt.
-        if (!isConfirmedQwen(upstreamModel) && result.cached === true && Date.now() - qwenRequestStartedAt < 40000) {
-          try {
-            const cacheBustPrompt = qwenPrompt + "\u2063".repeat(1 + (Date.now() % 17));
-            const retryResponse = await fetch("https://clipaist.com/api/tti/generate", {
-              method:"POST",
-              headers:{
-                "Content-Type":"application/json",
-                "Accept":"application/json",
-                "Origin":"https://clipaist.com",
-                "Referer":"https://clipaist.com/"
-              },
-              body:JSON.stringify({model:"Qwen/Qwen-Image-2.1",prompt:cacheBustPrompt,size:qwenSize,ratio:qwenRatio}),
-              cache:"no-store",
-              signal:AbortSignal.timeout(Math.max(1000, Math.min(25000, 68000 - (Date.now() - qwenRequestStartedAt))))
-            });
-            const retryRaw = await retryResponse.text();
-            let retryResult = {};
-            try { retryResult = retryRaw ? JSON.parse(retryRaw) : {}; } catch {}
-            const retryModelValue = retryResult.model || retryResult.data?.model || retryResult.meta?.model || retryResult.upstreamModel || retryResult.data?.upstreamModel || "";
-            const retryModel = typeof retryModelValue === "string" ? retryModelValue.trim() : "";
-            if (retryResponse.ok && (isConfirmedQwen(retryModel) || retryResult.cached !== true)) {
-              result = retryResult;
-              raw = retryRaw;
-              upstreamModelValue = retryModelValue;
-              upstreamModel = retryModel;
-            }
-          } catch {}
-        }
         if (!isConfirmedQwen(upstreamModel)) {
           const safeModelValue = value => typeof value === "string" ? value.slice(0,120) : value == null ? null : typeof value;
           return res.status(502).json({
