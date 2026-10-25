@@ -1105,10 +1105,10 @@ module.exports = async function imageHandler(req, res) {
                     present:true,
                     host:parsed.hostname.slice(0,180),
                     path:parsed.pathname.slice(0,240),
-                    looksLikeImage:/\\.(png|jpe?g|webp|avif)(;|$)/i.test(parsed.pathname) || /image|output|result|download/i.test(parsed.pathname)
+                    looksLikeImage:/\.(png|jpe?g|webp|avif)(;|$)/i.test(parsed.pathname) || /image|output|result|download/i.test(parsed.pathname)
                   };
                 } catch {
-                  return {present:true,host:null,path:null,looksLikeImage:/^data:image\\//i.test(value)};
+                  return {present:true,host:null,path:null,looksLikeImage:/^data:image\//i.test(value)};
                 }
               })()
             }
