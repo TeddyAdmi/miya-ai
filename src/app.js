@@ -1501,11 +1501,11 @@ function buildMediaCard(item,{video=false,pendingDots=false}={}){
   for(let row=0;row<rows;row++){
    for(let column=0;column<columns;column++){
     const dot=document.createElement("span");
-    // Each column pulses slightly after the previous one, creating a steady left-to-right wave.
+    // A fixed delay per column creates a continuous repeating wave from left to right.
     const size=1.8+((row*3+column*5)%5)*0.22;
     dot.style.width=size.toFixed(1)+"px";
     dot.style.height=size.toFixed(1)+"px";
-    dot.style.animationDelay=(column*0.08).toFixed(2)+"s";
+    dot.style.animationDelay=(column*0.12).toFixed(2)+"s";
     pendingDotsLayer.appendChild(dot);
    }
   }
