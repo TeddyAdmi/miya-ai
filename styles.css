@@ -4430,7 +4430,38 @@ body.light #composer .image-settings #improve{
   box-shadow:none!important;
 }
 
-/* Final attachment preview sizing and optical centering for its remove glyph. */
+/* Attachment thumbnail: no exposed dark backing edge; subtle floating 3D depth. */
+#composerAttachment.has-image{
+  box-sizing:border-box!important;
+  border:0!important;
+  padding:0!important;
+  background:transparent!important;
+  overflow:visible!important;
+  isolation:isolate!important;
+}
+#composerAttachment.has-image img{
+  display:block!important;
+  box-sizing:border-box!important;
+  width:100%!important;height:100%!important;
+  min-width:0!important;max-width:100%!important;
+  min-height:0!important;max-height:100%!important;
+  margin:0!important;padding:0!important;border:0!important;
+  object-fit:cover!important;object-position:center!important;
+  border-radius:8px!important;
+  background:transparent!important;
+  box-shadow:
+    0 0 0 1px rgba(255,255,255,.34),
+    0 2px 4px rgba(14,25,42,.13),
+    0 6px 13px rgba(14,25,42,.20),
+    0 10px 20px rgba(14,25,42,.08)!important;
+}
+body.light #composerAttachment.has-image img{
+  box-shadow:
+    0 0 0 1px rgba(255,255,255,.72),
+    0 2px 4px rgba(23,35,55,.10),
+    0 6px 13px rgba(23,35,55,.18),
+    0 10px 20px rgba(23,35,55,.07)!important;
+}
 .composer.mode-images #composerAttachment.has-image,
 .composer.mode-video #composerAttachment.has-image{
   width:40px!important;height:40px!important;
@@ -4438,14 +4469,6 @@ body.light #composer .image-settings #improve{
   min-height:40px!important;max-height:40px!important;
   flex:0 0 40px!important;
   box-sizing:border-box!important;
-}
-.composer.mode-images #composerAttachment.has-image img,
-.composer.mode-video #composerAttachment.has-image img{
-  display:block!important;
-  width:40px!important;height:40px!important;
-  min-width:40px!important;max-width:40px!important;
-  min-height:40px!important;max-height:40px!important;
-  object-fit:cover!important;object-position:center!important;
 }
 #composerAttachment button#composerAttachmentRemove{
   position:absolute!important;
