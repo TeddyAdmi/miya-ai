@@ -3342,7 +3342,7 @@ async function generateImage(prompt){
   if(fakeTimer){clearInterval(fakeTimer);fakeTimer=null;}
   $("#canvas .generation-loading")?.remove();
   if(composerProgress)composerProgress.textContent="";
-  if(useCinel){const notice="Подождите минуту";toast(notice);$("#composerStatus").textContent=notice;return;}
+  if(useCinel){const notice=displayModel+" · Подождите минуту";toast(notice);$("#composerStatus").textContent=notice;return;}
   if(e?.code==="IMAGESMITH_RATE_LIMIT"&&Number.isFinite(e.retryAfterMinutes)&&e.retryAfterMinutes>0){
    const minutes=e.retryAfterMinutes;
    const unit=minutes%10===1&&minutes%100!==11?"минуту":minutes%10>=2&&minutes%10<=4&&!(minutes%100>=12&&minutes%100<=14)?"минуты":"минут";
