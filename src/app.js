@@ -309,15 +309,24 @@ body.light .floating-wall-clear svg *,body.light .floating-theme svg *{
   transition:none!important;transform:none!important;
 }
 
-/* Reduce the selected source preview by exactly 2px in every composer mode. */
-.composer.mode-chat #composerAttachment.has-image{
-  width:32px!important;height:32px!important;min-width:32px!important;max-width:32px!important;
-  min-height:32px!important;max-height:32px!important;flex:0 0 32px!important;
-}
+/* Identical source-photo geometry in Chat, Images and Video; Images is the visual reference. */
+.composer.mode-chat #composerAttachment.has-image,
 .composer.mode-images #composerAttachment.has-image,
 .composer.mode-video #composerAttachment.has-image{
+  display:block!important;position:relative!important;
+  grid-column:2!important;grid-row:2!important;
+  left:auto!important;right:auto!important;top:auto!important;bottom:auto!important;
   width:38px!important;height:38px!important;min-width:38px!important;max-width:38px!important;
   min-height:38px!important;max-height:38px!important;flex:0 0 38px!important;
+  align-self:center!important;justify-self:center!important;margin:0!important;
+  box-sizing:border-box!important;transform:none!important;
+}
+.composer.mode-chat #composerAttachment.has-image img,
+.composer.mode-images #composerAttachment.has-image img,
+.composer.mode-video #composerAttachment.has-image img{
+  display:block!important;width:38px!important;height:38px!important;
+  min-width:38px!important;max-width:38px!important;min-height:38px!important;max-height:38px!important;
+  object-fit:cover!important;object-position:center!important;border-radius:8px!important;
 }
 /* Center the white X exactly inside the red remove circle. */
 #composerAttachment button#composerAttachmentRemove::before,
