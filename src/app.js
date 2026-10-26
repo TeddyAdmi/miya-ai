@@ -5116,6 +5116,7 @@ async function improveImageComposerPrompt(){
  button.title="AI улучшает промпт…";
  button.setAttribute("aria-label","AI улучшает промпт");
  if(status){
+  status.classList.remove("composer-status-shimmer");
   status.classList.add("composer-status-loading");
   status.textContent="AI улучшает промпт…";
  }
@@ -5145,7 +5146,21 @@ async function improveImageComposerPrompt(){
   input.dataset.improveSeedPrompt=original;
   input.dataset.improveLatestPrompt=improved;
   syncInput();
-  if(status)status.textContent="Промпт улучшен с помощью AI";
+  if(status){
+   status.textContent="Промпт улучшен с помощью AI";
+   const reduceMotion=window.matchMedia&&window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+   if(!reduceMotion){
+    status.classList.remove("composer-status-shimmer");
+    void status.offsetWidth;
+    status.classList.add("composer-status-shimmer");
+    const clearSuccessShimmer=event=>{
+     if(event.animationName!=="miya-prompt-success-shimmer")return;
+     status.classList.remove("composer-status-shimmer");
+     status.removeEventListener("animationend",clearSuccessShimmer);
+    };
+    status.addEventListener("animationend",clearSuccessShimmer);
+   }
+  }
   toast("Промпт улучшен AI");
  }catch(error){
   const reason=String(error?.message||"Модель временно недоступна").trim();
