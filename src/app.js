@@ -86,6 +86,8 @@ voice:{title:"Голос",eyebrow:"ГОЛОС",subtitle:"Превращай те
  .chat-welcome.section-welcome .hero-mark .nav-icon::after,
  .studio-room .chat-welcome.section-welcome .hero-mark .nav-icon::before,
  .studio-room .chat-welcome.section-welcome .hero-mark .nav-icon::after{color:#fff!important;border-color:#fff!important;box-shadow:none!important;filter:none!important;}
+ /* Solid green status points only: no surrounding glow. */
+ .live-dot,.status-dot{box-shadow:none!important;filter:none!important;}
  `;
  document.head.appendChild(st);
 })();
@@ -973,7 +975,7 @@ function setComposerAttachment(url){
   composerAttachmentPreviewObjectUrl="";
  }
  if(source){
-  img.alt="Исходное изображение для редактирования";
+  img.alt="";
   img.style.display="block";
   img.src=source;
   box.hidden=false;
@@ -1007,7 +1009,7 @@ function renderChatAttachmentImages(){
    chatAttachmentFile=chatAttachmentImages.length>0;
    renderChatAttachmentImages();
    if(!chatAttachmentFile){clearComposerAttachment();if(mode==="chat")$("#composerStatus").textContent="AI Chat готов";}
-   else $("#composerStatus").textContent="Картинка прикреплена — можно спросить меня о ней.";
+   else $("#composerStatus").textContent="Картинка прикреплена - можно спросить меня о ней.";
   });
   item.append(image,remove);
   list.append(item);
@@ -5460,7 +5462,7 @@ async function prepareAndAttachReferenceFile(file){
    const legacyList=$("#chatComposerAttachments");
    if(legacyList){legacyList.replaceChildren();legacyList.hidden=true}
    $("#composer")?.classList.remove("has-chat-attachments");
-   $("#composerStatus").textContent="Картинка прикреплена — можно спросить меня о ней.";
+   $("#composerStatus").textContent="Картинка прикреплена - можно спросить меня о ней.";
   }else if(mode==="images"){
    // Prepare once at selection time; the model can be changed after attachment.
    $("#composerModel").value="Agnes Image 2.5 Flash";
@@ -5470,7 +5472,7 @@ async function prepareAndAttachReferenceFile(file){
    const selectedVideoModel=String($("#videoModel")?.value||"LTX-2.3 Distilled");
    $("#composerStatus").textContent=selectedVideoModel+" · изображение готово";
   }else{
-   $("#composerStatus").textContent="Картинка прикреплена — можно спросить меня о ней.";
+   $("#composerStatus").textContent="Картинка прикреплена - можно спросить меня о ней.";
   }
   syncInput();
   $("#composerInput").focus();
