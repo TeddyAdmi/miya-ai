@@ -1485,9 +1485,28 @@ function toggleUpscalePanel(item,card){
  floatMediaOverlay(panel,card,"panel");
  return panel;
 }
-function buildMediaCard(item,{video=false}={}){
+function buildMediaCard(item,{video=false,pendingDots=false}={}){
  const card=document.createElement("div");card.className="media-card";card.dataset.mediaId=String(item?.id||"");
- let media=null,mediaFailed=false;
+ let media=null,mediaFailed=false,pendingDotsLayer=null;
+ const clearPendingDots=()=>{
+  if(pendingDotsLayer){pendingDotsLayer.remove();pendingDotsLayer=null;}
+  card.classList.remove("media-new-image-pending");
+ };
+ if(pendingDots&&!video){
+  card.classList.add("media-new-image-pending");
+  pendingDotsLayer=document.createElement("div");
+  pendingDotsLayer.className="media-new-image-dots";
+  pendingDotsLayer.setAttribute("aria-hidden","true");
+  const columns=19,rows=11;
+  for(let row=0;row<rows;row++){
+   for(let column=0;column<columns;column++){
+    const dot=document.createElement("span");
+    dot.style.animationDelay="-"+(((row*3+column*2)%13)*0.09).toFixed(2)+"s";
+    pendingDotsLayer.appendChild(dot);
+   }
+  }
+  card.appendChild(pendingDotsLayer);
+ }
  const handleMediaFailure=()=>{
    if(mediaFailed)return;
    mediaFailed=true;card.classList.add("media-load-error");
@@ -1523,13 +1542,13 @@ function buildMediaCard(item,{video=false}={}){
    }catch{}
    const isDeadVheer=/^https?:\/\/access\.vheer\.com\/results\//i.test(directUrl);
    const setImageSource=url=>{if(url&&!mediaFailed)media.src=url};
-   media.addEventListener("load",()=>{if(media.naturalWidth>0){media.classList.add("media-image-ready");cacheMedia(item.id,media.currentSrc||media.src||proxyUrl||storedUrl,"image")}});
+   media.addEventListener("load",()=>{if(media.naturalWidth>0){media.classList.add("media-image-ready");clearPendingDots();cacheMedia(item.id,media.currentSrc||media.src||proxyUrl||storedUrl,"image")}});
    media.addEventListener("error",()=>{
      // Start with the stable same-origin proxy. Use a cached object URL only as
      // a first fallback, then try the provider URL if the proxy itself fails.
      if(proxyUrl&&!triedProxy&&media.src.startsWith("blob:")){triedProxy=true;setImageSource(proxyUrl);return}
      if(proxyUrl&&!triedDirect&&directUrl&&directUrl!==storedUrl){triedDirect=true;setImageSource(directUrl);return}
-     mediaFailed=true;card.classList.add("media-load-error");media.classList.remove("media-image-ready");media.removeAttribute("src");
+     mediaFailed=true;card.classList.add("media-load-error");media.classList.remove("media-image-ready");media.removeAttribute("src");clearPendingDots();
      media.alt=isDeadVheer?"Старая копия изображения":"Изображение временно недоступно";
    });
    const isAgnesPreview=/^Agnes Image/i.test(String(item.model||""));
@@ -1539,14 +1558,16 @@ function buildMediaCard(item,{video=false}={}){
    // Resolve the persistent IndexedDB copy before requesting the provider again.
    // This lets an already loaded wall render from saved image bytes after reloads and in new tabs.
    resolveMediaUrl(item).then(url=>{
-     if(!url||mediaFailed)return;
+     if(mediaFailed)return;
+     if(!url){clearPendingDots();return;}
      // Keep a single source during loading: switching from a half-loaded
      // provider image to a proxy response caused visible jumps and blank flashes.
      if(url.startsWith("blob:")){setImageSource(url);return}
      if(proxyUrl){setImageSource(proxyUrl);return}
      if(!isDeadVheer)setImageSource(url);
-   }).catch(()=>{});
-   if(isDeadVheer&&!proxyUrl)media.alt="Старая копия изображения";
+     else clearPendingDots();
+   }).catch(()=>{clearPendingDots()});
+   if(isDeadVheer&&!proxyUrl){media.alt="Старая копия изображения";clearPendingDots();}
    media.addEventListener("click",e=>{e.stopPropagation();openImageViewer(item)});
    card.appendChild(media);
  }
@@ -2944,7 +2965,7 @@ async function showImage(url,prompt="",model="FLUX Dev",ratio=""){
   }
   const c=$("#canvas");let grid=c.querySelector(".result-grid");
   if(!grid){c.innerHTML='<div class="result-grid"></div>';grid=c.querySelector(".result-grid")}
-  const card=buildMediaCard(item);grid.prepend(card);
+  const card=buildMediaCard(item,{pendingDots:true});grid.prepend(card);
   applyFirstSixMediaPriority(grid);
   // A provider has already returned a valid image URL. Do not make generation
   // success depend on the separate image-download/decode time: slow providers
