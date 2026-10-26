@@ -4290,7 +4290,7 @@ body.light #composerRatio,body.light #videoRatio{background-color:#f4f7fa!import
   }
 }
 
-/* New image cards only: calm, softly pulsing dots without glow or a traveling wave. */
+/* New image cards only: a slow, even left-to-right wave of plain pulsing dots. */
 .media-new-image-dots{
  position:absolute;
  inset:0;
@@ -4310,13 +4310,13 @@ body.light #composerRatio,body.light #videoRatio{background-color:#f4f7fa!import
  height:2px;
  border-radius:50%;
  background:rgba(205,232,255,.92);
- opacity:.34;
- transform:scale(.8);
- animation:miya-new-image-dot-pulse 2.6s ease-in-out infinite;
+ opacity:.24;
+ transform:scale(.78);
+ animation:miya-new-image-dot-pulse 3.2s ease-in-out infinite;
 }
 @keyframes miya-new-image-dot-pulse{
  0%,100%{opacity:.24;transform:scale(.78)}
- 50%{opacity:.82;transform:scale(1.35)}
+ 50%{opacity:.88;transform:scale(1.65)}
 }
 @media(prefers-reduced-motion:reduce){
  .media-new-image-dots span{animation:none;opacity:.55;transform:none}
