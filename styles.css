@@ -4306,15 +4306,22 @@ body.light #composerStatus.composer-status-shimmer::after{
   to{background-position:0 0}
 }
 
-/* Pulse the green status indicator only while an image-generation card is active. */
+/* Pulse the green status indicator slowly while image generation is active; keep its base shape perfectly circular. */
 body:has(#canvas .generation-loading.no-upload) .composer-status .status-dot,
 body:has(#canvas .generation-loading.has-upload) .composer-status .status-dot{
-  animation:miya-image-generation-dot-pulse 1.15s ease-in-out infinite!important;
+  width:6px!important;
+  height:6px!important;
+  min-width:6px!important;
+  min-height:6px!important;
+  flex:0 0 6px!important;
+  aspect-ratio:1 / 1!important;
+  border-radius:50%!important;
+  animation:miya-image-generation-dot-pulse 2.4s ease-in-out infinite!important;
   transform-origin:center;
 }
 @keyframes miya-image-generation-dot-pulse{
   0%,100%{transform:scale(1);box-shadow:0 0 5px rgba(24,213,161,.55)}
-  50%{transform:scale(1.55);box-shadow:0 0 12px rgba(24,213,161,.95)}
+  50%{transform:scale(1.22);box-shadow:0 0 8px rgba(24,213,161,.8)}
 }
 
 /* New image cards only: identical dots, pulsing in a smooth vertical-front wave from left to right. */
