@@ -293,7 +293,7 @@ body.light .floating-wall-clear svg *,body.light .floating-theme svg *{
 /* Put the attachment remove button at the thumbnail's top-right corner; red circle, centered white X. */
 .composer-attachment{position:relative!important}
 .composer-attachment button#composerAttachmentRemove{
-  position:absolute!important;right:-5px!important;top:-5px!important;left:auto!important;bottom:auto!important;
+  position:absolute!important;right:-9px!important;top:-9px!important;left:auto!important;bottom:auto!important;
   width:18px!important;height:18px!important;min-width:18px!important;min-height:18px!important;
   margin:0!important;padding:0!important;box-sizing:border-box!important;
   border:1px solid #ffffff!important;border-radius:50%!important;
@@ -308,6 +308,26 @@ body.light .floating-wall-clear svg *,body.light .floating-theme svg *{
   background:#dc2626!important;color:#ffffff!important;border-color:#ffffff!important;
   transition:none!important;transform:none!important;
 }
+
+/* Reduce the selected source preview by exactly 2px in every composer mode. */
+.composer.mode-chat #composerAttachment.has-image{
+  width:32px!important;height:32px!important;min-width:32px!important;max-width:32px!important;
+  min-height:32px!important;max-height:32px!important;flex:0 0 32px!important;
+}
+.composer.mode-images #composerAttachment.has-image,
+.composer.mode-video #composerAttachment.has-image{
+  width:38px!important;height:38px!important;min-width:38px!important;max-width:38px!important;
+  min-height:38px!important;max-height:38px!important;flex:0 0 38px!important;
+}
+/* Center the white X exactly inside the red remove circle. */
+#composerAttachment button#composerAttachmentRemove::before,
+#composerAttachment button#composerAttachmentRemove::after{
+  left:50%!important;top:50%!important;margin:0!important;
+  transform-origin:50% 50%!important;
+}
+#composerAttachment button#composerAttachmentRemove::before{transform:translate(-50%,-50%) rotate(45deg)!important}
+#composerAttachment button#composerAttachmentRemove::after{transform:translate(-50%,-50%) rotate(-45deg)!important}
+
 /* Static Z-axis lift for attached photos: no animation, rotation or glow. */
 .composer.mode-chat .composer-attachment.has-image,.composer.mode-images .composer-attachment.has-image,.composer.mode-video .composer-attachment.has-image,.composer.mode-chat .chat-attachment-list .chat-attachment-thumb{perspective:120px!important;transform-style:preserve-3d!important;overflow:visible!important}
 .composer.mode-chat .composer-attachment.has-image img,.composer.mode-images .composer-attachment.has-image img,.composer.mode-video .composer-attachment.has-image img,.composer.mode-chat .chat-attachment-list .chat-attachment-thumb img{transform:translateZ(8px) scale(1.02)!important;transform-origin:center!important;backface-visibility:hidden!important;border:1px solid rgba(255,255,255,.3)!important;box-shadow:0 2px 4px rgba(0,0,0,.16),0 6px 10px rgba(0,0,0,.18)!important;filter:none!important;animation:none!important;transition:none!important;will-change:auto!important;position:relative!important;z-index:2!important}
