@@ -333,7 +333,7 @@ body.light .floating-wall-clear svg *,body.light .floating-theme svg *{
 /* Center the white X exactly inside the red remove circle. */
 #composerAttachment button#composerAttachmentRemove::before,
 #composerAttachment button#composerAttachmentRemove::after{
-  left:50%!important;top:50%!important;margin:0!important;
+  left:calc(50% + 1px)!important;top:50%!important;margin:0!important;
   transform-origin:50% 50%!important;
 }
 #composerAttachment button#composerAttachmentRemove::before{transform:translate(-50%,-50%) rotate(45deg)!important}
@@ -1565,7 +1565,7 @@ function buildMediaCard(item,{video=false,pendingDots=false}={}){
  }
  const handleMediaFailure=()=>{
    if(mediaFailed)return;
-   mediaFailed=true;card.classList.add("media-load-error");
+   mediaFailed=true;card.classList.add("media-load-error");card.classList.remove("media-content-ready");
    if(media&&media.tagName==="VIDEO"){media.removeAttribute("src");media.load();media.controls=false}
  };
  if(video){
@@ -1576,6 +1576,7 @@ function buildMediaCard(item,{video=false,pendingDots=false}={}){
    media.setAttribute("aria-label","Miya Studio video");
    media.controls=false;media.playsInline=true;media.preload="none";media.muted=false;media.defaultMuted=false;media.volume=1;
    media.addEventListener("error",handleMediaFailure);
+   media.addEventListener("loadeddata",()=>{if(media.readyState>=2)card.classList.add("media-content-ready")});
    media.addEventListener("click",e=>{e.stopPropagation();openVideoViewer(item)});
    card.addEventListener("click",e=>{if(!e.target.closest(".media-actions"))openVideoViewer(item)});
    card.appendChild(media);
@@ -1585,7 +1586,7 @@ function buildMediaCard(item,{video=false,pendingDots=false}={}){
      if(url&&url!==directUrl&&!mediaFailed){media.src=url;media.load();}
    }).catch(()=>{});
   }else{
-   media=document.createElement("img");media.alt="Miya Studio";media.style.cursor="zoom-in";media.title="Открыть изображение";
+   media=document.createElement("img");media.alt="";media.style.cursor="zoom-in";media.title="Открыть изображение";
    media.decoding="async";
    const storedUrl=String(item.url||"");
    let proxyUrl="",directUrl=storedUrl,triedProxy=false,triedDirect=false;
@@ -1598,14 +1599,14 @@ function buildMediaCard(item,{video=false,pendingDots=false}={}){
    }catch{}
    const isDeadVheer=/^https?:\/\/access\.vheer\.com\/results\//i.test(directUrl);
    const setImageSource=url=>{if(url&&!mediaFailed)media.src=url};
-   media.addEventListener("load",()=>{if(media.naturalWidth>0){media.classList.add("media-image-ready");clearPendingDots();cacheMedia(item.id,media.currentSrc||media.src||proxyUrl||storedUrl,"image")}});
+   media.addEventListener("load",()=>{if(media.naturalWidth>0){media.classList.add("media-image-ready");card.classList.add("media-content-ready");clearPendingDots();cacheMedia(item.id,media.currentSrc||media.src||proxyUrl||storedUrl,"image")}});
    media.addEventListener("error",()=>{
      // Start with the stable same-origin proxy. Use a cached object URL only as
      // a first fallback, then try the provider URL if the proxy itself fails.
      if(proxyUrl&&!triedProxy&&media.src.startsWith("blob:")){triedProxy=true;setImageSource(proxyUrl);return}
      if(proxyUrl&&!triedDirect&&directUrl&&directUrl!==storedUrl){triedDirect=true;setImageSource(directUrl);return}
-     mediaFailed=true;card.classList.add("media-load-error");media.classList.remove("media-image-ready");media.removeAttribute("src");clearPendingDots();
-     media.alt=isDeadVheer?"Старая копия изображения":"Изображение временно недоступно";
+     mediaFailed=true;card.classList.add("media-load-error");card.classList.remove("media-content-ready");media.classList.remove("media-image-ready");media.removeAttribute("src");clearPendingDots();
+     media.alt="";
    });
    const isAgnesPreview=/^Agnes Image/i.test(String(item.model||""));
    media.loading="eager";
@@ -1623,7 +1624,7 @@ function buildMediaCard(item,{video=false,pendingDots=false}={}){
      if(!isDeadVheer)setImageSource(url);
      else clearPendingDots();
    }).catch(()=>{clearPendingDots()});
-   if(isDeadVheer&&!proxyUrl){media.alt="Старая копия изображения";clearPendingDots();}
+   if(isDeadVheer&&!proxyUrl){media.alt="";clearPendingDots();}
    media.addEventListener("click",e=>{e.stopPropagation();openImageViewer(item)});
    card.appendChild(media);
  }
