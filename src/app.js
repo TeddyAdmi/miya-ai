@@ -92,32 +92,35 @@ voice:{title:"Голос",eyebrow:"ГОЛОС",subtitle:"Превращай те
 const $=s=>document.querySelector(s);
 
 (function ensureAttachmentPreviewReplacesPlus(){
+ const box=document.getElementById("composerAttachment");
+ const slot=document.querySelector(".composer-left-actions");
+ if(box&&slot&&box.parentElement!==slot)slot.appendChild(box);
  if(document.getElementById("miyaAttachmentPreviewReplacesPlus"))return;
  const st=document.createElement("style");
  st.id="miyaAttachmentPreviewReplacesPlus";
  st.textContent=`
- /* The preview overlays the plus slot; it never becomes a separate grid item. */
- #composer{position:relative!important;}
+ /* Keep the existing plus-button slot and overlay the thumbnail without adding a grid item. */
+ #composer .composer-left-actions{position:relative!important;overflow:visible!important;}
  #composer #composerAttachment.has-image{
-  position:absolute!important;left:12px!important;bottom:22px!important;right:auto!important;top:auto!important;
+  position:absolute!important;left:50%!important;top:50%!important;right:auto!important;bottom:auto!important;
   display:block!important;width:30px!important;height:30px!important;
   min-width:30px!important;max-width:30px!important;min-height:30px!important;max-height:30px!important;
   flex:0 0 30px!important;grid-column:auto!important;grid-row:auto!important;
-  align-self:auto!important;justify-self:auto!important;margin:0!important;
-  box-sizing:border-box!important;transform:none!important;z-index:1010!important;
+  align-self:auto!important;justify-self:auto!important;margin:0!important;padding:0!important;
+  box-sizing:border-box!important;transform:translate(-50%,-50%)!important;z-index:1010!important;
  }
  #composer.mode-chat #composerAttachment.has-image{
-  left:10px!important;bottom:23px!important;width:29px!important;height:29px!important;
+  width:29px!important;height:29px!important;
   min-width:29px!important;max-width:29px!important;min-height:29px!important;max-height:29px!important;
   flex:0 0 29px!important;
  }
  #composer:has(#composerAttachment.has-image) #composerAttach{
   visibility:hidden!important;pointer-events:none!important;
  }
- /* Do not move the settings or chat actions when the image replaces the plus. */
- #composer.mode-chat:has(#composerAttachment.has-image) .chat-options{grid-column:2 / 4!important;}
- #composer.mode-images:has(#composerAttachment.has-image) .image-settings{grid-column:2 / 4!important;}
- #composer.mode-video:has(#composerAttachment.has-image) #videoOptions{grid-column:2 / 4!important;}
+ /* Never reflow adjacent settings/actions when the thumbnail replaces the plus. */
+ #composer.mode-chat:has(#composerAttachment.has-image) .chat-options,
+ #composer.mode-images:has(#composerAttachment.has-image) .image-settings,
+ #composer.mode-video:has(#composerAttachment.has-image) #videoOptions{grid-column:initial!important;}
  #composer #composerAttachment.has-image img{
   display:block!important;width:100%!important;height:100%!important;
   min-width:0!important;min-height:0!important;max-width:100%!important;max-height:100%!important;
