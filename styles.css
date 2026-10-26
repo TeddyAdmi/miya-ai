@@ -4314,6 +4314,7 @@ body.light #composerRatio,body.light #videoRatio{background-color:#f4f7fa!import
  opacity:.22;
  transform:scale(.55);
  animation:miya-new-image-dot-pulse 1.35s ease-in-out infinite;
+ animation-delay:0s!important;
 }
 @keyframes miya-new-image-dot-pulse{
  0%,100%{opacity:.18;transform:scale(.55)}
