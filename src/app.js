@@ -3043,7 +3043,12 @@ async function generateAgnesImage(prompt){
    $("#composerInput").value="";syncInput();
    $("#composerModel").value="Agnes Image 2.5 Flash";
    $("#composerRatio").value=ratio;
-   $("#composerStatus").textContent=displayModel+" · готово";
+   const successStatus=$("#composerStatus");
+   if(successStatus){
+    const successText=displayModel+" · готово";
+    successStatus.textContent=successText;
+    runComposerStatusShimmer(successStatus,successText);
+   }
    referenceImage=null;
    chatAttachmentFile=null;
    try{sessionStorage.removeItem("miyaReferenceImage")}catch{}
@@ -3297,7 +3302,12 @@ async function generateImage(prompt){
   $("#composerInput").value="";syncInput();
   $("#composerModel").value=modelName;
   $("#composerRatio").value=referenceImage?selectedRatio:$("#composerRatio").value;
-  $("#composerStatus").textContent=imageModelLabel(actualModel)+" · готово";
+  const successStatus=$("#composerStatus");
+  if(successStatus){
+   const successText=imageModelLabel(actualModel)+" · готово";
+   successStatus.textContent=successText;
+   runComposerStatusShimmer(successStatus,successText);
+  }
   if(composerProgress)composerProgress.textContent="100%";
   requestAnimationFrame(()=>$("#workspace")?.scrollTo({top:0,behavior:"smooth"}));
   setTimeout(()=>$("#canvas .generation-loading")?.remove(),350);
@@ -5078,6 +5088,25 @@ function improveVideoComposerPrompt(){
  else toast("Сначала введи промпт");
  syncInput();
 }
+function runComposerStatusShimmer(status,text){
+ if(!status)return;
+ status.classList.remove("composer-status-shimmer");
+ delete status.dataset.shimmerText;
+ const reduceMotion=window.matchMedia&&window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+ if(reduceMotion)return;
+ const shimmerText=String(text??status.textContent??"");
+ status.dataset.shimmerText=shimmerText;
+ void status.offsetWidth;
+ status.classList.add("composer-status-shimmer");
+ const clearSuccessShimmer=event=>{
+  if(event.animationName!=="miya-prompt-success-shimmer")return;
+  status.classList.remove("composer-status-shimmer");
+  delete status.dataset.shimmerText;
+  status.removeEventListener("animationend",clearSuccessShimmer);
+ };
+ status.addEventListener("animationend",clearSuccessShimmer);
+}
+
 async function improveImageComposerPrompt(){
  const input=$("#composerInput");
  const button=$("#improve");
@@ -5150,20 +5179,7 @@ async function improveImageComposerPrompt(){
   if(status){
    const successText="Промпт улучшен с помощью AI";
    status.textContent=successText;
-   const reduceMotion=window.matchMedia&&window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-   if(!reduceMotion){
-    status.classList.remove("composer-status-shimmer");
-    status.dataset.shimmerText=successText;
-    void status.offsetWidth;
-    status.classList.add("composer-status-shimmer");
-    const clearSuccessShimmer=event=>{
-     if(event.animationName!=="miya-prompt-success-shimmer")return;
-     status.classList.remove("composer-status-shimmer");
-     delete status.dataset.shimmerText;
-     status.removeEventListener("animationend",clearSuccessShimmer);
-    };
-    status.addEventListener("animationend",clearSuccessShimmer);
-   }
+   runComposerStatusShimmer(status,successText);
   }
   toast("Промпт улучшен AI");
  }catch(error){

@@ -4276,7 +4276,7 @@ body.light #composerRatio,body.light #videoRatio{background-color:#f4f7fa!import
   background-size:250% 100%;
   background-position:100% 0;
   background-repeat:no-repeat;
-  animation:miya-prompt-success-shimmer .82s cubic-bezier(.22,.61,.36,1) 1 both;
+  animation:miya-prompt-success-shimmer 1.1s cubic-bezier(.22,.61,.36,1) 1 both;
 }
 @keyframes miya-prompt-success-shimmer{
   from{background-position:100% 0}
