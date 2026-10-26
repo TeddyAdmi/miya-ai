@@ -452,6 +452,7 @@ function jpegImageUrl(url){
 }
 let mode="chat",referenceImage=null,chatAttachmentFile=null,chatAttachmentImages=[],chatMessages=[],pendingAssistantQuote="",restoringSavedChat=false;
 let composerAttachmentPreviewObjectUrl="",referenceImagePrepareToken=0,referenceImagePreparing=false,attachmentPrepareSendWasDisabled=false;
+let agnesPreparedReferenceSource="",agnesPreparedReferenceDataUrl="";
 let videoGenerationBusy=false;
 const CHAT_KEY="miyaChats";
 let chatMenuSuppressed=false;
@@ -991,6 +992,8 @@ function clearComposerAttachment(){
  }
  attachmentPrepareSendWasDisabled=false;
  referenceImage=null;
+ agnesPreparedReferenceSource="";
+ agnesPreparedReferenceDataUrl="";
  chatAttachmentFile=null;
  chatAttachmentImages=[];
  try{sessionStorage.removeItem("miyaReferenceImage")}catch{}
@@ -3063,10 +3066,15 @@ async function generateAgnesImage(prompt){
    const ratio=selectedRatio;
    const quality=["1K","2K","4K"].includes(String($("#composerQuality")?.value))?String($("#composerQuality").value):"2K";
    const requestedCount=Math.max(1,Math.min(4,Number($("#composerCount")?.value||1)));
+   const preparedAgnesImage=referenceImage
+     ? (agnesPreparedReferenceSource===referenceImage&&agnesPreparedReferenceDataUrl
+        ? agnesPreparedReferenceDataUrl
+        : await compressAgnesReferenceImage(referenceImage))
+     : "";
    const response=await fetch("/api/agnes-image",{
      method:"POST",
      headers:{"Content-Type":"application/json","Accept":"application/json"},
-     body:JSON.stringify({prompt:agnesPrompt,ratio,quality,n:requestedCount,imageBase64:await compressAgnesReferenceImage(referenceImage||"")}),
+     body:JSON.stringify({prompt:agnesPrompt,ratio,quality,n:requestedCount,imageBase64:preparedAgnesImage}),
      signal:AbortSignal.timeout(Math.max(1,generationDeadline-Date.now()))
    });
    const raw=await response.text();let data={};try{data=raw?JSON.parse(raw):{}}catch{}
@@ -3090,6 +3098,8 @@ async function generateAgnesImage(prompt){
     runComposerStatusShimmer(successStatus,successText);
    }
    referenceImage=null;
+   agnesPreparedReferenceSource="";
+   agnesPreparedReferenceDataUrl="";
    chatAttachmentFile=null;
    try{sessionStorage.removeItem("miyaReferenceImage")}catch{}
    setComposerAttachment("");
@@ -5349,6 +5359,9 @@ async function prepareAndAttachReferenceFile(file){
  if(mode==="chat"&&chatAttachmentImages.length>=5){toast("За одно сообщение можно прикрепить до 5 фотографий");return}
 
  const token=++referenceImagePrepareToken;
+ const attachmentModeAtStart=mode;
+ agnesPreparedReferenceSource="";
+ agnesPreparedReferenceDataUrl="";
  const send=$("#composerSend");
  attachmentPrepareSendWasDisabled=Boolean(send?.disabled);
  referenceImagePreparing=true;
@@ -5369,7 +5382,15 @@ async function prepareAndAttachReferenceFile(file){
   const dataUrl=await prepareReferenceImageDataUrl(file);
   if(token!==referenceImagePrepareToken)return;
   if(!/^data:image\//i.test(dataUrl))throw new Error("Не удалось подготовить фотографию");
+  const agnesDataUrl=attachmentModeAtStart==="images"
+    ? await compressAgnesReferenceImage(dataUrl)
+    : "";
+  if(token!==referenceImagePrepareToken)return;
   referenceImage=dataUrl;
+  if(agnesDataUrl){
+   agnesPreparedReferenceSource=dataUrl;
+   agnesPreparedReferenceDataUrl=agnesDataUrl;
+  }
   try{sessionStorage.setItem("miyaReferenceImage",referenceImage)}catch{}
 
   if(mode==="chat"){
