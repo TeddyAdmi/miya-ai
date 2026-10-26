@@ -4430,3 +4430,45 @@ body.light #composer .image-settings #improve{
   box-shadow:none!important;
 }
 
+/* Final attachment preview sizing and optical centering for its remove glyph. */
+.composer.mode-images #composerAttachment.has-image,
+.composer.mode-video #composerAttachment.has-image{
+  width:40px!important;height:40px!important;
+  min-width:40px!important;max-width:40px!important;
+  min-height:40px!important;max-height:40px!important;
+  flex:0 0 40px!important;
+  box-sizing:border-box!important;
+}
+.composer.mode-images #composerAttachment.has-image img,
+.composer.mode-video #composerAttachment.has-image img{
+  display:block!important;
+  width:40px!important;height:40px!important;
+  min-width:40px!important;max-width:40px!important;
+  min-height:40px!important;max-height:40px!important;
+  object-fit:cover!important;object-position:center!important;
+}
+#composerAttachment button#composerAttachmentRemove{
+  display:grid!important;
+  place-items:center!important;
+  align-content:center!important;
+  justify-content:center!important;
+  padding:0!important;
+  font-size:0!important;
+  line-height:0!important;
+  text-align:center!important;
+  transform:none!important;
+}
+#composerAttachment button#composerAttachmentRemove::before{
+  content:"×"!important;
+  display:grid!important;
+  place-items:center!important;
+  width:100%!important;height:100%!important;
+  margin:0!important;padding:0!important;
+  color:#fff!important;
+  font-family:Arial,sans-serif!important;
+  font-size:14px!important;font-weight:600!important;
+  line-height:14px!important;
+  text-align:center!important;
+  transform:translateY(-1px)!important;
+}
+
