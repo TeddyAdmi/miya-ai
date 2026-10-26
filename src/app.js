@@ -1501,7 +1501,7 @@ function buildMediaCard(item,{video=false,pendingDots=false}={}){
   for(let row=0;row<rows;row++){
    for(let column=0;column<columns;column++){
     const dot=document.createElement("span");
-    dot.style.animationDelay="-"+(((row*3+column*2)%13)*0.09).toFixed(2)+"s";
+    dot.style.animationDelay="-"+(((13-((row*3+column*2)%13))%13)*0.09).toFixed(2)+"s";
     pendingDotsLayer.appendChild(dot);
    }
   }
