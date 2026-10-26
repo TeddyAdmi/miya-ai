@@ -451,6 +451,7 @@ function jpegImageUrl(url){
   return value;
 }
 let mode="chat",referenceImage=null,chatAttachmentFile=null,chatAttachmentImages=[],chatMessages=[],pendingAssistantQuote="",restoringSavedChat=false;
+let composerAttachmentPreviewObjectUrl="",referenceImagePrepareToken=0,referenceImagePreparing=false,attachmentPrepareSendWasDisabled=false;
 let videoGenerationBusy=false;
 const CHAT_KEY="miyaChats";
 let chatMenuSuppressed=false;
@@ -933,6 +934,10 @@ function setComposerAttachment(url){
  const box=$("#composerAttachment"),img=$("#composerAttachmentImage");
  if(!box||!img)return;
  const source=String(url||"").trim();
+ if(composerAttachmentPreviewObjectUrl&&source!==composerAttachmentPreviewObjectUrl){
+  try{URL.revokeObjectURL(composerAttachmentPreviewObjectUrl)}catch{}
+  composerAttachmentPreviewObjectUrl="";
+ }
  if(source){
   img.alt="Исходное изображение для редактирования";
   img.style.display="block";
@@ -978,9 +983,17 @@ function renderChatAttachmentImages(){
  syncInput();
 }
 function clearComposerAttachment(){
+ if(referenceImagePreparing){
+  referenceImagePrepareToken++;
+  referenceImagePreparing=false;
+  const send=$("#composerSend");
+  if(send&&!attachmentPrepareSendWasDisabled)send.disabled=false;
+ }
+ attachmentPrepareSendWasDisabled=false;
  referenceImage=null;
  chatAttachmentFile=null;
  chatAttachmentImages=[];
+ try{sessionStorage.removeItem("miyaReferenceImage")}catch{}
  renderChatAttachmentImages();
  setComposerAttachment("");
  if(mode==="images"&&$("#composerModel")) $("#composerModel").value="ImageSmith";
@@ -3129,7 +3142,7 @@ async function generateImage(prompt){
  const timeoutMs=70000;
  const progressDurationMs=40000;
  const usesReferenceImage=Boolean(referenceImage);
- const hasFileUpload=Boolean(referenceImage);
+
  const composerProgress=$("#composerProgress");
  let fakeTimer=null;
  const progressStartedAt=Date.now();
@@ -3148,7 +3161,7 @@ async function generateImage(prompt){
  setProgress(0);
  // All image models share one clock: 0→99% in 40 seconds, then wait up to 30 seconds.
   fakeTimer=setInterval(updateProgress,400);
- $("#composerStatus").textContent=hasFileUpload?displayModel+" · загрузка файла…":displayModel+" · Создание изображения · 0%";
+ $("#composerStatus").textContent=displayModel+" · Создание изображения · 0%";
  try{
   const payload={
    prompt,
@@ -3182,7 +3195,7 @@ async function generateImage(prompt){
      : JSON.stringify({
           mode:"image",provider:"ahm7",prompt,model:modelName,
           ratio:$("#composerRatio").value,quality:selectedQuality,outputFormat:"jpeg",copies:requestedCount,
-          options:referenceImage?payload:{}
+          options:/kontext/i.test(modelName)&&referenceImage?payload:{}
          });
   let data;
   const requestThroughMiyaApi=async()=>new Promise((resolve,reject)=>{
@@ -3190,15 +3203,6 @@ async function generateImage(prompt){
    xhr.open("POST",useAgnesImage?"/api/agnes-image":"/api/image",true);
    xhr.setRequestHeader("Content-Type","application/json");
    xhr.setRequestHeader("Accept","application/json");
-   xhr.upload.onprogress=e=>{
-    if(!hasFileUpload||!e.lengthComputable)return;
-    const p=Math.max(0,Math.min(99,Math.round(e.loaded/e.total*100)));
-    if($("#composerStatus"))$("#composerStatus").textContent=displayModel+" · загрузка файла "+p+"%";
-   };
-   xhr.upload.onload=()=>{
-    if(!hasFileUpload)return;
-    if($("#composerStatus"))$("#composerStatus").textContent=displayModel+" · файл загружен · создание изображения";
-   };
    xhr.onerror=()=>reject(new Error("Не удалось соединиться с сервером генерации"));
    xhr.ontimeout=()=>reject(new Error("Сервер генерации не ответил вовремя"));
    xhr.onload=()=>{
@@ -5047,18 +5051,7 @@ composerInput.addEventListener("paste",e=>{
   const file=imageItem?.getAsFile();
   if(!file)return;
   e.preventDefault();
-  chatAttachmentFile=file;
-  const previewUrl=URL.createObjectURL(file);
-  referenceImage=previewUrl;
-  setComposerAttachment(previewUrl);
-  if(mode==="images"){
-    $("#composerModel").value="Agnes Image 2.5 Flash";
-    $("#composerRatio").value="auto";
-    $("#composerStatus").textContent="Agnes 2.5 · исходное изображение готово к редактированию";
-  }else{
-    $("#composerStatus").textContent="Изображение вставлено · готово";
-  }
-  syncInput();
+  void attachReferenceFile(file);
 });
 composerInput.addEventListener("keydown",e=>{if(e.key==="Enter"&&!e.shiftKey){e.preventDefault();$("#composerSend").click()}});
 $("#composerSend").addEventListener("click",async()=>{
@@ -5309,54 +5302,117 @@ $("#videoTrash")?.addEventListener("click",()=>{
   $("#composerStatus").textContent=modes.video.status;
   toast("Текст очищен");
 });
+function readImageFileAsDataUrl(file){
+ return new Promise((resolve,reject)=>{
+  const reader=new FileReader();
+  reader.onload=()=>resolve(String(reader.result||""));
+  reader.onerror=()=>reject(reader.error||new Error("Не удалось прочитать фотографию"));
+  reader.onabort=()=>reject(new Error("Чтение фотографии отменено"));
+  reader.readAsDataURL(file);
+ });
+}
+async function prepareReferenceImageDataUrl(file){
+ const rawRead=()=>readImageFileAsDataUrl(file);
+ const type=String(file?.type||"").toLowerCase();
+ // Small files are already quick to send; preserve their original bytes and detail.
+ if(!file||file.size<=3*1024*1024||/image\/(?:gif|svg\+xml|bmp|tiff?)/i.test(type)||typeof createImageBitmap!=="function"){
+  return rawRead();
+ }
+ let bitmap=null;
+ try{
+  bitmap=await createImageBitmap(file);
+  const maxEdge=2560;
+  const scale=Math.min(1,maxEdge/Math.max(bitmap.width||1,bitmap.height||1));
+  const width=Math.max(1,Math.round((bitmap.width||1)*scale));
+  const height=Math.max(1,Math.round((bitmap.height||1)*scale));
+  const canvas=document.createElement("canvas");
+  canvas.width=width;canvas.height=height;
+  const context=canvas.getContext("2d");
+  if(!context)throw new Error("Не удалось подготовить фотографию");
+  context.drawImage(bitmap,0,0,width,height);
+  const preparedBlob=await new Promise((resolve,reject)=>{
+   canvas.toBlob(blob=>blob&&/^image\//i.test(blob.type)?resolve(blob):reject(new Error("Не удалось уменьшить фотографию")),"image/webp",.9);
+  });
+  // Avoid making an already-compact photo larger if no resize was needed.
+  if(scale===1&&preparedBlob.size>=file.size)return rawRead();
+  return await readImageFileAsDataUrl(preparedBlob);
+ }catch(error){
+  console.warn("Miya photo preparation fell back to the original file",error);
+  return rawRead();
+ }finally{
+  try{bitmap?.close()}catch{}
+ }
+}
 async function attachReferenceFile(file){
- if(!file||!String(file.type||"").startsWith("image/")){toast("Перетащи сюда файл изображения");return}
- if(mode==="chat") chatAttachmentFile=file;
- const reader=new FileReader();
- reader.onload=()=>{
-  const rawData=String(reader.result||"");
-  const finishAttachment=(dataUrl)=>{
-    if(mode==="chat"){
-      if(chatAttachmentImages.length>=1){toast("Пока можно прикрепить только одну фотографию");return}
-      chatAttachmentImages.push(dataUrl);
-      referenceImage=chatAttachmentImages[0]||null;
-      chatAttachmentFile=true;
-      // Chat uses the same attachment preview as Images and Video.
-      // Keep the legacy list empty so it cannot create an extra grid row or shift controls.
-      const legacyList=$("#chatComposerAttachments");
-      if(legacyList){legacyList.replaceChildren();legacyList.hidden=true}
-      $("#composer")?.classList.remove("has-chat-attachments");
-      setComposerAttachment(dataUrl);
-      try{sessionStorage.setItem("miyaReferenceImage",referenceImage||"")}catch{}
-      $("#composerStatus").textContent="Картинка прикреплена — можно спросить меня о ней.";
-      toast("Фото добавлено");
-      $("#composerInput").focus();
-      return;
-    }
-    referenceImage=dataUrl;
-    try{sessionStorage.setItem("miyaReferenceImage",referenceImage)}catch{}
-    setComposerAttachment(referenceImage);
-    if(mode==="images"){
-      // In Images, every newly uploaded reference starts the Agnes edit flow.
-      // Keep this change local to the UI; generation-only model flows are untouched.
-      $("#composerModel").value="Agnes Image 2.5 Flash";
-      $("#composerRatio").value="auto";
-      $("#composerStatus").textContent="Agnes 2.5 · исходное изображение готово к редактированию";
-    }else if(mode==="video"){
-      const selectedVideoModel=String($("#videoModel")?.value||"LTX-2.3 Distilled");
-      $("#composerStatus").textContent=selectedVideoModel+" · изображение готово";
-    }else{
-      $("#composerStatus").textContent="Картинка прикреплена — можно спросить меня о ней.";
-    }
-    toast(mode==="chat"?"Изображение прикреплено к чату":"Изображение добавлено");
-    $("#composerInput").focus();
-  };
-  // Show the selected photo immediately. Resizing it here forced a second decode,
-  // canvas draw and JPEG encode before the attachment appeared; Agnes compresses
-  // its reference at request time, so keep the upload path lightweight.
-  finishAttachment(rawData);
- };
- reader.readAsDataURL(file);
+ if(!file||!String(file.type||"").startsWith("image/")){toast("Выбери файл изображения");return}
+ if(referenceImagePreparing){toast("Фотография уже подготавливается");return}
+ if(mode==="chat"&&chatAttachmentImages.length>=1){toast("Пока можно прикрепить только одну фотографию");return}
+
+ const token=++referenceImagePrepareToken;
+ const send=$("#composerSend");
+ attachmentPrepareSendWasDisabled=Boolean(send?.disabled);
+ referenceImagePreparing=true;
+ if(send)send.disabled=true;
+ if(mode==="chat")chatAttachmentFile=file;
+ referenceImage=null;
+ try{sessionStorage.removeItem("miyaReferenceImage")}catch{}
+
+ // The local preview is instant. The prepared data is kept separately for all
+ // later image/video requests, so selecting Create never repeats file decoding.
+ try{if(composerAttachmentPreviewObjectUrl)URL.revokeObjectURL(composerAttachmentPreviewObjectUrl)}catch{}
+ const previewUrl=URL.createObjectURL(file);
+ composerAttachmentPreviewObjectUrl=previewUrl;
+ setComposerAttachment(previewUrl);
+ if($("#composerStatus"))$("#composerStatus").textContent="Подготавливаю фотографию…";
+
+ try{
+  const dataUrl=await prepareReferenceImageDataUrl(file);
+  if(token!==referenceImagePrepareToken)return;
+  if(!/^data:image\//i.test(dataUrl))throw new Error("Не удалось подготовить фотографию");
+  referenceImage=dataUrl;
+  try{sessionStorage.setItem("miyaReferenceImage",referenceImage)}catch{}
+
+  if(mode==="chat"){
+   chatAttachmentImages.push(dataUrl);
+   chatAttachmentFile=true;
+   // Chat uses the same visible thumbnail; the hidden legacy list stays empty.
+   const legacyList=$("#chatComposerAttachments");
+   if(legacyList){legacyList.replaceChildren();legacyList.hidden=true}
+   $("#composer")?.classList.remove("has-chat-attachments");
+   $("#composerStatus").textContent="Картинка прикреплена — можно спросить меня о ней.";
+   toast("Фото добавлено");
+  }else if(mode==="images"){
+   // Prepare once at selection time; the model can be changed after attachment.
+   $("#composerModel").value="Agnes Image 2.5 Flash";
+   $("#composerRatio").value="auto";
+   $("#composerStatus").textContent="Agnes 2.5 · исходное изображение готово к редактированию";
+   toast("Изображение подготовлено");
+  }else if(mode==="video"){
+   const selectedVideoModel=String($("#videoModel")?.value||"LTX-2.3 Distilled");
+   $("#composerStatus").textContent=selectedVideoModel+" · изображение готово";
+   toast("Изображение подготовлено");
+  }else{
+   $("#composerStatus").textContent="Картинка прикреплена — можно спросить меня о ней.";
+   toast("Изображение подготовлено");
+  }
+  syncInput();
+  $("#composerInput").focus();
+ }catch(error){
+  if(token!==referenceImagePrepareToken)return;
+  referenceImage=null;
+  chatAttachmentFile=null;
+  setComposerAttachment("");
+  const message="Не удалось подготовить фотографию";
+  if($("#composerStatus"))$("#composerStatus").textContent=message;
+  toast(message);
+  console.error("Miya photo attachment failed",error);
+ }finally{
+  if(token===referenceImagePrepareToken){
+   referenceImagePreparing=false;
+   if(send&&!attachmentPrepareSendWasDisabled)send.disabled=false;
+   attachmentPrepareSendWasDisabled=false;
+  }
+ }
 }
 $("#referenceInput").onchange=e=>{
  const files=[...(e.target.files||[])].filter(file=>String(file.type||"").startsWith("image/"));
