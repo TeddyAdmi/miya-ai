@@ -123,9 +123,10 @@ const $=s=>document.querySelector(s);
   visibility:hidden!important;pointer-events:none!important;
  }
  /* Keep all adjacent controls in their original grid cells after the plus is replaced. */
- #composer.mode-chat:has(#composerAttachment.has-image) .chat-options{grid-column:2 / 4!important;}
- #composer.mode-images:has(#composerAttachment.has-image) .image-settings{grid-column:2 / 4!important;}
- #composer.mode-video:has(#composerAttachment.has-image) #videoOptions{grid-column:2 / 4!important;}
+ /* The thumbnail overlays the plus button; neighboring controls keep their original layout. */
+ #composer .composer-left-actions{position:relative!important;flex:0 0 34px!important;width:34px!important;height:34px!important;min-width:34px!important;}
+ #composer .composer-left-actions #composerAttachment.has-image{left:50%!important;top:50%!important;width:30px!important;height:30px!important;min-width:30px!important;max-width:30px!important;min-height:30px!important;max-height:30px!important;transform:translate(-50%,-50%)!important;}
+ #composer.mode-chat.has-chat-attachments .composer-input-row{grid-template-rows:none!important;row-gap:0!important;}
  #composer #composerAttachment.has-image img{
   display:block!important;width:100%!important;height:100%!important;
   min-width:0!important;min-height:0!important;max-width:100%!important;max-height:100%!important;
@@ -5482,6 +5483,10 @@ async function prepareAndAttachReferenceFile(file){
 }
 let referenceAttachmentQueue=Promise.resolve();
 function attachReferenceFile(file){
+ // A single selection starts immediately so its local preview is visible without
+ // waiting behind an earlier preparation. Preserve serialized handling for
+ // multi-photo Chat selections.
+ if(mode!=="chat")return prepareAndAttachReferenceFile(file);
  const job=referenceAttachmentQueue.then(()=>prepareAndAttachReferenceFile(file));
  referenceAttachmentQueue=job.catch(()=>{});
  return job;
