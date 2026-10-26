@@ -4349,7 +4349,7 @@ body.light .media-new-image-dots span{
  .media-new-image-dots span{animation:none;opacity:.55;transform:none}
 }
 
-/* Improve prompt: compact blue gradient button, matching the create-image button with no backing layer. */
+/* Improve prompt: use the exact profile-avatar gradient; keep the button clean and stationary. */
 #composer .image-settings #improve{
   appearance:none!important;
   -webkit-appearance:none!important;
@@ -4370,7 +4370,7 @@ body.light .media-new-image-dots span{
   justify-self:center!important;
   border:0!important;
   border-radius:8px!important;
-  background:linear-gradient(135deg,#57b5ff 0%,#438aff 52%,#3866f5 100%)!important;
+  background:linear-gradient(135deg,#8f62ff,#4b7dff)!important;
   background-clip:padding-box!important;
   color:#fff!important;
   box-shadow:none!important;
@@ -4403,7 +4403,7 @@ body.light .media-new-image-dots span{
 }
 #composer .image-settings #improve:hover,
 body.light #composer .image-settings #improve:hover{
-  background:linear-gradient(135deg,#70c2ff 0%,#5897ff 52%,#4c78ff 100%)!important;
+  background:linear-gradient(135deg,#8f62ff,#4b7dff)!important;
   color:#fff!important;
   border:0!important;
   border-radius:8px!important;
@@ -4414,7 +4414,7 @@ body.light #composer .image-settings #improve:hover{
 }
 #composer .image-settings #improve:active,
 body.light #composer .image-settings #improve:active{
-  background:linear-gradient(135deg,#438ff0 0%,#3472ed 52%,#2e5bdd 100%)!important;
+  background:linear-gradient(135deg,#8f62ff,#4b7dff)!important;
   color:#fff!important;
   border:0!important;
   border-radius:8px!important;
@@ -4423,7 +4423,7 @@ body.light #composer .image-settings #improve:active{
   filter:none!important;
 }
 body.light #composer .image-settings #improve{
-  background:linear-gradient(135deg,#57b5ff 0%,#438aff 52%,#3866f5 100%)!important;
+  background:linear-gradient(135deg,#8f62ff,#4b7dff)!important;
   color:#fff!important;
   border:0!important;
   border-radius:8px!important;
