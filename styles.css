@@ -4242,3 +4242,50 @@ body.light .miya-music-brand a{color:#7152dc!important}
 }
 #composerRatio option,#videoRatio option{font-family:Inter,system-ui,sans-serif}
 body.light #composerRatio,body.light #videoRatio{background-color:#f4f7fa!important}
+
+
+/* One-shot shimmer sweep, scoped only to the successful image-prompt status text. */
+#composerStatus.composer-status-shimmer{
+  color:transparent!important;
+  -webkit-text-fill-color:transparent!important;
+  -webkit-background-clip:text;
+  background-clip:text;
+  background-image:linear-gradient(
+    108deg,
+    #6e87a3 0%,
+    #6e87a3 43%,
+    rgba(207,228,255,.88) 49%,
+    #ffffff 51%,
+    rgba(207,228,255,.88) 53%,
+    #6e87a3 59%,
+    #6e87a3 100%
+  );
+  background-size:250% 100%;
+  background-position:100% 0;
+  background-repeat:no-repeat;
+  animation:miya-prompt-success-shimmer .82s cubic-bezier(.22,.61,.36,1) 1 both;
+}
+body.light #composerStatus.composer-status-shimmer{
+  background-image:linear-gradient(
+    108deg,
+    #53657a 0%,
+    #53657a 43%,
+    rgba(105,137,184,.72) 49%,
+    #ffffff 51%,
+    rgba(105,137,184,.72) 53%,
+    #53657a 59%,
+    #53657a 100%
+  );
+}
+@keyframes miya-prompt-success-shimmer{
+  from{background-position:100% 0}
+  to{background-position:0 0}
+}
+@media(prefers-reduced-motion:reduce){
+  #composerStatus.composer-status-shimmer{
+    animation:none!important;
+    background-image:none!important;
+    color:inherit!important;
+    -webkit-text-fill-color:currentColor!important;
+  }
+}
