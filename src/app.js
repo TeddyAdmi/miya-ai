@@ -308,6 +308,11 @@ body.light .floating-wall-clear svg *,body.light .floating-theme svg *{
   background:#dc2626!important;color:#ffffff!important;border-color:#ffffff!important;
   transition:none!important;transform:none!important;
 }
+/* Make the selected photo visibly lift toward the viewer in Z without changing its layout box. */
+.composer.mode-chat .composer-attachment.has-image,.composer.mode-images .composer-attachment.has-image,.composer.mode-video .composer-attachment.has-image,.composer.mode-chat .chat-attachment-list .chat-attachment-thumb{perspective:150px!important;transform-style:preserve-3d!important;overflow:visible!important}
+.composer.mode-chat .composer-attachment.has-image img,.composer.mode-images .composer-attachment.has-image img,.composer.mode-video .composer-attachment.has-image img,.composer.mode-chat .chat-attachment-list .chat-attachment-thumb img{transform-origin:50% 58%!important;backface-visibility:hidden!important;border:1px solid rgba(255,255,255,.28)!important;box-shadow:0 2px 0 rgba(0,0,0,.16),0 5px 8px rgba(0,0,0,.20),0 10px 16px rgba(0,0,0,.18)!important;filter:drop-shadow(0 0 1px rgba(255,255,255,.25))!important;animation:miyaAttachmentZLift 2.4s cubic-bezier(.42,0,.25,1) infinite alternate!important;will-change:transform,box-shadow!important}
+@keyframes miyaAttachmentZLift{0%{transform:perspective(150px) translateZ(0) rotateX(0deg) rotateY(0deg) scale(1)!important;box-shadow:0 1px 0 rgba(0,0,0,.14),0 3px 5px rgba(0,0,0,.15),0 5px 9px rgba(0,0,0,.10)!important}100%{transform:perspective(150px) translateZ(11px) rotateX(5deg) rotateY(-3deg) scale(1.13)!important;box-shadow:0 3px 0 rgba(0,0,0,.19),0 8px 12px rgba(0,0,0,.24),0 14px 20px rgba(0,0,0,.23)!important}}
+@media(prefers-reduced-motion:reduce){.composer.mode-chat .composer-attachment.has-image img,.composer.mode-images .composer-attachment.has-image img,.composer.mode-video .composer-attachment.has-image img,.composer.mode-chat .chat-attachment-list .chat-attachment-thumb img{animation:none!important;transform:perspective(150px) translateZ(7px) rotateX(3deg) scale(1.08)!important}}
 .chat-room .chat-welcome.section-welcome .hero-mark,.studio-room .chat-welcome.section-welcome .hero-mark{margin-top:0!important;transform:none!important;position:relative!important;top:auto!important}
 `;
  document.head.appendChild(st);
