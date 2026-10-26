@@ -5065,6 +5065,7 @@ composerInput.addEventListener("paste",e=>{
 });
 composerInput.addEventListener("keydown",e=>{if(e.key==="Enter"&&!e.shiftKey){e.preventDefault();$("#composerSend").click()}});
 $("#composerSend").addEventListener("click",async()=>{
+ if(referenceImagePreparing){toast("Фотография ещё подготавливается");return}
  const value=$("#composerInput").value.trim();
  if(!value){
    toast(mode==="chat"?"Напиши сообщение":mode==="video"?"Опиши видео":"Опиши, что создать или изменить");return
