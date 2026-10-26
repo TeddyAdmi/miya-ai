@@ -92,29 +92,37 @@ voice:{title:"Голос",eyebrow:"ГОЛОС",subtitle:"Превращай те
 const $=s=>document.querySelector(s);
 
 (function ensureAttachmentPreviewReplacesPlus(){
+ const box=document.getElementById("composerAttachment");
+ const slot=document.querySelector(".composer-left-actions");
+ if(box&&slot&&box.parentElement!==slot)slot.appendChild(box);
  if(document.getElementById("miyaAttachmentPreviewReplacesPlus"))return;
  const st=document.createElement("style");
  st.id="miyaAttachmentPreviewReplacesPlus";
  st.textContent=`
- /* The preview overlays the plus slot; it never becomes a separate grid item. */
+ /* The preview lives inside the plus slot and overlays it without changing layout. */
  #composer{position:relative!important;}
+ #composer.mode-chat .composer-left-actions:has(#composerAttachment),
+ #composer.mode-images .composer-left-actions:has(#composerAttachment),
+ #composer.mode-video .composer-left-actions:has(#composerAttachment){
+  position:relative!important;overflow:visible!important;
+ }
  #composer #composerAttachment.has-image{
-  position:absolute!important;left:12px!important;bottom:22px!important;right:auto!important;top:auto!important;
+  position:absolute!important;left:50%!important;top:50%!important;right:auto!important;bottom:auto!important;
   display:block!important;width:30px!important;height:30px!important;
   min-width:30px!important;max-width:30px!important;min-height:30px!important;max-height:30px!important;
   flex:0 0 30px!important;grid-column:auto!important;grid-row:auto!important;
   align-self:auto!important;justify-self:auto!important;margin:0!important;
-  box-sizing:border-box!important;transform:none!important;z-index:1010!important;
+  box-sizing:border-box!important;transform:translate(-50%,-50%)!important;z-index:1010!important;
  }
  #composer.mode-chat #composerAttachment.has-image{
-  left:10px!important;bottom:23px!important;width:29px!important;height:29px!important;
+  width:29px!important;height:29px!important;
   min-width:29px!important;max-width:29px!important;min-height:29px!important;max-height:29px!important;
   flex:0 0 29px!important;
  }
  #composer:has(#composerAttachment.has-image) #composerAttach{
   visibility:hidden!important;pointer-events:none!important;
  }
- /* Do not move the settings or chat actions when the image replaces the plus. */
+ /* Keep all adjacent controls in their original grid cells after the plus is replaced. */
  #composer.mode-chat:has(#composerAttachment.has-image) .chat-options{grid-column:2 / 4!important;}
  #composer.mode-images:has(#composerAttachment.has-image) .image-settings{grid-column:2 / 4!important;}
  #composer.mode-video:has(#composerAttachment.has-image) #videoOptions{grid-column:2 / 4!important;}
@@ -125,7 +133,7 @@ const $=s=>document.querySelector(s);
  }
  `;
  document.head.appendChild(st);
-})();
+})();;
 function installAnimatedStatusDots(){
  const status=$("#composerStatus");
  if(!status||status.dataset.animatedDotsReady)return;
