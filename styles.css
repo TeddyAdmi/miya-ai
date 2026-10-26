@@ -4290,7 +4290,7 @@ body.light #composerRatio,body.light #videoRatio{background-color:#f4f7fa!import
   }
 }
 
-/* New image cards only: synchronized diagonal dot-wave while the generated image loads. */
+/* New image cards only: clearly visible pulsing dots; the dots themselves stay still. */
 .media-new-image-dots{
  position:absolute;
  inset:0;
@@ -4302,23 +4302,23 @@ body.light #composerRatio,body.light #videoRatio{background-color:#f4f7fa!import
  justify-items:center;
  padding:5px 7px;
  pointer-events:none;
- background:rgba(7,24,43,.035);
+ background:rgba(7,24,43,.055);
 }
 .media-new-image-dots span{
  display:block;
  width:2px;
  height:2px;
  border-radius:50%;
- background:rgba(193,225,255,.92);
- box-shadow:0 0 5px rgba(126,190,255,.25);
+ background:rgba(205,232,255,1);
+ box-shadow:0 0 6px rgba(126,190,255,.48);
  opacity:.3;
  transform:scale(.72);
- animation:miya-new-image-dot-pulse 1.35s ease-in-out infinite;
+ animation:miya-new-image-dot-pulse 1.15s ease-in-out infinite;
 }
 @keyframes miya-new-image-dot-pulse{
- 0%,100%{opacity:.18;transform:scale(.62)}
- 50%{opacity:.88;transform:scale(1.42)}
+ 0%,100%{opacity:.08;transform:scale(.45);box-shadow:0 0 1px rgba(126,190,255,.12)}
+ 50%{opacity:1;transform:scale(2.05);box-shadow:0 0 8px rgba(126,190,255,.72)}
 }
 @media(prefers-reduced-motion:reduce){
- .media-new-image-dots span{animation:none;opacity:.55;transform:none}
+ .media-new-image-dots span{animation:none;opacity:.7;transform:scale(1.15)}
 }
