@@ -300,7 +300,7 @@ body.light .floating-wall-clear svg *,body.light .floating-theme svg *{
   margin:0!important;padding:0!important;box-sizing:border-box!important;
   border:1px solid #ffffff!important;border-radius:50%!important;
   background:#ef4444!important;color:#ffffff!important;font-size:13px!important;font-weight:700!important;
-  line-height:1!important;display:flex!important;align-items:center!important;justify-content:center!important;
+  line-height:0!important;display:grid!important;place-items:center!important;
   text-align:center!important;box-shadow:0 1px 4px rgba(0,0,0,.25)!important;
   transition:none!important;transform:none!important;
 }
@@ -330,14 +330,18 @@ body.light .floating-wall-clear svg *,body.light .floating-theme svg *{
   min-width:38px!important;max-width:38px!important;min-height:38px!important;max-height:38px!important;
   object-fit:cover!important;object-position:center!important;border-radius:8px!important;
 }
-/* Center the white X exactly inside the red remove circle. */
+/* Use one symmetric SVG cross; hide the old pseudo-element bars entirely. */
 #composerAttachment button#composerAttachmentRemove::before,
-#composerAttachment button#composerAttachmentRemove::after{
-  left:calc(50% + 1px)!important;top:50%!important;margin:0!important;
-  transform-origin:50% 50%!important;
+#composerAttachment button#composerAttachmentRemove::after{content:none!important;display:none!important}
+#composerAttachment button#composerAttachmentRemove > svg{
+  display:block!important;width:9px!important;height:9px!important;min-width:9px!important;min-height:9px!important;
+  max-width:9px!important;max-height:9px!important;margin:0!important;padding:0!important;position:static!important;
+  transform:none!important;overflow:visible!important;fill:none!important;stroke:#fff!important;stroke-width:1.6!important;
+  stroke-linecap:round!important;stroke-linejoin:round!important;
 }
-#composerAttachment button#composerAttachmentRemove::before{transform:translate(-50%,-50%) rotate(45deg)!important}
-#composerAttachment button#composerAttachmentRemove::after{transform:translate(-50%,-50%) rotate(-45deg)!important}
+#composerAttachment button#composerAttachmentRemove > svg path{
+  fill:none!important;stroke:#fff!important;stroke-width:1.6!important;stroke-linecap:round!important;stroke-linejoin:round!important;
+}
 
 /* Static Z-axis lift for attached photos: no animation, rotation or glow. */
 .composer.mode-chat .composer-attachment.has-image,.composer.mode-images .composer-attachment.has-image,.composer.mode-video .composer-attachment.has-image,.composer.mode-chat .chat-attachment-list .chat-attachment-thumb{perspective:120px!important;transform-style:preserve-3d!important;overflow:visible!important}
