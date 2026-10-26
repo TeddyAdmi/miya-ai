@@ -4289,3 +4289,36 @@ body.light #composerRatio,body.light #videoRatio{background-color:#f4f7fa!import
     background-image:none!important;
   }
 }
+
+/* New image cards only: animated dot-grid while the generated image is loading. */
+.media-new-image-dots{
+ position:absolute;
+ inset:0;
+ z-index:1;
+ display:grid;
+ grid-template-columns:repeat(19,minmax(0,1fr));
+ grid-template-rows:repeat(11,minmax(0,1fr));
+ align-items:center;
+ justify-items:center;
+ padding:5px 7px;
+ pointer-events:none;
+ background:rgba(7,24,43,.035);
+}
+.media-new-image-dots span{
+ display:block;
+ width:3px;
+ height:3px;
+ border-radius:50%;
+ background:rgba(193,225,255,.92);
+ box-shadow:0 0 5px rgba(126,190,255,.25);
+ opacity:.22;
+ transform:scale(.55);
+ animation:miya-new-image-dot-pulse 1.35s ease-in-out infinite;
+}
+@keyframes miya-new-image-dot-pulse{
+ 0%,100%{opacity:.18;transform:scale(.55)}
+ 50%{opacity:.82;transform:scale(1.35)}
+}
+@media(prefers-reduced-motion:reduce){
+ .media-new-image-dots span{animation:none;opacity:.55;transform:none}
+}
