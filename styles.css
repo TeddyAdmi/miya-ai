@@ -4349,7 +4349,7 @@ body.light .media-new-image-dots span{
  .media-new-image-dots span{animation:none;opacity:.55;transform:none}
 }
 
-/* Improve prompt: one stable yellow button with no overlapping layers or hover movement. */
+/* Improve prompt: compact blue gradient button, matching the create-image button with no backing layer. */
 #composer .image-settings #improve{
   appearance:none!important;
   -webkit-appearance:none!important;
@@ -4370,9 +4370,10 @@ body.light .media-new-image-dots span{
   justify-self:center!important;
   border:0!important;
   border-radius:8px!important;
-  background:linear-gradient(135deg,#ffe16a 0%,#ffc629 54%,#e7a900 100%)!important;
+  background:linear-gradient(135deg,#57b5ff 0%,#438aff 52%,#3866f5 100%)!important;
+  background-clip:padding-box!important;
   color:#fff!important;
-  box-shadow:0 2px 0 #b98208,0 3px 6px rgba(0,0,0,.16)!important;
+  box-shadow:none!important;
   outline:none!important;
   transform:none!important;
   filter:none!important;
@@ -4382,11 +4383,14 @@ body.light .media-new-image-dots span{
 #composer .image-settings #improve::after{
   content:none!important;
   display:none!important;
+  box-shadow:none!important;
 }
 #composer .image-settings #improve svg{
   display:block!important;
   width:17px!important;
   height:17px!important;
+  min-width:17px!important;
+  min-height:17px!important;
   margin:0!important;
   fill:none!important;
   stroke:#fff!important;
@@ -4395,28 +4399,34 @@ body.light .media-new-image-dots span{
   stroke-linecap:round!important;
   stroke-linejoin:round!important;
   transform:none!important;
+  filter:none!important;
 }
 #composer .image-settings #improve:hover,
 body.light #composer .image-settings #improve:hover{
-  background:linear-gradient(135deg,#ffe887 0%,#ffd044 54%,#efb30a 100%)!important;
+  background:linear-gradient(135deg,#70c2ff 0%,#5897ff 52%,#4c78ff 100%)!important;
   color:#fff!important;
   border:0!important;
-  box-shadow:0 2px 0 #b98208,0 3px 6px rgba(0,0,0,.16)!important;
+  border-radius:8px!important;
+  box-shadow:none!important;
   outline:none!important;
   transform:none!important;
   filter:none!important;
 }
 #composer .image-settings #improve:active,
 body.light #composer .image-settings #improve:active{
-  background:linear-gradient(135deg,#f5cd42 0%,#edb21a 100%)!important;
+  background:linear-gradient(135deg,#438ff0 0%,#3472ed 52%,#2e5bdd 100%)!important;
   color:#fff!important;
-  box-shadow:0 1px 0 #b98208!important;
+  border:0!important;
+  border-radius:8px!important;
+  box-shadow:none!important;
   transform:none!important;
   filter:none!important;
 }
 body.light #composer .image-settings #improve{
-  background:linear-gradient(135deg,#ffe16a 0%,#ffc629 54%,#e7a900 100%)!important;
+  background:linear-gradient(135deg,#57b5ff 0%,#438aff 52%,#3866f5 100%)!important;
   color:#fff!important;
   border:0!important;
+  border-radius:8px!important;
+  box-shadow:none!important;
 }
 
