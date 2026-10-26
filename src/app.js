@@ -5119,8 +5119,6 @@ function runComposerStatusShimmer(status,text){
  if(!status)return;
  status.classList.remove("composer-status-shimmer");
  delete status.dataset.shimmerText;
- const reduceMotion=window.matchMedia&&window.matchMedia("(prefers-reduced-motion: reduce)").matches;
- if(reduceMotion)return;
  const shimmerText=String(text??status.textContent??"");
  status.dataset.shimmerText=shimmerText;
  void status.offsetWidth;
