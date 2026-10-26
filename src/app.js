@@ -1501,7 +1501,14 @@ function buildMediaCard(item,{video=false,pendingDots=false}={}){
   for(let row=0;row<rows;row++){
    for(let column=0;column<columns;column++){
     const dot=document.createElement("span");
-    dot.style.animationDelay="-"+(((13-((row*3+column*2)%13))%13)*0.09).toFixed(2)+"s";
+    const index=row*columns+column+1;
+    const randomA=((Math.sin(index*127.1+row*311.7)*43758.5453)%1+1)%1;
+    const randomB=((Math.sin(index*269.5+column*183.3)*24634.6345)%1+1)%1;
+    const size=1.5+randomA*2.4;
+    dot.style.width=size.toFixed(1)+"px";
+    dot.style.height=size.toFixed(1)+"px";
+    dot.style.animationDelay="-"+(randomB*1.35).toFixed(2)+"s";
+    dot.style.opacity=(0.22+randomA*0.28).toFixed(2);
     pendingDotsLayer.appendChild(dot);
    }
   }
