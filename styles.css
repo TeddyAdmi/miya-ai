@@ -4290,7 +4290,7 @@ body.light #composerRatio,body.light #videoRatio{background-color:#f4f7fa!import
   }
 }
 
-/* New image cards only: visible from the start, with a repeating left-to-right pulse wave. */
+/* New image cards only: uniform dots, repeating left-to-right pulse wave. */
 .media-new-image-dots{
  position:absolute;
  inset:0;
@@ -4314,6 +4314,9 @@ body.light #composerRatio,body.light #videoRatio{background-color:#f4f7fa!import
  transform:scale(.78);
  animation:miya-new-image-dot-pulse 3.2s ease-in-out infinite;
  animation-fill-mode:backwards;
+}
+body.light .media-new-image-dots span{
+ background:rgba(32,58,91,.9);
 }
 @keyframes miya-new-image-dot-pulse{
  0%,100%{opacity:.24;transform:scale(.78)}
