@@ -1503,7 +1503,7 @@ function buildMediaCard(item,{video=false,pendingDots=false}={}){
     const dot=document.createElement("span");
     // Subtle size variation, with pulse timing synchronized into a diagonal wave.
     const size=1.8+((row*3+column*5)%5)*0.22;
-    const diagonalStep=row+column;
+    const diagonalStep=row+(columns-1-column);
     const phase=(diagonalStep*0.075)%1.35;
     dot.style.width=size.toFixed(1)+"px";
     dot.style.height=size.toFixed(1)+"px";
