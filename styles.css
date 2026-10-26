@@ -4290,7 +4290,7 @@ body.light #composerRatio,body.light #videoRatio{background-color:#f4f7fa!import
   }
 }
 
-/* New image cards only: a slow, even left-to-right wave of plain pulsing dots. */
+/* New image cards only: visible from the start, with a repeating left-to-right pulse wave. */
 .media-new-image-dots{
  position:absolute;
  inset:0;
@@ -4313,6 +4313,7 @@ body.light #composerRatio,body.light #videoRatio{background-color:#f4f7fa!import
  opacity:.24;
  transform:scale(.78);
  animation:miya-new-image-dot-pulse 3.2s ease-in-out infinite;
+ animation-fill-mode:backwards;
 }
 @keyframes miya-new-image-dot-pulse{
  0%,100%{opacity:.24;transform:scale(.78)}
