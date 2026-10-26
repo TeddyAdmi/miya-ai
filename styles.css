@@ -4290,7 +4290,7 @@ body.light #composerRatio,body.light #videoRatio{background-color:#f4f7fa!import
   }
 }
 
-/* New image cards only: animated dot-grid while the generated image is loading. */
+/* New image cards only: synchronized diagonal dot-wave while the generated image loads. */
 .media-new-image-dots{
  position:absolute;
  inset:0;
@@ -4316,8 +4316,8 @@ body.light #composerRatio,body.light #videoRatio{background-color:#f4f7fa!import
  animation:miya-new-image-dot-pulse 1.35s ease-in-out infinite;
 }
 @keyframes miya-new-image-dot-pulse{
- 0%,100%{opacity:.16;transform:scale(.58)}
- 50%{opacity:.92;transform:scale(1.5)}
+ 0%,100%{opacity:.18;transform:scale(.62)}
+ 50%{opacity:.88;transform:scale(1.42)}
 }
 @media(prefers-reduced-motion:reduce){
  .media-new-image-dots span{animation:none;opacity:.55;transform:none}
