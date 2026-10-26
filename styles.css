@@ -4448,27 +4448,43 @@ body.light #composer .image-settings #improve{
   object-fit:cover!important;object-position:center!important;
 }
 #composerAttachment button#composerAttachmentRemove{
-  display:grid!important;
-  place-items:center!important;
-  align-content:center!important;
-  justify-content:center!important;
+  position:absolute!important;
+  display:block!important;
+  box-sizing:border-box!important;
   padding:0!important;
   font-size:0!important;
   line-height:0!important;
   text-align:center!important;
   transform:none!important;
 }
+#composerAttachment button#composerAttachmentRemove::before,
+#composerAttachment button#composerAttachmentRemove::after{
+  content:""!important;
+  position:absolute!important;
+  display:block!important;
+  left:50%!important;
+  top:50%!important;
+  right:auto!important;
+  bottom:auto!important;
+  width:8px!important;
+  height:1.5px!important;
+  min-width:8px!important;
+  min-height:1.5px!important;
+  margin:0!important;
+  padding:0!important;
+  border:0!important;
+  border-radius:1px!important;
+  background:#fff!important;
+  color:transparent!important;
+  box-shadow:none!important;
+  font-size:0!important;
+  line-height:0!important;
+  transform-origin:50% 50%!important;
+}
 #composerAttachment button#composerAttachmentRemove::before{
-  content:"×"!important;
-  display:grid!important;
-  place-items:center!important;
-  width:100%!important;height:100%!important;
-  margin:0!important;padding:0!important;
-  color:#fff!important;
-  font-family:Arial,sans-serif!important;
-  font-size:14px!important;font-weight:600!important;
-  line-height:14px!important;
-  text-align:center!important;
-  transform:translateY(-1px)!important;
+  transform:translate(-50%,-50%) rotate(45deg)!important;
+}
+#composerAttachment button#composerAttachmentRemove::after{
+  transform:translate(-50%,-50%) rotate(-45deg)!important;
 }
 
