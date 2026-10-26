@@ -455,7 +455,7 @@ function jpegImageUrl(url){
   return value;
 }
 let mode="chat",referenceImage=null,chatAttachmentFile=null,chatAttachmentImages=[],chatMessages=[],pendingAssistantQuote="",restoringSavedChat=false;
-let composerAttachmentPreviewObjectUrl="",referenceImagePrepareToken=0,referenceImagePreparing=false,attachmentPrepareSendWasDisabled=false;
+let composerAttachmentPreviewObjectUrl="",referenceImagePrepareToken=0,referenceImagePreparing=false;
 let agnesPreparedReferenceSource="",agnesPreparedReferenceDataUrl="";
 let videoGenerationBusy=false;
 const CHAT_KEY="miyaChats";
@@ -992,9 +992,8 @@ function clearComposerAttachment(){
   referenceImagePrepareToken++;
   referenceImagePreparing=false;
   const send=$("#composerSend");
-  if(send&&!attachmentPrepareSendWasDisabled)send.disabled=false;
+  if(send)send.disabled=false;
  }
- attachmentPrepareSendWasDisabled=false;
  referenceImage=null;
  agnesPreparedReferenceSource="";
  agnesPreparedReferenceDataUrl="";
@@ -3019,9 +3018,9 @@ async function compressAgnesReferenceImage(source){
   return output;
  }catch{return value}
 }
-async function generateAgnesImage(prompt){
+async function generateAgnesImage(prompt,loaderAlreadyShown=false){
  if(videoGenerationBusy){}
- showLoading();if($("#composerSend"))$("#composerSend").disabled=true;
+ if(!loaderAlreadyShown)showLoading();if($("#composerSend"))$("#composerSend").disabled=true;
  const model="Agnes Image 2.5 Flash";
  const displayModel=imageModelLabel(model);
  const ethnicityRequested=/(asian|east asian|south asian|japanese|chinese|korean|mongolian|азиат|япон|кита|корей|монгол|african|black person|afro|afro-american|африкан|афроамерикан|араб|arab|indian|индийск|латино|latino|hispanic|испаноязыч|мексикан|indigenous|native american|коренной американ|еврей|jewish|славян|slavic|европейск|european|caucasian|кавказск)/i.test(String(prompt||""));
@@ -3130,7 +3129,7 @@ async function generateAgnesImage(prompt){
 }
 
 
-async function generateImage(prompt){
+async function generateImage(prompt,loaderAlreadyShown=false){
  const selectedModel=String($("#composerModel")?.value||"").trim();
  const useAgnesImage=/^Agnes Image/i.test(selectedModel);
  const useImageFree=/^Z-Image Turbo \(ImageFree\)$/i.test(selectedModel);
@@ -3142,12 +3141,12 @@ async function generateImage(prompt){
  // Existing-image edits stay on the established Agnes editing route.
  if(referenceImage && (useImageFree || useQwenImage21 || useNanoBananA || useImageSmith || useCinel)){
   $("#composerModel").value="Agnes Image 2.5 Flash";
-  return generateAgnesImage(prompt);
+  return generateAgnesImage(prompt,loaderAlreadyShown);
  }
  if(useAgnesImage){
-  return generateAgnesImage(prompt);
+  return generateAgnesImage(prompt,loaderAlreadyShown);
  }
- showLoading();$("#composerSend").disabled=true;
+ if(!loaderAlreadyShown)showLoading();$("#composerSend").disabled=true;
  const loader=$("#canvas .generation-loading");
  const ring=loader?.querySelector(".progress-circle");
  const percent=ring?.querySelector(".progress-percent");
@@ -5069,10 +5068,32 @@ composerInput.addEventListener("paste",e=>{
 });
 composerInput.addEventListener("keydown",e=>{if(e.key==="Enter"&&!e.shiftKey){e.preventDefault();$("#composerSend").click()}});
 $("#composerSend").addEventListener("click",async()=>{
- if(referenceImagePreparing){toast("Фотография ещё подготавливается");return}
  const value=$("#composerInput").value.trim();
  if(!value){
    toast(mode==="chat"?"Напиши сообщение":mode==="video"?"Опиши видео":"Опиши, что создать или изменить");return
+ }
+ if(referenceImagePreparing){
+  if(mode==="images"){
+   showLoading();
+   const loadingCard=$("#canvas .generation-loading");
+   if(loadingCard){
+    loadingCard.classList.remove("no-upload");
+    loadingCard.classList.add("has-upload");
+    loadingCard.dataset.model="Agnes Image 2.5 Flash";
+    const modelLabel=loadingCard.querySelector(".progress-model");
+    if(modelLabel)modelLabel.textContent=imageModelLabel("Agnes Image 2.5 Flash");
+   }
+   $("#composerSend").disabled=true;
+   await referenceAttachmentTask;
+   if(!referenceImage){
+    $("#canvas .generation-loading")?.remove();
+    $("#composerSend").disabled=false;
+    return;
+   }
+   await generateImage(value,true);
+   return;
+  }
+  await referenceAttachmentTask;
  }
  if(mode==="images"){await generateImage(value);return}
  if(mode==="video"){await generateVideo(value);return}
@@ -5367,10 +5388,7 @@ async function prepareAndAttachReferenceFile(file){
  const attachmentModeAtStart=mode;
  agnesPreparedReferenceSource="";
  agnesPreparedReferenceDataUrl="";
- const send=$("#composerSend");
- attachmentPrepareSendWasDisabled=Boolean(send?.disabled);
  referenceImagePreparing=true;
- if(send)send.disabled=true;
  if(mode==="chat")chatAttachmentFile=file;
  referenceImage=null;
  try{sessionStorage.removeItem("miyaReferenceImage")}catch{}
@@ -5381,12 +5399,20 @@ async function prepareAndAttachReferenceFile(file){
  const previewUrl=URL.createObjectURL(file);
  composerAttachmentPreviewObjectUrl=previewUrl;
  setComposerAttachment(previewUrl);
- if($("#composerStatus"))$("#composerStatus").textContent="Подготавливаю фотографию…";
+ if($("#composerStatus")){
+  $("#composerStatus").textContent=attachmentModeAtStart==="images"
+   ? "Исходное изображение прикреплено"
+   : attachmentModeAtStart==="video"
+     ? "Изображение прикреплено"
+     : "Фото прикреплено";
+ }
 
  try{
   const dataUrl=await prepareReferenceImageDataUrl(file);
   if(token!==referenceImagePrepareToken)return;
   if(!/^data:image\//i.test(dataUrl))throw new Error("Не удалось подготовить фотографию");
+  const visiblePreview=$("#composerAttachmentImage");
+  if(visiblePreview&&(!visiblePreview.complete||!visiblePreview.naturalWidth))setComposerAttachment(dataUrl);
   const agnesDataUrl=attachmentModeAtStart==="images"
     ? await compressAgnesReferenceImage(dataUrl)
     : "";
@@ -5406,20 +5432,16 @@ async function prepareAndAttachReferenceFile(file){
    if(legacyList){legacyList.replaceChildren();legacyList.hidden=true}
    $("#composer")?.classList.remove("has-chat-attachments");
    $("#composerStatus").textContent="Картинка прикреплена — можно спросить меня о ней.";
-   toast("Фото добавлено");
   }else if(mode==="images"){
    // Prepare once at selection time; the model can be changed after attachment.
    $("#composerModel").value="Agnes Image 2.5 Flash";
    $("#composerRatio").value="auto";
    $("#composerStatus").textContent="Agnes 2.5 · исходное изображение готово к редактированию";
-   toast("Изображение подготовлено");
   }else if(mode==="video"){
    const selectedVideoModel=String($("#videoModel")?.value||"LTX-2.3 Distilled");
    $("#composerStatus").textContent=selectedVideoModel+" · изображение готово";
-   toast("Изображение подготовлено");
   }else{
    $("#composerStatus").textContent="Картинка прикреплена — можно спросить меня о ней.";
-   toast("Изображение подготовлено");
   }
   syncInput();
   $("#composerInput").focus();
@@ -5435,15 +5457,15 @@ async function prepareAndAttachReferenceFile(file){
  }finally{
   if(token===referenceImagePrepareToken){
    referenceImagePreparing=false;
-   if(send&&!attachmentPrepareSendWasDisabled)send.disabled=false;
-   attachmentPrepareSendWasDisabled=false;
   }
  }
 }
 let referenceAttachmentQueue=Promise.resolve();
+let referenceAttachmentTask=Promise.resolve();
 function attachReferenceFile(file){
  const job=referenceAttachmentQueue.then(()=>prepareAndAttachReferenceFile(file));
  referenceAttachmentQueue=job.catch(()=>{});
+ referenceAttachmentTask=job;
  return job;
 }
 $("#referenceInput").onchange=e=>{
