@@ -5343,10 +5343,10 @@ async function prepareReferenceImageDataUrl(file){
   try{bitmap?.close()}catch{}
  }
 }
-async function attachReferenceFile(file){
+async function prepareAndAttachReferenceFile(file){
  if(!file||!String(file.type||"").startsWith("image/")){toast("Выбери файл изображения");return}
  if(referenceImagePreparing){toast("Фотография уже подготавливается");return}
- if(mode==="chat"&&chatAttachmentImages.length>=1){toast("Пока можно прикрепить только одну фотографию");return}
+ if(mode==="chat"&&chatAttachmentImages.length>=5){toast("За одно сообщение можно прикрепить до 5 фотографий");return}
 
  const token=++referenceImagePrepareToken;
  const send=$("#composerSend");
@@ -5413,6 +5413,12 @@ async function attachReferenceFile(file){
    attachmentPrepareSendWasDisabled=false;
   }
  }
+}
+let referenceAttachmentQueue=Promise.resolve();
+function attachReferenceFile(file){
+ const job=referenceAttachmentQueue.then(()=>prepareAndAttachReferenceFile(file));
+ referenceAttachmentQueue=job.catch(()=>{});
+ return job;
 }
 $("#referenceInput").onchange=e=>{
  const files=[...(e.target.files||[])].filter(file=>String(file.type||"").startsWith("image/"));
