@@ -1498,13 +1498,16 @@ function buildMediaCard(item,{video=false,pendingDots=false}={}){
   pendingDotsLayer.className="media-new-image-dots";
   pendingDotsLayer.setAttribute("aria-hidden","true");
   const columns=19,rows=11;
+  const waveStep=0.18,waveDuration=columns*waveStep;
   for(let row=0;row<rows;row++){
    for(let column=0;column<columns;column++){
     const dot=document.createElement("span");
-    // Every dot has the exact same base size; column delay carries the wave left to right.
+    // Strictly identical dot sizes. Every dot in a column shares one phase,
+    // so the pulse travels as a straight vertical front from left to right.
     dot.style.width="2px";
     dot.style.height="2px";
-    dot.style.animationDelay=(column*0.12).toFixed(2)+"s";
+    const phase=((waveDuration/2-column*waveStep)%waveDuration+waveDuration)%waveDuration;
+    dot.style.animationDelay=(-phase).toFixed(3)+"s";
     pendingDotsLayer.appendChild(dot);
    }
   }
