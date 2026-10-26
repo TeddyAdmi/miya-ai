@@ -4288,14 +4288,15 @@ body.light #composerRatio,body.light #videoRatio{background-color:#f4f7fa!import
   background-repeat:no-repeat;
   animation:miya-prompt-success-shimmer 1.25s linear 1 both;
 }
+/* Match the dark-theme sweep's bright highlight, tuned only for light-theme text. */
 body.light #composerStatus.composer-status-shimmer::after{
   background-image:linear-gradient(
     108deg,
     transparent 0%,
     transparent 40%,
-    rgba(20,55,95,.72) 46%,
-    #123f70 50%,
-    rgba(20,55,95,.72) 54%,
+    rgba(255,255,255,.78) 46%,
+    #ffffff 50%,
+    rgba(255,255,255,.78) 54%,
     transparent 60%,
     transparent 100%
   );
