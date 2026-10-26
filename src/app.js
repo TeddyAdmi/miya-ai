@@ -1501,13 +1501,11 @@ function buildMediaCard(item,{video=false,pendingDots=false}={}){
   for(let row=0;row<rows;row++){
    for(let column=0;column<columns;column++){
     const dot=document.createElement("span");
-    // Slight size variation and scattered timing keep the dots gently alive without a directional wave.
+    // Each column pulses slightly after the previous one, creating a steady left-to-right wave.
     const size=1.8+((row*3+column*5)%5)*0.22;
-    const phaseSeed=(row*37+column*19+row*column*11)%101;
-    const phase=(phaseSeed/101)*2.6;
     dot.style.width=size.toFixed(1)+"px";
     dot.style.height=size.toFixed(1)+"px";
-    dot.style.animationDelay="-"+phase.toFixed(2)+"s";
+    dot.style.animationDelay=(column*0.08).toFixed(2)+"s";
     pendingDotsLayer.appendChild(dot);
    }
   }
