@@ -162,16 +162,61 @@
   </nav>
 </div>
 <style>
-/* Aspect-ratio controls use the same compact centered down-chevron as model and quality. */
+/* Compact ratio selectors; align trigger icon with the centered icon column in the popup. */
 #composerRatio,#videoRatio{
- width:88px!important;min-width:88px!important;max-width:88px!important;flex:0 0 88px!important;
+ width:84px!important;min-width:84px!important;max-width:84px!important;flex:0 0 84px!important;
  box-sizing:border-box!important;padding-left:8px!important;padding-right:16px!important;
- background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 8' fill='none'%3E%3Cpath d='M2 2L6 6L10 2' stroke='%237690ad' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E")!important;
+ background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 8' fill='none'%3E%3Cpath d='M2 2L6 6L10 2' stroke='%237690ad' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E")!important;
  background-position:calc(100% - 8px) 50%!important;background-size:10px 7px!important;background-repeat:no-repeat!important;letter-spacing:0!important;
 }
 #composerRatio option,#videoRatio option{padding:2px 3px;font-family:Inter,Arial,sans-serif}
 body.light #composerRatio,body.light #videoRatio{background-color:#f4f7fa!important}
-#composerRatio{width:88px!important;min-width:88px!important;max-width:88px!important;flex:0 0 88px!important;padding-left:8px!important;padding-right:30px!important;font-size:12px!important;text-align:left!important}
+#composerRatio{width:84px!important;min-width:84px!important;max-width:84px!important;flex:0 0 84px!important;padding-left:8px!important;padding-right:22px!important;font-size:12px!important;text-align:left!important}
+
+/* Light theme: unify ordinary text and interface icons to the same deep near-black.
+   Preserve intentional semantic/brand states such as primary buttons, active selections and recording. */
+body.light{--text:#111111!important;--muted:#111111!important}
+body.light .side-btn:not(.active),
+body.light .tool-btn,
+body.light .side-label,
+body.light .side-subbtn:not(.active),
+body.light .chat-history-mini-item:not(.active),
+body.light .composer textarea,
+body.light .composer textarea::placeholder,
+body.light .select-pill,
+body.light .pill,
+body.light .composer-copy,
+body.light .composer-paste,
+body.light .composer-trash,
+body.light .improve,
+body.light .attach,
+body.light .mic:not(.recording),
+body.light .nav-icon,
+body.light .ico,
+body.light .chat-quick-actions button,
+body.light .library-tab:not(.active),
+body.light .media-action,
+body.light .media-prompt-copy,
+body.light .media-prompt-close,
+body.light .chat-actions button,
+body.light .mobile-tabs button:not(.active),
+body.light .chat-history-actions button,
+body.light .chat-history-menu button,
+body.light .composer-clear{color:#111111!important}
+body.light .composer-copy svg,
+body.light .composer-paste svg,
+body.light .composer-trash svg,
+body.light .improve svg,
+body.light .attach svg,
+body.light .mic:not(.recording) svg,
+body.light .nav-icon svg,
+body.light .ico svg,
+body.light .media-action svg,
+body.light .media-prompt-copy svg,
+body.light .media-prompt-close svg,
+body.light .chat-history-actions svg,
+body.light .chat-history-menu svg{color:currentColor!important;stroke:currentColor}
+body.light .composer textarea::placeholder{opacity:1!important;color:#111111!important;-webkit-text-fill-color:#111111!important}
 </style>
 
 <script>
@@ -182,15 +227,16 @@ body.light #composerRatio,body.light #videoRatio{background-color:#f4f7fa!import
  const ids=["composerModel","composerRatio","composerQuality","videoModel","videoDuration","videoRatio"];
  const ratioValues=new Set(["16:9","9:16","1:1"]);
  const ratioSvg=value=>{
-  const ratio=ratioValues.has(value)?value:"16:9";
-  const shapes={
-   "16:9":'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 70"><rect x="9" y="11" width="82" height="48" rx="9" fill="#8b929e" fill-opacity=".12" stroke="#777f8c" stroke-width="3"/><path d="M19 13Q15 14 14 21M19 13H79Q85 13 87 19" fill="none" stroke="#fff" stroke-opacity=".9" stroke-width="2" stroke-linecap="round"/><path d="M14 48Q15 56 23 57H77Q84 57 86 50" fill="none" stroke="#59616e" stroke-opacity=".85" stroke-width="2" stroke-linecap="round"/></svg>',
-   "9:16":'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 70 100"><rect x="11" y="8" width="48" height="84" rx="9" fill="#8b929e" fill-opacity=".12" stroke="#777f8c" stroke-width="3"/><path d="M21 10Q16 11 16 19M21 10H49Q55 10 56 17" fill="none" stroke="#fff" stroke-opacity=".9" stroke-width="2" stroke-linecap="round"/><path d="M16 80Q17 89 25 90H45Q54 90 56 81" fill="none" stroke="#59616e" stroke-opacity=".85" stroke-width="2" stroke-linecap="round"/></svg>',
-   "1:1":'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect x="10" y="10" width="80" height="80" rx="10" fill="#8b929e" fill-opacity=".12" stroke="#777f8c" stroke-width="3"/><path d="M21 12Q16 13 15 21M21 12H79Q85 13 86 20" fill="none" stroke="#fff" stroke-opacity=".9" stroke-width="2" stroke-linecap="round"/><path d="M15 77Q16 86 24 87H76Q84 86 86 77" fill="none" stroke="#59616e" stroke-opacity=".85" stroke-width="2" stroke-linecap="round"/></svg>'
+   const ratio=ratioValues.has(value)?value:"16:9";
+   const stroke=document.body.classList.contains("light")?"#111111":"#e5edf7";
+   const shapes={
+    "16:9":'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 70"><rect x="9" y="9" width="82" height="52" rx="9" fill="none" stroke="'+stroke+'" stroke-width="4.5"/><path d="M15 48Q17 57 26 57H74Q83 57 85 48" fill="none" stroke="'+stroke+'" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+    "9:16":'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 70 100"><rect x="9" y="7" width="52" height="86" rx="9" fill="none" stroke="'+stroke+'" stroke-width="4.5"/><path d="M16 77Q18 87 27 87H43Q52 87 54 77" fill="none" stroke="'+stroke+'" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+    "1:1":'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect x="9" y="9" width="82" height="82" rx="10" fill="none" stroke="'+stroke+'" stroke-width="4.5"/><path d="M16 75Q18 85 27 85H73Q82 85 84 75" fill="none" stroke="'+stroke+'" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round"/></svg>'
+   };
+   return shapes[ratio];
   };
-  return shapes[ratio];
- };
- const ratioIconSize=value=>value==="9:16"?"10px 16px":value==="1:1"?"13px 13px":"19px 13px";
+  const ratioIconSize=value=>value==="9:16"?"10px 16px":value==="1:1"?"13px 13px":"19px 13px";
  const ratioArrow='url("data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 12 8%27 fill=%27none%27%3E%3Cpath d=%27M2 2L6 6L10 2%27 stroke=%27%237690ad%27 stroke-width=%271.5%27 stroke-linecap=%27round%27 stroke-linejoin=%27round%27/%3E%3C/svg%3E")';
  const syncRatioTrigger=select=>{
   if(!select||!["composerRatio","videoRatio"].includes(select.id))return;
@@ -201,7 +247,8 @@ body.light #composerRatio,body.light #videoRatio{background-color:#f4f7fa!import
   select.style.removeProperty("-webkit-text-fill-color");
   select.style.removeProperty("text-shadow");
   select.style.setProperty("background-image",icon+", "+ratioArrow,"important");
-  select.style.setProperty("background-position","calc(100% - "+(18+(value==="9:16"?10:value==="1:1"?13:19))+"px) 50%, calc(100% - 8px) 50%","important");
+  const iconOffset=value==="9:16"?"40.5px":value==="1:1"?"42px":"45px";
+   select.style.setProperty("background-position","calc(100% - "+iconOffset+") 50%, calc(100% - 8px) 50%","important");
   select.style.setProperty("background-size",size+", 10px 7px","important");
   select.style.setProperty("text-align","left","important");
   select.style.setProperty("background-repeat","no-repeat, no-repeat","important");
@@ -209,7 +256,7 @@ body.light #composerRatio,body.light #videoRatio{background-color:#f4f7fa!import
  };
  const ratioStyle=document.createElement("style");
  ratioStyle.id="miyaRatioIconStyles";
- ratioStyle.textContent='.miya-composer-select-popup .miya-composer-select-option.miya-ratio-option{display:flex!important;align-items:center!important;justify-content:flex-start!important;gap:8px!important;min-height:28px!important;height:28px!important;padding:2px 8px!important;box-sizing:border-box!important}.miya-composer-select-popup .miya-composer-select-option.miya-ratio-option .miya-ratio-label{display:block;flex:0 0 26px;width:26px;text-align:left;font:12px Inter,Arial,sans-serif;line-height:16px}.miya-composer-select-popup .miya-composer-select-option.miya-ratio-option .miya-ratio-icon{display:flex;align-items:center;justify-content:center;flex:none}.miya-composer-select-popup .miya-composer-select-option.miya-ratio-option svg{display:block;width:19px;height:13px;overflow:visible}.miya-composer-select-popup .miya-composer-select-option.miya-ratio-option[data-value="9:16"] svg{width:10px;height:16px}.miya-composer-select-popup .miya-composer-select-option.miya-ratio-option[data-value="1:1"] svg{width:13px;height:13px}';
+ ratioStyle.textContent='.miya-composer-select-popup .miya-composer-select-option.miya-ratio-option{display:flex!important;align-items:center!important;justify-content:flex-start!important;gap:7px!important;min-height:28px!important;height:28px!important;padding:2px 8px!important;box-sizing:border-box!important}.miya-composer-select-popup .miya-composer-select-option.miya-ratio-option .miya-ratio-label{display:block;flex:0 0 24px;width:24px;text-align:left;font:12px Inter,Arial,sans-serif;line-height:16px}.miya-composer-select-popup .miya-composer-select-option.miya-ratio-option .miya-ratio-icon{display:flex;align-items:center;justify-content:center;flex:none;width:19px;height:19px}.miya-composer-select-popup .miya-composer-select-option.miya-ratio-option svg{display:block;width:19px;height:13px;overflow:visible}.miya-composer-select-popup .miya-composer-select-option.miya-ratio-option[data-value="9:16"] svg{width:10px;height:16px}.miya-composer-select-popup .miya-composer-select-option.miya-ratio-option[data-value="1:1"] svg{width:13px;height:13px}';
  document.head.appendChild(ratioStyle);
  ["composerRatio","videoRatio"].forEach(id=>{
   const select=document.getElementById(id);
