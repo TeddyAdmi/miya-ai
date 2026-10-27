@@ -173,6 +173,13 @@
 body.light #composerRatio,body.light #videoRatio{background-color:#f4f7fa!important}
 #composerRatio{width:74px!important;min-width:0!important;max-width:74px!important;flex:0 0 74px!important;padding-left:6px!important;padding-right:8px!important;font-size:12px!important;text-align:left!important}
 
+/* Final ratio trigger sizing: reserve a fixed right lane for the chevron in both Images and Video. */
+#composerRatio.select-pill,#videoRatio.select-pill{
+ width:78px!important;min-width:78px!important;max-width:78px!important;flex:0 0 78px!important;
+ box-sizing:border-box!important;padding-left:6px!important;padding-right:18px!important;
+}
+#composerRatio.select-pill{width:78px!important;min-width:78px!important;max-width:78px!important;flex-basis:78px!important}
+
 /* Light theme: unify ordinary text and interface icons to the same deep near-black.
    Preserve intentional semantic/brand states such as primary buttons, active selections and recording. */
 body.light{--text:#111111!important;--muted:#111111!important}
