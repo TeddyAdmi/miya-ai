@@ -17,10 +17,10 @@
  .generation-loading:not(.video-generation-loading) .progress-circle .progress-percent{
    font-size:13px!important;line-height:1!important;font-weight:850!important;
  }
- /* Never expose a partially decoded image; reveal it only after the load event. */
- /* Keep the card visible while a slow image URL is downloading; the browser still decodes the image normally. */
- .media-card img:not(.media-image-ready){opacity:1!important}
- .media-card img.media-image-ready{opacity:1!important;transition:opacity .16s ease-out!important}
+ /* Hide image elements until their bytes have fully loaded, so their temporary paint
+    cannot create bright edges around every card during the initial wall render. */
+ .media-card img:not(.media-image-ready){visibility:hidden!important;opacity:0!important}
+ .media-card img.media-image-ready{visibility:visible!important;opacity:1!important;transition:opacity .16s ease-out!important}
  
 `;
  document.head.appendChild(st);
