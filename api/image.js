@@ -1454,7 +1454,7 @@ module.exports = async function imageHandler(req, res) {
       return res.status(400).json({
         ok: false,
         error: "KONTEXT_SOURCE_REQUIRED",
-        message: "Для Flux Kontext Dev нужно загрузить исходное изображение."
+        message: "Для Flux Kontext нужно загрузить исходное изображение."
       });
     }
 
