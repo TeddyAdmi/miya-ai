@@ -217,6 +217,11 @@ body.light .media-prompt-close svg,
 body.light .chat-history-actions svg,
 body.light .chat-history-menu svg{color:currentColor!important;stroke:currentColor}
 body.light .composer textarea::placeholder{opacity:1!important;color:#111111!important;-webkit-text-fill-color:#111111!important}
+body.light .side-btn.active,
+body.light .side-btn.active .ico,
+body.light .side-btn.active .nav-icon,
+body.light .mobile-tabs button.active,
+body.light .library-tab.active{color:#111111!important}
 </style>
 
 <script>
@@ -265,6 +270,7 @@ body.light .composer textarea::placeholder{opacity:1!important;color:#111111!imp
   select.addEventListener("change",()=>syncRatioTrigger(select));
   select.addEventListener("input",()=>syncRatioTrigger(select));
  });
+ new MutationObserver(()=>["composerRatio","videoRatio"].forEach(id=>syncRatioTrigger(document.getElementById(id)))).observe(document.body,{attributes:true,attributeFilter:["class"]});
 
  const popup=document.createElement("div");
  popup.className="miya-composer-select-popup";
