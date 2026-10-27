@@ -4261,7 +4261,7 @@ body.light .miya-music-brand a{color:#7152dc!important}
   background-size:250% 100%;
   background-position:100% 0;
   background-repeat:no-repeat;
-  animation:miya-prompt-success-shimmer 1.25s linear 1 both;
+  animation:miya-prompt-success-shimmer 2.5s linear 1 both;
 }
 /* Match the dark-theme sweep's bright highlight, tuned only for light-theme text. */
 body.light #composerStatus.composer-status-shimmer::after{
