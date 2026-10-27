@@ -4616,3 +4616,35 @@ body.light .composer.mode-video #videoDuration.select-pill[aria-expanded="true"]
 body.light .composer.mode-video #videoRatio.select-pill[aria-expanded="true"]{
   background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 8' fill='none'%3E%3Cpath d='M2 6L6 2L10 6' stroke='%2352657b' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E")!important;
 }
+
+
+/* Pending image cards: clip the dot animation to the card and remove edge strips. */
+.media-card.media-new-image-pending{
+  box-sizing:border-box!important;
+  overflow:hidden!important;
+  border:0!important;
+  outline:0!important;
+  box-shadow:none!important;
+  isolation:isolate!important;
+  background:#081a2d!important;
+}
+.media-card.media-new-image-pending::before,
+.media-card.media-new-image-pending::after{
+  content:none!important;
+  display:none!important;
+  border:0!important;
+  box-shadow:none!important;
+}
+.media-card.media-new-image-pending .media-new-image-dots{
+  position:absolute!important;
+  inset:0!important;
+  width:100%!important;
+  height:100%!important;
+  box-sizing:border-box!important;
+  margin:0!important;
+  border:0!important;
+  outline:0!important;
+  box-shadow:none!important;
+  border-radius:inherit!important;
+  background:transparent!important;
+}
