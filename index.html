@@ -477,7 +477,7 @@ body.light #composer.mode-images .miya-model-logo{border-color:#d3deea!important
   if(v.includes("flux"))return "blackforestlabs.ai";
   return "google.com";
  };
- const modelLogoUrl=value=>{if(String(value||"").toLowerCase().includes("seedream"))return "data:image/svg+xml,"+encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><defs><linearGradient id="s" x1="5" y1="8" x2="59" y2="56" gradientUnits="userSpaceOnUse"><stop stop-color="#ff6cab"/><stop offset=".52" stop-color="#9a5cff"/><stop offset="1" stop-color="#4cc9f0"/></linearGradient></defs><rect width="64" height="64" rx="14" fill="#10172a"/><path d="M32 7 39 24 57 32 39 40 32 57 25 40 7 32 25 24Z" fill="url(#s)"/><circle cx="32" cy="32" r="7" fill="#fff" fill-opacity=".95"/></svg>');return "https://www.google.com/s2/favicons?domain="+encodeURIComponent(modelBrandDomain(value))+"&sz=64";};
+ const modelLogoUrl=value=>{const v=String(value||"").toLowerCase();if(v==="nano banana 2")return "https://www.google.com/s2/favicons?domain=google.com&sz=64";return "https://www.google.com/s2/favicons?domain="+encodeURIComponent(modelBrandDomain(value))+"&sz=64";};
  function ensureModelTriggerLogo(select){
   if(!select||select.id!=="composerModel")return;
   let logo=select.previousElementSibling;
