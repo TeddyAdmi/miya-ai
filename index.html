@@ -557,7 +557,7 @@ body.light #composer.mode-images .miya-model-logo{background:transparent!importa
   // Ratio menus must exactly match their closed 90px trigger; only model menus expand to fit long labels.
   const isRatioSelect=select.id==="composerRatio"||select.id==="videoRatio";
   const modelSelect=document.getElementById(select.id==="videoModel"?"videoModel":"composerModel")||document.getElementById("composerModel");
-  if(modelSelect&&!isRatioSelect){
+  if((select.id==="composerModel"||select.id==="videoModel")&&modelSelect){
    const canvas=document.createElement("canvas"),ctx=canvas.getContext("2d");
    if(ctx){
     const style=getComputedStyle(modelSelect);
