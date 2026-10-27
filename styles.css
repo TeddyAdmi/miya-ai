@@ -4659,10 +4659,15 @@ body.light .media-card.media-new-image-pending{
 
 
 /* User-requested canonical typography for every composer dropdown and popup. */
-/* One font, one weight, one solid dark foreground; keep digits unambiguous.
-   The dropdown surfaces stay light in every app theme so dark text never fades
-   into the dark composer background. No text shadows, overlays, or opacity. */
-html body #composer.composer .select-pill{
+/* Keep the same typography in both themes; only the surface/text palette changes.
+   Dark mode: navy controls and popup, one bright text color for every digit/state.
+   Light mode: pale controls and popup, one solid dark text color. */
+html body #composer #composerModel.select-pill,
+html body #composer #composerRatio.select-pill,
+html body #composer #composerQuality.select-pill,
+html body #composer #videoModel.select-pill,
+html body #composer #videoDuration.select-pill,
+html body #composer #videoRatio.select-pill{
   font-family:Inter,system-ui,sans-serif!important;
   font-size:12px!important;
   font-style:normal!important;
@@ -4672,35 +4677,34 @@ html body #composer.composer .select-pill{
   font-variant-numeric:lining-nums tabular-nums!important;
   font-feature-settings:"lnum" 1,"tnum" 1!important;
   font-optical-sizing:none!important;
-  color:#111111!important;
-  -webkit-text-fill-color:#111111!important;
+  color:#edf5ff!important;
+  -webkit-text-fill-color:#edf5ff!important;
   text-shadow:none!important;
   -webkit-text-stroke:0 transparent!important;
   opacity:1!important;
   filter:none!important;
-  color-scheme:light!important;
-  background-color:#f4f7fa!important;
-  border-color:#d3deea!important;
+  color-scheme:dark!important;
+  background-color:#0b223b!important;
+  border-color:#1a4b78!important;
 }
-/* Model name and select share one light control surface. */
 html body #composer.composer.mode-images .miya-model-control{
-  background:#f4f7fa!important;
-  border-color:#d3deea!important;
+  background:#0b223b!important;
+  border-color:#1a4b78!important;
 }
-html body #composer.composer.mode-images #composerModel.select-pill{
+html body #composer #composerModel.select-pill{
   background-color:transparent!important;
-  color:#111111!important;
-  -webkit-text-fill-color:#111111!important;
+  color:#edf5ff!important;
+  -webkit-text-fill-color:#edf5ff!important;
 }
-/* The custom popup deliberately uses the same light surface and typography,
-   regardless of which section opened it or whether the selected row is active. */
+
+/* Dark-theme dropdown menu matches the dark composer controls. */
 html body #miyaComposerSelectPopup.miya-composer-select-popup{
-  background-color:#f4f7fa!important;
-  border-color:#d3deea!important;
-  color:#111111!important;
-  color-scheme:light!important;
+  background-color:#0b223b!important;
+  border-color:#1a4b78!important;
+  color:#edf5ff!important;
+  color-scheme:dark!important;
   text-shadow:none!important;
-  -webkit-text-fill-color:#111111!important;
+  -webkit-text-fill-color:#edf5ff!important;
   opacity:1!important;
   filter:none!important;
 }
@@ -4715,17 +4719,71 @@ html body #miyaComposerSelectPopup.miya-composer-select-popup .miya-composer-sel
   letter-spacing:normal!important;
   font-variant-numeric:lining-nums tabular-nums!important;
   font-feature-settings:"lnum" 1,"tnum" 1!important;
-  color:#111111!important;
-  -webkit-text-fill-color:#111111!important;
+  color:#edf5ff!important;
+  -webkit-text-fill-color:#edf5ff!important;
   text-shadow:none!important;
   -webkit-text-stroke:0 transparent!important;
   opacity:1!important;
   filter:none!important;
 }
-html body #miyaComposerSelectPopup.miya-composer-select-popup .miya-composer-select-option[aria-selected="true"],
+html body #miyaComposerSelectPopup.miya-composer-select-popup .miya-composer-select-option[aria-selected="true"]{
+  background:#12314f!important;
+  color:#edf5ff!important;
+  -webkit-text-fill-color:#edf5ff!important;
+}
 html body #miyaComposerSelectPopup.miya-composer-select-popup .miya-composer-select-option:hover,
 html body #miyaComposerSelectPopup.miya-composer-select-popup .miya-composer-select-option.is-active,
 html body #miyaComposerSelectPopup.miya-composer-select-popup .miya-composer-select-option:focus-visible{
+  background:#153653!important;
+  color:#edf5ff!important;
+  -webkit-text-fill-color:#edf5ff!important;
+  opacity:1!important;
+  text-shadow:none!important;
+  filter:none!important;
+}
+
+/* Light theme keeps the clear black typography requested earlier. */
+html body.light #composer #composerModel.select-pill,
+html body.light #composer #composerRatio.select-pill,
+html body.light #composer #composerQuality.select-pill,
+html body.light #composer #videoModel.select-pill,
+html body.light #composer #videoDuration.select-pill,
+html body.light #composer #videoRatio.select-pill{
+  color-scheme:light!important;
+  color:#111111!important;
+  -webkit-text-fill-color:#111111!important;
+  background-color:#f4f7fa!important;
+  border-color:#d3deea!important;
+}
+html body.light #composer.composer.mode-images .miya-model-control{
+  background:#f4f7fa!important;
+  border-color:#d3deea!important;
+}
+html body.light #composer #composerModel.select-pill{
+  background-color:transparent!important;
+  color:#111111!important;
+  -webkit-text-fill-color:#111111!important;
+}
+html body.light #miyaComposerSelectPopup.miya-composer-select-popup{
+  background-color:#f4f7fa!important;
+  border-color:#d3deea!important;
+  color:#111111!important;
+  color-scheme:light!important;
+  -webkit-text-fill-color:#111111!important;
+}
+html body.light #miyaComposerSelectPopup.miya-composer-select-popup .miya-composer-select-option,
+html body.light #miyaComposerSelectPopup.miya-composer-select-popup .miya-composer-select-option .miya-ratio-label,
+html body.light #miyaComposerSelectPopup.miya-composer-select-popup .miya-composer-select-option .miya-model-option-label{
+  color:#111111!important;
+  -webkit-text-fill-color:#111111!important;
+  opacity:1!important;
+  text-shadow:none!important;
+  filter:none!important;
+}
+html body.light #miyaComposerSelectPopup.miya-composer-select-popup .miya-composer-select-option[aria-selected="true"],
+html body.light #miyaComposerSelectPopup.miya-composer-select-popup .miya-composer-select-option:hover,
+html body.light #miyaComposerSelectPopup.miya-composer-select-popup .miya-composer-select-option.is-active,
+html body.light #miyaComposerSelectPopup.miya-composer-select-popup .miya-composer-select-option:focus-visible{
   color:#111111!important;
   -webkit-text-fill-color:#111111!important;
   opacity:1!important;
