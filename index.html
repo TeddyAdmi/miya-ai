@@ -162,24 +162,6 @@
   </nav>
 </div>
 <style>
-/* Compact ratio selectors; align trigger icon with the centered icon column in the popup. */
-#composerRatio,#videoRatio{
- width:74px!important;min-width:0!important;max-width:74px!important;flex:0 0 74px!important;
- box-sizing:border-box!important;padding-left:6px!important;padding-right:8px!important;
- background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 8' fill='none'%3E%3Cpath d='M2 2L6 6L10 2' stroke='%237690ad' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E")!important;
- background-position:calc(100% - 8px) 50%!important;background-size:10px 7px!important;background-repeat:no-repeat!important;letter-spacing:0!important;
-}
-#composerRatio option,#videoRatio option{padding:2px 3px;font-family:Inter,Arial,sans-serif}
-body.light #composerRatio,body.light #videoRatio{background-color:#f4f7fa!important}
-#composerRatio{width:74px!important;min-width:0!important;max-width:74px!important;flex:0 0 74px!important;padding-left:6px!important;padding-right:8px!important;font-size:12px!important;text-align:left!important}
-
-/* Final ratio trigger sizing: keep the same text-to-icon and icon-to-chevron breathing room in Images and Video. */
-#composerRatio.select-pill,#videoRatio.select-pill{
- width:90px!important;min-width:90px!important;max-width:90px!important;flex:0 0 90px!important;
- box-sizing:border-box!important;padding-left:10px!important;padding-right:18px!important;
-}
-#composerRatio.select-pill{width:90px!important;min-width:90px!important;max-width:90px!important;flex-basis:90px!important}
-
 /* Light theme: unify ordinary text and interface icons to the same deep near-black.
    Preserve intentional semantic/brand states such as primary buttons, active selections and recording. */
 body.light{--text:#111111!important;--muted:#111111!important}
@@ -224,23 +206,7 @@ body.light .media-prompt-close svg,
 body.light .chat-history-actions svg,
 body.light .chat-history-menu svg{color:currentColor!important;stroke:currentColor}
 body.light .composer textarea::placeholder{opacity:1!important;color:#111111!important;-webkit-text-fill-color:#111111!important}
-/* Keep the three closed image controls as dark and legible as the model list reference. */
-body.light .composer.mode-images #composerModel.select-pill,
-body.light .composer.mode-images #composerRatio.select-pill,
-body.light .composer.mode-images #composerQuality.select-pill,
-body.light .composer.mode-video #videoModel.select-pill,
-body.light .composer.mode-video #videoDuration.select-pill,
-body.light .composer.mode-video #videoRatio.select-pill{
- color:#111111!important;
- -webkit-text-fill-color:#111111!important;
- font-weight:700!important;
-}
-body.light .composer.mode-images #composerModel.select-pill,
-body.light .composer.mode-images #composerQuality.select-pill,
-body.light .composer.mode-video #videoModel.select-pill,
-body.light .composer.mode-video #videoDuration.select-pill{
- background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 8' fill='none'%3E%3Cpath d='M2 2L6 6L10 2' stroke='%23111111' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E")!important;
-}
+/* Popup colors are shared by all composer dropdowns; the six closed controls are normalized below. */
 body.light .miya-composer-select-popup,
 body.light .miya-composer-select-option,
 body.light .miya-composer-select-option .miya-ratio-label{color:#111111!important}
@@ -272,6 +238,82 @@ body.light .miya-composer-select-popup .miya-composer-select-option.miya-ratio-o
  stroke:#111111!important;
 }
 #composerRatio.select-pill,#videoRatio.select-pill{padding-right:18px!important;}
+
+/* Canonical prompt controls for Images and Video. Keep the six selectors visually identical in both themes. */
+#composer.mode-images #composerModel.select-pill,
+#composer.mode-images #composerRatio.select-pill,
+#composer.mode-images #composerQuality.select-pill,
+#composer.mode-video #videoModel.select-pill,
+#composer.mode-video #videoDuration.select-pill,
+#composer.mode-video #videoRatio.select-pill{
+  box-sizing:border-box!important;
+  font-family:Inter,system-ui,sans-serif!important;
+  font-size:12px!important;
+  font-weight:700!important;
+  line-height:16px!important;
+  color:#a9bad0!important;
+  -webkit-text-fill-color:#a9bad0!important;
+  background-color:#0b223b!important;
+  border-color:#1a4b78!important;
+}
+#composer.mode-images #composerModel.select-pill,
+#composer.mode-images #composerQuality.select-pill,
+#composer.mode-video #videoModel.select-pill,
+#composer.mode-video #videoDuration.select-pill{
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 8' fill='none'%3E%3Cpath d='M2 2L6 6L10 2' stroke='%237690ad' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E")!important;
+  background-repeat:no-repeat!important;
+  background-size:10px 7px!important;
+  background-position:calc(100% - 10px) 50%!important;
+}
+#composer.mode-images #composerModel.select-pill[aria-expanded="true"],
+#composer.mode-images #composerQuality.select-pill[aria-expanded="true"],
+#composer.mode-video #videoModel.select-pill[aria-expanded="true"],
+#composer.mode-video #videoDuration.select-pill[aria-expanded="true"]{
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 8' fill='none'%3E%3Cpath d='M2 6L6 2L10 6' stroke='%237690ad' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E")!important;
+}
+body.light #composer.mode-images #composerModel.select-pill,
+body.light #composer.mode-images #composerRatio.select-pill,
+body.light #composer.mode-images #composerQuality.select-pill,
+body.light #composer.mode-video #videoModel.select-pill,
+body.light #composer.mode-video #videoDuration.select-pill,
+body.light #composer.mode-video #videoRatio.select-pill{
+  color:#111111!important;
+  -webkit-text-fill-color:#111111!important;
+  background-color:#f4f7fa!important;
+  border-color:#d3deea!important;
+}
+body.light #composer.mode-images #composerModel.select-pill,
+body.light #composer.mode-images #composerQuality.select-pill,
+body.light #composer.mode-video #videoModel.select-pill,
+body.light #composer.mode-video #videoDuration.select-pill{
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 8' fill='none'%3E%3Cpath d='M2 2L6 6L10 2' stroke='%23111111' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E")!important;
+}
+body.light #composer.mode-images #composerModel.select-pill[aria-expanded="true"],
+body.light #composer.mode-images #composerQuality.select-pill[aria-expanded="true"],
+body.light #composer.mode-video #videoModel.select-pill[aria-expanded="true"],
+body.light #composer.mode-video #videoDuration.select-pill[aria-expanded="true"]{
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 8' fill='none'%3E%3Cpath d='M2 6L6 2L10 6' stroke='%23111111' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E")!important;
+}
+#composer.mode-images #composerModel option,
+#composer.mode-images #composerRatio option,
+#composer.mode-images #composerQuality option,
+#composer.mode-video #videoModel option,
+#composer.mode-video #videoDuration option,
+#composer.mode-video #videoRatio option{
+  font-family:Inter,system-ui,sans-serif!important;
+  font-size:12px!important;
+  font-weight:600!important;
+}
+.miya-composer-select-popup .miya-composer-select-option{
+  font-family:Inter,system-ui,sans-serif!important;
+  font-size:12px!important;
+  font-weight:600!important;
+  line-height:16px!important;
+}
+body.light .miya-composer-select-popup .miya-composer-select-option{
+  color:#111111!important;
+}
+
 </style>
 
 <script>
