@@ -456,19 +456,25 @@ body.light #composer.mode-images .miya-model-logo{background:transparent!importa
   return "google.com";
  };
  const modelLogoUrl=value=>{const v=String(value||"").trim().toLowerCase();if(v==="nano banana")return "https://cdn.jsdelivr.net/gh/glincker/thesvg@main/public/icons/nano-banana-google/default.svg";if(v==="nano banana 2")return "https://www.google.com/s2/favicons?domain=google.com&sz=64";return "https://www.google.com/s2/favicons?domain="+encodeURIComponent(modelBrandDomain(value))+"&sz=64";};
- // Warm the browser cache for all model logos before the first menu interaction.
+ // Start every model-logo request together as early as possible, before a dropdown is opened.
+ // Newly-added options are warmed too, so restored/dynamic model lists are covered.
  const preloadedModelLogoUrls=new Set();
+ const preloadModelLogo=value=>{
+  const src=modelLogoUrl(value);
+  if(!src||preloadedModelLogoUrls.has(src))return;
+  preloadedModelLogoUrls.add(src);
+  const preload=new Image();
+  preload.fetchPriority="high";
+  preload.loading="eager";
+  preload.decoding="async";
+  preload.src=src;
+ };
  ids.filter(id=>id==="composerModel"||id==="videoModel").forEach(id=>{
   const select=document.getElementById(id);
   if(!select)return;
-  availableOptions(select).forEach(option=>{
-   const src=modelLogoUrl(option.value);
-   if(!src||preloadedModelLogoUrls.has(src))return;
-   preloadedModelLogoUrls.add(src);
-   const preload=new Image();
-   preload.decoding="async";
-   preload.src=src;
-  });
+  const warmOptions=()=>availableOptions(select).forEach(option=>preloadModelLogo(option.value));
+  warmOptions();
+  new MutationObserver(warmOptions).observe(select,{childList:true,subtree:true});
  });
  function ensureModelTriggerLogo(select){
   if(!select||select.id!=="composerModel")return;
@@ -486,7 +492,7 @@ body.light #composer.mode-images .miya-model-logo{background:transparent!importa
    control.insertBefore(logo,select);
   }
   let img=logo.querySelector("img");
-  if(!img){img=document.createElement("img");img.alt="";img.draggable=false;logo.appendChild(img);}
+  if(!img){img=document.createElement("img");img.alt="";img.draggable=false;img.loading="eager";img.fetchPriority="high";img.decoding="async";logo.appendChild(img);}
   const src=modelLogoUrl(select.value);
   if(img.src!==src)img.src=src;
  }
@@ -578,7 +584,7 @@ body.light #composer.mode-images .miya-model-logo{background:transparent!importa
    item.dataset.index=String(index);
    if((select.id==="composerRatio"||select.id==="videoRatio")&&(ratioValues.has(option.value)||option.value==="auto")){item.classList.add("miya-ratio-option");const label=document.createElement("span");label.className="miya-ratio-label";label.textContent=option.value;const icon=document.createElement("span");icon.className="miya-ratio-icon";if(ratioValues.has(option.value))icon.innerHTML=ratioSvg(option.value);item.append(label,icon);item.setAttribute("aria-label",option.value);}else if(select.id==="composerModel"){
     item.classList.add("miya-model-option");
-    const img=document.createElement("img");img.className="miya-model-option-logo";img.alt="";img.draggable=false;img.src=modelLogoUrl(option.value);
+    const img=document.createElement("img");img.className="miya-model-option-logo";img.alt="";img.draggable=false;img.loading="eager";img.fetchPriority="high";img.decoding="async";img.src=modelLogoUrl(option.value);
     const label=document.createElement("span");label.className="miya-model-option-label";label.textContent=String(option.label||option.textContent||option.value);
     item.append(img,label);
    }else{item.textContent=String(option.label||option.textContent||option.value);}
