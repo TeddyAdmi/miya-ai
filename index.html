@@ -416,6 +416,8 @@ body.light #composer.mode-images .miya-model-logo{background:transparent!importa
   iconNode.style.display=isAuto?"none":"flex";
   const iconLeft=value==="9:16"?"47.5px":value==="1:1"?"46px":"43px";
   iconNode.style.left=iconLeft;
+  const svgNode=iconNode.querySelector("svg");
+  if(svgNode){svgNode.style.width=value==="9:16"?"13px":value==="1:1"?"13px":"19px";svgNode.style.height=value==="9:16"?"16px":value==="1:1"?"13px":"13px";}
   select.style.removeProperty("color");
   select.style.removeProperty("-webkit-text-fill-color");
   select.style.removeProperty("text-shadow");
@@ -428,7 +430,7 @@ body.light #composer.mode-images .miya-model-logo{background:transparent!importa
   select.setAttribute("aria-label",select.id==="videoRatio"?"Соотношение сторон видео: "+value:"Соотношение сторон изображения: "+value);
  };
  const ratioTriggerStyle=document.createElement("style");
- ratioTriggerStyle.textContent='.miya-ratio-control{position:relative!important;display:inline-flex!important;flex:0 0 90px!important;width:90px!important;min-width:90px!important;max-width:90px!important;height:100%!important;vertical-align:middle!important}.miya-ratio-control>select.select-pill{width:100%!important;min-width:0!important;max-width:100%!important;flex:1 1 auto!important}.miya-ratio-trigger-icon{position:absolute;top:50%;transform:translateY(-50%);display:flex;align-items:center;justify-content:center;width:19px;height:19px;pointer-events:none;z-index:2}.miya-ratio-trigger-icon svg{display:block;width:19px;height:13px;overflow:visible}.miya-ratio-control:has(select[data-value="9:16"]) .miya-ratio-trigger-icon svg{width:13px;height:16px}.miya-ratio-control:has(select[value="9:16"]) .miya-ratio-trigger-icon svg{width:13px;height:16px}.miya-ratio-trigger-icon:empty{display:none!important}';
+ ratioTriggerStyle.textContent='.miya-ratio-control{position:relative!important;display:inline-flex!important;flex:0 0 90px!important;width:90px!important;min-width:90px!important;max-width:90px!important;height:31px!important;vertical-align:middle!important}.miya-ratio-control>select.select-pill{width:100%!important;min-width:0!important;max-width:100%!important;flex:1 1 auto!important}.miya-ratio-trigger-icon{position:absolute;top:50%;transform:translateY(-50%);display:flex;align-items:center;justify-content:center;width:19px;height:19px;pointer-events:none;z-index:2}.miya-ratio-trigger-icon svg{display:block;width:19px;height:13px;overflow:visible}.miya-ratio-trigger-icon:empty{display:none!important}';
  document.head.appendChild(ratioTriggerStyle);
  const ratioStyle=document.createElement("style");
  ratioStyle.id="miyaRatioIconStyles";
