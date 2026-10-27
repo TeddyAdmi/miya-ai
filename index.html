@@ -333,7 +333,7 @@ body.light .miya-composer-select-popup .miya-composer-select-option{
  const ratioValues=new Set(["16:9","9:16","1:1"]);
  const ratioSvg=value=>{
    const ratio=ratioValues.has(value)?value:"16:9";
-   const stroke=document.body.classList.contains("light")?"#111111":"#e5edf7";
+   const stroke=document.body.classList.contains("light")?"#000000":"#e5edf7";
    const shapes={
     "16:9":'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 70"><rect x="9" y="9" width="82" height="52" rx="9" fill="none" stroke="'+stroke+'" stroke-width="3.5"/><path d="M15 48Q17 57 26 57H74Q83 57 85 48" fill="none" stroke="'+stroke+'" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"/></svg>',
     "9:16":'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 70 100"><rect x="9" y="7" width="52" height="86" rx="9" fill="none" stroke="'+stroke+'" stroke-width="4.5"/><path d="M16 77Q18 87 27 87H43Q52 87 54 77" fill="none" stroke="'+stroke+'" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round"/></svg>',
