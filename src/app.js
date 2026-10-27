@@ -28,7 +28,7 @@
 
 const modes={
  chat:{title:"Твоя AI-комната",eyebrow:"AI CHAT",subtitle:"Общайся с Miya, придумывай идеи и управляй созданием контента.",placeholder:"Напишите сообщение или задайте вопрос Miya…",send:"Отправить",status:"AI Chat готов"},
- images:{title:"Картинки",eyebrow:"КАРТИНКИ",subtitle:"Создавай изображения с нуля или загружай исходник и описывай изменения.",placeholder:"Опиши картинку или что изменить в загруженном изображении...",send:"Создать",status:"GPT Image 2.5 · T2I · создание изображения"},
+ images:{title:"Картинки",eyebrow:"КАРТИНКИ",subtitle:"Создавай изображения с нуля или загружай исходник и описывай изменения.",placeholder:"Опиши картинку или что изменить в загруженном изображении...",send:"Создать",status:"Nano BananA · T2I · готов к созданию"},
  video:{title:"Видео",eyebrow:"ВИДЕО",subtitle:"Создавай короткие видео по сцене, действиям и движению — со звуком.",placeholder:"Опиши сцену, действия персонажей, движение камеры и атмосферу...",send:"Создать видео",status:"OmegaTech T2V · 16:9 · 5 сек"},
 voice:{title:"Голос",eyebrow:"ГОЛОС",subtitle:"Превращай текст в естественную речь с мужскими и женскими голосами.",placeholder:"Введите текст для озвучки...",send:"Создать голос",status:"Svetlana · Female · Russia"}
 };
@@ -1037,9 +1037,9 @@ function clearComposerAttachment(){
  try{sessionStorage.removeItem("miyaReferenceImage")}catch{}
  renderChatAttachmentImages();
  setComposerAttachment("");
- if(mode==="images"&&$("#composerModel")) $("#composerModel").value="ImageSmith";
+ if(mode==="images"&&$("#composerModel")){const model=$("#composerModel");model.value="ImageSmith";model.dispatchEvent(new Event("change",{bubbles:true}));}
 }
-function openEditor(url){referenceImage=url;try{sessionStorage.setItem("miyaReferenceImage",referenceImage)}catch{};setComposerAttachment(url);mode="images";$("#composerModel").value="Agnes Image 2.5 Flash";$("#composerRatio").value="auto";const m=modes.images;$("#workspaceEyebrow").textContent=m.eyebrow;$("#workspaceTitle").textContent=m.title;$("#workspaceSubtitle").textContent=m.subtitle;const promptInput=$("#composerInput"); if(promptInput){ promptInput.placeholder=m.placeholder; promptInput.setAttribute("aria-label",m.placeholder); promptInput.classList.remove("prompt-chat","prompt-images","prompt-video","prompt-voice"); promptInput.classList.add("prompt-images"); }$("#composerSendText").textContent=m.send;$("#composerStatus").textContent=imageModelLabel("Agnes Image 2.5 Flash")+" · исходное изображение готово к редактированию";$(".image-settings").style.display="flex";$("#voiceOptions").style.display="none";$("#voiceOptions").classList.remove("show");$("#videoOptions").style.display="none";$("#videoOptions").classList.remove("show");document.querySelectorAll("[data-mode]").forEach(x=>x.classList.toggle("active",x.dataset.mode==="images"));if(!$("#canvas .result-grid")) renderImageLibrary();$("#composerInput").focus();syncInput()}
+function openEditor(url){referenceImage=url;try{sessionStorage.setItem("miyaReferenceImage",referenceImage)}catch{};setComposerAttachment(url);mode="images";$("#composerModel").value="Agnes Image 2.5 Flash";$("#composerModel").dispatchEvent(new Event("change",{bubbles:true}));$("#composerRatio").value="auto";$("#composerRatio").dispatchEvent(new Event("change",{bubbles:true}));const m=modes.images;$("#workspaceEyebrow").textContent=m.eyebrow;$("#workspaceTitle").textContent=m.title;$("#workspaceSubtitle").textContent=m.subtitle;const promptInput=$("#composerInput"); if(promptInput){ promptInput.placeholder=m.placeholder; promptInput.setAttribute("aria-label",m.placeholder); promptInput.classList.remove("prompt-chat","prompt-images","prompt-video","prompt-voice"); promptInput.classList.add("prompt-images"); }$("#composerSendText").textContent=m.send;$("#composerStatus").textContent=imageModelLabel("Agnes Image 2.5 Flash")+" · исходное изображение готово к редактированию";$(".image-settings").style.display="flex";$("#voiceOptions").style.display="none";$("#voiceOptions").classList.remove("show");$("#videoOptions").style.display="none";$("#videoOptions").classList.remove("show");document.querySelectorAll("[data-mode]").forEach(x=>x.classList.toggle("active",x.dataset.mode==="images"));if(!$("#canvas .result-grid")) renderImageLibrary();$("#composerInput").focus();syncInput()}
 async function downloadImage(url){
  try{
   const response=await fetch(jpegImageUrl(url),{mode:"cors"});if(!response.ok)throw new Error("DOWNLOAD_HTTP_"+response.status);
@@ -3129,7 +3129,9 @@ async function generateAgnesImage(prompt,loaderAlreadyShown=false){
    scrollImagesToTop();
    $("#composerInput").value="";syncInput();
    $("#composerModel").value="Agnes Image 2.5 Flash";
+   $("#composerModel").dispatchEvent(new Event("change",{bubbles:true}));
    $("#composerRatio").value=ratio;
+   $("#composerRatio").dispatchEvent(new Event("change",{bubbles:true}));
    const successStatus=$("#composerStatus");
    if(successStatus){
     const successText=displayModel+" · готово";
@@ -5475,8 +5477,10 @@ async function prepareAndAttachReferenceFile(file){
   }else if(mode==="images"){
    // Prepare once at selection time; the model can be changed after attachment.
    $("#composerModel").value="Agnes Image 2.5 Flash";
+   $("#composerModel").dispatchEvent(new Event("change",{bubbles:true}));
    $("#composerRatio").value="auto";
-   $("#composerStatus").textContent="Agnes 2.5 · исходное изображение готово к редактированию";
+   $("#composerRatio").dispatchEvent(new Event("change",{bubbles:true}));
+   $("#composerStatus").textContent=imageModelLabel("Agnes Image 2.5 Flash")+" · исходное изображение готово к редактированию";
   }else if(mode==="video"){
    const selectedVideoModel=String($("#videoModel")?.value||"LTX-2.3 Distilled");
    $("#composerStatus").textContent=selectedVideoModel+" · изображение готово";
