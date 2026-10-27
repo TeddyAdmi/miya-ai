@@ -253,6 +253,23 @@ body.light .side-btn.active .ico,
 body.light .side-btn.active .nav-icon,
 body.light .mobile-tabs button.active,
 body.light .library-tab.active{color:#111111!important}
+
+/* Final ratio-menu normalization: stable text/icon columns and one text color in light mode. */
+.miya-composer-select-popup .miya-composer-select-option.miya-ratio-option,
+body.light .miya-composer-select-popup .miya-composer-select-option.miya-ratio-option,
+body.light .miya-composer-select-popup .miya-composer-select-option.miya-ratio-option .miya-ratio-label{
+ color:#111111!important;
+}
+body.light .miya-composer-select-popup .miya-composer-select-option.miya-ratio-option[aria-selected="true"],
+body.light .miya-composer-select-popup .miya-composer-select-option.miya-ratio-option:hover,
+body.light .miya-composer-select-popup .miya-composer-select-option.miya-ratio-option.is-active,
+body.light .miya-composer-select-popup .miya-composer-select-option.miya-ratio-option:focus-visible{
+ color:#111111!important;
+}
+body.light .miya-composer-select-popup .miya-composer-select-option.miya-ratio-option .miya-ratio-icon svg{
+ stroke:#111111!important;
+}
+#composerRatio.select-pill,#videoRatio.select-pill{padding-right:18px!important;}
 </style>
 
 <script>
@@ -273,18 +290,23 @@ body.light .library-tab.active{color:#111111!important}
    return shapes[ratio];
   };
   const ratioIconSize=value=>value==="9:16"?"10px 16px":value==="1:1"?"13px 13px":"19px 13px";
- const ratioArrow='url("data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 12 8%27 fill=%27none%27%3E%3Cpath d=%27M2 2L6 6L10 2%27 stroke=%27%237690ad%27 stroke-width=%271.5%27 stroke-linecap=%27round%27 stroke-linejoin=%27round%27/%3E%3C/svg%3E")';
  const syncRatioTrigger=select=>{
   if(!select||!["composerRatio","videoRatio"].includes(select.id))return;
   const value=select.value==="9:16"||select.value==="1:1"?select.value:"16:9";
   const icon='url("data:image/svg+xml,'+encodeURIComponent(ratioSvg(value))+ '")';
+  const light=document.body.classList.contains("light");
+  const stroke=light?"%23111111":"%23e5edf7";
+  const open=select.getAttribute("aria-expanded")==="true";
+  const arrowPath=open?"M2 6L6 2L10 6":"M2 2L6 6L10 2";
+  const arrow='url("data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 12 8%27 fill=%27none%27%3E%3Cpath d=%27'+arrowPath.replace(/ /g,"%20")+'%27 stroke=%27'+stroke+'%27 stroke-width=%271.8%27 stroke-linecap=%27round%27 stroke-linejoin=%27round%27/%3E%3C/svg%3E")';
   const size=ratioIconSize(value);
   select.style.removeProperty("color");
   select.style.removeProperty("-webkit-text-fill-color");
   select.style.removeProperty("text-shadow");
-  select.style.setProperty("background-image",icon+", "+ratioArrow,"important");
-  const iconLeft=value==="9:16"?"43px":value==="1:1"?"41.5px":"38.5px";
-   select.style.setProperty("background-position",iconLeft+" 50%, calc(100% - 8px) 50%","important");
+  select.style.setProperty("background-image",icon+", "+arrow,"important");
+  /* All aspect-ratio icons share one centered 19px column, matching the popup. */
+  const iconLeft=value==="9:16"?"47.5px":value==="1:1"?"46px":"43px";
+  select.style.setProperty("background-position",iconLeft+" 50%, calc(100% - 8px) 50%","important");
   select.style.setProperty("background-size",size+", 10px 7px","important");
   select.style.setProperty("text-align","left","important");
   select.style.setProperty("background-repeat","no-repeat, no-repeat","important");
@@ -292,7 +314,7 @@ body.light .library-tab.active{color:#111111!important}
  };
  const ratioStyle=document.createElement("style");
  ratioStyle.id="miyaRatioIconStyles";
- ratioStyle.textContent='.miya-composer-select-popup .miya-composer-select-option.miya-ratio-option{display:flex!important;align-items:center!important;justify-content:flex-start!important;gap:7px!important;min-height:28px!important;height:28px!important;padding:2px 8px!important;box-sizing:border-box!important}.miya-composer-select-popup .miya-composer-select-option.miya-ratio-option .miya-ratio-label{display:block;flex:0 0 24px;width:24px;text-align:left;font:12px Inter,Arial,sans-serif;line-height:16px}.miya-composer-select-popup .miya-composer-select-option.miya-ratio-option .miya-ratio-icon{display:flex;align-items:center;justify-content:center;flex:none;width:19px;height:19px}.miya-composer-select-popup .miya-composer-select-option.miya-ratio-option svg{display:block;width:19px;height:13px;overflow:visible}.miya-composer-select-popup .miya-composer-select-option.miya-ratio-option[data-value="9:16"] svg{width:10px;height:16px}.miya-composer-select-popup .miya-composer-select-option.miya-ratio-option[data-value="1:1"] svg{width:13px;height:13px}';
+ ratioStyle.textContent='.miya-composer-select-popup .miya-composer-select-option.miya-ratio-option{display:flex!important;align-items:center!important;justify-content:flex-start!important;gap:7px!important;min-height:28px!important;height:28px!important;padding:2px 8px!important;box-sizing:border-box!important;font:600 12px/16px Inter,system-ui,sans-serif!important;color:inherit!important}.miya-composer-select-popup .miya-composer-select-option.miya-ratio-option .miya-ratio-label{display:block;flex:0 0 24px;width:24px;text-align:left;font:600 12px/16px Inter,system-ui,sans-serif!important;color:inherit!important}.miya-composer-select-popup .miya-composer-select-option.miya-ratio-option .miya-ratio-icon{display:flex;align-items:center;justify-content:center;flex:none;width:19px;height:19px}.miya-composer-select-popup .miya-composer-select-option.miya-ratio-option .miya-ratio-icon svg{display:block;width:19px;height:13px;overflow:visible}.miya-composer-select-popup .miya-composer-select-option.miya-ratio-option[data-value="9:16"] svg{width:10px;height:16px}.miya-composer-select-popup .miya-composer-select-option.miya-ratio-option[data-value="1:1"] svg{width:13px;height:13px}.miya-composer-select-popup .miya-composer-select-option.miya-ratio-option[data-value="auto"] .miya-ratio-icon{visibility:hidden}';
  document.head.appendChild(ratioStyle);
  ["composerRatio","videoRatio"].forEach(id=>{
   const select=document.getElementById(id);
@@ -321,7 +343,7 @@ body.light .library-tab.active{color:#111111!important}
  };
  const availableOptions=select=>Array.from(select.options).filter(option=>!option.disabled);
  function closePopup(){
-  if(activeSelect)activeSelect.setAttribute("aria-expanded","false");
+  if(activeSelect){activeSelect.setAttribute("aria-expanded","false");syncRatioTrigger(activeSelect);}
   popup.hidden=true;
   popup.replaceChildren();
   activeSelect=null;
@@ -385,7 +407,7 @@ body.light .library-tab.active{color:#111111!important}
    item.setAttribute("aria-selected",String(option.value===select.value));
    item.dataset.value=option.value;
    item.dataset.index=String(index);
-   if((select.id==="composerRatio"||select.id==="videoRatio")&&ratioValues.has(option.value)){item.classList.add("miya-ratio-option");const label=document.createElement("span");label.className="miya-ratio-label";label.textContent=option.value;const icon=document.createElement("span");icon.className="miya-ratio-icon";icon.innerHTML=ratioSvg(option.value);item.append(label,icon);item.setAttribute("aria-label",option.value);item.title=option.value;}else{item.textContent=String(option.label||option.textContent||option.value);}
+   if((select.id==="composerRatio"||select.id==="videoRatio")&&(ratioValues.has(option.value)||option.value==="auto")){item.classList.add("miya-ratio-option");const label=document.createElement("span");label.className="miya-ratio-label";label.textContent=option.value;const icon=document.createElement("span");icon.className="miya-ratio-icon";if(ratioValues.has(option.value))icon.innerHTML=ratioSvg(option.value);item.append(label,icon);item.setAttribute("aria-label",option.value);item.title=option.value;}else{item.textContent=String(option.label||option.textContent||option.value);}
    item.disabled=option.disabled;
    item.tabIndex=-1;
    item.addEventListener("mouseenter",()=>moveActive(index));
@@ -398,6 +420,7 @@ body.light .library-tab.active{color:#111111!important}
    popup.appendChild(item);
   });
   select.setAttribute("aria-expanded","true");
+  syncRatioTrigger(select);
   select.setAttribute("aria-controls",popup.id);
   popup.hidden=false;
   positionPopup(select);
