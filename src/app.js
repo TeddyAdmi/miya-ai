@@ -7594,53 +7594,54 @@ document.head.appendChild(musicCardPolish);const oldHero=modeHero;modeHero=funct
 
 /* Use a page-styled popup for image/video selects: native Firefox pickers ignore option background colors. */
 (function miyaComposerDropdownPopupV1(){
- if(window.__miyaComposerDropdownPopupV1)return;
- window.__miyaComposerDropdownPopupV1=true;
- const ids=["composerModel","composerRatio","composerQuality","videoModel","videoDuration","videoRatio"];
- const popup=document.createElement("div");
- popup.className="miya-composer-select-popup";
- popup.id="miyaComposerSelectPopup";
- popup.setAttribute("role","listbox");
- popup.setAttribute("aria-label","Выберите значение");
- popup.hidden=true;
- document.body.appendChild(popup);
- let activeSelect=null;
- let activeIndex=-1;
+ const ids=new Set(["composerModel","composerRatio","composerQuality","videoModel","videoDuration","videoRatio"]);
+ let popup=document.getElementById("miyaComposerSelectPopup");
+ if(!popup){
+  popup=document.createElement("div");
+  popup.className="miya-composer-select-popup";
+  popup.id="miyaComposerSelectPopup";
+  popup.setAttribute("role","listbox");
+  popup.setAttribute("aria-label","Выберите значение");
+  popup.hidden=true;
+  (document.body||document.documentElement).appendChild(popup);
+ }
+ // Reuse one delegated controller. Select nodes may be replaced during rapid section changes,
+ // so binding handlers once to the initial six DOM nodes is not reliable.
+ if(window.__miyaComposerDropdownPopupV2)return;
+ window.__miyaComposerDropdownPopupV2=true;
+ let activeSelect=null,activeIndex=-1;
+ const getSelect=target=>{
+  const el=target&&target.closest?target.closest("select"):null;
+  return el&&ids.has(el.id)?el:null;
+ };
  const belongsToActiveSection=select=>{
-  // Trust the actual rendered state, not a mode class that can briefly lag during rapid section switches.
-  // Hidden controls stay inactive; any visible image/video control can open immediately.
-  if(!select||!select.isConnected)return false;
-  const rects=select.getClientRects();
-  if(!rects.length)return false;
-  const style=window.getComputedStyle(select);
+  if(!select||!select.isConnected||!select.getClientRects().length)return false;
+  const style=getComputedStyle(select);
   if(style.display==="none"||style.visibility==="hidden"||Number(style.opacity)===0)return false;
-  const options=select.closest("#composerOptions, #videoOptions");
-  if(options){
-   const optionStyle=window.getComputedStyle(options);
-   if(optionStyle.display==="none"||optionStyle.visibility==="hidden")return false;
-  }
-  return true;
+  const composer=document.getElementById("composer");
+  if(!composer)return false;
+  // The select itself must belong to the currently active section. This also avoids opening
+  // a hidden duplicate left behind during a transition.
+  return select.id.startsWith("video")
+   ? composer.classList.contains("mode-video")
+   : composer.classList.contains("mode-images");
  };
  const availableOptions=select=>Array.from(select.options).filter(option=>!option.disabled);
  function closePopup(){
   if(activeSelect)activeSelect.setAttribute("aria-expanded","false");
-  popup.hidden=true;
-  popup.replaceChildren();
-  activeSelect=null;
-  activeIndex=-1;
+  popup.hidden=true;popup.replaceChildren();activeSelect=null;activeIndex=-1;
  }
  function moveActive(nextIndex){
   const items=Array.from(popup.querySelectorAll(".miya-composer-select-option:not(:disabled)"));
   if(!items.length)return;
   activeIndex=(nextIndex+items.length)%items.length;
   items.forEach((item,index)=>{
-   const active=index===activeIndex;
-   item.classList.toggle("is-active",active);
-   item.setAttribute("aria-selected",String(activeSelect&&item.dataset.value===activeSelect.value));
+   item.classList.toggle("is-active",index===activeIndex);
+   item.setAttribute("aria-selected",String(!!activeSelect&&item.dataset.value===activeSelect.value));
   });
-  const active=items[activeIndex];
-  if(active){
-   const r=active.getBoundingClientRect(),p=popup.getBoundingClientRect();
+  const item=items[activeIndex];
+  if(item){
+   const r=item.getBoundingClientRect(),p=popup.getBoundingClientRect();
    if(r.bottom>p.bottom)popup.scrollTop+=r.bottom-p.bottom;
    else if(r.top<p.top)popup.scrollTop-=p.top-r.top;
   }
@@ -7648,31 +7649,25 @@ document.head.appendChild(musicCardPolish);const oldHero=modeHero;modeHero=funct
  function chooseOption(option){
   const select=activeSelect;
   if(!select||!option||option.disabled)return;
-  select.value=option.value;
-  closePopup();
-  select.focus({preventScroll:true});
+  select.value=option.value;closePopup();
+  try{select.focus({preventScroll:true})}catch{select.focus()}
   select.dispatchEvent(new Event("input",{bubbles:true}));
   select.dispatchEvent(new Event("change",{bubbles:true}));
  }
  function positionPopup(select){
   const rect=select.getBoundingClientRect();
-  // Match the trigger width exactly, just like the size and quality menus.
   const width=Math.max(1,Math.min(Math.ceil(rect.width),window.innerWidth-16));
   popup.style.width=width+"px";
   popup.style.left=Math.max(8,Math.min(rect.left,window.innerWidth-width-8))+"px";
-  // Fit all model options when possible; only scroll on unusually short viewports.
-  const desiredHeight=popup.scrollHeight;
-  popup.style.maxHeight=Math.max(80,Math.min(desiredHeight,window.innerHeight-16))+"px";
-  const popupHeight=Math.min(desiredHeight,window.innerHeight-16);
-  const below=window.innerHeight-rect.bottom-8;
-  const above=rect.top-8;
-  let top;
-  if(below<Math.min(popupHeight,180)&&above>below)top=Math.max(8,rect.top-popupHeight-4);
-  else top=Math.min(window.innerHeight-popupHeight-8,rect.bottom+4);
+  popup.style.maxHeight=Math.max(80,Math.min(popup.scrollHeight,window.innerHeight-16))+"px";
+  const height=Math.min(popup.scrollHeight,window.innerHeight-16);
+  const below=window.innerHeight-rect.bottom-8,above=rect.top-8;
+  const top=below<Math.min(height,180)&&above>below
+   ?Math.max(8,rect.top-height-4):Math.min(window.innerHeight-height-8,rect.bottom+4);
   popup.style.top=Math.max(8,top)+"px";
  }
  function openPopup(select,initialIndex){
-  if(!select||!belongsToActiveSection(select))return;
+  if(!belongsToActiveSection(select))return;
   if(activeSelect&&activeSelect!==select)activeSelect.setAttribute("aria-expanded","false");
   activeSelect=select;
   const options=availableOptions(select);
@@ -7681,93 +7676,62 @@ document.head.appendChild(musicCardPolish);const oldHero=modeHero;modeHero=funct
   if(activeIndex<0)activeIndex=0;
   options.forEach((option,index)=>{
    const item=document.createElement("button");
-   item.type="button";
-   item.className="miya-composer-select-option";
-   item.setAttribute("role","option");
-   item.setAttribute("aria-selected",String(option.value===select.value));
-   item.dataset.value=option.value;
-   item.dataset.index=String(index);
+   item.type="button";item.className="miya-composer-select-option";
+   item.setAttribute("role","option");item.setAttribute("aria-selected",String(option.value===select.value));
+   item.dataset.value=option.value;item.dataset.index=String(index);
    item.textContent=String(option.label||option.textContent||option.value);
-   item.disabled=option.disabled;
-   item.tabIndex=-1;
+   item.disabled=option.disabled;item.tabIndex=-1;
    item.addEventListener("mouseenter",()=>moveActive(index));
    item.addEventListener("mousedown",event=>{event.preventDefault();event.stopPropagation()});
-   item.addEventListener("click",event=>{
-    event.preventDefault();
-    event.stopPropagation();
-    chooseOption(option);
-   });
+   item.addEventListener("click",event=>{event.preventDefault();event.stopPropagation();chooseOption(option)});
    popup.appendChild(item);
   });
   select.setAttribute("aria-expanded","true");
   select.setAttribute("aria-controls",popup.id);
-  popup.hidden=false;
-  positionPopup(select);
-  moveActive(activeIndex);
+  popup.hidden=false;positionPopup(select);moveActive(activeIndex);
  }
  function togglePopup(select){
-  if(activeSelect===select&&!popup.hidden)closePopup();
-  else openPopup(select);
+  if(activeSelect===select&&!popup.hidden)closePopup();else openPopup(select);
  }
- ids.forEach(id=>{
-  const select=document.getElementById(id);
-  if(!select||select.dataset.miyaCustomPopupBound)return;
-  select.dataset.miyaCustomPopupBound="1";
-  select.setAttribute("aria-haspopup","listbox");
-  select.setAttribute("aria-expanded","false");
-  const onMouseDown=event=>{
-   if(event.button!==0||!belongsToActiveSection(select))return;
-   event.preventDefault();
-   event.stopPropagation();
-   try{select.focus({preventScroll:true})}catch{select.focus()}
-   togglePopup(select);
-  };
-  select.addEventListener("mousedown",onMouseDown,true);
-  // Mouse clicks are toggled on mousedown/pointerdown above. Do not reopen here:
-  // the click event follows the same press and used to undo a just-closed popup.
-  select.addEventListener("click",event=>{
-   if(!belongsToActiveSection(select))return;
-   event.preventDefault();
-   event.stopPropagation();
-  },true);
-  select.addEventListener("pointerdown",event=>{
-   if(event.pointerType==="mouse"||!belongsToActiveSection(select))return;
-   event.preventDefault();
-   event.stopPropagation();
-   try{select.focus({preventScroll:true})}catch{select.focus()}
-   togglePopup(select);
-  },true);
-  select.addEventListener("keydown",event=>{
-   if(!belongsToActiveSection(select))return;
-   if(event.key==="Escape"&&activeSelect===select&&!popup.hidden){
-    event.preventDefault();event.stopPropagation();closePopup();return;
-   }
-   if(!["ArrowDown","ArrowUp","Enter"," ","F4"].includes(event.key))return;
-   event.preventDefault();
-   event.stopPropagation();
-   if(popup.hidden||activeSelect!==select){
-    const selected=availableOptions(select).findIndex(option=>option.value===select.value);
-    const start=selected<0?0:selected;
-    openPopup(select,event.key==="ArrowUp"?Math.max(0,start-1):start);
-    return;
-   }
-   if(event.key==="ArrowDown")moveActive(activeIndex+1);
-   else if(event.key==="ArrowUp")moveActive(activeIndex-1);
-   else if(event.key==="Enter"||event.key===" "){
-    const option=availableOptions(select)[activeIndex];
-    chooseOption(option);
-   }
-  });
- });
+ // Capture at document level so this continues to work when section controls are re-rendered.
  document.addEventListener("mousedown",event=>{
-  if(popup.hidden)return;
-  if(popup.contains(event.target)||event.target===activeSelect)return;
-  closePopup();
+  const select=getSelect(event.target);
+  if(select){
+   if(event.button!==0||!belongsToActiveSection(select))return;
+   event.preventDefault();event.stopPropagation();
+   try{select.focus({preventScroll:true})}catch{select.focus()}
+   togglePopup(select);return;
+  }
+  if(!popup.hidden&&!popup.contains(event.target))closePopup();
+ },true);
+ document.addEventListener("pointerdown",event=>{
+  if(event.pointerType==="mouse")return;
+  const select=getSelect(event.target);
+  if(!select||!belongsToActiveSection(select))return;
+  event.preventDefault();event.stopPropagation();
+  try{select.focus({preventScroll:true})}catch{select.focus()}
+  togglePopup(select);
+ },true);
+ document.addEventListener("click",event=>{
+  const select=getSelect(event.target);
+  if(select&&belongsToActiveSection(select)){event.preventDefault();event.stopPropagation()}
  },true);
  document.addEventListener("keydown",event=>{
-  if(event.key==="Escape"&&!popup.hidden){event.preventDefault();closePopup()}
+  const select=getSelect(event.target);
+  if(event.key==="Escape"&&!popup.hidden){event.preventDefault();closePopup();return}
+  if(!select||!belongsToActiveSection(select))return;
+  if(!["ArrowDown","ArrowUp","Enter"," ","F4"].includes(event.key))return;
+  event.preventDefault();event.stopPropagation();
+  if(popup.hidden||activeSelect!==select){
+   const selected=availableOptions(select).findIndex(option=>option.value===select.value);
+   const start=selected<0?0:selected;
+   openPopup(select,event.key==="ArrowUp"?Math.max(0,start-1):start);return;
+  }
+  if(event.key==="ArrowDown")moveActive(activeIndex+1);
+  else if(event.key==="ArrowUp")moveActive(activeIndex-1);
+  else if(event.key==="Enter"||event.key===" "){chooseOption(availableOptions(select)[activeIndex])}
  });
- const reposition=()=>{if(!popup.hidden&&activeSelect)positionPopup(activeSelect)};
+ const reposition=()=>{if(!popup.hidden&&activeSelect){if(!belongsToActiveSection(activeSelect))closePopup();else positionPopup(activeSelect)}};
  window.addEventListener("resize",reposition,{passive:true});
  window.addEventListener("scroll",reposition,true);
 })();
