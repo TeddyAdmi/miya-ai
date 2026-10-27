@@ -92,6 +92,72 @@ voice:{title:"Голос",eyebrow:"ГОЛОС",subtitle:"Превращай те
  document.head.appendChild(st);
 })();
 const $=s=>document.querySelector(s);
+
+// Keep the ratio indicator synchronized with the selected aspect ratio in Firefox.
+function syncImageRatioControl(){
+ const el=$("#composerRatio");
+ if(!el)return;
+ const value=String(el.value||"16:9");
+ let kind=value==="1:1"?"square":
+   ["9:16","2:3","3:4"].includes(value)?"portrait":
+   ["16:9","3:2","4:3","21:9"].includes(value)?"landscape":"auto";
+ if(value==="auto"){
+  const image=$("#composerAttachmentImage");
+  const width=Number(image?.naturalWidth||0),height=Number(image?.naturalHeight||0);
+  if(width>0&&height>0){
+   const aspect=width/height;
+   kind=aspect<0.82?"portrait":aspect>1.22?"landscape":"square";
+  }
+ }
+ const stroke=document.body?.classList.contains("light")?"#52657b":"#a9bad0";
+ let art="";
+ if(kind==="portrait"){
+  art='<rect x="5.5" y="1.5" width="9" height="17" rx="1.8"/><path d="M8.5 4h3M9.2 15.8h1.6"/>';
+ }else if(kind==="landscape"){
+  art='<rect x="1.5" y="4.1" width="17" height="11.8" rx="1.7"/><path d="M7.5 13h5"/>';
+ }else if(kind==="square"){
+  art='<rect x="3" y="3" width="14" height="14" rx="1.7"/>';
+ }else{
+  art='<rect x="2.5" y="2.5" width="15" height="15" rx="1.7" stroke-dasharray="2 2"/><path d="M6 10h8"/>';
+ }
+ const svg=(inner)=>'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="none" stroke="'+stroke+'" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">'+inner+'</svg>';
+ const arrowOpen=el.getAttribute("aria-expanded")==="true";
+ const arrowSvg='<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 12 8" fill="none"><path d="'+(arrowOpen?"M2 6L6 2L10 6":"M2 2L6 6L10 2")+'" stroke="'+stroke+'" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+ const dataUrl=source=>'url("data:image/svg+xml,'+encodeURIComponent(source)+'")';
+ el.style.setProperty("background-image",dataUrl(svg(art))+","+dataUrl(arrowSvg),"important");
+ el.style.setProperty("background-repeat","no-repeat, no-repeat","important");
+ el.style.setProperty("background-size","17px 17px, 10px 7px","important");
+ el.style.setProperty("background-position","7px 50%, calc(100% - 8px) 50%","important");
+ el.style.setProperty("padding-left","30px","important");
+ el.dataset.ratioIcon=kind;
+}
+function setImageRatio(value){
+ const el=$("#composerRatio");
+ if(!el)return;
+ const requested=String(value||"16:9");
+ el.value=requested;
+ if(el.value!==requested)el.value="16:9";
+ syncImageRatioControl();
+ el.dispatchEvent(new Event("input",{bubbles:true}));
+ el.dispatchEvent(new Event("change",{bubbles:true}));
+}
+function installImageRatioControl(){
+ const el=$("#composerRatio");
+ if(!el||el.dataset.miyaRatioIconReady==="1")return;
+ el.dataset.miyaRatioIconReady="1";
+ el.addEventListener("input",syncImageRatioControl);
+ el.addEventListener("change",syncImageRatioControl);
+ el.addEventListener("focus",syncImageRatioControl);
+ const image=$("#composerAttachmentImage");
+ image?.addEventListener("load",syncImageRatioControl);
+ image?.addEventListener("error",syncImageRatioControl);
+ if(document.body){
+  new MutationObserver(syncImageRatioControl).observe(document.body,{attributes:true,attributeFilter:["class"]});
+ }
+ new MutationObserver(syncImageRatioControl).observe(el,{attributes:true,attributeFilter:["aria-expanded","disabled"]});
+ syncImageRatioControl();
+}
+installImageRatioControl();
 function installAnimatedStatusDots(){
  const status=$("#composerStatus");
  if(!status||status.dataset.animatedDotsReady)return;
@@ -1056,13 +1122,12 @@ function clearComposerAttachment(){
   // Removing the source photo returns Images to the first/default model, not GPT Image.
   model.value="Nano BananA";
   model.dispatchEvent(new Event("change",{bubbles:true}));
-  const ratio=$("#composerRatio");
-  if(ratio){ratio.value="16:9";ratio.dispatchEvent(new Event("change",{bubbles:true}));}
+  setImageRatio("16:9");
   const status=$("#composerStatus");
   if(status)status.textContent="Nano BananA · T2I / I2I · готов к созданию";
  }
 }
-function openEditor(url){mode="images";$("#composerModel").value="Nano BananA";$("#composerModel").dispatchEvent(new Event("change",{bubbles:true}));$("#composerRatio").value="auto";$("#composerRatio").dispatchEvent(new Event("change",{bubbles:true}));referenceImage=url;try{sessionStorage.setItem("miyaReferenceImage",referenceImage)}catch{};setComposerAttachment(url);const m=modes.images;$("#workspaceEyebrow").textContent=m.eyebrow;$("#workspaceTitle").textContent=m.title;$("#workspaceSubtitle").textContent=m.subtitle;const promptInput=$("#composerInput"); if(promptInput){ promptInput.placeholder=m.placeholder; promptInput.setAttribute("aria-label",m.placeholder); promptInput.classList.remove("prompt-chat","prompt-images","prompt-video","prompt-voice"); promptInput.classList.add("prompt-images"); }$("#composerSendText").textContent=m.send;$("#composerStatus").textContent=imageModelLabel("Nano BananA")+" · исходное изображение готово к редактированию";$(".image-settings").style.display="flex";$("#voiceOptions").style.display="none";$("#voiceOptions").classList.remove("show");$("#videoOptions").style.display="none";$("#videoOptions").classList.remove("show");document.querySelectorAll("[data-mode]").forEach(x=>x.classList.toggle("active",x.dataset.mode==="images"));if(!$("#canvas .result-grid")) renderImageLibrary();$("#composerInput").focus();syncInput()}
+function openEditor(url){mode="images";$("#composerModel").value="Nano BananA";$("#composerModel").dispatchEvent(new Event("change",{bubbles:true}));setImageRatio("auto");referenceImage=url;try{sessionStorage.setItem("miyaReferenceImage",referenceImage)}catch{};setComposerAttachment(url);const m=modes.images;$("#workspaceEyebrow").textContent=m.eyebrow;$("#workspaceTitle").textContent=m.title;$("#workspaceSubtitle").textContent=m.subtitle;const promptInput=$("#composerInput"); if(promptInput){ promptInput.placeholder=m.placeholder; promptInput.setAttribute("aria-label",m.placeholder); promptInput.classList.remove("prompt-chat","prompt-images","prompt-video","prompt-voice"); promptInput.classList.add("prompt-images"); }$("#composerSendText").textContent=m.send;$("#composerStatus").textContent=imageModelLabel("Nano BananA")+" · исходное изображение готово к редактированию";$(".image-settings").style.display="flex";$("#voiceOptions").style.display="none";$("#voiceOptions").classList.remove("show");$("#videoOptions").style.display="none";$("#videoOptions").classList.remove("show");document.querySelectorAll("[data-mode]").forEach(x=>x.classList.toggle("active",x.dataset.mode==="images"));if(!$("#canvas .result-grid")) renderImageLibrary();$("#composerInput").focus();syncInput()}
 async function downloadImage(url){
  try{
   const response=await fetch(jpegImageUrl(url),{mode:"cors"});if(!response.ok)throw new Error("DOWNLOAD_HTTP_"+response.status);
@@ -3186,8 +3251,7 @@ async function generateAgnesImage(prompt,loaderAlreadyShown=false){
    $("#composerInput").value="";syncInput();
    $("#composerModel").value="Agnes Image 2.5 Flash";
    $("#composerModel").dispatchEvent(new Event("change",{bubbles:true}));
-   $("#composerRatio").value=ratio;
-   $("#composerRatio").dispatchEvent(new Event("change",{bubbles:true}));
+   setImageRatio(ratio);
    const successStatus=$("#composerStatus");
    if(successStatus){
     const successText=displayModel+" · готово";
@@ -3463,7 +3527,7 @@ async function generateImage(prompt,loaderAlreadyShown=false){
   scrollImagesToTop();
   $("#composerInput").value="";syncInput();
   $("#composerModel").value=modelName;
-  $("#composerRatio").value=referenceImage?selectedRatio:$("#composerRatio").value;
+  setImageRatio(referenceImage?selectedRatio:$("#composerRatio").value);
   const successStatus=$("#composerStatus");
   if(successStatus){
    const successText=imageModelLabel(actualModel)+" · готово";
@@ -5103,8 +5167,7 @@ function setMode(next,render=true){
    // so saved cards and image decoding cannot block the first model-menu interaction.
    const imageModel=$("#composerModel");
    if(imageModel&&!referenceImage)imageModel.value="ImageSmith";
-   const ratio=$("#composerRatio");
-   if(ratio&&!referenceImage)ratio.value="16:9";
+   if(!referenceImage)setImageRatio("16:9");
    const paintImageWall=()=>{if(mode==="images")renderImageLibrary()};
    if("requestIdleCallback" in window)requestIdleCallback(paintImageWall,{timeout:1500});
    else setTimeout(paintImageWall,250);
@@ -5400,17 +5463,17 @@ $("#composerModel")?.addEventListener("change",()=>{
   /* Keep an existing edit image visible while switching models. The selected
      model decides whether that image is actually sent for generation. */
   if(model==="FLUX Kontext Dev"){
-    $("#composerRatio").value="auto";
+    setImageRatio("auto");
     $("#composerStatus").textContent=referenceImage
       ?modelLabel+" · изображение готово к редактированию"
       :modelLabel+" · готов к созданию";
   }else if(model==="Agnes Image 2.5 Flash"){
-    $("#composerRatio").value="16:9";
+    setImageRatio("16:9");
     $("#composerStatus").textContent=referenceImage
       ?modelLabel+" · изображение прикреплено · готово к редактированию"
       :modelLabel+" · готов к созданию";
   }else{
-    $("#composerRatio").value="16:9";
+    setImageRatio("16:9");
     $("#composerStatus").textContent=referenceImage
       ?modelLabel+" · изображение прикреплено"
       :modelLabel+" · готов к созданию";
@@ -5524,10 +5587,7 @@ async function prepareAndAttachReferenceFile(file){
    model.dispatchEvent(new Event("change",{bubbles:true}));
   }
   const ratio=$("#composerRatio");
-  if(ratio&&ratio.value!=="auto"){
-   ratio.value="auto";
-   ratio.dispatchEvent(new Event("change",{bubbles:true}));
-  }
+  if(ratio&&ratio.value!=="auto")setImageRatio("auto");
   if($("#composerStatus"))$("#composerStatus").textContent=imageModelLabel("Nano BananA")+" · исходное изображение готово к редактированию";
  }
 
