@@ -4618,22 +4618,17 @@ body.light .composer.mode-video #videoRatio.select-pill[aria-expanded="true"]{
 }
 
 
-/* Pending image cards: clip the dot animation to the card and remove edge strips. */
+/* Pending image cards keep the exact same frame as every normal media card. */
 .media-card.media-new-image-pending{
   box-sizing:border-box!important;
+  position:relative!important;
   overflow:hidden!important;
-  border:0!important;
+  border:1px solid var(--line)!important;
+  border-radius:10px!important;
   outline:0!important;
   box-shadow:none!important;
   isolation:isolate!important;
   background:#081a2d!important;
-}
-.media-card.media-new-image-pending::before,
-.media-card.media-new-image-pending::after{
-  content:none!important;
-  display:none!important;
-  border:0!important;
-  box-shadow:none!important;
 }
 .media-card.media-new-image-pending .media-new-image-dots{
   position:absolute!important;
@@ -4647,4 +4642,7 @@ body.light .composer.mode-video #videoRatio.select-pill[aria-expanded="true"]{
   box-shadow:none!important;
   border-radius:inherit!important;
   background:transparent!important;
+  overflow:hidden!important;
+  clip-path:inset(0 round 9px);
+  pointer-events:none!important;
 }
