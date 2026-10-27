@@ -116,14 +116,8 @@
         </select>
         <select class="select-pill" id="composerRatio" aria-label="Соотношение сторон"><option value="auto">auto</option><option value="16:9" selected>16:9</option><option value="9:16">9:16</option><option value="1:1">1:1</option></select>
         <select class="select-pill" id="composerQuality" aria-label="Качество изображения"><option value="1K">1K · Быстро</option><option value="2K" selected>2K · Высокое</option><option value="4K">4K · Максимум</option></select>
-        <button class="improve composer-trash" id="improve" type="button" title="Улучшить промпт" aria-label="Улучшить промпт" style="display:grid;place-items:center;padding:0">
-          <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" focusable="false" style="display:block;width:20px;height:20px;margin:0;transform:none;fill:none;stroke:currentColor;stroke-width:1.75;stroke-linecap:round;stroke-linejoin:round">
-            <path d="M12 4.6a3.2 3.2 0 0 0-6 1.5 3.45 3.45 0 0 0-1.4 5.3 3.35 3.35 0 0 0 1.2 5.7 3.5 3.5 0 0 0 6.2 1.2"/>
-            <path d="M12 4.6a3.2 3.2 0 0 1 6 1.5 3.45 3.45 0 0 1 1.4 5.3 3.35 3.35 0 0 1-1.2 5.7 3.5 3.5 0 0 1-6.2 1.2"/>
-            <path d="M12 4.6v15"/>
-            <path d="M7.2 7.2c1.7-.1 2.7 1.1 2.5 2.5M5.8 12.5c1.6-.7 2.9.2 3 1.7M8 16.7c1.1 0 1.8-.5 2.1-1.4"/>
-            <path d="M16.8 7.2c-1.7-.1-2.7 1.1-2.5 2.5M18.2 12.5c-1.6-.7-2.9.2-3 1.7M16 16.7c-1.1 0-1.8-.5-2.1-1.4"/>
-          </svg>
+        <button class="improve composer-trash" id="improve" type="button" title="Улучшить промпт" aria-label="Улучшить промпт">
+          <svg viewBox="0 0 24 24" aria-hidden="true" style="transform:translateY(1px)"><path d="m14 3-1.7 4.3L8 9l4.3 1.7L14 15l1.7-4.3L20 9l-4.3-1.7L14 3Z"/><path d="m6.5 13-.9 2.3L3 16.2l2.6.9.9 2.4.9-2.4 2.6-.9-2.6-.9L6.5 13Z"/><path d="m18.5 14-.6 1.6-1.7.6 1.7.6.6 1.7.6-1.7 1.7-.6-1.7-.6-.6-1.6Z"/></svg>
         </button>
         <button class="composer-copy" id="copyPrompt" type="button" title="Копировать текст" aria-label="Копировать текст"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M15 9V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v7a2 2 0 0 0 2 2h3"/></svg></button>
         <button class="composer-paste" id="imagePastePrompt" type="button" title="Вставить" aria-label="Вставить"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 4.5h6a2 2 0 0 1 2 2V8H7V6.5a2 2 0 0 1 2-2Z"/><rect x="5" y="8" width="14" height="13" rx="2"/><path d="M9 12h6M9 16h4"/></svg></button>
@@ -376,6 +370,12 @@ body.light #composer.mode-images .miya-model-logo{background:transparent!importa
   #composer.mode-images .miya-model-logo img{width:18px!important;height:18px!important;max-width:18px!important;max-height:18px!important}
 }
 
+
+/* The shared prompt-icon rule was cancelling the star offset with transform:none!important.
+   Restore the original three-star SVG and shift only this icon down inside its centered button. */
+#composer .image-settings #improve svg{
+  transform:translateY(2px)!important;
+}
 </style>
 
 <script>
