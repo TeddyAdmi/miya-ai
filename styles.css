@@ -4556,3 +4556,17 @@ body.light .miya-composer-select-option:focus-visible{
 body.light .miya-composer-select-option[aria-selected="true"]{
  background:#e1e9f2!important;color:#273047!important;
 }
+
+/* Hide the visible scrollbar in custom composer dropdowns without reducing their rounded popup corners. */
+.miya-composer-select-popup{
+ scrollbar-width:none!important;
+ -ms-overflow-style:none!important;
+ scrollbar-color:transparent transparent!important;
+}
+.miya-composer-select-popup::-webkit-scrollbar{
+ display:none!important;width:0!important;height:0!important;
+}
+body.light .miya-composer-select-popup{
+ scrollbar-width:none!important;
+ scrollbar-color:transparent transparent!important;
+}
