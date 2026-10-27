@@ -345,7 +345,7 @@ body.light .miya-composer-select-popup .miya-composer-select-option{
 /* Brand marks for the image-model selector: same icon size in the trigger and dropdown. */
 #composer.mode-images #composerModel.select-pill{
   width:auto!important;min-width:0!important;max-width:none!important;
-  flex:0 0 auto!important;padding-left:10px!important;border-top-left-radius:0!important;border-bottom-left-radius:0!important;
+  flex:0 0 auto!important;padding-left:15px!important;border-top-left-radius:0!important;border-bottom-left-radius:0!important;
 }
 .miya-model-logo{
   display:inline-flex!important;align-items:center!important;justify-content:center!important;
@@ -490,6 +490,7 @@ body.light #composer.mode-images .miya-model-logo{border-color:#d3deea!important
   const siblingGap=parseFloat(parentStyle.columnGap||parentStyle.gap)||0;
   logo.style.setProperty("margin-right",(-siblingGap)+"px","important");
   const img=logo.querySelector("img");
+  if(img)img.style.setProperty("transform","translateX(5px)","important");
   if(img){const src=modelLogoUrl(select.value);if(img.src!==src)img.src=src;}
  }
 
