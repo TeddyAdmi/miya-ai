@@ -7644,13 +7644,14 @@ document.head.appendChild(musicCardPolish);const oldHero=modeHero;modeHero=funct
  }
  function positionPopup(select){
   const rect=select.getBoundingClientRect();
-  const optionWidths=availableOptions(select).map(option=>Math.ceil(String(option.label||option.textContent||"").trim().length*7.2+30));
-  const desiredWidth=Math.max(rect.width,...optionWidths,rect.width);
-  const width=Math.max(1,Math.min(Math.ceil(desiredWidth),window.innerWidth-16));
+  // Match the trigger width exactly, just like the size and quality menus.
+  const width=Math.max(1,Math.min(Math.ceil(rect.width),window.innerWidth-16));
   popup.style.width=width+"px";
   popup.style.left=Math.max(8,Math.min(rect.left,window.innerWidth-width-8))+"px";
-  popup.style.maxHeight=Math.max(80,Math.min(300,window.innerHeight-16))+"px";
-  const popupHeight=Math.min(popup.scrollHeight,300,window.innerHeight-16);
+  // Fit all model options when possible; only scroll on unusually short viewports.
+  const desiredHeight=popup.scrollHeight;
+  popup.style.maxHeight=Math.max(80,Math.min(desiredHeight,window.innerHeight-16))+"px";
+  const popupHeight=Math.min(desiredHeight,window.innerHeight-16);
   const below=window.innerHeight-rect.bottom-8;
   const above=rect.top-8;
   let top;
