@@ -414,7 +414,7 @@ body.light #composer.mode-images .miya-model-logo{background:transparent!importa
  };
  const ratioStyle=document.createElement("style");
  ratioStyle.id="miyaRatioIconStyles";
- ratioStyle.textContent='.miya-composer-select-popup .miya-composer-select-option{display:flex!important;align-items:center!important;min-height:36px!important;height:36px!important;padding:7px 28px 7px 10px!important;box-sizing:border-box!important;white-space:nowrap!important;font:600 12px/16px Inter,system-ui,sans-serif!important;border-radius:6px!important}.miya-composer-select-popup .miya-composer-select-option.miya-ratio-option{justify-content:flex-start!important;gap:10px!important;padding:7px 28px 7px 10px!important;color:inherit!important}.miya-composer-select-popup .miya-composer-select-option.miya-ratio-option .miya-ratio-label{display:block;flex:0 0 38px;width:38px;white-space:nowrap;text-align:left;font:600 12px/16px Inter,system-ui,sans-serif!important;color:inherit!important}.miya-composer-select-popup .miya-composer-select-option.miya-ratio-option .miya-ratio-icon{display:flex;align-items:center;justify-content:center;flex:none;width:22px;height:22px;position:static;margin-left:2px}.miya-composer-select-popup .miya-composer-select-option.miya-ratio-option .miya-ratio-icon svg{display:block;width:22px;height:18px;overflow:visible}.miya-composer-select-popup .miya-composer-select-option.miya-ratio-option[data-value="9:16"] svg{width:15px;height:22px}.miya-composer-select-popup .miya-composer-select-option.miya-ratio-option[data-value="1:1"] svg{width:20px;height:20px}.miya-composer-select-popup .miya-composer-select-option.miya-ratio-option[data-value="auto"] .miya-ratio-icon{visibility:hidden}';
+ ratioStyle.textContent='.miya-composer-select-popup .miya-composer-select-option{display:flex!important;align-items:center!important;min-height:36px!important;height:36px!important;padding:7px 28px 7px 10px!important;box-sizing:border-box!important;white-space:nowrap!important;font:600 12px/16px Inter,system-ui,sans-serif!important;border-radius:6px!important}.miya-composer-select-popup .miya-composer-select-option.miya-ratio-option{justify-content:flex-start!important;gap:7px!important;padding:7px 28px 7px 8px!important;color:inherit!important}.miya-composer-select-popup .miya-composer-select-option.miya-ratio-option .miya-ratio-label{display:block;flex:0 0 32px;width:32px;white-space:nowrap;text-align:left;font:600 12px/16px Inter,system-ui,sans-serif!important;color:inherit!important}.miya-composer-select-popup .miya-composer-select-option.miya-ratio-option[data-value="1:1"] .miya-ratio-label{text-indent:6px}.miya-composer-select-popup .miya-composer-select-option.miya-ratio-option .miya-ratio-icon{display:flex;align-items:center;justify-content:center;flex:none;width:19px;height:19px;position:absolute;left:43px;margin:0}.miya-composer-select-popup .miya-composer-select-option.miya-ratio-option .miya-ratio-icon svg{display:block;width:19px;height:13px;overflow:visible}.miya-composer-select-popup .miya-composer-select-option.miya-ratio-option[data-value="9:16"] svg{width:13px;height:16px}.miya-composer-select-popup .miya-composer-select-option.miya-ratio-option[data-value="1:1"] svg{width:13px;height:13px}.miya-composer-select-popup .miya-composer-select-option.miya-ratio-option[data-value="auto"] .miya-ratio-icon{visibility:hidden}';
  document.head.appendChild(ratioStyle);
  ["composerRatio","videoRatio"].forEach(id=>{
   const select=document.getElementById(id);
@@ -455,6 +455,20 @@ body.light #composer.mode-images .miya-model-logo{background:transparent!importa
   return "google.com";
  };
  const modelLogoUrl=value=>{const v=String(value||"").trim().toLowerCase();if(v==="nano banana")return "https://cdn.jsdelivr.net/gh/glincker/thesvg@main/public/icons/nano-banana-google/default.svg";if(v==="nano banana 2")return "https://www.google.com/s2/favicons?domain=google.com&sz=64";return "https://www.google.com/s2/favicons?domain="+encodeURIComponent(modelBrandDomain(value))+"&sz=64";};
+ // Warm the browser cache for all model logos before the first menu interaction.
+ const preloadedModelLogoUrls=new Set();
+ ids.filter(id=>id==="composerModel"||id==="videoModel").forEach(id=>{
+  const select=document.getElementById(id);
+  if(!select)return;
+  availableOptions(select).forEach(option=>{
+   const src=modelLogoUrl(option.value);
+   if(!src||preloadedModelLogoUrls.has(src))return;
+   preloadedModelLogoUrls.add(src);
+   const preload=new Image();
+   preload.decoding="async";
+   preload.src=src;
+  });
+ });
  function ensureModelTriggerLogo(select){
   if(!select||select.id!=="composerModel")return;
   let control=select.parentElement;
