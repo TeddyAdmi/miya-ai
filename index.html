@@ -339,7 +339,7 @@ body.light .miya-composer-select-popup .miya-composer-select-option{
    };
    return shapes[ratio];
   };
-  const ratioIconSize=value=>value==="9:16"?"10px 16px":value==="1:1"?"13px 13px":"19px 13px";
+  const ratioIconSize=value=>value==="9:16"?"13px 16px":value==="1:1"?"13px 13px":"19px 13px";
  const syncRatioTrigger=select=>{
   if(!select||!["composerRatio","videoRatio"].includes(select.id))return;
   const value=select.value==="9:16"||select.value==="1:1"?select.value:"16:9";
