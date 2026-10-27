@@ -1371,7 +1371,7 @@ module.exports = async function imageHandler(req, res) {
       const imageSmithPrompt = typeof body.prompt === "string" ? body.prompt.trim() : "";
       const imageSmithRatio = ["1:1","3:4","4:3","16:9","9:16","2:3","3:2","21:9"].includes(String(body.ratio || ""))
         ? String(body.ratio) : "16:9";
-      if (!["ImageSmith","GPT Image 2.5 · T2I","GPT Image 2.5 - T2I"].includes(requestedModel)) {
+      if (requestedModel !== "ImageSmith") {
         return res.status(400).json({ok:false,error:"IMAGESMITH_MODEL_UNSUPPORTED",message:"Неизвестная модель ImageSmith."});
       }
       if (!imageSmithPrompt) return res.status(400).json({ok:false,error:"PROMPT_REQUIRED"});

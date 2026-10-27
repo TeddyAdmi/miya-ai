@@ -106,10 +106,9 @@
           <option value="ImageSmith">ImageSmith · T2I</option>
           <option value="Nano Banana">Nano Banana · T2I</option>
           <option value="Seedream">Seedream · T2I</option>
-          <option value="Nano Banana 2">Nano Banana 2 · T2I</option>
-          <option value="GPT Image 2.5">GPT Image 2.5 · T2I</option>
           <option value="Agnes Image 2.5 Flash">Agnes Image · T2I / I2I</option>
           <option value="Z-Image Turbo (ImageFree)">Z-Image Turbo · ImageFree · бесплатно</option>
+          <option value="Qwen Image 2.1 · T2I">Qwen Image 2.1 · T2I</option>
           <option value="Kolors">Kolors · T2I</option>
           <option value="FLUX Dev">FLUX Dev · T2I</option>
           <option value="FLUX Kontext Dev">FLUX Kontext · I2I</option>
@@ -473,7 +472,7 @@ body.light #composer.mode-images .miya-model-logo{background:transparent!importa
  const modelBrandDomain=value=>{
   const v=String(value||"").toLowerCase();
   if(v.includes("nano banana")||v.includes("nanobanana"))return "deepmind.google";
-  if(v==="imagesmith"||v.includes("gpt image"))return "openai.com";
+  if(v==="imagesmith")return "aiimagesmith.com";
   if(v.includes("seedream"))return "seed.bytedance.com";
   if(v.includes("agnes"))return "agnes-ai.com";
   if(v.includes("z-image"))return "tongyi.aliyun.com";
@@ -482,7 +481,7 @@ body.light #composer.mode-images .miya-model-logo{background:transparent!importa
   if(v.includes("flux"))return "blackforestlabs.ai";
   return "google.com";
  };
- const modelLogoUrl=value=>{const v=String(value||"").trim().toLowerCase();if(v==="nano banana")return "https://cdn.jsdelivr.net/gh/glincker/thesvg@main/public/icons/nano-banana-google/default.svg";if(v==="nano banana 2")return "https://www.google.com/s2/favicons?domain=google.com&sz=64";return "https://www.google.com/s2/favicons?domain="+encodeURIComponent(modelBrandDomain(value))+"&sz=64";};
+ const modelLogoUrl=value=>{const v=String(value||"").trim().toLowerCase();if(v==="nano banana")return "https://cdn.jsdelivr.net/gh/glincker/thesvg@main/public/icons/nano-banana-google/default.svg";return "https://www.google.com/s2/favicons?domain="+encodeURIComponent(modelBrandDomain(value))+"&sz=64";};
  // Start every model-logo request together as early as possible, before a dropdown is opened.
  // Newly-added options are warmed too, so restored/dynamic model lists are covered.
  const preloadedModelLogoUrls=new Set();
