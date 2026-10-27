@@ -175,10 +175,10 @@ body.light #composerRatio,body.light #videoRatio{background-color:#f4f7fa!import
 
 /* Final ratio trigger sizing: keep the same text-to-icon and icon-to-chevron breathing room in Images and Video. */
 #composerRatio.select-pill,#videoRatio.select-pill{
- width:100px!important;min-width:100px!important;max-width:100px!important;flex:0 0 100px!important;
+ width:90px!important;min-width:90px!important;max-width:90px!important;flex:0 0 90px!important;
  box-sizing:border-box!important;padding-left:6px!important;padding-right:18px!important;
 }
-#composerRatio.select-pill{width:100px!important;min-width:100px!important;max-width:100px!important;flex-basis:100px!important}
+#composerRatio.select-pill{width:90px!important;min-width:90px!important;max-width:90px!important;flex-basis:90px!important}
 
 /* Light theme: unify ordinary text and interface icons to the same deep near-black.
    Preserve intentional semantic/brand states such as primary buttons, active selections and recording. */
@@ -255,7 +255,9 @@ body.light .mobile-tabs button.active,
 body.light .library-tab.active{color:#111111!important}
 
 /* Final ratio-menu normalization: stable text/icon columns and one text color in light mode. */
-.miya-composer-select-popup .miya-composer-select-option.miya-ratio-option,
+.miya-composer-select-popup .miya-composer-select-option.miya-ratio-option{
+ color:inherit!important;
+}
 body.light .miya-composer-select-popup .miya-composer-select-option.miya-ratio-option,
 body.light .miya-composer-select-popup .miya-composer-select-option.miya-ratio-option .miya-ratio-label{
  color:#111111!important;
