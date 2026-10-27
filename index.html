@@ -341,6 +341,44 @@ body.light .miya-composer-select-popup .miya-composer-select-option{
   color:#111111!important;
 }
 
+
+/* Brand marks for the image-model selector: same icon size in the trigger and dropdown. */
+#composer.mode-images #composerModel.select-pill{
+  width:218px!important;min-width:218px!important;max-width:218px!important;
+  flex:0 0 218px!important;padding-left:10px!important;border-top-left-radius:0!important;border-bottom-left-radius:0!important;
+}
+.miya-model-logo{
+  display:inline-flex!important;align-items:center!important;justify-content:center!important;
+  width:27px!important;height:30px!important;min-width:27px!important;flex:0 0 27px!important;
+  margin-right:0!important;overflow:hidden!important;border:1px solid #1a4b78!important;
+  border-right:0!important;border-radius:9px 0 0 9px!important;background:#0b223b!important;
+  box-sizing:border-box!important;pointer-events:none!important;
+}
+.miya-model-logo img{
+  display:block!important;width:20px!important;height:20px!important;max-width:20px!important;max-height:20px!important;
+  object-fit:contain!important;border:0!important;border-radius:3px!important;background:transparent!important;
+}
+body.light .miya-model-logo{background:#f4f7fa!important;border-color:#d3deea!important}
+.miya-composer-select-popup .miya-composer-select-option.miya-model-option{
+  display:flex!important;align-items:center!important;gap:9px!important;
+  min-height:36px!important;padding:7px 10px!important;box-sizing:border-box!important;white-space:nowrap!important;
+}
+.miya-composer-select-popup .miya-model-option .miya-model-option-logo{
+  display:block!important;flex:0 0 22px!important;width:22px!important;height:22px!important;
+  object-fit:contain!important;border:0!important;border-radius:4px!important;background:transparent!important;
+}
+.miya-composer-select-popup .miya-model-option .miya-model-option-label{
+  min-width:0!important;overflow:hidden!important;text-overflow:ellipsis!important;white-space:nowrap!important;
+}
+@media(max-width:800px){
+  #composer.mode-images #composerModel.select-pill{
+    width:min(218px,48vw)!important;min-width:min(218px,48vw)!important;max-width:min(218px,48vw)!important;
+    flex:0 0 min(218px,48vw)!important;
+  }
+  .miya-model-logo{width:25px!important;height:30px!important;min-width:25px!important;flex-basis:25px!important}
+  .miya-model-logo img{width:18px!important;height:18px!important;max-width:18px!important;max-height:18px!important}
+}
+
 </style>
 
 <script>
@@ -414,6 +452,31 @@ body.light .miya-composer-select-popup .miya-composer-select-option{
    : composer.classList.contains("mode-images");
  };
  const availableOptions=select=>Array.from(select.options).filter(option=>!option.disabled);
+ const modelBrandDomain=value=>{
+  const v=String(value||"").toLowerCase();
+  if(v.includes("nano banana")||v.includes("nanobanana"))return "deepmind.google";
+  if(v==="imagesmith"||v.includes("gpt image"))return "openai.com";
+  if(v.includes("seedream"))return "bytedance.com";
+  if(v.includes("agnes"))return "agnes-ai.com";
+  if(v.includes("z-image"))return "tongyi.aliyun.com";
+  if(v.includes("qwen"))return "qwen.ai";
+  if(v.includes("kolors"))return "kuaishou.com";
+  if(v.includes("flux"))return "blackforestlabs.ai";
+  return "google.com";
+ };
+ const modelLogoUrl=value=>"https://www.google.com/s2/favicons?domain="+encodeURIComponent(modelBrandDomain(value))+"&sz=64";
+ function ensureModelTriggerLogo(select){
+  if(!select||select.id!=="composerModel")return;
+  let logo=select.previousElementSibling;
+  if(!logo||!logo.classList.contains("miya-model-logo")){
+   logo=document.createElement("span");logo.className="miya-model-logo";logo.setAttribute("aria-hidden","true");
+   const img=document.createElement("img");img.alt="";img.draggable=false;logo.appendChild(img);
+   select.parentNode.insertBefore(logo,select);
+  }
+  const img=logo.querySelector("img");
+  if(img){const src=modelLogoUrl(select.value);if(img.src!==src)img.src=src;}
+ }
+
  function closePopup(){
   if(activeSelect){activeSelect.setAttribute("aria-expanded","false");syncRatioTrigger(activeSelect);}
   popup.hidden=true;
@@ -447,11 +510,13 @@ body.light .miya-composer-select-popup .miya-composer-select-option{
   select.dispatchEvent(new Event("change",{bubbles:true}));
  }
  function positionPopup(select){
-  const rect=select.getBoundingClientRect();
-  // Match the trigger width exactly, just like the size and quality menus.
-  const width=Math.max(1,Math.min(Math.ceil(rect.width),window.innerWidth-16));
+  const selectRect=select.getBoundingClientRect();
+  const logo=select.id==="composerModel"?select.previousElementSibling:null;
+  const logoRect=logo&&logo.classList.contains("miya-model-logo")?logo.getBoundingClientRect():null;
+  const left=logoRect?logoRect.left:selectRect.left;
+  const width=Math.max(1,Math.min(Math.ceil(selectRect.width+(logoRect?logoRect.width:0)),window.innerWidth-16));
   popup.style.width=width+"px";
-  popup.style.left=Math.max(8,Math.min(rect.left,window.innerWidth-width-8))+"px";
+  popup.style.left=Math.max(8,Math.min(left,window.innerWidth-width-8))+"px";
   // Fit all model options when possible; only scroll on unusually short viewports.
   const desiredHeight=popup.scrollHeight;
   popup.style.maxHeight=Math.max(80,Math.min(desiredHeight,window.innerHeight-16))+"px";
@@ -479,7 +544,12 @@ body.light .miya-composer-select-popup .miya-composer-select-option{
    item.setAttribute("aria-selected",String(option.value===select.value));
    item.dataset.value=option.value;
    item.dataset.index=String(index);
-   if((select.id==="composerRatio"||select.id==="videoRatio")&&(ratioValues.has(option.value)||option.value==="auto")){item.classList.add("miya-ratio-option");const label=document.createElement("span");label.className="miya-ratio-label";label.textContent=option.value;const icon=document.createElement("span");icon.className="miya-ratio-icon";if(ratioValues.has(option.value))icon.innerHTML=ratioSvg(option.value);item.append(label,icon);item.setAttribute("aria-label",option.value);}else{item.textContent=String(option.label||option.textContent||option.value);}
+   if((select.id==="composerRatio"||select.id==="videoRatio")&&(ratioValues.has(option.value)||option.value==="auto")){item.classList.add("miya-ratio-option");const label=document.createElement("span");label.className="miya-ratio-label";label.textContent=option.value;const icon=document.createElement("span");icon.className="miya-ratio-icon";if(ratioValues.has(option.value))icon.innerHTML=ratioSvg(option.value);item.append(label,icon);item.setAttribute("aria-label",option.value);}else if(select.id==="composerModel"){
+    item.classList.add("miya-model-option");
+    const img=document.createElement("img");img.className="miya-model-option-logo";img.alt="";img.draggable=false;img.src=modelLogoUrl(option.value);
+    const label=document.createElement("span");label.className="miya-model-option-label";label.textContent=String(option.label||option.textContent||option.value);
+    item.append(img,label);
+   }else{item.textContent=String(option.label||option.textContent||option.value);}
    item.disabled=option.disabled;
    item.tabIndex=-1;
    item.addEventListener("mouseenter",()=>moveActive(index));
@@ -508,6 +578,11 @@ body.light .miya-composer-select-popup .miya-composer-select-option{
   select.dataset.miyaCustomPopupBound="1";
   select.setAttribute("aria-haspopup","listbox");
   select.setAttribute("aria-expanded","false");
+  if(select.id==="composerModel"){
+   ensureModelTriggerLogo(select);
+   select.addEventListener("change",()=>ensureModelTriggerLogo(select));
+   new MutationObserver(()=>ensureModelTriggerLogo(select)).observe(select,{childList:true,subtree:true});
+  }
   const onMouseDown=event=>{
    if(event.button!==0||!belongsToActiveSection(select))return;
    event.preventDefault();
