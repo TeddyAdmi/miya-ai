@@ -1384,6 +1384,13 @@ module.exports = async function imageHandler(req, res) {
       const imageSmithPrompt = typeof body.prompt === "string" ? body.prompt.trim() : "";
       const imageSmithRatio = ["1:1","3:4","4:3","16:9","9:16","2:3","3:2","21:9"].includes(String(body.ratio || ""))
         ? String(body.ratio) : "16:9";
+      const imageSmithReference = typeof body.referenceImage === "string" ? body.referenceImage.trim() : "";
+      if (imageSmithReference && (
+        imageSmithReference.length > 2_000_000 ||
+        !/^data:image\/(jpeg|png|webp);base64,[A-Za-z0-9+/=\r\n]+$/i.test(imageSmithReference)
+      )) {
+        return res.status(400).json({ok:false,error:"IMAGESMITH_REFERENCE_INVALID",message:"Не удалось прочитать исходную фотографию для GPT Image 2.5."});
+      }
       if (requestedModel !== "ImageSmith") {
         return res.status(400).json({ok:false,error:"IMAGESMITH_MODEL_UNSUPPORTED",message:"Неизвестная модель ImageSmith."});
       }
@@ -1399,7 +1406,7 @@ module.exports = async function imageHandler(req, res) {
             "Origin":"https://aiimagesmith.com",
             "Referer":"https://aiimagesmith.com/"
           },
-          body:JSON.stringify({bg:"",mode:"generate",prompt:imageSmithPrompt,shape,transparent:false}),
+          body:JSON.stringify({bg:"",mode:imageSmithReference?"edit":"generate",prompt:imageSmithPrompt,shape,transparent:false,...(imageSmithReference?{image:imageSmithReference}:{})}),
           cache:"no-store",
           signal:AbortSignal.timeout(65000)
         });
@@ -1438,7 +1445,7 @@ module.exports = async function imageHandler(req, res) {
         return res.status(200).json({
           ok:true,mode:"image",status:"completed",provider:"ImageSmith",model:"ImageSmith",
           imageUrl:resultUrl,imageUrls:[resultUrl],count:1,
-          meta:{free:true,shape,requestedRatio:imageSmithRatio,native:true,noCrop:true,transparent:false}
+          meta:{free:true,shape,requestedRatio:imageSmithRatio,native:true,noCrop:true,transparent:false,edit:Boolean(imageSmithReference)}
         });
       } catch (error) {
         const timedOut = error?.name === "TimeoutError" || error?.name === "AbortError" || /timed? ?out|abort/i.test(String(error?.message||""));
