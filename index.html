@@ -117,7 +117,7 @@
         <select class="select-pill" id="composerRatio" aria-label="Соотношение сторон"><option value="auto">auto</option><option value="16:9" selected>16:9</option><option value="9:16">9:16</option><option value="1:1">1:1</option></select>
         <select class="select-pill" id="composerQuality" aria-label="Качество изображения"><option value="1K">1K · Быстро</option><option value="2K" selected>2K · Высокое</option><option value="4K">4K · Максимум</option></select>
         <button class="improve composer-trash" id="improve" type="button" title="Улучшить промпт" aria-label="Улучшить промпт">
-          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m14 3-1.7 4.3L8 9l4.3 1.7L14 15l1.7-4.3L20 9l-4.3-1.7L14 3Z"/><path d="m6.5 13-.9 2.3L3 16.2l2.6.9.9 2.4.9-2.4 2.6-.9-2.6-.9L6.5 13Z"/><path d="m18.5 14-.6 1.6-1.7.6 1.7.6.6 1.7.6-1.7 1.7-.6-1.7-.6-.6-1.6Z"/></svg>
+          <svg viewBox="0 0 24 24" aria-hidden="true" style="transform:translateY(1px)"><path d="m14 3-1.7 4.3L8 9l4.3 1.7L14 15l1.7-4.3L20 9l-4.3-1.7L14 3Z"/><path d="m6.5 13-.9 2.3L3 16.2l2.6.9.9 2.4.9-2.4 2.6-.9-2.6-.9L6.5 13Z"/><path d="m18.5 14-.6 1.6-1.7.6 1.7.6.6 1.7.6-1.7 1.7-.6-1.7-.6-.6-1.6Z"/></svg>
         </button>
         <button class="composer-copy" id="copyPrompt" type="button" title="Копировать текст" aria-label="Копировать текст"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M15 9V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v7a2 2 0 0 0 2 2h3"/></svg></button>
         <button class="composer-paste" id="imagePastePrompt" type="button" title="Вставить" aria-label="Вставить"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 4.5h6a2 2 0 0 1 2 2V8H7V6.5a2 2 0 0 1 2-2Z"/><rect x="5" y="8" width="14" height="13" rx="2"/><path d="M9 12h6M9 16h4"/></svg></button>
@@ -459,6 +459,7 @@ body.light #composer.mode-images .miya-model-logo{background:transparent!importa
  // Start every model-logo request together as early as possible, before a dropdown is opened.
  // Newly-added options are warmed too, so restored/dynamic model lists are covered.
  const preloadedModelLogoUrls=new Set();
+ const preloadedModelLogoImages=new Map();
  const preloadModelLogo=value=>{
   const src=modelLogoUrl(value);
   if(!src||preloadedModelLogoUrls.has(src))return;
@@ -466,8 +467,9 @@ body.light #composer.mode-images .miya-model-logo{background:transparent!importa
   const preload=new Image();
   preload.fetchPriority="high";
   preload.loading="eager";
-  preload.decoding="async";
+  preload.decoding="sync";
   preload.src=src;
+  preloadedModelLogoImages.set(src,preload);
  };
  ids.filter(id=>id==="composerModel"||id==="videoModel").forEach(id=>{
   const select=document.getElementById(id);
@@ -492,9 +494,24 @@ body.light #composer.mode-images .miya-model-logo{background:transparent!importa
    control.insertBefore(logo,select);
   }
   let img=logo.querySelector("img");
-  if(!img){img=document.createElement("img");img.alt="";img.draggable=false;img.loading="eager";img.fetchPriority="high";img.decoding="async";logo.appendChild(img);}
+  if(!img){img=document.createElement("img");img.alt="";img.draggable=false;img.loading="eager";img.fetchPriority="high";img.decoding="sync";logo.appendChild(img);}
   const src=modelLogoUrl(select.value);
-  if(img.src!==src)img.src=src;
+  if(img.src!==src){
+   const warmed=preloadedModelLogoImages.get(src);
+   if(warmed&&warmed.complete&&warmed.naturalWidth){
+    const replacement=warmed.cloneNode(false);
+    replacement.alt="";
+    replacement.draggable=false;
+    replacement.loading="eager";
+    replacement.fetchPriority="high";
+    replacement.decoding="sync";
+    logo.replaceChild(replacement,img);
+    img=replacement;
+   }else{
+    img.decoding="sync";
+    img.src=src;
+   }
+  }
  }
 
  function closePopup(){
