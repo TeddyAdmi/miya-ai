@@ -298,9 +298,10 @@ body.light .miya-composer-select-popup .miya-composer-select-option.miya-ratio-o
   const icon='url("data:image/svg+xml,'+encodeURIComponent(ratioSvg(value))+ '")';
   const light=document.body.classList.contains("light");
   const stroke=light?"%23111111":"%23e5edf7";
+  const arrowStroke=light?"%23111111":"%237690ad";
   const open=select.getAttribute("aria-expanded")==="true";
   const arrowPath=open?"M2 6L6 2L10 6":"M2 2L6 6L10 2";
-  const arrow='url("data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 12 8%27 fill=%27none%27%3E%3Cpath d=%27'+arrowPath.replace(/ /g,"%20")+'%27 stroke=%27'+stroke+'%27 stroke-width=%271.8%27 stroke-linecap=%27round%27 stroke-linejoin=%27round%27/%3E%3C/svg%3E")';
+  const arrow='url("data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 12 8%27 fill=%27none%27%3E%3Cpath d=%27'+arrowPath.replace(/ /g,"%20")+'%27 stroke=%27'+arrowStroke+'%27 stroke-width=%271.8%27 stroke-linecap=%27round%27 stroke-linejoin=%27round%27/%3E%3C/svg%3E")';
   const size=ratioIconSize(value);
   select.style.removeProperty("color");
   select.style.removeProperty("-webkit-text-fill-color");
@@ -310,7 +311,8 @@ body.light .miya-composer-select-popup .miya-composer-select-option.miya-ratio-o
   const iconLeft=value==="9:16"?"47.5px":value==="1:1"?"46px":"43px";
   select.style.setProperty("background-position",iconLeft+" 50%, calc(100% - 8px) 50%","important");
   select.style.setProperty("background-size",size+", 10px 7px","important");
-  select.style.setProperty("text-align","left","important");
+  select.style.setProperty("text-align","center","important");
+  select.style.setProperty("text-indent","-23px","important");
   select.style.setProperty("background-repeat","no-repeat, no-repeat","important");
   select.setAttribute("aria-label",select.id==="videoRatio"?"Соотношение сторон видео: "+value:"Соотношение сторон изображения: "+value);
  };
