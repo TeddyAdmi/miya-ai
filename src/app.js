@@ -5017,11 +5017,15 @@ function setMode(next,render=true){
    renderVideoLibrary();
  }else if(target==="images"){
    referenceImage=referenceImage||null;
-   renderImageLibrary();
+   // Prepare prompt controls immediately; the media wall is deliberately deferred
+   // so saved cards and image decoding cannot block the first model-menu interaction.
    const imageModel=$("#composerModel");
    if(imageModel&&!referenceImage)imageModel.value="ImageSmith";
    const ratio=$("#composerRatio");
    if(ratio&&!referenceImage)ratio.value="16:9";
+   const paintImageWall=()=>{if(mode==="images")renderImageLibrary()};
+   if("requestIdleCallback" in window)requestIdleCallback(paintImageWall,{timeout:1500});
+   else setTimeout(paintImageWall,250);
  }else if(target==="voice"){
    renderVoiceLibrary();loadVoiceCatalog();
  }else{
