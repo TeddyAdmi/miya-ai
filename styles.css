@@ -4570,3 +4570,23 @@ body.light .miya-composer-select-popup{
  scrollbar-width:none!important;
  scrollbar-color:transparent transparent!important;
 }
+
+
+/* Model dropdown: hide the scrollbar while preserving the popup's rounded right corners. */
+.miya-composer-select-popup,
+.miya-composer-select-popup *{
+  scrollbar-width:none!important;
+  -ms-overflow-style:none!important;
+}
+.miya-composer-select-popup::-webkit-scrollbar,
+.miya-composer-select-popup *::-webkit-scrollbar{
+  display:none!important;
+  width:0!important;
+  height:0!important;
+  background:transparent!important;
+}
+.miya-composer-select-popup{
+  border-radius:8px!important;
+  overflow-x:hidden!important;
+  clip-path:inset(0 round 8px)!important;
+}
