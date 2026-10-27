@@ -344,8 +344,8 @@ body.light .miya-composer-select-popup .miya-composer-select-option{
 
 /* Brand marks for the image-model selector: same icon size in the trigger and dropdown. */
 #composer.mode-images #composerModel.select-pill{
-  width:218px!important;min-width:218px!important;max-width:218px!important;
-  flex:0 0 218px!important;padding-left:10px!important;border-top-left-radius:0!important;border-bottom-left-radius:0!important;
+  width:auto!important;min-width:0!important;max-width:none!important;
+  flex:0 0 auto!important;padding-left:10px!important;border-top-left-radius:0!important;border-bottom-left-radius:0!important;
 }
 .miya-model-logo{
   display:inline-flex!important;align-items:center!important;justify-content:center!important;
@@ -360,11 +360,12 @@ body.light .miya-composer-select-popup .miya-composer-select-option{
 }
 body.light .miya-model-logo{background:#f4f7fa!important;border-color:#d3deea!important}
 .miya-composer-select-popup .miya-composer-select-option.miya-model-option{
-  display:flex!important;align-items:center!important;gap:9px!important;
-  min-height:36px!important;padding:7px 10px!important;box-sizing:border-box!important;white-space:nowrap!important;
+  display:flex!important;align-items:center!important;gap:10px!important;
+  min-height:36px!important;padding:7px 28px 7px 0!important;box-sizing:border-box!important;white-space:nowrap!important;
 }
 .miya-composer-select-popup .miya-model-option .miya-model-option-logo{
   display:block!important;flex:0 0 22px!important;width:22px!important;height:22px!important;
+  margin-left:2.5px!important;margin-right:2.5px!important;
   object-fit:contain!important;border:0!important;border-radius:4px!important;background:transparent!important;
 }
 .miya-composer-select-popup .miya-model-option .miya-model-option-label{
@@ -372,10 +373,10 @@ body.light .miya-model-logo{background:#f4f7fa!important;border-color:#d3deea!im
 }
 @media(max-width:800px){
   #composer.mode-images #composerModel.select-pill{
-    width:min(218px,48vw)!important;min-width:min(218px,48vw)!important;max-width:min(218px,48vw)!important;
-    flex:0 0 min(218px,48vw)!important;
+    width:auto!important;min-width:0!important;max-width:none!important;
+    flex:0 0 auto!important;
   }
-  .miya-model-logo{width:25px!important;height:30px!important;min-width:25px!important;flex-basis:25px!important}
+  .miya-model-logo{width:27px!important;height:30px!important;min-width:27px!important;flex-basis:27px!important}
   .miya-model-logo img{width:18px!important;height:18px!important;max-width:18px!important;max-height:18px!important}
 }
 
@@ -485,6 +486,9 @@ body.light #composer.mode-images .miya-model-logo{border-color:#d3deea!important
    const img=document.createElement("img");img.alt="";img.draggable=false;logo.appendChild(img);
    select.parentNode.insertBefore(logo,select);
   }
+  const parentStyle=getComputedStyle(select.parentElement);
+  const siblingGap=parseFloat(parentStyle.columnGap||parentStyle.gap)||0;
+  logo.style.setProperty("margin-right",(-siblingGap)+"px","important");
   const img=logo.querySelector("img");
   if(img){const src=modelLogoUrl(select.value);if(img.src!==src)img.src=src;}
  }
@@ -526,7 +530,23 @@ body.light #composer.mode-images .miya-model-logo{border-color:#d3deea!important
   const logo=select.id==="composerModel"?select.previousElementSibling:null;
   const logoRect=logo&&logo.classList.contains("miya-model-logo")?logo.getBoundingClientRect():null;
   const left=logoRect?logoRect.left:selectRect.left;
-  const width=Math.max(1,Math.min(Math.ceil(selectRect.width+(logoRect?logoRect.width:0)),window.innerWidth-16));
+  let desiredWidth=Math.ceil(selectRect.width+(logoRect?logoRect.width:0));
+  if(select.id==="composerModel"){
+   const canvas=document.createElement("canvas"),ctx=canvas.getContext("2d");
+   if(ctx){
+    const style=getComputedStyle(select);
+    ctx.font="700 "+(style.fontSize||"12px")+" "+(style.fontFamily||"Inter,system-ui,sans-serif");
+    const longest=availableOptions(select).reduce((max,option)=>Math.max(max,ctx.measureText(String(option.label||option.textContent||option.value)).width),0);
+    const logoWidth=logoRect?logoRect.width:27;
+    desiredWidth=Math.ceil(logoWidth+10+longest+28);
+    const selectWidth=Math.max(80,desiredWidth-logoWidth);
+    select.style.setProperty("width",selectWidth+"px","important");
+    select.style.setProperty("min-width",selectWidth+"px","important");
+    select.style.setProperty("max-width",selectWidth+"px","important");
+    select.style.setProperty("flex-basis",selectWidth+"px","important");
+   }
+  }
+  const width=Math.max(1,Math.min(desiredWidth,window.innerWidth-16));
   popup.style.width=width+"px";
   popup.style.left=Math.max(8,Math.min(left,window.innerWidth-width-8))+"px";
   // Fit all model options when possible; only scroll on unusually short viewports.
