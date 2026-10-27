@@ -771,10 +771,22 @@ module.exports = async function imageHandler(req, res) {
           lastStatus = String(job.status || lastStatus).toLowerCase();
 
           if (["failed","error","cancelled","canceled"].includes(lastStatus)) {
+            // Return safe provider diagnostics so failed reference-image edits can be
+            // investigated from the Network response without exposing taskToken or image data.
+            const safeProviderText = value => typeof value === "string" ? value.slice(0,500) : undefined;
+            const providerDiagnostics = {
+              taskStatus:lastStatus,
+              progress:Number.isFinite(Number(job.progress)) ? Number(job.progress) : undefined,
+              errorMessage:safeProviderText(job.errorMessage),
+              errorCode:safeProviderText(job.errorCode || job.code),
+              reason:safeProviderText(job.reason),
+              message:safeProviderText(job.message)
+            };
             return res.status(502).json({
               ok:false,
               error:"NANOBANANA25_GENERATION_FAILED",
-              message:String(job.errorMessage || "Nano BananA не смогла создать изображение.").slice(0,240)
+              message:String(job.errorMessage || job.message || "Nano BananA не смогла создать изображение.").slice(0,240),
+              providerDiagnostics
             });
           }
 
