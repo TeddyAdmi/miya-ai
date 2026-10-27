@@ -3199,7 +3199,7 @@ async function generateImage(prompt,loaderAlreadyShown=false){
  const useCinel=selectedModel==="Kolors";
  const useAuraImage=!useNanoBananA&&/^(?:Nano Banana|Seedream)$/i.test(selectedModel);
  // Existing-image edits stay on the established Agnes editing route.
- if(referenceImage && (useImageFree || useQwenImage21 || useNanoBananA || useImageSmith || useCinel)){
+ if(referenceImage && (useImageFree || useQwenImage21 || useImageSmith || useCinel || (useNanoBananA && !/^data:image\//i.test(referenceImage)))){
   $("#composerModel").value="Agnes Image 2.5 Flash";
   return generateAgnesImage(prompt,loaderAlreadyShown);
  }
@@ -3251,12 +3251,15 @@ async function generateImage(prompt,loaderAlreadyShown=false){
     ? String($("#composerRatio").value) : "16:9";
   const selectedQuality=["1K","2K","4K"].includes(String($("#composerQuality")?.value))
     ? String($("#composerQuality").value) : "1K";
+  const nanoBananAReferenceImage=useNanoBananA && /^data:image\//i.test(referenceImage)
+    ? (agnesPreparedReferenceSource===referenceImage && agnesPreparedReferenceDataUrl ? agnesPreparedReferenceDataUrl : await compressAgnesReferenceImage(referenceImage))
+    : "";
   const body=useAgnesImage
    ? JSON.stringify({prompt,ratio:$("#composerRatio").value,n:requestedCount,imageBase64:referenceImage||""})
    : useImageFree
      ? JSON.stringify({mode:"image",provider:"imagefree",prompt,model:modelName,ratio:selectedRatio})
      : useNanoBananA
-       ? JSON.stringify({mode:"image",provider:"nanobanana25",prompt,model:modelName,ratio:selectedRatio})
+       ? JSON.stringify({mode:"image",provider:"nanobanana25",prompt,model:modelName,ratio:selectedRatio,...(nanoBananAReferenceImage?{referenceImage:nanoBananAReferenceImage}:{})})
        : useImageSmith
        ? JSON.stringify({mode:"image",provider:"imagesmith",prompt,model:modelName,ratio:selectedRatio})
        : useCinel

@@ -680,6 +680,7 @@ module.exports = async function imageHandler(req, res) {
 
     if (provider === "nanobanana25") {
       const userPrompt = typeof body.prompt === "string" ? body.prompt.trim() : "";
+      const referenceImage = typeof body.referenceImage === "string" ? body.referenceImage.trim() : "";
       const allowedAspects = ["1:1", "16:9", "9:16"];
       const aspect = allowedAspects.includes(String(body.ratio || "")) ? String(body.ratio) : "16:9";
 
@@ -702,8 +703,8 @@ module.exports = async function imageHandler(req, res) {
             "Origin":"https://nanobanana25.io",
             "Referer":"https://nanobanana25.io/"
           },
-          // The endpoint requires JSON; use its original "aspect" field.
-          body:JSON.stringify({prompt:userPrompt,aspect}),
+          // Match the upstream form: prompt + aspect, and referenceImage only for image edits.
+          body:JSON.stringify({prompt:userPrompt,aspect,...(referenceImage?{referenceImage}:{})}),
           cache:"no-store",
           signal:AbortSignal.timeout(18000)
         });
@@ -803,7 +804,7 @@ module.exports = async function imageHandler(req, res) {
               imageUrl:imageUrl.toString(),
               imageUrls:[imageUrl.toString()],
               count:1,
-              meta:{free:true,aspect,native:true,noCrop:true,edit:false,resolution:"1K"}
+              meta:{free:true,aspect,native:true,noCrop:true,edit:Boolean(referenceImage),resolution:"1K"}
             });
           }
         }
