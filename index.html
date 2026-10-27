@@ -164,14 +164,14 @@
 <style>
 /* Compact ratio selectors; align trigger icon with the centered icon column in the popup. */
 #composerRatio,#videoRatio{
- width:82px!important;min-width:82px!important;max-width:82px!important;flex:0 0 82px!important;
- box-sizing:border-box!important;padding-left:8px!important;padding-right:16px!important;
+ width:78px!important;min-width:0!important;max-width:78px!important;flex:0 0 78px!important;
+ box-sizing:border-box!important;padding-left:8px!important;padding-right:14px!important;
  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 8' fill='none'%3E%3Cpath d='M2 2L6 6L10 2' stroke='%237690ad' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E")!important;
  background-position:calc(100% - 8px) 50%!important;background-size:10px 7px!important;background-repeat:no-repeat!important;letter-spacing:0!important;
 }
 #composerRatio option,#videoRatio option{padding:2px 3px;font-family:Inter,Arial,sans-serif}
 body.light #composerRatio,body.light #videoRatio{background-color:#f4f7fa!important}
-#composerRatio{width:82px!important;min-width:82px!important;max-width:82px!important;flex:0 0 82px!important;padding-left:8px!important;padding-right:18px!important;font-size:12px!important;text-align:left!important}
+#composerRatio{width:78px!important;min-width:0!important;max-width:78px!important;flex:0 0 78px!important;padding-left:8px!important;padding-right:14px!important;font-size:12px!important;text-align:left!important}
 
 /* Light theme: unify ordinary text and interface icons to the same deep near-black.
    Preserve intentional semantic/brand states such as primary buttons, active selections and recording. */
@@ -276,7 +276,7 @@ body.light .library-tab.active{color:#111111!important}
   select.style.removeProperty("-webkit-text-fill-color");
   select.style.removeProperty("text-shadow");
   select.style.setProperty("background-image",icon+", "+ratioArrow,"important");
-  const iconOffset=value==="9:16"?"29.5px":value==="1:1"?"28px":"25px";
+  const iconOffset=value==="9:16"?"25.5px":value==="1:1"?"24px":"20.5px";
    select.style.setProperty("background-position","calc(100% - "+iconOffset+") 50%, calc(100% - 8px) 50%","important");
   select.style.setProperty("background-size",size+", 10px 7px","important");
   select.style.setProperty("text-align","left","important");
