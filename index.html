@@ -201,7 +201,7 @@ body.light #composerRatio,body.light #videoRatio{background-color:#f4f7fa!import
   select.style.removeProperty("-webkit-text-fill-color");
   select.style.removeProperty("text-shadow");
   select.style.setProperty("background-image",icon+", "+ratioArrow,"important");
-  select.style.setProperty("background-position","calc(100% - 36px) 50%, calc(100% - 8px) 50%","important");
+  select.style.setProperty("background-position","calc(100% - "+(18+(value==="9:16"?10:value==="1:1"?13:19))+"px) 50%, calc(100% - 8px) 50%","important");
   select.style.setProperty("background-size",size+", 10px 7px","important");
   select.style.setProperty("text-align","left","important");
   select.style.setProperty("background-repeat","no-repeat, no-repeat","important");
@@ -209,7 +209,7 @@ body.light #composerRatio,body.light #videoRatio{background-color:#f4f7fa!import
  };
  const ratioStyle=document.createElement("style");
  ratioStyle.id="miyaRatioIconStyles";
- ratioStyle.textContent='.miya-composer-select-popup .miya-composer-select-option.miya-ratio-option{display:flex!important;align-items:center!important;justify-content:flex-start!important;min-height:28px!important;height:28px!important;padding:2px 8px!important;box-sizing:border-box!important}.miya-composer-select-popup .miya-composer-select-option.miya-ratio-option svg{display:block;width:19px;height:13px;overflow:visible;flex:none}.miya-composer-select-popup .miya-composer-select-option.miya-ratio-option[data-value="9:16"] svg{width:10px;height:16px}.miya-composer-select-popup .miya-composer-select-option.miya-ratio-option[data-value="1:1"] svg{width:13px;height:13px}';
+ ratioStyle.textContent='.miya-composer-select-popup .miya-composer-select-option.miya-ratio-option{display:flex!important;align-items:center!important;justify-content:flex-start!important;gap:8px!important;min-height:28px!important;height:28px!important;padding:2px 8px!important;box-sizing:border-box!important}.miya-composer-select-popup .miya-composer-select-option.miya-ratio-option .miya-ratio-label{display:block;flex:0 0 26px;width:26px;text-align:left;font:12px Inter,Arial,sans-serif;line-height:16px}.miya-composer-select-popup .miya-composer-select-option.miya-ratio-option .miya-ratio-icon{display:flex;align-items:center;justify-content:center;flex:none}.miya-composer-select-popup .miya-composer-select-option.miya-ratio-option svg{display:block;width:19px;height:13px;overflow:visible}.miya-composer-select-popup .miya-composer-select-option.miya-ratio-option[data-value="9:16"] svg{width:10px;height:16px}.miya-composer-select-popup .miya-composer-select-option.miya-ratio-option[data-value="1:1"] svg{width:13px;height:13px}';
  document.head.appendChild(ratioStyle);
  ["composerRatio","videoRatio"].forEach(id=>{
   const select=document.getElementById(id);
@@ -301,7 +301,7 @@ body.light #composerRatio,body.light #videoRatio{background-color:#f4f7fa!import
    item.setAttribute("aria-selected",String(option.value===select.value));
    item.dataset.value=option.value;
    item.dataset.index=String(index);
-   if((select.id==="composerRatio"||select.id==="videoRatio")&&ratioValues.has(option.value)){item.classList.add("miya-ratio-option");item.innerHTML=ratioSvg(option.value);item.setAttribute("aria-label",option.value);item.title=option.value;}else{item.textContent=String(option.label||option.textContent||option.value);}
+   if((select.id==="composerRatio"||select.id==="videoRatio")&&ratioValues.has(option.value)){item.classList.add("miya-ratio-option");const label=document.createElement("span");label.className="miya-ratio-label";label.textContent=option.value;const icon=document.createElement("span");icon.className="miya-ratio-icon";icon.innerHTML=ratioSvg(option.value);item.append(label,icon);item.setAttribute("aria-label",option.value);item.title=option.value;}else{item.textContent=String(option.label||option.textContent||option.value);}
    item.disabled=option.disabled;
    item.tabIndex=-1;
    item.addEventListener("mouseenter",()=>moveActive(index));
