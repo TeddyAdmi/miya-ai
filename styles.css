@@ -4656,3 +4656,80 @@ body.light .composer.mode-video #videoRatio.select-pill[aria-expanded="true"]{
 body.light .media-card.media-new-image-pending{
   background:#edf2f7!important;
 }
+
+
+/* User-requested canonical typography for every composer dropdown and popup. */
+/* One font, one weight, one solid dark foreground; keep digits unambiguous.
+   The dropdown surfaces stay light in every app theme so dark text never fades
+   into the dark composer background. No text shadows, overlays, or opacity. */
+html body #composer.composer .select-pill{
+  font-family:Inter,system-ui,sans-serif!important;
+  font-size:12px!important;
+  font-style:normal!important;
+  font-weight:700!important;
+  line-height:16px!important;
+  letter-spacing:normal!important;
+  font-variant-numeric:lining-nums tabular-nums!important;
+  font-feature-settings:"lnum" 1,"tnum" 1!important;
+  font-optical-sizing:none!important;
+  color:#111111!important;
+  -webkit-text-fill-color:#111111!important;
+  text-shadow:none!important;
+  -webkit-text-stroke:0 transparent!important;
+  opacity:1!important;
+  filter:none!important;
+  color-scheme:light!important;
+  background-color:#f4f7fa!important;
+  border-color:#d3deea!important;
+}
+/* Model name and select share one light control surface. */
+html body #composer.composer.mode-images .miya-model-control{
+  background:#f4f7fa!important;
+  border-color:#d3deea!important;
+}
+html body #composer.composer.mode-images #composerModel.select-pill{
+  background-color:transparent!important;
+  color:#111111!important;
+  -webkit-text-fill-color:#111111!important;
+}
+/* The custom popup deliberately uses the same light surface and typography,
+   regardless of which section opened it or whether the selected row is active. */
+html body #miyaComposerSelectPopup.miya-composer-select-popup{
+  background-color:#f4f7fa!important;
+  border-color:#d3deea!important;
+  color:#111111!important;
+  color-scheme:light!important;
+  text-shadow:none!important;
+  -webkit-text-fill-color:#111111!important;
+  opacity:1!important;
+  filter:none!important;
+}
+html body #miyaComposerSelectPopup.miya-composer-select-popup .miya-composer-select-option,
+html body #miyaComposerSelectPopup.miya-composer-select-popup .miya-composer-select-option .miya-ratio-label,
+html body #miyaComposerSelectPopup.miya-composer-select-popup .miya-composer-select-option .miya-model-option-label{
+  font-family:Inter,system-ui,sans-serif!important;
+  font-size:12px!important;
+  font-style:normal!important;
+  font-weight:700!important;
+  line-height:16px!important;
+  letter-spacing:normal!important;
+  font-variant-numeric:lining-nums tabular-nums!important;
+  font-feature-settings:"lnum" 1,"tnum" 1!important;
+  color:#111111!important;
+  -webkit-text-fill-color:#111111!important;
+  text-shadow:none!important;
+  -webkit-text-stroke:0 transparent!important;
+  opacity:1!important;
+  filter:none!important;
+}
+html body #miyaComposerSelectPopup.miya-composer-select-popup .miya-composer-select-option[aria-selected="true"],
+html body #miyaComposerSelectPopup.miya-composer-select-popup .miya-composer-select-option:hover,
+html body #miyaComposerSelectPopup.miya-composer-select-popup .miya-composer-select-option.is-active,
+html body #miyaComposerSelectPopup.miya-composer-select-popup .miya-composer-select-option:focus-visible{
+  color:#111111!important;
+  -webkit-text-fill-color:#111111!important;
+  opacity:1!important;
+  text-shadow:none!important;
+  filter:none!important;
+  background:#e3ebf4!important;
+}
