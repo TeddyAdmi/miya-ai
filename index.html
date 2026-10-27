@@ -103,7 +103,7 @@
       <div class="composer-options image-settings" id="composerOptions">
         <select class="select-pill" id="composerModel" aria-label="Модель">
           <option value="Nano BananA">Nano BananA · T2I</option>
-          <option value="ImageSmith">ImageSmith · T2I</option>
+          <option value="ImageSmith">GPT Image 2.5 · T2I</option>
           <option value="Nano Banana">Nano Banana · T2I</option>
           <option value="Seedream">Seedream · T2I</option>
           <option value="Agnes Image 2.5 Flash">Agnes Image · T2I / I2I</option>
@@ -351,6 +351,17 @@ body.light #composer.mode-images .miya-model-control{
   border-color:#d3deea!important;background:#f4f7fa!important;
 }
 body.light #composer.mode-images .miya-model-logo{background:transparent!important}
+/* The two Nano Banana entries share the banana mark on a rounded black tile. */
+#composer.mode-images .miya-model-logo.miya-nano-banana-logo{
+  width:26px!important;height:26px!important;min-width:26px!important;flex:0 0 26px!important;
+  margin:0 .5px!important;padding:3px!important;box-sizing:border-box!important;
+  background:#000!important;border-radius:6px!important;overflow:hidden!important;
+}
+body.light #composer.mode-images .miya-model-logo.miya-nano-banana-logo{background:#000!important}
+#composer.mode-images .miya-model-logo.miya-nano-banana-logo img{
+  width:20px!important;height:20px!important;max-width:20px!important;max-height:20px!important;
+  border-radius:0!important;background:transparent!important;object-fit:contain!important;
+}
 .miya-composer-select-popup .miya-composer-select-option.miya-model-option{
   display:flex!important;align-items:center!important;gap:10px!important;
   min-height:36px!important;padding:7px 28px 7px 0!important;box-sizing:border-box!important;white-space:nowrap!important;
@@ -359,6 +370,9 @@ body.light #composer.mode-images .miya-model-logo{background:transparent!importa
   display:block!important;flex:0 0 22px!important;width:22px!important;height:22px!important;
   margin-left:2.5px!important;margin-right:2.5px!important;
   object-fit:contain!important;border:0!important;border-radius:4px!important;background:transparent!important;
+}
+.miya-composer-select-popup .miya-model-option .miya-model-option-logo.miya-nano-banana-option-logo{
+  background:#000!important;padding:3px!important;box-sizing:border-box!important;border-radius:5px!important;
 }
 .miya-composer-select-popup .miya-model-option .miya-model-option-label{
   min-width:max-content!important;flex:0 0 auto!important;overflow:visible!important;text-overflow:clip!important;white-space:nowrap!important;
@@ -472,7 +486,7 @@ body.light #composer.mode-images .miya-model-logo{background:transparent!importa
  const modelBrandDomain=value=>{
   const v=String(value||"").toLowerCase();
   if(v.includes("nano banana")||v.includes("nanobanana"))return "deepmind.google";
-  if(v==="imagesmith")return "aiimagesmith.com";
+  if(v==="imagesmith"||v.includes("gpt image"))return "openai.com";
   if(v.includes("seedream"))return "seed.bytedance.com";
   if(v.includes("agnes"))return "agnes-ai.com";
   if(v.includes("z-image"))return "tongyi.aliyun.com";
@@ -521,6 +535,7 @@ body.light #composer.mode-images .miya-model-logo{background:transparent!importa
   }
   let img=logo.querySelector("img");
   if(!img){img=document.createElement("img");img.alt="";img.draggable=false;img.loading="eager";img.fetchPriority="high";img.decoding="sync";logo.appendChild(img);}
+  logo.classList.toggle("miya-nano-banana-logo",String(select.value||"").trim().toLowerCase()==="nano banana");
   const src=modelLogoUrl(select.value);
   if(img.src!==src){
    const warmed=preloadedModelLogoImages.get(src);
@@ -627,7 +642,7 @@ body.light #composer.mode-images .miya-model-logo{background:transparent!importa
    item.dataset.index=String(index);
    if((select.id==="composerRatio"||select.id==="videoRatio")&&(ratioValues.has(option.value)||option.value==="auto")){item.classList.add("miya-ratio-option");const label=document.createElement("span");label.className="miya-ratio-label";label.textContent=option.value;const icon=document.createElement("span");icon.className="miya-ratio-icon";if(ratioValues.has(option.value))icon.innerHTML=ratioSvg(option.value);item.append(label,icon);item.setAttribute("aria-label",option.value);}else if(select.id==="composerModel"){
     item.classList.add("miya-model-option");
-    const img=document.createElement("img");img.className="miya-model-option-logo";img.alt="";img.draggable=false;img.loading="eager";img.fetchPriority="high";img.decoding="async";img.src=modelLogoUrl(option.value);
+    const img=document.createElement("img");img.className="miya-model-option-logo";if(String(option.value||"").trim().toLowerCase()==="nano banana")img.classList.add("miya-nano-banana-option-logo");img.alt="";img.draggable=false;img.loading="eager";img.fetchPriority="high";img.decoding="async";img.src=modelLogoUrl(option.value);
     const label=document.createElement("span");label.className="miya-model-option-label";label.textContent=String(option.label||option.textContent||option.value);
     item.append(img,label);
    }else{item.textContent=String(option.label||option.textContent||option.value);}
