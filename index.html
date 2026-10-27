@@ -521,8 +521,9 @@ body.light .miya-model-logo{background:#f4f7fa!important;border-color:#d3deea!im
   const desiredHeight=popup.scrollHeight;
   popup.style.maxHeight=Math.max(80,Math.min(desiredHeight,window.innerHeight-16))+"px";
   const popupHeight=Math.min(desiredHeight,window.innerHeight-16);
-  const below=window.innerHeight-rect.bottom-8;
-  const above=rect.top-8;
+  const popupAnchor=logoRect||selectRect;
+  const below=window.innerHeight-popupAnchor.bottom-8;
+  const above=popupAnchor.top-8;
   let top;
   if(below<Math.min(popupHeight,180)&&above>below)top=Math.max(8,rect.top-popupHeight-4);
   else top=Math.min(window.innerHeight-popupHeight-8,rect.bottom+4);
