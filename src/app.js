@@ -7607,11 +7607,19 @@ document.head.appendChild(musicCardPolish);const oldHero=modeHero;modeHero=funct
  let activeSelect=null;
  let activeIndex=-1;
  const belongsToActiveSection=select=>{
-  const composer=document.getElementById("composer");
-  if(!composer)return false;
-  return select.id.startsWith("video")
-   ? composer.classList.contains("mode-video")
-   : composer.classList.contains("mode-images");
+  // Trust the actual rendered state, not a mode class that can briefly lag during rapid section switches.
+  // Hidden controls stay inactive; any visible image/video control can open immediately.
+  if(!select||!select.isConnected)return false;
+  const rects=select.getClientRects();
+  if(!rects.length)return false;
+  const style=window.getComputedStyle(select);
+  if(style.display==="none"||style.visibility==="hidden"||Number(style.opacity)===0)return false;
+  const options=select.closest("#composerOptions, #videoOptions");
+  if(options){
+   const optionStyle=window.getComputedStyle(options);
+   if(optionStyle.display==="none"||optionStyle.visibility==="hidden")return false;
+  }
+  return true;
  };
  const availableOptions=select=>Array.from(select.options).filter(option=>!option.disabled);
  function closePopup(){
