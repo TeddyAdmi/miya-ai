@@ -4646,3 +4646,13 @@ body.light .composer.mode-video #videoRatio.select-pill[aria-expanded="true"]{
   clip-path:inset(0 round 9px);
   pointer-events:none!important;
 }
+
+/* While an image is loading, show only the card itself and the dot layer.
+   The not-yet-decoded IMG has its own background and rounded corners; letting
+   that empty IMG render creates extra bright bands inside the card frame. */
+.media-card.media-new-image-pending > img{
+  display:none!important;
+}
+body.light .media-card.media-new-image-pending{
+  background:#edf2f7!important;
+}
