@@ -391,8 +391,9 @@ body.light #composer.mode-images .miya-model-logo{background:transparent!importa
   const ratioIconSize=value=>value==="9:16"?"13px 16px":value==="1:1"?"13px 13px":"19px 13px";
  const syncRatioTrigger=select=>{
   if(!select||!["composerRatio","videoRatio"].includes(select.id))return;
+  const isAuto=select.value==="auto";
   const value=select.value==="9:16"||select.value==="1:1"?select.value:"16:9";
-  const icon=select.value==="auto"?"none":'url("data:image/svg+xml,'+encodeURIComponent(ratioSvg(value))+ '")';
+  const icon=isAuto?"none":'url("data:image/svg+xml,'+encodeURIComponent(ratioSvg(value))+ '")';
   const light=document.body.classList.contains("light");
   const arrowStroke=light?"%23111111":"%237690ad";
   const open=select.getAttribute("aria-expanded")==="true";
@@ -402,14 +403,14 @@ body.light #composer.mode-images .miya-model-logo{background:transparent!importa
   select.style.removeProperty("color");
   select.style.removeProperty("-webkit-text-fill-color");
   select.style.removeProperty("text-shadow");
-  select.style.setProperty("background-image",icon+", "+arrow,"important");
+  select.style.setProperty("background-image",isAuto?arrow:icon+", "+arrow,"important");
   /* All aspect-ratio icons share one centered 19px column, matching the popup. */
   const iconLeft=value==="9:16"?"47.5px":value==="1:1"?"46px":"43px";
-  select.style.setProperty("background-position",iconLeft+" 50%, calc(100% - 10px) 50%","important");
-  select.style.setProperty("background-size",size+", 10px 7px","important");
+  select.style.setProperty("background-position",isAuto?"calc(100% - 10px) 50%":iconLeft+" 50%, calc(100% - 10px) 50%","important");
+  select.style.setProperty("background-size",isAuto?"10px 7px":size+", 10px 7px","important");
   select.style.setProperty("text-align","center","important");
-  select.style.setProperty("text-indent","-16px","important");
-  select.style.setProperty("background-repeat","no-repeat, no-repeat","important");
+  select.style.setProperty("text-indent",isAuto?"0px":"-16px","important");
+  select.style.setProperty("background-repeat",isAuto?"no-repeat":"no-repeat, no-repeat","important");
   select.setAttribute("aria-label",select.id==="videoRatio"?"Соотношение сторон видео: "+value:"Соотношение сторон изображения: "+value);
  };
  const ratioStyle=document.createElement("style");
@@ -530,9 +531,10 @@ body.light #composer.mode-images .miya-model-logo{background:transparent!importa
   const oldLogoRect=oldLogo&&oldLogo.classList.contains("miya-model-logo")?oldLogo.getBoundingClientRect():null;
   const left=controlRect?controlRect.left:(oldLogoRect?oldLogoRect.left:selectRect.left);
   let desiredWidth=Math.ceil(controlRect?controlRect.width:(selectRect.width+(oldLogoRect?oldLogoRect.width:0)));
-  // Give every picker the same generous row width as the model menu, while leaving closed controls unchanged.
+  // Ratio menus must exactly match their closed 90px trigger; only model menus expand to fit long labels.
+  const isRatioSelect=select.id==="composerRatio"||select.id==="videoRatio";
   const modelSelect=document.getElementById(select.id==="videoModel"?"videoModel":"composerModel")||document.getElementById("composerModel");
-  if(modelSelect){
+  if(modelSelect&&!isRatioSelect){
    const canvas=document.createElement("canvas"),ctx=canvas.getContext("2d");
    if(ctx){
     const style=getComputedStyle(modelSelect);
