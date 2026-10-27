@@ -239,6 +239,19 @@ body.light .miya-composer-select-popup .miya-composer-select-option.miya-ratio-o
  stroke:#000000!important;
  opacity:1!important;
 }
+
+/* Dark theme: force ratio labels and SVG outlines to the same blue-gray as selector text.
+   Use !important because generic selected/hover menu rules otherwise brighten the icons. */
+body:not(.light) .miya-composer-select-popup .miya-composer-select-option.miya-ratio-option,
+body:not(.light) .miya-composer-select-popup .miya-composer-select-option.miya-ratio-option .miya-ratio-label{
+ color:#a9bad0!important;
+ -webkit-text-fill-color:#a9bad0!important;
+}
+body:not(.light) .miya-composer-select-popup .miya-composer-select-option.miya-ratio-option .miya-ratio-icon svg,
+body:not(.light) .miya-composer-select-popup .miya-composer-select-option.miya-ratio-option .miya-ratio-icon svg *{
+ stroke:#a9bad0!important;
+ opacity:1!important;
+}
 #composerRatio.select-pill,#videoRatio.select-pill{padding-right:18px!important;}
 
 /* Preserve the established compact footprint of the two aspect-ratio triggers. */
