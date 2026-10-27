@@ -981,11 +981,24 @@ function setComposerAttachment(url){
  if(source){
   img.alt="";
   img.style.display="block";
+  // Keep progressive JPEGs hidden until the browser has decoded the full frame.
+  img.style.opacity="0";
   img.src=source;
   box.hidden=false;
   box.classList.add("has-image");
+  const expectedSource=img.src;
+  const revealDecodedImage=()=>{
+   if(img.isConnected&&img.src===expectedSource)img.style.opacity="1";
+  };
+  if(typeof img.decode==="function")img.decode().then(revealDecodedImage).catch(()=>{
+   if(img.complete&&img.naturalWidth)revealDecodedImage();
+   else img.addEventListener("load",revealDecodedImage,{once:true});
+  });
+  else if(img.complete&&img.naturalWidth)revealDecodedImage();
+  else img.addEventListener("load",revealDecodedImage,{once:true});
  }else{
   img.removeAttribute("src");
+  img.style.opacity="1";
   img.style.display="none";
   box.classList.remove("has-image");
   box.hidden=true;
