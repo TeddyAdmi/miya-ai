@@ -342,23 +342,37 @@ body.light .miya-composer-select-popup .miya-composer-select-option{
 }
 
 
-/* Brand marks for the image-model selector: same icon size in the trigger and dropdown. */
-#composer.mode-images #composerModel.select-pill{
-  width:auto!important;min-width:0!important;max-width:none!important;
-  flex:0 0 auto!important;padding-left:10px!important;border-top-left-radius:0!important;border-bottom-left-radius:0!important;
+/* The model picker is one control: the logo and native select share one outer border. */
+#composer.mode-images .miya-model-control{
+  display:inline-flex!important;align-items:center!important;flex:0 0 auto!important;
+  height:30px!important;min-height:30px!important;box-sizing:border-box!important;
+  border:1px solid #1a4b78!important;border-radius:7px!important;
+  background:#0b223b!important;overflow:visible!important;vertical-align:middle!important;
 }
-.miya-model-logo{
+#composer.mode-images .miya-model-logo{
   display:inline-flex!important;align-items:center!important;justify-content:center!important;
-  width:27px!important;height:30px!important;min-width:27px!important;flex:0 0 27px!important;align-self:center!important;vertical-align:middle!important;position:relative!important;top:0!important;
-  margin-right:0!important;overflow:visible!important;border:1px solid #1a4b78!important;
-  border-right:0!important;border-radius:9px 0 0 9px!important;background:#0b223b!important;
-  box-sizing:border-box!important;pointer-events:none!important;
+  width:27px!important;height:28px!important;min-width:27px!important;flex:0 0 27px!important;
+  margin:0!important;padding:0!important;box-sizing:border-box!important;
+  border:0!important;border-radius:0!important;background:transparent!important;
+  overflow:visible!important;pointer-events:none!important;
 }
-.miya-model-logo img{
+#composer.mode-images .miya-model-logo img{
   display:block!important;width:20px!important;height:20px!important;max-width:20px!important;max-height:20px!important;
-  object-fit:contain!important;border:0!important;border-radius:3px!important;background:transparent!important;
+  flex:none!important;object-fit:contain!important;border:0!important;border-radius:3px!important;background:transparent!important;
+  transform:none!important;
 }
-body.light .miya-model-logo{background:#f4f7fa!important;border-color:#d3deea!important}
+#composer.mode-images #composerModel.select-pill{
+  width:auto!important;min-width:0!important;max-width:none!important;flex:0 0 auto!important;
+  height:28px!important;min-height:28px!important;box-sizing:border-box!important;
+  margin:0!important;padding:0 28px 0 7.5px!important;
+  border:0!important;border-radius:0!important;background-color:transparent!important;
+  align-self:center!important;
+  background-position:calc(100% - 10px) 50%!important;
+}
+body.light #composer.mode-images .miya-model-control{
+  border-color:#d3deea!important;background:#f4f7fa!important;
+}
+body.light #composer.mode-images .miya-model-logo{background:transparent!important}
 .miya-composer-select-popup .miya-composer-select-option.miya-model-option{
   display:flex!important;align-items:center!important;gap:10px!important;
   min-height:36px!important;padding:7px 28px 7px 0!important;box-sizing:border-box!important;white-space:nowrap!important;
@@ -372,25 +386,10 @@ body.light .miya-model-logo{background:#f4f7fa!important;border-color:#d3deea!im
   min-width:max-content!important;flex:0 0 auto!important;overflow:visible!important;text-overflow:clip!important;white-space:nowrap!important;
 }
 @media(max-width:800px){
-  #composer.mode-images #composerModel.select-pill{
-    width:auto!important;min-width:0!important;max-width:none!important;
-    flex:0 0 auto!important;
-  }
-  .miya-model-logo{width:27px!important;height:30px!important;min-width:27px!important;flex-basis:27px!important}
-  .miya-model-logo img{width:18px!important;height:18px!important;max-width:18px!important;max-height:18px!important}
+  #composer.mode-images .miya-model-control{height:30px!important;min-height:30px!important}
+  #composer.mode-images .miya-model-logo{width:27px!important;height:28px!important;min-width:27px!important;flex-basis:27px!important}
+  #composer.mode-images .miya-model-logo img{width:18px!important;height:18px!important;max-width:18px!important;max-height:18px!important}
 }
-
-
-/* Keep the model mark and select looking like one continuous control. */
-#composer.mode-images .miya-model-logo{
-  border:1px solid #1a4b78!important;border-right:0!important;
-  border-radius:7px 0 0 7px!important;
-}
-#composer.mode-images #composerModel.select-pill{
-  border-left:0!important;border-radius:0 7px 7px 0!important;
-  background-position:calc(100% - 10px) 50%!important;
-}
-body.light #composer.mode-images .miya-model-logo{border-color:#d3deea!important}
 
 </style>
 
@@ -480,17 +479,23 @@ body.light #composer.mode-images .miya-model-logo{border-color:#d3deea!important
  const modelLogoUrl=value=>{const v=String(value||"").toLowerCase();if(v==="nano banana 2")return "https://www.google.com/s2/favicons?domain=google.com&sz=64";return "https://www.google.com/s2/favicons?domain="+encodeURIComponent(modelBrandDomain(value))+"&sz=64";};
  function ensureModelTriggerLogo(select){
   if(!select||select.id!=="composerModel")return;
-  let logo=select.previousElementSibling;
-  if(!logo||!logo.classList.contains("miya-model-logo")){
-   logo=document.createElement("span");logo.className="miya-model-logo";logo.setAttribute("aria-hidden","true");
-   const img=document.createElement("img");img.alt="";img.draggable=false;logo.appendChild(img);
-   select.parentNode.insertBefore(logo,select);
+  let control=select.parentElement;
+  if(!control||!control.classList.contains("miya-model-control")){
+   control=document.createElement("span");control.className="miya-model-control";
+   const oldLogo=select.previousElementSibling&&select.previousElementSibling.classList.contains("miya-model-logo")?select.previousElementSibling:null;
+   select.parentNode.insertBefore(control,oldLogo||select);
+   if(oldLogo)control.appendChild(oldLogo);
+   control.appendChild(select);
   }
-  const parentStyle=getComputedStyle(select.parentElement);
-  const siblingGap=parseFloat(parentStyle.columnGap||parentStyle.gap)||0;
-  logo.style.setProperty("margin-right",(-siblingGap)+"px","important");
-  const img=logo.querySelector("img");
-  if(img){const src=modelLogoUrl(select.value);if(img.src!==src)img.src=src;}
+  let logo=control.querySelector(":scope > .miya-model-logo");
+  if(!logo){
+   logo=document.createElement("span");logo.className="miya-model-logo";logo.setAttribute("aria-hidden","true");
+   control.insertBefore(logo,select);
+  }
+  let img=logo.querySelector("img");
+  if(!img){img=document.createElement("img");img.alt="";img.draggable=false;logo.appendChild(img);}
+  const src=modelLogoUrl(select.value);
+  if(img.src!==src)img.src=src;
  }
 
  function closePopup(){
@@ -527,18 +532,20 @@ body.light #composer.mode-images .miya-model-logo{border-color:#d3deea!important
  }
  function positionPopup(select){
   const selectRect=select.getBoundingClientRect();
-  const logo=select.id==="composerModel"?select.previousElementSibling:null;
-  const logoRect=logo&&logo.classList.contains("miya-model-logo")?logo.getBoundingClientRect():null;
-  const left=logoRect?logoRect.left:selectRect.left;
-  let desiredWidth=Math.ceil(selectRect.width+(logoRect?logoRect.width:0));
+  const control=select.id==="composerModel"&&select.parentElement&&select.parentElement.classList.contains("miya-model-control")?select.parentElement:null;
+  const controlRect=control?control.getBoundingClientRect():null;
+  const oldLogo=select.id==="composerModel"&&!control?select.previousElementSibling:null;
+  const oldLogoRect=oldLogo&&oldLogo.classList.contains("miya-model-logo")?oldLogo.getBoundingClientRect():null;
+  const left=controlRect?controlRect.left:(oldLogoRect?oldLogoRect.left:selectRect.left);
+  let desiredWidth=Math.ceil(controlRect?controlRect.width:(selectRect.width+(oldLogoRect?oldLogoRect.width:0)));
   if(select.id==="composerModel"){
    const canvas=document.createElement("canvas"),ctx=canvas.getContext("2d");
    if(ctx){
     const style=getComputedStyle(select);
     ctx.font="700 "+(style.fontSize||"12px")+" "+(style.fontFamily||"Inter,system-ui,sans-serif");
     const longest=availableOptions(select).reduce((max,option)=>Math.max(max,ctx.measureText(String(option.label||option.textContent||option.value)).width),0);
-    const logoWidth=logoRect?logoRect.width:27;
-    desiredWidth=Math.ceil(logoWidth+10+longest+28);
+    const logoWidth=control?control.querySelector(".miya-model-logo").getBoundingClientRect().width:(oldLogoRect?oldLogoRect.width:27);
+    desiredWidth=Math.ceil(logoWidth+7.5+longest+28);
     const selectWidth=Math.max(80,desiredWidth-logoWidth);
     select.style.setProperty("width",selectWidth+"px","important");
     select.style.setProperty("min-width",selectWidth+"px","important");
