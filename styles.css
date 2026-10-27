@@ -4345,10 +4345,10 @@ body.light .media-new-image-dots span{
   justify-self:center!important;
   border:0!important;
   border-radius:8px!important;
-  background:linear-gradient(135deg,#8f62ff,#4b7dff)!important;
+  background:radial-gradient(ellipse at 27% 15%,rgba(255,255,255,.32) 0%,rgba(255,255,255,.13) 24%,rgba(255,255,255,0) 62%),linear-gradient(145deg,#b56aff 0%,#9564ff 30%,#7563ff 56%,#4c79f6 100%)!important;
   background-clip:padding-box!important;
   color:#fff!important;
-  box-shadow:none!important;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.34),inset 0 -2px 3px rgba(31,28,112,.28)!important;
   outline:none!important;
   transform:none!important;
   filter:none!important;
@@ -4378,31 +4378,31 @@ body.light .media-new-image-dots span{
 }
 #composer .image-settings #improve:hover,
 body.light #composer .image-settings #improve:hover{
-  background:linear-gradient(135deg,#8f62ff,#4b7dff)!important;
+  background:radial-gradient(ellipse at 27% 15%,rgba(255,255,255,.32) 0%,rgba(255,255,255,.13) 24%,rgba(255,255,255,0) 62%),linear-gradient(145deg,#b56aff 0%,#9564ff 30%,#7563ff 56%,#4c79f6 100%)!important;
   color:#fff!important;
   border:0!important;
   border-radius:8px!important;
-  box-shadow:none!important;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.34),inset 0 -2px 3px rgba(31,28,112,.28)!important;
   outline:none!important;
   transform:none!important;
   filter:none!important;
 }
 #composer .image-settings #improve:active,
 body.light #composer .image-settings #improve:active{
-  background:linear-gradient(135deg,#8f62ff,#4b7dff)!important;
+  background:radial-gradient(ellipse at 27% 15%,rgba(255,255,255,.32) 0%,rgba(255,255,255,.13) 24%,rgba(255,255,255,0) 62%),linear-gradient(145deg,#b56aff 0%,#9564ff 30%,#7563ff 56%,#4c79f6 100%)!important;
   color:#fff!important;
   border:0!important;
   border-radius:8px!important;
-  box-shadow:none!important;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.34),inset 0 -2px 3px rgba(31,28,112,.28)!important;
   transform:none!important;
   filter:none!important;
 }
 body.light #composer .image-settings #improve{
-  background:linear-gradient(135deg,#8f62ff,#4b7dff)!important;
+  background:radial-gradient(ellipse at 27% 15%,rgba(255,255,255,.32) 0%,rgba(255,255,255,.13) 24%,rgba(255,255,255,0) 62%),linear-gradient(145deg,#b56aff 0%,#9564ff 30%,#7563ff 56%,#4c79f6 100%)!important;
   color:#fff!important;
   border:0!important;
   border-radius:8px!important;
-  box-shadow:none!important;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.34),inset 0 -2px 3px rgba(31,28,112,.28)!important;
 }
 
 /* Attachment thumbnail: no exposed dark backing edge; subtle floating 3D depth. */
