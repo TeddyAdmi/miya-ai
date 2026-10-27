@@ -171,7 +171,7 @@
 }
 #composerRatio option,#videoRatio option{padding:2px 3px;font-family:Inter,Arial,sans-serif}
 body.light #composerRatio,body.light #videoRatio{background-color:#f4f7fa!important}
-#composerRatio{width:50px!important;min-width:50px!important;max-width:50px!important;flex:0 0 50px!important;padding-left:5px!important;padding-right:16px!important;font-size:12px!important}
+#composerRatio{width:88px!important;min-width:88px!important;max-width:88px!important;flex:0 0 88px!important;padding-left:8px!important;padding-right:30px!important;font-size:12px!important;text-align:left!important}
 </style>
 
 <script>
@@ -197,18 +197,19 @@ body.light #composerRatio,body.light #videoRatio{background-color:#f4f7fa!import
   const value=select.value==="9:16"||select.value==="1:1"?select.value:"16:9";
   const icon='url("data:image/svg+xml,'+encodeURIComponent(ratioSvg(value))+ '")';
   const size=ratioIconSize(value);
-  select.style.setProperty("color","transparent","important");
-  select.style.setProperty("-webkit-text-fill-color","transparent","important");
-  select.style.setProperty("text-shadow","none","important");
+  select.style.removeProperty("color");
+  select.style.removeProperty("-webkit-text-fill-color");
+  select.style.removeProperty("text-shadow");
   select.style.setProperty("background-image",icon+", "+ratioArrow,"important");
-  select.style.setProperty("background-position","center, calc(100% - 8px) 50%","important");
+  select.style.setProperty("background-position","calc(100% - 22px) 50%, calc(100% - 8px) 50%","important");
   select.style.setProperty("background-size",size+", 10px 7px","important");
+  select.style.setProperty("text-align","left","important");
   select.style.setProperty("background-repeat","no-repeat, no-repeat","important");
   select.setAttribute("aria-label",select.id==="videoRatio"?"Соотношение сторон видео: "+value:"Соотношение сторон изображения: "+value);
  };
  const ratioStyle=document.createElement("style");
  ratioStyle.id="miyaRatioIconStyles";
- ratioStyle.textContent='.miya-composer-select-popup .miya-composer-select-option.miya-ratio-option{display:flex!important;align-items:center!important;justify-content:center!important;min-height:40px!important;padding:6px 12px!important}.miya-composer-select-popup .miya-composer-select-option.miya-ratio-option svg{display:block;width:30px;height:22px;overflow:visible}.miya-composer-select-popup .miya-composer-select-option.miya-ratio-option[data-value="9:16"] svg{width:15px;height:25px}.miya-composer-select-popup .miya-composer-select-option.miya-ratio-option[data-value="1:1"] svg{width:21px;height:21px}';
+ ratioStyle.textContent='.miya-composer-select-popup .miya-composer-select-option.miya-ratio-option{display:flex!important;align-items:center!important;justify-content:flex-start!important;min-height:28px!important;height:28px!important;padding:2px 8px!important;box-sizing:border-box!important}.miya-composer-select-popup .miya-composer-select-option.miya-ratio-option svg{display:block;width:19px;height:13px;overflow:visible;flex:none}.miya-composer-select-popup .miya-composer-select-option.miya-ratio-option[data-value="9:16"] svg{width:10px;height:16px}.miya-composer-select-popup .miya-composer-select-option.miya-ratio-option[data-value="1:1"] svg{width:13px;height:13px}';
  document.head.appendChild(ratioStyle);
  ["composerRatio","videoRatio"].forEach(id=>{
   const select=document.getElementById(id);
