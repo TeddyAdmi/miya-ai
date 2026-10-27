@@ -546,11 +546,8 @@ body.light #composer.mode-images .miya-model-logo{background:transparent!importa
     const longest=availableOptions(select).reduce((max,option)=>Math.max(max,ctx.measureText(String(option.label||option.textContent||option.value)).width),0);
     const logoWidth=control?control.querySelector(".miya-model-logo").getBoundingClientRect().width:(oldLogoRect?oldLogoRect.width:27);
     desiredWidth=Math.ceil(logoWidth+7.5+longest+28);
-    const selectWidth=Math.max(80,desiredWidth-logoWidth);
-    select.style.setProperty("width",selectWidth+"px","important");
-    select.style.setProperty("min-width",selectWidth+"px","important");
-    select.style.setProperty("max-width",selectWidth+"px","important");
-    select.style.setProperty("flex-basis",selectWidth+"px","important");
+    // Size the popup to the longest model label without changing the closed trigger's width.
+    // Mutating the select here made the lower control drift after opening the menu.
    }
   }
   const width=Math.max(1,Math.min(desiredWidth,window.innerWidth-16));
@@ -560,7 +557,7 @@ body.light #composer.mode-images .miya-model-logo{background:transparent!importa
   const desiredHeight=popup.scrollHeight;
   popup.style.maxHeight=Math.max(80,Math.min(desiredHeight,window.innerHeight-16))+"px";
   const popupHeight=Math.min(desiredHeight,window.innerHeight-16);
-  const popupAnchor=logoRect||selectRect;
+  const popupAnchor=controlRect||oldLogoRect||selectRect;
   const below=window.innerHeight-popupAnchor.bottom-8;
   const above=popupAnchor.top-8;
   let top;
