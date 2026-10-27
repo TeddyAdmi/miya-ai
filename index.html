@@ -239,6 +239,12 @@ body.light .miya-composer-select-popup .miya-composer-select-option.miya-ratio-o
 }
 #composerRatio.select-pill,#videoRatio.select-pill{padding-right:18px!important;}
 
+/* Preserve the established compact footprint of the two aspect-ratio triggers. */
+#composerRatio.select-pill,#videoRatio.select-pill{
+  width:90px!important;min-width:90px!important;max-width:90px!important;
+  flex:0 0 90px!important;box-sizing:border-box!important;
+  padding-left:10px!important;padding-right:18px!important;
+}
 /* Canonical prompt controls for Images and Video. Keep the six selectors visually identical in both themes. */
 #composer.mode-images #composerModel.select-pill,
 #composer.mode-images #composerRatio.select-pill,
