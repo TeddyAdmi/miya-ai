@@ -3076,6 +3076,39 @@ async function compressAgnesReferenceImage(source){
   return output;
  }catch{return value}
 }
+async function prepareNanoBananAReferenceImage(source){
+ const value=String(source||"").trim();
+ if(!/^data:image\//i.test(value))throw new Error("Для редактирования Nano BananA не удалось прочитать исходную фотографию");
+ const image=new Image();
+ await new Promise((resolve,reject)=>{
+  image.onload=resolve;
+  image.onerror=()=>reject(new Error("Не удалось открыть исходную фотографию для Nano BananA"));
+  image.src=value;
+ });
+ const originalWidth=image.naturalWidth||0;
+ const originalHeight=image.naturalHeight||0;
+ if(!originalWidth||!originalHeight)throw new Error("Исходная фотография пустая или повреждена");
+ // Always normalize to JPEG and progressively reduce dimensions/quality so large
+ // phone photos cannot silently fall back to text-only generation.
+ let maxEdge=1536;
+ while(maxEdge>=768){
+  const scale=Math.min(1,maxEdge/Math.max(originalWidth,originalHeight));
+  const canvas=document.createElement("canvas");
+  canvas.width=Math.max(1,Math.round(originalWidth*scale));
+  canvas.height=Math.max(1,Math.round(originalHeight*scale));
+  const context=canvas.getContext("2d");
+  if(!context)throw new Error("Не удалось подготовить фотографию для Nano BananA");
+  context.fillStyle="#fff";
+  context.fillRect(0,0,canvas.width,canvas.height);
+  context.drawImage(image,0,0,canvas.width,canvas.height);
+  for(const quality of [.82,.72,.62,.52,.42]){
+   const output=canvas.toDataURL("image/jpeg",quality);
+   if(/^data:image\/jpeg;base64,/.test(output)&&output.length<=1_800_000)return output;
+  }
+  maxEdge=Math.floor(maxEdge*.8);
+ }
+ throw new Error("Фотография слишком большая для передачи в Nano BananA. Выбери изображение меньшего размера.");
+}
 async function generateAgnesImage(prompt,loaderAlreadyShown=false){
  if(videoGenerationBusy){}
  if(!loaderAlreadyShown)showLoading();if($("#composerSend"))$("#composerSend").disabled=true;
@@ -3264,9 +3297,12 @@ async function generateImage(prompt,loaderAlreadyShown=false){
     ? String($("#composerRatio").value) : "16:9";
   const selectedQuality=["1K","2K","4K"].includes(String($("#composerQuality")?.value))
     ? String($("#composerQuality").value) : "1K";
-  const nanoBananAReferenceImage=useNanoBananA && /^data:image\//i.test(referenceImage)
-    ? (agnesPreparedReferenceSource===referenceImage && agnesPreparedReferenceDataUrl ? agnesPreparedReferenceDataUrl : await compressAgnesReferenceImage(referenceImage))
+  const nanoBananAReferenceImage=useNanoBananA && referenceImage
+    ? await prepareNanoBananAReferenceImage(referenceImage)
     : "";
+  if(useNanoBananA && referenceImage && !nanoBananAReferenceImage){
+    throw new Error("Не удалось подготовить исходную фотографию для редактирования Nano BananA");
+  }
   const body=useAgnesImage
    ? JSON.stringify({prompt,ratio:$("#composerRatio").value,n:requestedCount,imageBase64:referenceImage||""})
    : useImageFree
