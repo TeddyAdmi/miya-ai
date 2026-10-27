@@ -7586,3 +7586,174 @@ document.head.appendChild(musicCardPolish);const oldHero=modeHero;modeHero=funct
 
 /* Poetry/Lyrics alignment and controls */
 (function miyaPoetryLyricsPolishV2(){if(window.__miyaPoetryLyricsPolishV2)return;window.__miyaPoetryLyricsPolishV2=true;const style=document.createElement("style");style.textContent="\n/* Fix custom poetry/lyrics icons: remove the generic mask square and align to all sidebar icons. */\n.nav-icon.miya-poems-nav-icon::before,.nav-icon.miya-lyrics-nav-icon::before{display:none!important;content:none!important}\n.nav-icon.miya-poems-nav-icon,.nav-icon.miya-lyrics-nav-icon{display:inline-grid!important;width:19px!important;height:19px!important;min-width:19px!important;min-height:19px!important;flex:0 0 19px!important;place-items:center!important;background:transparent!important;color:inherit!important;vertical-align:middle!important;align-self:center!important}\n.nav-icon.miya-poems-nav-icon svg,.nav-icon.miya-lyrics-nav-icon svg{display:block!important;width:18px!important;height:18px!important;fill:none!important;stroke:currentColor!important;stroke-width:1.8!important;stroke-linecap:round!important;stroke-linejoin:round!important}\n/* Override the global image-only visibility rule for the poetry and lyrics settings row. */\n#composer.mode-poems #composerOptions.image-settings,#composer.mode-lyrics #composerOptions.image-settings{display:flex!important;visibility:visible!important;height:auto!important;min-height:0!important;overflow-x:auto!important;overflow-y:hidden!important;pointer-events:auto!important;align-items:center!important;gap:5px!important}\n#composerOptions .select-pill{font-size:7px!important;min-height:28px!important;line-height:1.2!important;padding:6px 23px 6px 8px!important;flex:0 0 auto!important;max-width:46vw!important;min-width:110px!important}\n#composer.mode-poems #composerModel{display:none!important}\n#composer.mode-poems #composerRatio,#composer.mode-lyrics #composerRatio,#composer.mode-lyrics #composerQuality{display:none!important}\n#composer.mode-poems #miyaPoemCategory{min-width:120px!important;max-width:170px!important}\n#composer.mode-poems #miyaPoemAuthor{min-width:150px!important;max-width:220px!important}\n#composer.mode-poems #composerQuality{min-width:125px!important;max-width:170px!important}\n#composer.mode-lyrics #composerModel{display:block!important;min-width:170px!important;max-width:270px!important;flex:0 1 250px!important}\n#composer.mode-poems #improve,#composer.mode-lyrics #improve{display:none!important}\n/* Match the Images welcome tile: same size and vertical spacing, with a subtle 3D gradient. */\n.hero-mark.miya-text-hero{width:64px!important;height:64px!important;min-width:64px!important;min-height:64px!important;border-radius:20px!important;margin:0 auto 10px!important;display:grid!important;place-items:center!important;background:linear-gradient(145deg,#c77bff 0%,#7958ff 48%,#426bff 100%)!important;box-shadow:inset 0 1px 0 rgba(255,255,255,.35),0 8px 24px rgba(105,82,255,.25),0 0 38px rgba(125,85,255,.24)!important;color:#fff!important}\n.hero-mark.miya-text-hero svg{width:24px!important;height:24px!important;max-width:24px!important;max-height:24px!important;display:block!important;fill:none!important;stroke:currentColor!important;stroke-width:1.8!important;stroke-linecap:round!important;stroke-linejoin:round!important}\n";document.head.appendChild(style);document.querySelectorAll('[data-tool="poems"] .nav-icon').forEach(n=>{n.className="nav-icon miya-poems-nav-icon";n.innerHTML='<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 3.5h7l4 4V20a1.5 1.5 0 0 1-1.5 1.5h-9A1.5 1.5 0 0 1 6 20V5A1.5 1.5 0 0 1 7.5 3.5Z"/><path d="M14 3.5V8h4M9 12h6M9 15.5h6M9 19h4"/></svg>'});document.querySelectorAll('[data-tool="lyrics"] .nav-icon').forEach(n=>{n.className="nav-icon miya-lyrics-nav-icon";n.innerHTML='<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>'});})();
+
+
+/* Use a page-styled popup for image/video selects: native Firefox pickers ignore option background colors. */
+(function miyaComposerDropdownPopupV1(){
+ if(window.__miyaComposerDropdownPopupV1)return;
+ window.__miyaComposerDropdownPopupV1=true;
+ const ids=["composerModel","composerRatio","composerQuality","videoModel","videoDuration","videoRatio"];
+ const popup=document.createElement("div");
+ popup.className="miya-composer-select-popup";
+ popup.id="miyaComposerSelectPopup";
+ popup.setAttribute("role","listbox");
+ popup.setAttribute("aria-label","Выберите значение");
+ popup.hidden=true;
+ document.body.appendChild(popup);
+ let activeSelect=null;
+ let activeIndex=-1;
+ const belongsToActiveSection=select=>{
+  const composer=document.getElementById("composer");
+  if(!composer)return false;
+  return select.id.startsWith("video")
+   ? composer.classList.contains("mode-video")
+   : composer.classList.contains("mode-images");
+ };
+ const availableOptions=select=>Array.from(select.options).filter(option=>!option.disabled);
+ function closePopup(){
+  if(activeSelect)activeSelect.setAttribute("aria-expanded","false");
+  popup.hidden=true;
+  popup.replaceChildren();
+  activeSelect=null;
+  activeIndex=-1;
+ }
+ function moveActive(nextIndex){
+  const items=Array.from(popup.querySelectorAll(".miya-composer-select-option:not(:disabled)"));
+  if(!items.length)return;
+  activeIndex=(nextIndex+items.length)%items.length;
+  items.forEach((item,index)=>{
+   const active=index===activeIndex;
+   item.classList.toggle("is-active",active);
+   item.setAttribute("aria-selected",String(activeSelect&&item.dataset.value===activeSelect.value));
+  });
+  const active=items[activeIndex];
+  if(active){
+   const r=active.getBoundingClientRect(),p=popup.getBoundingClientRect();
+   if(r.bottom>p.bottom)popup.scrollTop+=r.bottom-p.bottom;
+   else if(r.top<p.top)popup.scrollTop-=p.top-r.top;
+  }
+ }
+ function chooseOption(option){
+  const select=activeSelect;
+  if(!select||!option||option.disabled)return;
+  select.value=option.value;
+  closePopup();
+  select.focus({preventScroll:true});
+  select.dispatchEvent(new Event("input",{bubbles:true}));
+  select.dispatchEvent(new Event("change",{bubbles:true}));
+ }
+ function positionPopup(select){
+  const rect=select.getBoundingClientRect();
+  const optionWidths=availableOptions(select).map(option=>Math.ceil(String(option.label||option.textContent||"").trim().length*7.2+30));
+  const desiredWidth=Math.max(rect.width,...optionWidths,rect.width);
+  const width=Math.max(1,Math.min(Math.ceil(desiredWidth),window.innerWidth-16));
+  popup.style.width=width+"px";
+  popup.style.left=Math.max(8,Math.min(rect.left,window.innerWidth-width-8))+"px";
+  popup.style.maxHeight=Math.max(80,Math.min(300,window.innerHeight-16))+"px";
+  const popupHeight=Math.min(popup.scrollHeight,300,window.innerHeight-16);
+  const below=window.innerHeight-rect.bottom-8;
+  const above=rect.top-8;
+  let top;
+  if(below<Math.min(popupHeight,180)&&above>below)top=Math.max(8,rect.top-popupHeight-4);
+  else top=Math.min(window.innerHeight-popupHeight-8,rect.bottom+4);
+  popup.style.top=Math.max(8,top)+"px";
+ }
+ function openPopup(select,initialIndex){
+  if(!select||!belongsToActiveSection(select))return;
+  if(activeSelect&&activeSelect!==select)activeSelect.setAttribute("aria-expanded","false");
+  activeSelect=select;
+  const options=availableOptions(select);
+  popup.replaceChildren();
+  activeIndex=Number.isInteger(initialIndex)?initialIndex:options.findIndex(option=>option.value===select.value);
+  if(activeIndex<0)activeIndex=0;
+  options.forEach((option,index)=>{
+   const item=document.createElement("button");
+   item.type="button";
+   item.className="miya-composer-select-option";
+   item.setAttribute("role","option");
+   item.setAttribute("aria-selected",String(option.value===select.value));
+   item.dataset.value=option.value;
+   item.dataset.index=String(index);
+   item.textContent=String(option.label||option.textContent||option.value);
+   item.disabled=option.disabled;
+   item.tabIndex=-1;
+   item.addEventListener("mouseenter",()=>moveActive(index));
+   item.addEventListener("mousedown",event=>{event.preventDefault();event.stopPropagation()});
+   item.addEventListener("click",event=>{
+    event.preventDefault();
+    event.stopPropagation();
+    chooseOption(option);
+   });
+   popup.appendChild(item);
+  });
+  select.setAttribute("aria-expanded","true");
+  select.setAttribute("aria-controls",popup.id);
+  popup.hidden=false;
+  positionPopup(select);
+  moveActive(activeIndex);
+ }
+ function togglePopup(select){
+  if(activeSelect===select&&!popup.hidden)closePopup();
+  else openPopup(select);
+ }
+ ids.forEach(id=>{
+  const select=document.getElementById(id);
+  if(!select||select.dataset.miyaCustomPopupBound)return;
+  select.dataset.miyaCustomPopupBound="1";
+  select.setAttribute("aria-haspopup","listbox");
+  select.setAttribute("aria-expanded","false");
+  const onMouseDown=event=>{
+   if(event.button!==0||!belongsToActiveSection(select))return;
+   event.preventDefault();
+   event.stopPropagation();
+   try{select.focus({preventScroll:true})}catch{select.focus()}
+   togglePopup(select);
+  };
+  select.addEventListener("mousedown",onMouseDown,true);
+  select.addEventListener("click",event=>{
+   if(!belongsToActiveSection(select))return;
+   event.preventDefault();
+   event.stopPropagation();
+   if(popup.hidden||activeSelect!==select)openPopup(select);
+  },true);
+  select.addEventListener("pointerdown",event=>{
+   if(event.pointerType==="mouse"||!belongsToActiveSection(select))return;
+   event.preventDefault();
+   event.stopPropagation();
+   try{select.focus({preventScroll:true})}catch{select.focus()}
+   togglePopup(select);
+  },true);
+  select.addEventListener("keydown",event=>{
+   if(!belongsToActiveSection(select))return;
+   if(event.key==="Escape"&&activeSelect===select&&!popup.hidden){
+    event.preventDefault();event.stopPropagation();closePopup();return;
+   }
+   if(!["ArrowDown","ArrowUp","Enter"," ","F4"].includes(event.key))return;
+   event.preventDefault();
+   event.stopPropagation();
+   if(popup.hidden||activeSelect!==select){
+    const selected=availableOptions(select).findIndex(option=>option.value===select.value);
+    const start=selected<0?0:selected;
+    openPopup(select,event.key==="ArrowUp"?Math.max(0,start-1):start);
+    return;
+   }
+   if(event.key==="ArrowDown")moveActive(activeIndex+1);
+   else if(event.key==="ArrowUp")moveActive(activeIndex-1);
+   else if(event.key==="Enter"||event.key===" "){
+    const option=availableOptions(select)[activeIndex];
+    chooseOption(option);
+   }
+  });
+ });
+ document.addEventListener("mousedown",event=>{
+  if(popup.hidden)return;
+  if(popup.contains(event.target)||event.target===activeSelect)return;
+  closePopup();
+ },true);
+ document.addEventListener("keydown",event=>{
+  if(event.key==="Escape"&&!popup.hidden){event.preventDefault();closePopup()}
+ });
+ const reposition=()=>{if(!popup.hidden&&activeSelect)positionPopup(activeSelect)};
+ window.addEventListener("resize",reposition,{passive:true});
+ window.addEventListener("scroll",reposition,true);
+})();

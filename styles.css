@@ -4515,3 +4515,44 @@ body.light .composer.mode-video #videoDuration option,
 body.light .composer.mode-video #videoRatio option{
   background-color:#f4f7fa!important;color:#52657b!important;color-scheme:light;
 }
+
+
+/* Browser-colored composer select menus: custom popup guarantees the dark navy background in Firefox. */
+.miya-composer-select-popup{
+ position:fixed!important;z-index:2147483647!important;display:block!important;
+ box-sizing:border-box!important;overflow-x:hidden!important;overflow-y:auto!important;
+ padding:4px!important;border:1px solid #1a4b78!important;border-radius:8px!important;
+ background-color:#0b223b!important;color:#a9bad0!important;
+ box-shadow:0 12px 30px rgba(0,0,0,.38)!important;
+ scrollbar-width:thin!important;scrollbar-color:#285579 #0b223b!important;
+ font-family:Inter,system-ui,sans-serif!important;
+}
+.miya-composer-select-popup[hidden]{display:none!important}
+.miya-composer-select-option{
+ appearance:none!important;-webkit-appearance:none!important;
+ display:block!important;box-sizing:border-box!important;width:100%!important;min-width:0!important;
+ min-height:30px!important;margin:0!important;padding:7px 10px!important;
+ border:0!important;border-radius:5px!important;background:transparent!important;
+ color:#a9bad0!important;font:600 12px/1.25 Inter,system-ui,sans-serif!important;
+ text-align:left!important;white-space:normal!important;overflow-wrap:anywhere!important;
+ cursor:pointer!important;box-shadow:none!important;transform:none!important;
+}
+.miya-composer-select-option:hover,.miya-composer-select-option.is-active,
+.miya-composer-select-option:focus-visible{background:#153653!important;color:#f4f8ff!important;outline:none!important}
+.miya-composer-select-option[aria-selected="true"]{color:#fff!important;background:#12314f!important}
+.miya-composer-select-option:disabled{opacity:.45!important;cursor:not-allowed!important}
+body.light .miya-composer-select-popup{
+ background-color:#f4f7fa!important;color:#52657b!important;border-color:#d3deea!important;
+ box-shadow:0 12px 28px rgba(35,55,80,.18)!important;scrollbar-color:#c1cedc #f4f7fa!important;
+}
+body.light .miya-composer-select-option{
+ background:transparent!important;color:#52657b!important;
+}
+body.light .miya-composer-select-option:hover,
+body.light .miya-composer-select-option.is-active,
+body.light .miya-composer-select-option:focus-visible{
+ background:#e9eef5!important;color:#273047!important;
+}
+body.light .miya-composer-select-option[aria-selected="true"]{
+ background:#e1e9f2!important;color:#273047!important;
+}
