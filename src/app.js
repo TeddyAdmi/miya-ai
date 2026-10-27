@@ -965,8 +965,8 @@ function imageModelLabel(model){
  if(/^Agnes Image(?: 2\.5 Flash)?$/i.test(name))return "Agnes 2.5 · T2I / I2I";
  if(/^Z-Image Turbo(?: \(ImageFree\))?$/i.test(name))return "Z-Image Turbo · T2I";
  if(/^FLUX Dev$/i.test(name))return "FLUX Dev · T2I";
- if(/^FLUX Kontext Dev$/i.test(name))return "FLUX Kontext Dev · I2I";
- if(/^FLUX Content Dev$/i.test(name))return "FLUX Content Dev · I2I";
+ if(/^FLUX Kontext(?: Dev)?$/i.test(name))return "FLUX Kontext · I2I";
+ if(/^FLUX Content(?: Dev)?$/i.test(name))return "FLUX Content · I2I";
  return name;
 }
 const zImageTurboOption=document.querySelector('#composerModel option[value="Z-Image Turbo (ImageFree)"]');if(zImageTurboOption)zImageTurboOption.textContent="Z-Image Turbo · T2I";
