@@ -379,6 +379,18 @@ body.light .miya-model-logo{background:#f4f7fa!important;border-color:#d3deea!im
   .miya-model-logo img{width:18px!important;height:18px!important;max-width:18px!important;max-height:18px!important}
 }
 
+
+/* Keep the model mark and select looking like one continuous control. */
+#composer.mode-images .miya-model-logo{
+  border:1px solid #1a4b78!important;border-right:0!important;
+  border-radius:7px 0 0 7px!important;
+}
+#composer.mode-images #composerModel.select-pill{
+  border-left:0!important;border-radius:0 7px 7px 0!important;
+  background-position:calc(100% - 10px) 50%!important;
+}
+body.light #composer.mode-images .miya-model-logo{border-color:#d3deea!important}
+
 </style>
 
 <script>
@@ -525,8 +537,8 @@ body.light .miya-model-logo{background:#f4f7fa!important;border-color:#d3deea!im
   const below=window.innerHeight-popupAnchor.bottom-8;
   const above=popupAnchor.top-8;
   let top;
-  if(below<Math.min(popupHeight,180)&&above>below)top=Math.max(8,rect.top-popupHeight-4);
-  else top=Math.min(window.innerHeight-popupHeight-8,rect.bottom+4);
+  if(below<Math.min(popupHeight,180)&&above>below)top=Math.max(8,popupAnchor.top-popupHeight-4);
+  else top=Math.min(window.innerHeight-popupHeight-8,popupAnchor.bottom+4);
   popup.style.top=Math.max(8,top)+"px";
  }
  function openPopup(select,initialIndex){
