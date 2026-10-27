@@ -1039,7 +1039,7 @@ function clearComposerAttachment(){
  setComposerAttachment("");
  if(mode==="images"&&$("#composerModel")){const model=$("#composerModel");model.value="ImageSmith";model.dispatchEvent(new Event("change",{bubbles:true}));}
 }
-function openEditor(url){referenceImage=url;try{sessionStorage.setItem("miyaReferenceImage",referenceImage)}catch{};setComposerAttachment(url);mode="images";$("#composerModel").value="Agnes Image 2.5 Flash";$("#composerModel").dispatchEvent(new Event("change",{bubbles:true}));$("#composerRatio").value="auto";$("#composerRatio").dispatchEvent(new Event("change",{bubbles:true}));const m=modes.images;$("#workspaceEyebrow").textContent=m.eyebrow;$("#workspaceTitle").textContent=m.title;$("#workspaceSubtitle").textContent=m.subtitle;const promptInput=$("#composerInput"); if(promptInput){ promptInput.placeholder=m.placeholder; promptInput.setAttribute("aria-label",m.placeholder); promptInput.classList.remove("prompt-chat","prompt-images","prompt-video","prompt-voice"); promptInput.classList.add("prompt-images"); }$("#composerSendText").textContent=m.send;$("#composerStatus").textContent=imageModelLabel("Agnes Image 2.5 Flash")+" · исходное изображение готово к редактированию";$(".image-settings").style.display="flex";$("#voiceOptions").style.display="none";$("#voiceOptions").classList.remove("show");$("#videoOptions").style.display="none";$("#videoOptions").classList.remove("show");document.querySelectorAll("[data-mode]").forEach(x=>x.classList.toggle("active",x.dataset.mode==="images"));if(!$("#canvas .result-grid")) renderImageLibrary();$("#composerInput").focus();syncInput()}
+function openEditor(url){mode="images";$("#composerModel").value="Agnes Image 2.5 Flash";$("#composerModel").dispatchEvent(new Event("change",{bubbles:true}));$("#composerRatio").value="auto";$("#composerRatio").dispatchEvent(new Event("change",{bubbles:true}));referenceImage=url;try{sessionStorage.setItem("miyaReferenceImage",referenceImage)}catch{};setComposerAttachment(url);const m=modes.images;$("#workspaceEyebrow").textContent=m.eyebrow;$("#workspaceTitle").textContent=m.title;$("#workspaceSubtitle").textContent=m.subtitle;const promptInput=$("#composerInput"); if(promptInput){ promptInput.placeholder=m.placeholder; promptInput.setAttribute("aria-label",m.placeholder); promptInput.classList.remove("prompt-chat","prompt-images","prompt-video","prompt-voice"); promptInput.classList.add("prompt-images"); }$("#composerSendText").textContent=m.send;$("#composerStatus").textContent=imageModelLabel("Agnes Image 2.5 Flash")+" · исходное изображение готово к редактированию";$(".image-settings").style.display="flex";$("#voiceOptions").style.display="none";$("#voiceOptions").classList.remove("show");$("#videoOptions").style.display="none";$("#videoOptions").classList.remove("show");document.querySelectorAll("[data-mode]").forEach(x=>x.classList.toggle("active",x.dataset.mode==="images"));if(!$("#canvas .result-grid")) renderImageLibrary();$("#composerInput").focus();syncInput()}
 async function downloadImage(url){
  try{
   const response=await fetch(jpegImageUrl(url),{mode:"cors"});if(!response.ok)throw new Error("DOWNLOAD_HTTP_"+response.status);
@@ -5435,18 +5435,32 @@ async function prepareAndAttachReferenceFile(file){
  referenceImage=null;
  try{sessionStorage.removeItem("miyaReferenceImage")}catch{}
 
+ // Switch model, its logo, and ratio synchronously before revealing the thumbnail.
+ // All these DOM updates happen in the same task, so the browser paints one consistent state.
+ if(attachmentModeAtStart==="images"){
+  const model=$("#composerModel");
+  if(model&&model.value!=="Agnes Image 2.5 Flash"){
+   model.value="Agnes Image 2.5 Flash";
+   model.dispatchEvent(new Event("change",{bubbles:true}));
+  }
+  const ratio=$("#composerRatio");
+  if(ratio&&ratio.value!=="auto"){
+   ratio.value="auto";
+   ratio.dispatchEvent(new Event("change",{bubbles:true}));
+  }
+  if($("#composerStatus"))$("#composerStatus").textContent=imageModelLabel("Agnes Image 2.5 Flash")+" · исходное изображение готово к редактированию";
+ }
+
  // The local preview is instant. The prepared data is kept separately for all
  // later image/video requests, so selecting Create never repeats file decoding.
  try{if(composerAttachmentPreviewObjectUrl)URL.revokeObjectURL(composerAttachmentPreviewObjectUrl)}catch{}
  const previewUrl=URL.createObjectURL(file);
  composerAttachmentPreviewObjectUrl=previewUrl;
  setComposerAttachment(previewUrl);
- if($("#composerStatus")){
-  $("#composerStatus").textContent=attachmentModeAtStart==="images"
-   ? "Исходное изображение прикреплено"
-   : attachmentModeAtStart==="video"
-     ? "Изображение прикреплено"
-     : "Фото прикреплено";
+ if($("#composerStatus")&&attachmentModeAtStart!=="images"){
+  $("#composerStatus").textContent=attachmentModeAtStart==="video"
+   ? "Изображение прикреплено"
+   : "Фото прикреплено";
  }
 
  try{
@@ -5475,12 +5489,11 @@ async function prepareAndAttachReferenceFile(file){
    $("#composer")?.classList.remove("has-chat-attachments");
    $("#composerStatus").textContent="Картинка прикреплена - можно спросить меня о ней.";
   }else if(mode==="images"){
-   // Prepare once at selection time; the model can be changed after attachment.
-   $("#composerModel").value="Agnes Image 2.5 Flash";
-   $("#composerModel").dispatchEvent(new Event("change",{bubbles:true}));
-   $("#composerRatio").value="auto";
-   $("#composerRatio").dispatchEvent(new Event("change",{bubbles:true}));
-   $("#composerStatus").textContent=imageModelLabel("Agnes Image 2.5 Flash")+" · исходное изображение готово к редактированию";
+   // Model/ratio were switched before the thumbnail appeared. Do not reset them
+   // here: the user may have selected another model while the image was decoding.
+   if($("#composerModel")?.value==="Agnes Image 2.5 Flash"){
+    $("#composerStatus").textContent=imageModelLabel("Agnes Image 2.5 Flash")+" · исходное изображение готово к редактированию";
+   }
   }else if(mode==="video"){
    const selectedVideoModel=String($("#videoModel")?.value||"LTX-2.3 Distilled");
    $("#composerStatus").textContent=selectedVideoModel+" · изображение готово";
