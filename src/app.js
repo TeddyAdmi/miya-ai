@@ -7711,11 +7711,12 @@ document.head.appendChild(musicCardPolish);const oldHero=modeHero;modeHero=funct
    togglePopup(select);
   };
   select.addEventListener("mousedown",onMouseDown,true);
+  // Mouse clicks are toggled on mousedown/pointerdown above. Do not reopen here:
+  // the click event follows the same press and used to undo a just-closed popup.
   select.addEventListener("click",event=>{
    if(!belongsToActiveSection(select))return;
    event.preventDefault();
    event.stopPropagation();
-   if(popup.hidden||activeSelect!==select)openPopup(select);
   },true);
   select.addEventListener("pointerdown",event=>{
    if(event.pointerType==="mouse"||!belongsToActiveSection(select))return;
