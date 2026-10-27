@@ -1037,7 +1037,16 @@ function clearComposerAttachment(){
  try{sessionStorage.removeItem("miyaReferenceImage")}catch{}
  renderChatAttachmentImages();
  setComposerAttachment("");
- if(mode==="images"&&$("#composerModel")){const model=$("#composerModel");model.value="ImageSmith";model.dispatchEvent(new Event("change",{bubbles:true}));}
+ if(mode==="images"&&$("#composerModel")){
+  const model=$("#composerModel");
+  // Removing the source photo returns Images to the first/default model, not GPT Image.
+  model.value="Nano BananA";
+  model.dispatchEvent(new Event("change",{bubbles:true}));
+  const ratio=$("#composerRatio");
+  if(ratio){ratio.value="16:9";ratio.dispatchEvent(new Event("change",{bubbles:true}));}
+  const status=$("#composerStatus");
+  if(status)status.textContent="Nano BananA · T2I · готов к созданию";
+ }
 }
 function openEditor(url){mode="images";$("#composerModel").value="Agnes Image 2.5 Flash";$("#composerModel").dispatchEvent(new Event("change",{bubbles:true}));$("#composerRatio").value="auto";$("#composerRatio").dispatchEvent(new Event("change",{bubbles:true}));referenceImage=url;try{sessionStorage.setItem("miyaReferenceImage",referenceImage)}catch{};setComposerAttachment(url);const m=modes.images;$("#workspaceEyebrow").textContent=m.eyebrow;$("#workspaceTitle").textContent=m.title;$("#workspaceSubtitle").textContent=m.subtitle;const promptInput=$("#composerInput"); if(promptInput){ promptInput.placeholder=m.placeholder; promptInput.setAttribute("aria-label",m.placeholder); promptInput.classList.remove("prompt-chat","prompt-images","prompt-video","prompt-voice"); promptInput.classList.add("prompt-images"); }$("#composerSendText").textContent=m.send;$("#composerStatus").textContent=imageModelLabel("Agnes Image 2.5 Flash")+" · исходное изображение готово к редактированию";$(".image-settings").style.display="flex";$("#voiceOptions").style.display="none";$("#voiceOptions").classList.remove("show");$("#videoOptions").style.display="none";$("#videoOptions").classList.remove("show");document.querySelectorAll("[data-mode]").forEach(x=>x.classList.toggle("active",x.dataset.mode==="images"));if(!$("#canvas .result-grid")) renderImageLibrary();$("#composerInput").focus();syncInput()}
 async function downloadImage(url){
