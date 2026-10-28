@@ -693,6 +693,9 @@ module.exports = async function imageHandler(req, res) {
       }
       if (!userPrompt) return res.status(400).json({ok:false,error:"PROMPT_REQUIRED"});
 
+      const nanoBananAFidelityPrompt = "\n\nPROMPT FIDELITY: Treat this as a completely independent image request. Follow only the details explicitly stated in the current prompt; do not carry over, remember, or reuse characters' clothing, bags, backpacks, briefcases, accessories, props, poses, or composition from any previous generation. Do not invent extra items or clothing that the user did not request. Keep the scene simple and faithful to the current description. Make objects interact naturally with the character: if a character is looking at a phone, the phone screen should face the character unless the prompt explicitly asks for a different orientation.";
+      const finalPrompt = referenceImage ? userPrompt : userPrompt + nanoBananAFidelityPrompt;
+
       const deadline = Date.now() + 84000;
       try {
         const createResponse = await fetch("https://nanobanana25.io/api/generate", {
@@ -704,7 +707,7 @@ module.exports = async function imageHandler(req, res) {
             "Referer":"https://nanobanana25.io/"
           },
           // Match the upstream form: prompt + aspect, and referenceImage only for image edits.
-          body:JSON.stringify({prompt:userPrompt,aspect,...(referenceImage?{referenceImage}:{})}),
+          body:JSON.stringify({prompt:finalPrompt,aspect,...(referenceImage?{referenceImage}:{})}),
           cache:"no-store",
           signal:AbortSignal.timeout(18000)
         });
