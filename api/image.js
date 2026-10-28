@@ -1401,7 +1401,7 @@ module.exports = async function imageHandler(req, res) {
         // For fresh GPT Image 2.5 generations only, explicitly isolate the request from prior outputs.
         // Do not append this to edits, where the uploaded source image must remain the editing context.
         const imageSmithFinalPrompt = imageSmithReference ? imageSmithPrompt : imageSmithPrompt +
-          "\\n\\nPROMPT FIDELITY: Treat this as a completely independent image request. Follow only the details explicitly stated in the current prompt. Do not carry over, remember, or reuse clothing, bags, backpacks, briefcases, accessories, props, poses, or composition from previous generations or unrelated requests. Do not invent extra items, clothing, or accessories that the user did not request. Include only the subject and elements described in the current prompt, and follow all stated exclusions.";
+          "\n\nPROMPT FIDELITY: Treat this as a completely independent image request. Follow only the details explicitly stated in the current prompt. Do not carry over, remember, or reuse clothing, bags, backpacks, briefcases, accessories, props, poses, or composition from previous generations or unrelated requests. Do not invent extra items, clothing, or accessories that the user did not request. Include only the subject and elements described in the current prompt, and follow all stated exclusions.";
         const upstream = await fetch("https://aiimagesmith.com/api/image", {
           method:"POST",
           headers:{
