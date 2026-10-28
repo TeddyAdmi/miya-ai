@@ -352,12 +352,17 @@ body.light .floating-wall-clear svg *,body.light .floating-theme svg *{
   min-width:38px!important;max-width:38px!important;min-height:38px!important;max-height:38px!important;
   object-fit:cover!important;object-position:center!important;border-radius:8px!important;
 }
-/* Use one symmetric SVG cross; hide the old pseudo-element bars entirely. */
-#composerAttachment button#composerAttachmentRemove::before,
+/* Keep the symmetric SVG cross and add a glossy highlight above the red button surface. */
+#composerAttachment button#composerAttachmentRemove::before{
+  content:""!important;display:block!important;position:absolute!important;inset:0!important;
+  border-radius:inherit!important;
+  background:linear-gradient(150deg,rgba(255,255,255,.48),rgba(255,255,255,.14) 34%,transparent 60%,rgba(88,0,20,.14))!important;
+  pointer-events:none!important;z-index:0!important;
+}
 #composerAttachment button#composerAttachmentRemove::after{content:none!important;display:none!important}
 #composerAttachment button#composerAttachmentRemove > svg{
   display:block!important;width:9px!important;height:9px!important;min-width:9px!important;min-height:9px!important;
-  max-width:9px!important;max-height:9px!important;margin:0!important;padding:0!important;position:static!important;
+  max-width:9px!important;max-height:9px!important;margin:0!important;padding:0!important;position:relative!important;z-index:1!important;
   transform:none!important;overflow:visible!important;fill:none!important;stroke:#fff!important;stroke-width:1.6!important;
   stroke-linecap:round!important;stroke-linejoin:round!important;
 }
