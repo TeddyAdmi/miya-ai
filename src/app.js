@@ -315,7 +315,7 @@ body.light .floating-wall-clear svg *,body.light .floating-theme svg *{
   color:#ffffff!important;font-size:13px!important;font-weight:700!important;
   line-height:0!important;display:grid!important;place-items:center!important;text-align:center!important;
   box-shadow:inset 0 1px 1px rgba(255,255,255,.72),inset 0 -2px 2px rgba(99,0,24,.28),0 2px 3px rgba(116,0,26,.25),0 4px 8px rgba(225,29,72,.30),0 1px 1px rgba(0,0,0,.14)!important;
-  position:relative!important;isolation:isolate!important;overflow:hidden!important;
+  isolation:isolate!important;overflow:hidden!important;
   transform:translateZ(14px)!important;transform-style:preserve-3d!important;
   transition:background .14s ease,box-shadow .14s ease,transform .14s ease!important;
 }
