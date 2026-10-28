@@ -93,71 +93,17 @@ voice:{title:"Голос",eyebrow:"ГОЛОС",subtitle:"Превращай те
 })();
 const $=s=>document.querySelector(s);
 
-// Keep the ratio indicator synchronized with the selected aspect ratio in Firefox.
-function syncImageRatioControl(){
- const el=$("#composerRatio");
- if(!el)return;
- const value=String(el.value||"16:9");
- let kind=value==="1:1"?"square":
-   ["9:16","2:3","3:4"].includes(value)?"portrait":
-   ["16:9","3:2","4:3","21:9"].includes(value)?"landscape":"auto";
- if(value==="auto"){
-  const image=$("#composerAttachmentImage");
-  const width=Number(image?.naturalWidth||0),height=Number(image?.naturalHeight||0);
-  if(width>0&&height>0){
-   const aspect=width/height;
-   kind=aspect<0.82?"portrait":aspect>1.22?"landscape":"square";
-  }
- }
- const stroke=document.body?.classList.contains("light")?"#52657b":"#a9bad0";
- let art="";
- if(kind==="portrait"){
-  art='<rect x="5.5" y="1.5" width="9" height="17" rx="1.8"/><path d="M8.5 4h3M9.2 15.8h1.6"/>';
- }else if(kind==="landscape"){
-  art='<rect x="1.5" y="4.1" width="17" height="11.8" rx="1.7"/><path d="M7.5 13h5"/>';
- }else if(kind==="square"){
-  art='<rect x="3" y="3" width="14" height="14" rx="1.7"/>';
- }else{
-  art='<rect x="2.5" y="2.5" width="15" height="15" rx="1.7" stroke-dasharray="2 2"/><path d="M6 10h8"/>';
- }
- const svg=(inner)=>'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="none" stroke="'+stroke+'" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">'+inner+'</svg>';
- const arrowOpen=el.getAttribute("aria-expanded")==="true";
- const arrowSvg='<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 12 8" fill="none"><path d="'+(arrowOpen?"M2 6L6 2L10 6":"M2 2L6 6L10 2")+'" stroke="'+stroke+'" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>';
- const dataUrl=source=>'url("data:image/svg+xml,'+encodeURIComponent(source)+'")';
- el.style.setProperty("background-image",dataUrl(svg(art))+","+dataUrl(arrowSvg),"important");
- el.style.setProperty("background-repeat","no-repeat, no-repeat","important");
- el.style.setProperty("background-size","17px 17px, 10px 7px","important");
- el.style.setProperty("background-position","7px 50%, calc(100% - 8px) 50%","important");
- el.style.setProperty("padding-left","30px","important");
- el.dataset.ratioIcon=kind;
-}
+// Update the existing aspect-ratio control through its normal events.
+// Keep its original CSS/icons untouched: no extra glyphs or padding.
 function setImageRatio(value){
  const el=$("#composerRatio");
  if(!el)return;
  const requested=String(value||"16:9");
  el.value=requested;
  if(el.value!==requested)el.value="16:9";
- syncImageRatioControl();
  el.dispatchEvent(new Event("input",{bubbles:true}));
  el.dispatchEvent(new Event("change",{bubbles:true}));
 }
-function installImageRatioControl(){
- const el=$("#composerRatio");
- if(!el||el.dataset.miyaRatioIconReady==="1")return;
- el.dataset.miyaRatioIconReady="1";
- el.addEventListener("input",syncImageRatioControl);
- el.addEventListener("change",syncImageRatioControl);
- el.addEventListener("focus",syncImageRatioControl);
- const image=$("#composerAttachmentImage");
- image?.addEventListener("load",syncImageRatioControl);
- image?.addEventListener("error",syncImageRatioControl);
- if(document.body){
-  new MutationObserver(syncImageRatioControl).observe(document.body,{attributes:true,attributeFilter:["class"]});
- }
- new MutationObserver(syncImageRatioControl).observe(el,{attributes:true,attributeFilter:["aria-expanded","disabled"]});
- syncImageRatioControl();
-}
-installImageRatioControl();
 function installAnimatedStatusDots(){
  const status=$("#composerStatus");
  if(!status||status.dataset.animatedDotsReady)return;
