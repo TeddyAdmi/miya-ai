@@ -304,23 +304,33 @@ body.light .floating-wall-clear svg *,body.light .floating-theme svg *{
   stroke:#273047!important;color:#273047!important;
 }
 
-/* Put the attachment remove button at the thumbnail's top-right corner; red circle, centered white X. */
+/* Glossy, raised red removal button: preserve the existing size and behavior. */
 .composer-attachment{position:relative!important}
 .composer-attachment button#composerAttachmentRemove{
   position:absolute!important;right:-9px!important;top:-9px!important;left:auto!important;bottom:auto!important;
   width:18px!important;height:18px!important;min-width:18px!important;min-height:18px!important;
   margin:0!important;padding:0!important;box-sizing:border-box!important;
-  border:1px solid #ffffff!important;border-radius:50%!important;
-  background:#ef4444!important;color:#ffffff!important;font-size:13px!important;font-weight:700!important;
-  line-height:0!important;display:grid!important;place-items:center!important;
-  text-align:center!important;box-shadow:0 1px 4px rgba(0,0,0,.25)!important;
-  transition:none!important;transform:none!important;
+  border:1px solid rgba(255,255,255,.88)!important;border-radius:50%!important;
+  background:linear-gradient(145deg,#ff9aa4 0%,#ff667b 25%,#f43f5e 58%,#bd1238 100%)!important;
+  color:#ffffff!important;font-size:13px!important;font-weight:700!important;
+  line-height:0!important;display:grid!important;place-items:center!important;text-align:center!important;
+  box-shadow:inset 0 1px 1px rgba(255,255,255,.72),inset 0 -2px 2px rgba(99,0,24,.28),0 2px 3px rgba(116,0,26,.25),0 4px 8px rgba(225,29,72,.30),0 1px 1px rgba(0,0,0,.14)!important;
+  position:relative!important;isolation:isolate!important;overflow:hidden!important;
+  transform:translateZ(14px)!important;transform-style:preserve-3d!important;
+  transition:background .14s ease,box-shadow .14s ease,transform .14s ease!important;
 }
 .composer-attachment button#composerAttachmentRemove:hover,
-.composer-attachment button#composerAttachmentRemove:focus,
+.composer-attachment button#composerAttachmentRemove:focus{
+  background:linear-gradient(145deg,#ffb0b8 0%,#ff7185 25%,#f52f53 58%,#c9163e 100%)!important;
+  color:#ffffff!important;border-color:#ffffff!important;
+  box-shadow:inset 0 1px 1px rgba(255,255,255,.82),inset 0 -2px 2px rgba(99,0,24,.25),0 3px 4px rgba(116,0,26,.28),0 6px 11px rgba(225,29,72,.38)!important;
+  transform:translateZ(16px) scale(1.04)!important;
+}
 .composer-attachment button#composerAttachmentRemove:active{
-  background:#dc2626!important;color:#ffffff!important;border-color:#ffffff!important;
-  transition:none!important;transform:none!important;
+  background:linear-gradient(145deg,#f45c72 0%,#e52b4c 54%,#a90f32 100%)!important;
+  color:#ffffff!important;border-color:rgba(255,255,255,.78)!important;
+  box-shadow:inset 0 2px 3px rgba(90,0,22,.38),inset 0 1px 1px rgba(255,255,255,.3),0 1px 2px rgba(116,0,26,.24)!important;
+  transform:translateZ(11px) scale(.96)!important;
 }
 
 /* Identical source-photo geometry in Chat, Images and Video; Images is the visual reference. */
