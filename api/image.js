@@ -693,8 +693,8 @@ module.exports = async function imageHandler(req, res) {
       }
       if (!userPrompt) return res.status(400).json({ok:false,error:"PROMPT_REQUIRED"});
 
-      const nanoBananAFidelityPrompt = "\n\nPROMPT FIDELITY: Treat this as a completely independent image request. Follow only the details explicitly stated in the current prompt; do not carry over, remember, or reuse characters' clothing, bags, backpacks, briefcases, accessories, props, poses, or composition from any previous generation. Do not invent extra items or clothing that the user did not request. Keep the scene simple and faithful to the current description. Make objects interact naturally with the character: if a character is looking at a phone, the phone screen should face the character unless the prompt explicitly asks for a different orientation.";
-      const finalPrompt = referenceImage ? userPrompt : userPrompt + nanoBananAFidelityPrompt;
+      // Send only the user's prompt for Nano BananA; no hidden prompt additions.
+      const finalPrompt = userPrompt;
 
       const deadline = Date.now() + 84000;
       try {
