@@ -459,6 +459,81 @@ module.exports = async function imageHandler(req, res) {
     const provider = typeof body.provider === "string" ? body.provider.trim().toLowerCase() : "";
     const requestedModel = typeof body.model === "string" ? body.model.trim() : "";
 
+    // Hoodgen's free Flux 2 Dev endpoint returns a JPEG binary response.
+    // Keep it separate from the existing PixelSter Flux Dev integration.
+    if (provider === "hoodgen" || requestedModel === "Flux 2 Dev · T2I") {
+      const hoodgenPrompt = typeof body.prompt === "string" ? body.prompt.trim() : "";
+      if (!hoodgenPrompt) return res.status(400).json({ok:false,error:"PROMPT_REQUIRED"});
+      try {
+        const upstream = await fetch("https://hoodgen.com/api/free-image-gen", {
+          method:"POST",
+          headers:{
+            "Content-Type":"application/json",
+            "Accept":"image/jpeg",
+            "Origin":"https://hoodgen.com",
+            "Referer":"https://hoodgen.com/free-ai-image-generator"
+          },
+          body:JSON.stringify({
+            prompt:hoodgenPrompt,
+            model:"community/scriptsnsenses-sys/flux-2-dev-free",
+            size:"512x512"
+          }),
+          cache:"no-store",
+          signal:AbortSignal.timeout(65000)
+        });
+        const contentType = String(upstream.headers.get("content-type") || "").split(";")[0].trim().toLowerCase();
+        if (!upstream.ok) {
+          const upstreamBody = await upstream.text().catch(() => "");
+          return res.status(502).json({
+            ok:false,
+            error:"HOODGEN_UPSTREAM_HTTP",
+            message:"Hoodgen вернул HTTP " + upstream.status + ".",
+            upstreamStatus:upstream.status,
+            upstreamBody:upstreamBody.slice(0,700)
+          });
+        }
+        if (!/^image\/(?:jpeg|jpg|png|webp)$/i.test(contentType)) {
+          const upstreamBody = await upstream.text().catch(() => "");
+          return res.status(502).json({
+            ok:false,
+            error:"HOODGEN_RESPONSE_NOT_IMAGE",
+            message:"Hoodgen не вернул готовое изображение.",
+            upstreamContentType:contentType,
+            upstreamBody:upstreamBody.slice(0,500)
+          });
+        }
+        const sourceBytes = Buffer.from(await upstream.arrayBuffer());
+        if (!sourceBytes.length || sourceBytes.length > 15 * 1024 * 1024) {
+          return res.status(413).json({ok:false,error:"HOODGEN_IMAGE_SIZE",message:"Hoodgen вернул пустое или слишком большое изображение."});
+        }
+        const jpeg = await sharp(sourceBytes).rotate().jpeg({quality:90,mozjpeg:true}).toBuffer();
+        if (!jpeg.length || jpeg.length > 3 * 1024 * 1024) {
+          return res.status(413).json({ok:false,error:"HOODGEN_IMAGE_TOO_LARGE",message:"Изображение Flux 2 Dev слишком большое для передачи в студию."});
+        }
+        const imageUrl = "data:image/jpeg;base64," + jpeg.toString("base64");
+        return res.status(200).json({
+          ok:true,
+          mode:"image",
+          status:"completed",
+          provider:"Hoodgen",
+          model:"Flux 2 Dev · T2I",
+          imageUrl,
+          imageUrls:[imageUrl],
+          count:1,
+          meta:{free:true,endpoint:"/api/free-image-gen",modelId:"community/scriptsnsenses-sys/flux-2-dev-free",requestedSize:"512x512",nativeOutputSize:"1024x1024",edit:false}
+        });
+      } catch (error) {
+        const timedOut = error?.name === "TimeoutError" || error?.name === "AbortError" || /timed? ?out|abort/i.test(String(error?.message||""));
+        return res.status(502).json({
+          ok:false,
+          error:timedOut ? "HOODGEN_UPSTREAM_TIMEOUT" : "HOODGEN_HANDLER_ERROR",
+          message:timedOut
+            ? "Flux 2 Dev · T2I от Hoodgen не ответил за 65 секунд. Попробуй ещё раз."
+            : "Не удалось связаться с Hoodgen: " + String(error?.message||error||"ошибка запроса").slice(0,180)
+        });
+      }
+    }
+
     if (provider === "cinel") {
       const userPrompt = typeof body.prompt === "string" ? body.prompt.trim() : "";
       const allowedRatios = ["1:1","16:9","9:16","4:3","3:4","3:2","2:3","21:9"];
