@@ -321,112 +321,71 @@ body.light .miya-composer-select-popup .miya-composer-select-option{
 }
 
 
-/* The model picker is one control: the logo and native select share one outer border. */
+/* Image model selector: one source of truth for tile size, alignment and artwork scale. */
 #composer.mode-images .miya-model-control{
   display:inline-flex!important;align-items:center!important;flex:0 0 auto!important;
-  height:30px!important;min-height:30px!important;box-sizing:border-box!important;
+  height:34px!important;min-height:34px!important;box-sizing:border-box!important;
   border:1px solid #1a4b78!important;border-radius:7px!important;
   background:#0b223b!important;overflow:visible!important;vertical-align:middle!important;
 }
 #composer.mode-images .miya-model-logo{
-  display:inline-flex!important;align-items:center!important;justify-content:center!important;
-  width:27px!important;height:28px!important;min-width:27px!important;flex:0 0 27px!important;
-  margin:0!important;padding:0!important;box-sizing:border-box!important;
-  border:0!important;border-radius:0!important;background:transparent!important;
-  overflow:visible!important;pointer-events:none!important;
+  position:relative!important;display:inline-flex!important;align-items:center!important;justify-content:center!important;
+  width:26px!important;height:26px!important;min-width:26px!important;flex:0 0 26px!important;
+  margin:0 .5px!important;padding:0!important;box-sizing:border-box!important;
+  border:1px solid #e3e9f0!important;border-radius:6px!important;
+  background:linear-gradient(145deg,#fff 0%,#fff 54%,#edf2f7 100%)!important;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.98),inset 0 -1px 0 rgba(148,163,184,.16),0 2px 4px rgba(0,0,0,.22)!important;
+  overflow:hidden!important;pointer-events:none!important;line-height:0!important;
 }
 #composer.mode-images .miya-model-logo img{
-  display:block!important;width:20px!important;height:20px!important;max-width:20px!important;max-height:20px!important;
-  flex:none!important;object-fit:contain!important;border:0!important;border-radius:3px!important;background:transparent!important;
-  transform:none!important;
-}
-#composer.mode-images #composerModel.select-pill{
-  width:auto!important;min-width:0!important;max-width:none!important;flex:0 0 auto!important;
-  height:28px!important;min-height:28px!important;box-sizing:border-box!important;
-  margin:0!important;padding:0 28px 0 7.5px!important;
-  border:0!important;border-radius:0!important;background-color:transparent!important;
-  align-self:center!important;
-  background-position:calc(100% - 10px) 50%!important;
+  position:absolute!important;left:50%!important;top:50%!important;display:block!important;
+  width:30px!important;height:30px!important;max-width:none!important;max-height:none!important;
+  margin:0!important;padding:0!important;flex:none!important;object-fit:contain!important;
+  border:0!important;border-radius:0!important;background:transparent!important;
+  transform:translate(-50%,-50%) translateY(1px)!important;mix-blend-mode:normal!important;
 }
 body.light #composer.mode-images .miya-model-control{
   border-color:#d3deea!important;background:#f4f7fa!important;
 }
-body.light #composer.mode-images .miya-model-logo{background:transparent!important}
-/* Each model logo gets exactly one rounded white tile with a light 3D lift. */
-#composer.mode-images .miya-model-control{height:34px!important;min-height:34px!important;align-items:center!important}
-#composer.mode-images .miya-model-logo{
-  display:inline-flex!important;align-items:center!important;justify-content:center!important;
-  width:32px!important;height:32px!important;min-width:32px!important;flex:0 0 32px!important;
-  margin:0!important;padding:0!important;box-sizing:border-box!important;
-  border:1px solid #e3e9f0!important;border-radius:7px!important;
+body.light #composer.mode-images .miya-model-logo{
   background:linear-gradient(145deg,#fff 0%,#fff 54%,#edf2f7 100%)!important;
-  box-shadow:inset 0 1px 0 rgba(255,255,255,.98),inset 0 -1px 0 rgba(148,163,184,.16),0 2px 4px rgba(0,0,0,.22)!important;
-  overflow:hidden!important;pointer-events:none!important;line-height:0!important;position:relative!important;
 }
-body.light #composer.mode-images .miya-model-logo{background:linear-gradient(145deg,#fff 0%,#fff 54%,#edf2f7 100%)!important}
-#composer.mode-images .miya-model-logo img{
-  display:block!important;width:38px!important;height:38px!important;max-width:none!important;max-height:none!important;
-  margin:0!important;padding:0!important;flex:none!important;object-fit:contain!important;
-  border:0!important;border-radius:0!important;background:transparent!important;transform:none!important;mix-blend-mode:multiply!important;
+#composer.mode-images #composerModel.select-pill{
+  width:auto!important;min-width:0!important;max-width:none!important;flex:0 0 auto!important;
+  height:32px!important;min-height:32px!important;box-sizing:border-box!important;
+  margin:0!important;padding:0 28px 0 7.5px!important;
+  border:0!important;border-radius:0!important;background-color:transparent!important;
+  align-self:center!important;background-position:calc(100% - 10px) 50%!important;
 }
-#composer.mode-images #composerModel.select-pill{height:32px!important;min-height:32px!important;align-self:center!important}
-#composer.mode-images .miya-model-logo.miya-nano-banana-logo{width:32px!important;height:32px!important;min-width:32px!important;flex-basis:32px!important}
-#composer.mode-images .miya-model-logo.miya-nano-banana-logo img{width:38px!important;height:38px!important;max-width:none!important;max-height:none!important}
+/* Dropdown rows keep their current dimensions; only the artwork inside each tile grows. */
 .miya-composer-select-popup .miya-composer-select-option.miya-model-option{
   display:flex!important;align-items:center!important;gap:8px!important;
   height:40px!important;min-height:40px!important;padding:3px 28px 3px 3px!important;
   box-sizing:border-box!important;white-space:nowrap!important;
 }
-/* The img itself paints the one tile. There is no nested span or inner white square. */
-.miya-composer-select-popup .miya-model-option .miya-model-option-logo{
-  display:block!important;flex:none!important;width:34px!important;height:34px!important;
-  max-width:none!important;max-height:none!important;margin:0!important;padding:0!important;
-  box-sizing:border-box!important;object-fit:contain!important;
-  border:1px solid #e3e9f0!important;border-radius:7px!important;
+.miya-composer-select-popup .miya-model-option .miya-model-option-logo-tile{
+  position:relative!important;display:inline-flex!important;align-items:center!important;justify-content:center!important;
+  flex:0 0 24px!important;width:24px!important;height:24px!important;min-width:24px!important;min-height:24px!important;
+  margin:0 1.5px!important;padding:0!important;box-sizing:border-box!important;overflow:hidden!important;
+  border:1px solid #e3e9f0!important;border-radius:6px!important;
   background:linear-gradient(145deg,#fff 0%,#fff 54%,#edf2f7 100%)!important;
   box-shadow:inset 0 1px 0 rgba(255,255,255,.98),inset 0 -1px 0 rgba(148,163,184,.16),0 2px 4px rgba(0,0,0,.22)!important;
-  overflow:hidden!important;mix-blend-mode:normal!important;
+  line-height:0!important;isolation:isolate!important;
+}
+.miya-composer-select-popup .miya-model-option .miya-model-option-logo{
+  position:absolute!important;left:50%!important;top:50%!important;display:block!important;
+  width:28px!important;height:28px!important;max-width:none!important;max-height:none!important;
+  margin:0!important;padding:0!important;flex:none!important;object-fit:contain!important;
+  border:0!important;border-radius:0!important;background:transparent!important;
+  transform:translate(-50%,-50%) translateY(1px)!important;mix-blend-mode:normal!important;
 }
 .miya-composer-select-popup .miya-model-option .miya-model-option-label{
   min-width:max-content!important;flex:0 0 auto!important;overflow:visible!important;text-overflow:clip!important;white-space:nowrap!important;
 }
-@media(max-width:800px){
-  #composer.mode-images .miya-model-control{height:34px!important;min-height:34px!important}
-  #composer.mode-images .miya-model-logo{width:32px!important;height:32px!important;min-width:32px!important;flex-basis:32px!important}
-  #composer.mode-images .miya-model-logo img{width:38px!important;height:38px!important;max-width:none!important;max-height:none!important}
-}
 
-/* The shared prompt-icon rule was cancelling the star offset with transform:none!important.
-   Restore the original three-star SVG and shift only this icon down inside its centered button. */
+/* Keep the prompt-improvement icon optically centered independently of the model picker. */
 #composer .image-settings #improve svg{
   transform:translateY(2px)!important;
-}
-
-/* Consistent white rounded logo tiles for every image model. */
-#composer.mode-images .miya-model-logo,
-body.light #composer.mode-images .miya-model-logo,
-#composer.mode-images .miya-model-logo.miya-nano-banana-logo,
-body.light #composer.mode-images .miya-model-logo.miya-nano-banana-logo{
-  width:26px!important;height:26px!important;min-width:26px!important;flex:0 0 26px!important;
-  margin:0 .5px!important;padding:3px!important;box-sizing:border-box!important;
-  background:#fff!important;border:1px solid #e8e8e8!important;border-radius:6px!important;
-  overflow:hidden!important;box-shadow:0 1px 2px rgba(0,0,0,.08)!important;
-}
-#composer.mode-images .miya-model-logo img,
-#composer.mode-images .miya-model-logo.miya-nano-banana-logo img{
-  display:block!important;width:20px!important;height:20px!important;max-width:20px!important;max-height:20px!important;
-  padding:0!important;border-radius:2px!important;background:#fff!important;object-fit:contain!important;
-}
-.miya-composer-select-popup .miya-model-option .miya-model-option-logo,
-.miya-composer-select-popup .miya-model-option .miya-model-option-logo.miya-nano-banana-option-logo{
-  flex:0 0 24px!important;width:24px!important;height:24px!important;
-  margin-left:1.5px!important;margin-right:1.5px!important;padding:3px!important;box-sizing:border-box!important;
-  object-fit:contain!important;border:1px solid #e8e8e8!important;border-radius:6px!important;
-  background:#fff!important;box-shadow:0 1px 2px rgba(0,0,0,.08)!important;
-}
-@media(max-width:800px){
- #composer.mode-images .miya-model-logo{width:26px!important;height:26px!important;min-width:26px!important;flex-basis:26px!important}
- #composer.mode-images .miya-model-logo img{width:20px!important;height:20px!important;max-width:20px!important;max-height:20px!important}
 }
 </style>
 
@@ -587,7 +546,6 @@ body.light #composer.mode-images .miya-model-logo.miya-nano-banana-logo{
   }
   let img=logo.querySelector("img");
   if(!img){img=document.createElement("img");img.alt="";img.draggable=false;img.loading="eager";img.fetchPriority="high";img.decoding="sync";logo.appendChild(img);}
-  logo.classList.toggle("miya-nano-banana-logo",String(select.value||"").trim().toLowerCase().includes("nano banana"));
   const src=modelLogoUrl(select.value);
   if(img.src!==src){
    const warmed=preloadedModelLogoImages.get(src);
@@ -694,9 +652,10 @@ body.light #composer.mode-images .miya-model-logo.miya-nano-banana-logo{
    item.dataset.index=String(index);
    if((select.id==="composerRatio"||select.id==="videoRatio")&&(ratioValues.has(option.value)||option.value==="auto")){item.classList.add("miya-ratio-option");const label=document.createElement("span");label.className="miya-ratio-label";label.textContent=option.value;const icon=document.createElement("span");icon.className="miya-ratio-icon";if(ratioValues.has(option.value))icon.innerHTML=ratioSvg(option.value);item.append(label,icon);item.setAttribute("aria-label",option.value);}else if(select.id==="composerModel"){
     item.classList.add("miya-model-option");
+    const tile=document.createElement("span");tile.className="miya-model-option-logo-tile";tile.setAttribute("aria-hidden","true");
     const img=document.createElement("img");img.className="miya-model-option-logo";img.alt="";img.draggable=false;img.loading="eager";img.fetchPriority="high";img.decoding="sync";img.src=modelLogoUrl(option.value);
     const label=document.createElement("span");label.className="miya-model-option-label";label.textContent=String(option.label||option.textContent||option.value);
-    item.append(img,label);
+    tile.appendChild(img);item.append(tile,label);
    }else{item.textContent=String(option.label||option.textContent||option.value);}
    item.disabled=option.disabled;
    item.tabIndex=-1;
