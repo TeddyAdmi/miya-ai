@@ -97,14 +97,9 @@ module.exports = async function handler(req, res) {
       }
     }
     const n=Math.max(1,Math.min(4,Number(body.n)||1));
-    // Apply Miya default appearance only when no ethnicity was requested and no source image is being edited.
-    const explicitAppearance=/(asian|east asian|south asian|japanese|chinese|korean|mongolian|азиат|япон|кита|корей|монгол|african|black person|afro|afro-american|африкан|афроамерикан|араб|arab|indian|индийск|латино|latino|hispanic|испаноязыч|мексикан|indigenous|native american|коренной американ|еврей|jewish|славян|slavic|европейск|european|caucasian|кавказск)/i.test(prompt);
-    const qualityPrompt=source||explicitAppearance?prompt:prompt+"\n\nDefault appearance instruction: If the user has not specified an ethnicity or a reference image, portray any person (woman, man, child, or older adult) with a natural Slavic / European appearance. Do not default to East Asian or other specific ethnic features. Follow any ethnicity or appearance explicitly requested by the user.";
-    // For text-to-image, isolate each request from previous generations so Agnes
-    // follows the current prompt instead of carrying over or inventing visual details.
-    // Do not append this to image edits; the uploaded source image remains the context.
-    const promptFidelity=source?"":"\n\nPROMPT FIDELITY: Treat this as a completely independent image request. Follow only the details explicitly stated in the current prompt; do not carry over, remember, or reuse characters' clothing, bags, backpacks, briefcases, accessories, props, poses, or composition from any previous generation. Do not invent extra items or clothing that the user did not request. Keep the scene simple and faithful to the current description. Make objects interact naturally with the character: if a character is looking at a phone, the phone screen should face the character unless the prompt explicitly asks for a different orientation.";
-    const finalPrompt=qualityPrompt+promptFidelity;
+    // Fresh text-to-image requests receive two explicit rules; edits retain their original source context.
+    const generationInstructions=source?"":"\n\nPROMPT FIDELITY: Treat this as a completely independent image request. Follow only the details explicitly stated in the current prompt; do not carry over, remember, or reuse characters' clothing, bags, backpacks, briefcases, accessories, props, poses, or composition from any previous generation. Do not invent extra items or clothing that the user did not request. Keep the scene simple and faithful to the current description. Make objects interact naturally with the character: if a character is looking at a phone, the phone screen should face the character unless the prompt explicitly asks for a different orientation.\n\nDEFAULT HUMAN APPEARANCE: If the current prompt does not explicitly request a different ethnicity or appearance, depict every person as having a natural Slavic / European appearance, whether the prompt describes a person, woman, man, girl, boy, or older adult. Do not default to Chinese, Korean, Japanese, East Asian, or other non-European features. If the user explicitly requests another ethnicity or appearance, follow that request exactly.";
+    const finalPrompt=prompt+generationInstructions;
     // Use the maximum native output size supported by Agnes Image 2.5 Flash (4K).
     // Use Agnes' documented native dimensions so the requested aspect ratio is not subtly distorted.
     const qualitySizes={
