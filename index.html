@@ -352,23 +352,22 @@ body.light #composer.mode-images .miya-model-control{
   border-color:#d3deea!important;background:#f4f7fa!important;
 }
 body.light #composer.mode-images .miya-model-logo{background:transparent!important}
-/* One white rounded tile per model logo; enlarge artwork with centered cropping, never stretch. */
+/* Each model logo gets exactly one rounded white tile with a light 3D lift. */
 #composer.mode-images .miya-model-control{height:34px!important;min-height:34px!important;align-items:center!important}
 #composer.mode-images .miya-model-logo{
   display:inline-flex!important;align-items:center!important;justify-content:center!important;
   width:32px!important;height:32px!important;min-width:32px!important;flex:0 0 32px!important;
   margin:0!important;padding:0!important;box-sizing:border-box!important;
   border:1px solid #e3e9f0!important;border-radius:7px!important;
-  background:linear-gradient(145deg,#fff 0%,#fff 52%,#eef2f7 100%)!important;
-  box-shadow:inset 0 1px 0 rgba(255,255,255,.98),inset 0 -1px 0 rgba(148,163,184,.18),0 2px 4px rgba(0,0,0,.23)!important;
+  background:linear-gradient(145deg,#fff 0%,#fff 54%,#edf2f7 100%)!important;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.98),inset 0 -1px 0 rgba(148,163,184,.16),0 2px 4px rgba(0,0,0,.22)!important;
   overflow:hidden!important;pointer-events:none!important;line-height:0!important;position:relative!important;
 }
-body.light #composer.mode-images .miya-model-logo{background:linear-gradient(145deg,#fff 0%,#fff 52%,#eef2f7 100%)!important}
+body.light #composer.mode-images .miya-model-logo{background:linear-gradient(145deg,#fff 0%,#fff 54%,#edf2f7 100%)!important}
 #composer.mode-images .miya-model-logo img{
   display:block!important;width:38px!important;height:38px!important;max-width:none!important;max-height:none!important;
   margin:0!important;padding:0!important;flex:none!important;object-fit:contain!important;
-  border:0!important;border-radius:0!important;background:transparent!important;transform:none!important;
-  mix-blend-mode:multiply!important;
+  border:0!important;border-radius:0!important;background:transparent!important;transform:none!important;mix-blend-mode:multiply!important;
 }
 #composer.mode-images #composerModel.select-pill{height:32px!important;min-height:32px!important;align-self:center!important}
 #composer.mode-images .miya-model-logo.miya-nano-banana-logo{width:32px!important;height:32px!important;min-width:32px!important;flex-basis:32px!important}
@@ -378,21 +377,15 @@ body.light #composer.mode-images .miya-model-logo{background:linear-gradient(145
   height:40px!important;min-height:40px!important;padding:3px 28px 3px 3px!important;
   box-sizing:border-box!important;white-space:nowrap!important;
 }
-/* Exactly one white tile in the dropdown; logo artwork has no built-in white square. */
-.miya-composer-select-popup .miya-model-option .miya-model-option-logo-tile{
-  display:flex!important;align-items:center!important;justify-content:center!important;
-  flex:0 0 34px!important;width:34px!important;height:34px!important;min-width:34px!important;
-  margin:0!important;padding:0!important;box-sizing:border-box!important;
-  border:1px solid #e3e9f0!important;border-radius:7px!important;
-  background:linear-gradient(145deg,#fff 0%,#fff 52%,#eef2f7 100%)!important;
-  box-shadow:inset 0 1px 0 rgba(255,255,255,.98),inset 0 -1px 0 rgba(148,163,184,.18),0 2px 4px rgba(0,0,0,.23)!important;
-  overflow:hidden!important;line-height:0!important;
-}
+/* The img itself paints the one tile. There is no nested span or inner white square. */
 .miya-composer-select-popup .miya-model-option .miya-model-option-logo{
-  display:block!important;flex:none!important;width:38px!important;height:38px!important;
+  display:block!important;flex:none!important;width:34px!important;height:34px!important;
   max-width:none!important;max-height:none!important;margin:0!important;padding:0!important;
-  box-sizing:border-box!important;object-fit:contain!important;border:0!important;border-radius:0!important;
-  background:transparent!important;mix-blend-mode:multiply!important;
+  box-sizing:border-box!important;object-fit:contain!important;
+  border:1px solid #e3e9f0!important;border-radius:7px!important;
+  background:linear-gradient(145deg,#fff 0%,#fff 54%,#edf2f7 100%)!important;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.98),inset 0 -1px 0 rgba(148,163,184,.16),0 2px 4px rgba(0,0,0,.22)!important;
+  overflow:hidden!important;mix-blend-mode:normal!important;
 }
 .miya-composer-select-popup .miya-model-option .miya-model-option-label{
   min-width:max-content!important;flex:0 0 auto!important;overflow:visible!important;text-overflow:clip!important;white-space:nowrap!important;
@@ -543,7 +536,7 @@ body.light #composer.mode-images .miya-model-logo.miya-nano-banana-logo{
  };
  const modelLogoData={
   // Three upright, tightly grouped yellow bananas hanging from a shared stem.
-  banana:'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><defs><linearGradient id="bLeft" x1="0" y1="0" x2="1" y2=".2"><stop stop-color="#D68A12"/><stop offset=".25" stop-color="#FFE46A"/><stop offset=".65" stop-color="#FFD129"/><stop offset="1" stop-color="#E8A01A"/></linearGradient><linearGradient id="bCenter" x1="0" y1="0" x2="1" y2=".2"><stop stop-color="#D98D12"/><stop offset=".3" stop-color="#FFF078"/><stop offset=".7" stop-color="#FFD12B"/><stop offset="1" stop-color="#D98A12"/></linearGradient><linearGradient id="bRight" x1="0" y1="0" x2="1" y2=".2"><stop stop-color="#D98D17"/><stop offset=".3" stop-color="#FFE978"/><stop offset=".7" stop-color="#FFD02C"/><stop offset="1" stop-color="#D98B13"/></linearGradient></defs><g stroke="#A96E16" stroke-width="1.05" stroke-linejoin="round" stroke-linecap="round"><path d="M26 12C20 16 14 23 10 32 6 41 9 49 15 54 19 57 23 53 21 49 17 44 17 38 19 32 21 25 26 19 30 15 29 12 27 11 26 12Z" fill="url(#bLeft)"/><path d="M29 11C25 18 24 26 25 35 26 44 29 52 34 57 38 60 42 56 39 51 36 44 34 37 35 29 35 22 37 16 38 13 36 10 32 9 29 11Z" fill="url(#bCenter)"/><path d="M37 13C43 17 49 24 53 32 57 40 54 49 48 54 44 57 40 53 42 49 46 43 45 38 42 32 39 26 35 19 33 15 34 12 35 12 37 13Z" fill="url(#bRight)"/></g><g fill="none" stroke="#FFF5B4" stroke-width="1.25" stroke-linecap="round" opacity=".95"><path d="M25 17C20 23 15 31 13 38"/><path d="M30 16C28 24 28 34 30 43"/><path d="M39 17C43 24 47 31 49 37"/></g><g fill="#64882A" stroke="#4C6D20" stroke-width="1.05" stroke-linejoin="round"><path d="M26 12 23 9 24 7 28 6 32 8 35 6 39 8 41 11 39 14 36 15 32 12 29 14Z"/><path d="M25 8 22 6 23 4 27 5 29 7M35 7 38 5 40 6 41 9" fill="#85A93B"/></g><path d="M15 53l3 1-1 2-3-1M34 56l3 1-1 2-3-1M48 53l2-1 2 2-2 2" fill="#79501F"/></svg>',
+  banana:'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><defs><linearGradient id="bn1" x1="0" y1="0" x2="1" y2=".2"><stop stop-color="#C97D0D"/><stop offset=".25" stop-color="#FFE56A"/><stop offset=".62" stop-color="#FFD12B"/><stop offset="1" stop-color="#E7A018"/></linearGradient><linearGradient id="bn2" x1="0" y1="0" x2="1" y2=".2"><stop stop-color="#CA7B0B"/><stop offset=".28" stop-color="#FFF078"/><stop offset=".66" stop-color="#FFD42F"/><stop offset="1" stop-color="#D98B11"/></linearGradient><linearGradient id="bn3" x1="0" y1="0" x2="1" y2=".2"><stop stop-color="#C97D0D"/><stop offset=".3" stop-color="#FFE978"/><stop offset=".68" stop-color="#FFD02D"/><stop offset="1" stop-color="#DB8B11"/></linearGradient></defs><g stroke="#A96F16" stroke-width="1.25" stroke-linejoin="round" stroke-linecap="round"><path d="M26 12C20 16 14 23 10 32 6 41 9 49 15 53 19 56 23 52 20 47 18 43 20 36 24 29 28 22 31 17 31 14 31 12 28 11 26 12Z" fill="url(#bn1)"/><path d="M37 13C43 17 49 24 53 33 57 42 54 50 49 53 44 56 40 52 43 47 46 43 43 36 40 29 37 22 34 17 33 14 33 12 35 12 37 13Z" fill="url(#bn3)"/><path d="M31 11C27 19 26 28 27 37 28 46 31 53 35 56 40 59 43 54 40 49 37 42 37 34 38 26 39 18 38 13 35 11 33 10 32 10 31 11Z" fill="url(#bn2)"/></g><g fill="none" stroke="#FFF8C2" stroke-width="1.5" stroke-linecap="round" opacity=".95"><path d="M25 17C20 23 15 31 13 38"/><path d="M31 16C29 24 29 34 31 43"/><path d="M38 17C42 24 47 32 49 38"/></g><g fill="#5D7C25" stroke="#405D1A" stroke-width="1.1" stroke-linejoin="round"><path d="M25 12 23 9 25 6 29 6 32 8 35 6 39 8 41 11 39 14 36 15 32 12 29 14Z"/><path d="M25 8 22 6 23 4 27 5 29 7M35 7 38 5 40 6 41 9" fill="#82A936"/></g><path d="M14 52 17 53 16 56 14 55ZM34 55 37 56 36 59 33 58ZM48 52 51 51 52 54 49 56Z" fill="#795020" stroke="#5F3E17" stroke-width=".8"/></svg>',
   // Original Agnes AI swoosh-and-dot mark, recolored black on white.
   agnes:'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><path d="M17.013 8.817c-.2-.003-.4.026-.59.084-.51.153-.991.405-1.256.906-1.248 2.369-7.222 9.47-9.446 4.707H5.72c-.007.021-1.176 3.606.999 3.968 2.182.362 5.8-.672 9.798-8.227-.007.03-.496 2.381-.762 3.731a.885.885 0 01-.308.513.906.906 0 01-.567.204h-.533a.157.157 0 00-.088.287c.506.345 1.154 1.094 1.258 2.68a.487.487 0 00.239.388.503.503 0 00.459.029.824.824 0 00.38-.353c.085-.154.132-.325.136-.5l-.073-.66a.77.77 0 01.507-.79c.474-.17 1.114-.525 1.427-1.252a.11.11 0 00.009-.046.11.11 0 00-.013-.045.108.108 0 00-.03-.036.113.113 0 00-.104-.017c-.317.113-.918.299-1.443.296a.261.261 0 01-.244-.185.254.254 0 01-.007-.108l.728-5.013a.484.484 0 00-.475-.56zm-.406-3.169a1.204 1.204 0 10-.384 2.378 1.204 1.204 0 00.384-2.378z" transform="translate(-18 -18) scale(4.1)" fill="#111" fill-rule="evenodd"/></svg>',
   flux:'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><g fill="#151515" transform="translate(5.6 6.5) scale(2.2)"><path d="M0 20.683 12.01 2.5 24 20.683h-2.233L12.009 5.878 3.471 18.806h12.122l1.239 1.877H0z"/><path d="m8.069 16.724 2.073-3.115 2.074 3.115H8.069zM18.24 20.683l-5.668-8.707h2.177l5.686 8.707h-2.196zM19.74 11.676l2.13-3.19 2.13 3.19h-4.26z"/></g></svg>',
@@ -701,10 +694,9 @@ body.light #composer.mode-images .miya-model-logo.miya-nano-banana-logo{
    item.dataset.index=String(index);
    if((select.id==="composerRatio"||select.id==="videoRatio")&&(ratioValues.has(option.value)||option.value==="auto")){item.classList.add("miya-ratio-option");const label=document.createElement("span");label.className="miya-ratio-label";label.textContent=option.value;const icon=document.createElement("span");icon.className="miya-ratio-icon";if(ratioValues.has(option.value))icon.innerHTML=ratioSvg(option.value);item.append(label,icon);item.setAttribute("aria-label",option.value);}else if(select.id==="composerModel"){
     item.classList.add("miya-model-option");
-    const tile=document.createElement("span");tile.className="miya-model-option-logo-tile";tile.setAttribute("aria-hidden","true");
-    const img=document.createElement("img");img.className="miya-model-option-logo";img.alt="";img.draggable=false;img.loading="eager";img.fetchPriority="high";img.decoding="async";img.src=modelLogoUrl(option.value);tile.appendChild(img);
+    const img=document.createElement("img");img.className="miya-model-option-logo";img.alt="";img.draggable=false;img.loading="eager";img.fetchPriority="high";img.decoding="sync";img.src=modelLogoUrl(option.value);
     const label=document.createElement("span");label.className="miya-model-option-label";label.textContent=String(option.label||option.textContent||option.value);
-    item.append(tile,label);
+    item.append(img,label);
    }else{item.textContent=String(option.label||option.textContent||option.value);}
    item.disabled=option.disabled;
    item.tabIndex=-1;
