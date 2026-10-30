@@ -459,6 +459,92 @@ module.exports = async function imageHandler(req, res) {
     const provider = typeof body.provider === "string" ? body.provider.trim().toLowerCase() : "";
     const requestedModel = typeof body.model === "string" ? body.model.trim() : "";
 
+    if (provider === "stickerdesigner") {
+      const stickerPrompt = typeof body.prompt === "string" ? body.prompt.trim() : "";
+      const stickerStyle = typeof body.style === "string" ? body.style.trim().toLowerCase() : "cartoon";
+      const stickerStyles = {
+        "cartoon":"Cartoon",
+        "kawaii":"Kawaii",
+        "retro badge":"Retro badge",
+        "line art":"Line art",
+        "watercolour":"Watercolour"
+      };
+      if (requestedModel !== "Sticker Designer") {
+        return res.status(400).json({ok:false,error:"STICKERDESIGNER_MODEL_UNSUPPORTED",message:"Неизвестная модель Sticker Designer."});
+      }
+      if (!stickerPrompt) return res.status(400).json({ok:false,error:"PROMPT_REQUIRED"});
+      if (stickerPrompt.length > 4000) {
+        return res.status(413).json({ok:false,error:"STICKERDESIGNER_PROMPT_TOO_LONG",message:"Промпт Sticker Designer не должен превышать 4000 символов."});
+      }
+      if (!Object.prototype.hasOwnProperty.call(stickerStyles, stickerStyle)) {
+        return res.status(400).json({ok:false,error:"STICKERDESIGNER_STYLE_UNSUPPORTED",message:"Выбери один из пяти доступных стилей Sticker Designer."});
+      }
+
+      try {
+        const upstream = await fetch("https://stickerdesigner.app/api/generate", {
+          method:"POST",
+          headers:{
+            "Content-Type":"application/json",
+            "Accept":"application/json",
+            "Origin":"https://stickerdesigner.app",
+            "Referer":"https://stickerdesigner.app/ai-sticker-generator"
+          },
+          body:JSON.stringify({prompt:stickerPrompt,style:stickerStyle}),
+          cache:"no-store",
+          signal:AbortSignal.timeout(60000)
+        });
+        const raw = await upstream.text();
+        let data = {};
+        try { data = raw ? JSON.parse(raw) : {}; } catch {}
+
+        if (!upstream.ok) {
+          const limited = upstream.status === 429;
+          return res.status(limited ? 429 : 502).json({
+            ok:false,
+            error:limited ? "STICKERDESIGNER_RATE_LIMIT" : "STICKERDESIGNER_UPSTREAM_HTTP",
+            message:limited
+              ? "Sticker Designer достиг лимита пяти генераций в час на посетителя."
+              : "Sticker Designer вернул HTTP " + upstream.status + ".",
+            upstreamStatus:upstream.status,
+            upstreamBody:raw.slice(0,700),
+            retryAfter:upstream.headers.get("retry-after") || ""
+          });
+        }
+
+        const imageData = typeof data.image === "string" ? data.image.trim() : "";
+        const match = imageData.match(/^data:image\/webp;base64,([A-Za-z0-9+/=\r\n]+)$/i);
+        if (!match) {
+          return res.status(502).json({ok:false,error:"STICKERDESIGNER_IMAGE_MISSING",message:"Sticker Designer не вернул изображение WebP.",upstreamBody:raw.slice(0,700)});
+        }
+        const imageBytes = Buffer.from(match[1].replace(/\s+/g,""),"base64");
+        if (!imageBytes.length || imageBytes.length > 5 * 1024 * 1024) {
+          return res.status(413).json({ok:false,error:"STICKERDESIGNER_IMAGE_SIZE",message:"Полученное изображение пустое или слишком большое."});
+        }
+
+        const stickerModel = "Sticker Designer · Recraft v4.1 Flash · " + stickerStyles[stickerStyle];
+        return res.status(200).json({
+          ok:true,
+          mode:"image",
+          status:"completed",
+          provider:"Sticker Designer",
+          model:stickerModel,
+          imageUrl:imageData,
+          imageUrls:[imageData],
+          count:1,
+          meta:{free:true,modelId:"recraft-v4.1-flash",style:stickerStyle,mime:"image/webp",rateLimit:"5 per hour per visitor"}
+        });
+      } catch (error) {
+        const timedOut = error?.name === "TimeoutError" || error?.name === "AbortError" || /timed? ?out|abort/i.test(String(error?.message||""));
+        return res.status(timedOut ? 504 : 502).json({
+          ok:false,
+          error:timedOut ? "STICKERDESIGNER_UPSTREAM_TIMEOUT" : "STICKERDESIGNER_HANDLER_ERROR",
+          message:timedOut
+            ? "Sticker Designer не вернул изображение вовремя. Попробуй ещё раз."
+            : "Не удалось связаться со Sticker Designer: " + String(error?.message||error||"ошибка запроса").slice(0,180)
+        });
+      }
+    }
+
     // Hoodgen's free Flux 2 Dev endpoint returns a JPEG binary response.
     // Keep it separate from the existing PixelSter Flux Dev integration.
     if (provider === "hoodgen" || requestedModel === "Flux 2 Dev · T2I") {

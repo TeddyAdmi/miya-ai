@@ -984,6 +984,7 @@ function imageModelLabel(model){
  const name=String(model||"").trim();
  if(name==="Nano BananA")return "Nano BananA · T2I / I2I";
  if(name==="ImageSmith")return "GPT Image 2.5 · T2I / I2I";
+ if(name==="Sticker Designer")return "Sticker Designer · Recraft v4.1 Flash · T2I";
  if(name==="Kolors")return "Kolors · T2I";
  if(/^Nano Banana$/i.test(name))return "Nano Banana · T2I";
  if(/^Seedream$/i.test(name))return "Seedream · T2I";
@@ -999,6 +1000,14 @@ function imageModelLabel(model){
 }
 const imageSmithModelOption=document.querySelector('#composerModel option[value="ImageSmith"]');if(imageSmithModelOption)imageSmithModelOption.textContent="GPT Image 2.5 · T2I / I2I";
 const zImageTurboOption=document.querySelector('#composerModel option[value="Z-Image Turbo (ImageFree)"]');if(zImageTurboOption)zImageTurboOption.textContent="Z-Image Turbo · T2I";
+function syncStickerStyleControls(){
+ const active=$("#composerModel")?.value==="Sticker Designer";
+ const style=$("#stickerStyle"),ratio=$("#composerRatio"),quality=$("#composerQuality");
+ if(style)style.style.display=active?"":"none";
+ if(ratio)ratio.style.display=active?"none":"";
+ if(quality)quality.style.display=active?"none":"";
+}
+syncStickerStyleControls();
 function setComposerAttachment(url){
  const box=$("#composerAttachment"),img=$("#composerAttachmentImage");
  if(!box||!img)return;
@@ -3255,9 +3264,16 @@ async function generateImage(prompt,loaderAlreadyShown=false){
  const useQwenImage21=selectedModel==="Qwen Image 2.1 · T2I";
  const useNanoBananA=selectedModel==="Nano BananA";
  const useImageSmith=selectedModel==="ImageSmith";
+ const useStickerDesigner=selectedModel==="Sticker Designer";
  const useCinel=selectedModel==="Kolors";
  const useFlux2DevHoodgen=selectedModel==="Flux 2 Dev · T2I";
  const useAuraImage=!useNanoBananA&&/^(?:Nano Banana|Seedream)$/i.test(selectedModel);
+ if(useStickerDesigner && referenceImage){
+  const notice="Sticker Designer поддерживает только генерацию по тексту (T2I), загрузка фотографии пока не поддерживается.";
+  if($("#composerStatus"))$("#composerStatus").textContent=notice;
+  toast(notice);
+  return;
+ }
  if((useNanoBananA || useImageSmith) && referenceImage && !/^data:image\//i.test(referenceImage)){
   try{
    const sourceResponse=await fetch(referenceImage,{mode:"cors",credentials:"omit"});
@@ -3343,6 +3359,8 @@ async function generateImage(prompt,loaderAlreadyShown=false){
        ? JSON.stringify({mode:"image",provider:"nanobanana25",prompt,model:modelName,ratio:selectedRatio,...(nanoBananAReferenceImage?{referenceImage:nanoBananAReferenceImage}:{})})
        : useImageSmith
        ? JSON.stringify({mode:"image",provider:"imagesmith",prompt,model:modelName,ratio:selectedRatio,...(imageSmithReferenceImage?{referenceImage:imageSmithReferenceImage}:{})})
+       : useStickerDesigner
+       ? JSON.stringify({mode:"image",provider:"stickerdesigner",prompt,model:modelName,style:$("#stickerStyle")?.value||"cartoon"})
        : useCinel
        ? JSON.stringify({mode:"image",provider:"cinel",prompt,model:modelName,ratio:selectedRatio})
        : useFlux2DevHoodgen
@@ -3506,6 +3524,12 @@ async function generateImage(prompt,loaderAlreadyShown=false){
   $("#canvas .generation-loading")?.remove();
   if(composerProgress)composerProgress.textContent="";
   if(useCinel){const notice=displayModel+" · Подождите минуту";toast(notice);$("#composerStatus").textContent=notice;return;}
+  if(useStickerDesigner && (e?.status===429 || e?.code==="STICKERDESIGNER_RATE_LIMIT")){
+   const notice="Sticker Designer · лимит 5 генераций в час. Попробуйте позже.";
+   if($("#composerStatus"))$("#composerStatus").textContent=notice;
+   toast(notice);
+   return;
+  }
   if(useFlux2DevHoodgen && (e?.name==="TimeoutError" || e?.name==="AbortError" || /HOODGEN_UPSTREAM_TIMEOUT|не ответил вовремя|timed? ?out|timeout/i.test(String(e?.message||"")))){
    const notice=displayModel+" · Подождите минуту";
    if($("#composerStatus"))$("#composerStatus").textContent=notice;
@@ -5137,6 +5161,7 @@ function setMode(next,render=true){
    // so saved cards and image decoding cannot block the first model-menu interaction.
    const imageModel=$("#composerModel");
    if(imageModel&&!referenceImage)imageModel.value="ImageSmith";
+   syncStickerStyleControls();
    if(!referenceImage)setImageRatio("16:9");
    const paintImageWall=()=>{if(mode==="images")renderImageLibrary()};
    if("requestIdleCallback" in window)requestIdleCallback(paintImageWall,{timeout:1500});
@@ -5430,6 +5455,7 @@ $("#composerAttachmentRemove")?.addEventListener("click",()=>clearComposerAttach
 $("#composerModel")?.addEventListener("change",()=>{
   const model=$("#composerModel").value;
   const modelLabel=imageModelLabel(model);
+  syncStickerStyleControls();
   /* Keep an existing edit image visible while switching models. The selected
      model decides whether that image is actually sent for generation. */
   if(model==="FLUX Kontext Dev"){
@@ -5437,6 +5463,9 @@ $("#composerModel")?.addEventListener("change",()=>{
     $("#composerStatus").textContent=referenceImage
       ?modelLabel+" · изображение готово к редактированию"
       :modelLabel+" · готов к созданию";
+  }else if(model==="Sticker Designer"){
+    const style=$("#stickerStyle")?.value||"cartoon";
+    $("#composerStatus").textContent=modelLabel+" · "+style+" · готов к созданию";
   }else if(model==="Agnes Image 2.5 Flash"){
     setImageRatio("16:9");
     $("#composerStatus").textContent=referenceImage
@@ -5447,6 +5476,13 @@ $("#composerModel")?.addEventListener("change",()=>{
     $("#composerStatus").textContent=referenceImage
       ?modelLabel+" · изображение прикреплено"
       :modelLabel+" · готов к созданию";
+  }
+});
+$("#stickerStyle")?.addEventListener("change",()=>{
+  if($("#composerModel")?.value==="Sticker Designer"){
+    const style=$("#stickerStyle").value;
+    const status=$("#composerStatus");
+    if(status)status.textContent=imageModelLabel("Sticker Designer")+" · "+style+" · готов к созданию";
   }
 });
 $("#improve")?.addEventListener("click",improveImageComposerPrompt);
