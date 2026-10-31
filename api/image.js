@@ -582,30 +582,32 @@ module.exports = async function imageHandler(req, res) {
         const outlineRadius = Math.max(5,Math.min(14,Math.round(Math.min(stickerWidth,stickerHeight) * 0.012)));
         const horizontal = new Uint8Array(pixels);
         const expanded = new Uint8Array(pixels);
+        const deque = new Int32Array(Math.max(stickerWidth,stickerHeight));
         for (let y = 0; y < stickerHeight; y++) {
           const row = y * stickerWidth;
+          let head = 0, tail = 0, next = 0;
           for (let x = 0; x < stickerWidth; x++) {
-            let max = 0;
-            const left = Math.max(0,x - outlineRadius);
             const right = Math.min(stickerWidth - 1,x + outlineRadius);
-            for (let sample = left; sample <= right; sample++) {
-              const value = silhouette[row + sample];
-              if (value > max) max = value;
-              if (max === 255) break;
+            while (next <= right) {
+              while (tail > head && silhouette[row + deque[tail - 1]] <= silhouette[row + next]) tail--;
+              deque[tail++] = next++;
             }
-            horizontal[row + x] = max;
+            const left = x - outlineRadius;
+            while (tail > head && deque[head] < left) head++;
+            horizontal[row + x] = tail > head ? silhouette[row + deque[head]] : 0;
           }
         }
-        for (let y = 0; y < stickerHeight; y++) {
-          for (let x = 0; x < stickerWidth; x++) {
-            let max = 0;
-            const top = Math.max(0,y - outlineRadius);
+        for (let x = 0; x < stickerWidth; x++) {
+          let head = 0, tail = 0, next = 0;
+          for (let y = 0; y < stickerHeight; y++) {
             const bottom = Math.min(stickerHeight - 1,y + outlineRadius);
-            for (let sample = top; sample <= bottom; sample++) {
-              const value = horizontal[sample * stickerWidth + x];
-              if (value > max) max = value;
-              if (max === 255) break;
+            while (next <= bottom) {
+              while (tail > head && horizontal[deque[tail - 1] * stickerWidth + x] <= horizontal[next * stickerWidth + x]) tail--;
+              deque[tail++] = next++;
             }
+            const top = y - outlineRadius;
+            while (tail > head && deque[head] < top) head++;
+            const max = tail > head ? horizontal[deque[head] * stickerWidth + x] : 0;
             const pixel = y * stickerWidth + x;
             if (max) {
               expanded[pixel] = 255;
