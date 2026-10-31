@@ -140,13 +140,13 @@ installAnimatedStatusDots();
 body.light .media-action.media-more{background:rgba(255,255,255,.52)!important;border-color:rgba(40,30,60,.14)!important;color:#273047!important}
 body.light .media-action.media-more:hover{background:rgba(0,0,0,.10)!important;border-color:rgba(40,30,60,.18)!important;color:#17121f!important}
 .image-viewer-created-info{position:fixed!important;right:22px!important;bottom:18px!important;top:auto!important;left:auto!important;z-index:20!important;display:flex!important;flex-direction:column!important;align-items:flex-end!important;gap:3px!important;padding:7px 10px!important;border-radius:9px!important;background:rgba(20,27,38,.78)!important;color:rgba(255,255,255,.88)!important;border:1px solid rgba(255,255,255,.14)!important;backdrop-filter:blur(8px)!important;-webkit-backdrop-filter:blur(8px)!important;pointer-events:none!important;max-width:min(320px,calc(100vw - 24px))!important}
-.image-viewer-created-info .image-viewer-created-model,.image-viewer-created-info .image-viewer-created-date{position:static!important;inset:auto!important;padding:0!important;margin:0!important;border:0!important;border-radius:0!important;background:transparent!important;backdrop-filter:none!important;-webkit-backdrop-filter:none!important;color:inherit!important;font-size:11px!important;line-height:1.25!important;white-space:normal!important;text-align:right!important}
-.image-viewer-created-info .image-viewer-created-model:empty{display:none!important}
+.image-viewer-created-info .image-viewer-created-model,.image-viewer-created-info .image-viewer-created-style,.image-viewer-created-info .image-viewer-created-date{position:static!important;inset:auto!important;padding:0!important;margin:0!important;border:0!important;border-radius:0!important;background:transparent!important;backdrop-filter:none!important;-webkit-backdrop-filter:none!important;color:inherit!important;font-size:11px!important;line-height:1.25!important;white-space:normal!important;text-align:right!important}
+.image-viewer-created-info .image-viewer-created-model:empty,.image-viewer-created-info .image-viewer-created-style:empty{display:none!important}
 .image-viewer-created-model{font-weight:600!important;color:#fff!important;max-width:100%!important;overflow-wrap:anywhere!important}
-.image-viewer-created-info .image-viewer-created-date{font-weight:400!important;color:rgba(255,255,255,.72)!important}
+.image-viewer-created-info .image-viewer-created-style{font-weight:500!important;color:rgba(255,255,255,.86)!important}.image-viewer-created-info .image-viewer-created-date{font-weight:400!important;color:rgba(255,255,255,.72)!important}
 body.light .image-viewer-created-info{background:rgba(255,255,255,.9)!important;color:#52627a!important;border-color:rgba(40,30,60,.14)!important;box-shadow:0 4px 18px rgba(0,0,0,.12)!important}
 body.light .image-viewer-created-info .image-viewer-created-model{color:#273047!important}
-body.light .image-viewer-created-info .image-viewer-created-date{color:#64748b!important}
+body.light .image-viewer-created-info .image-viewer-created-style{color:#52627a!important}body.light .image-viewer-created-info .image-viewer-created-date{color:#64748b!important}
 @media(max-width:800px){.image-viewer-created-info{right:12px!important;bottom:12px!important;max-width:calc(100vw - 24px)!important}}
 /* Compact progress popup centered over the workspace, with title and model on two lines. */
 .generation-loading:not(.video-generation-loading){position:fixed!important;left:calc(50% + 102.5px)!important;top:50%!important;transform:translate(-50%,-50%)!important;z-index:1200!important;padding:6px 8px!important;min-width:0!important;min-height:0!important;height:auto!important;width:max-content!important;max-width:calc(100vw - 24px)!important;box-sizing:border-box!important;overflow:visible!important;margin:0!important}
@@ -1224,6 +1224,10 @@ function closeImageViewer(){
 function formatMediaCreationDate(item){
  return item?.createdAt?new Date(item.createdAt).toLocaleDateString("ru-RU",{day:"2-digit",month:"2-digit",year:"numeric"}):"";
 }
+function stickerStyleDisplayName(value){
+ const key=String(value||"").trim().toLowerCase();
+ return ({"cartoon":"Cartoon","kawaii":"Kawaii","retro badge":"Retro badge","line art":"Line art","watercolour":"Watercolour"})[key]||"";
+}
 function openImageViewer(item){
  let modal=$("#imageViewerModal");
  if(!modal){
@@ -1235,7 +1239,7 @@ function openImageViewer(item){
 <button type="button" class="image-viewer-nav image-viewer-prev" aria-label="Предыдущее изображение" title="Предыдущее изображение"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m14.5 5-7 7 7 7"/><path d="M8 12h10"/></svg></button>
 <button type="button" class="image-viewer-nav image-viewer-next" aria-label="Следующее изображение" title="Следующее изображение"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m9.5 5 7 7-7 7"/><path d="M16 12H6"/></svg></button>
 <div class="image-viewer-controls">
-<div class="image-viewer-created-info"><div class="image-viewer-created-model"></div><div class="image-viewer-created-date"></div></div>
+<div class="image-viewer-created-info"><div class="image-viewer-created-model"></div><div class="image-viewer-created-style"></div><div class="image-viewer-created-date"></div></div>
 <button type="button" class="image-viewer-edit" aria-label="Изменить картинку" title="Изменить картинку"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m4 16.5-.8 3.3 3.3-.8L18.7 6.8a2.2 2.2 0 0 1 3.1 3.1L6.5 19l-3.3.8.8-3.3Z"/><path d="m14.2 5.8 4 4"/></svg></button>
 <button type="button" class="image-viewer-video" aria-label="Создать видео" title="Создать видео"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m8 5 11 7-11 7V5Z"/></svg></button>
 <button type="button" class="image-viewer-prompt" aria-label="Показать промт" title="Промт"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 5h14v14H5z"/><path d="M8 9h8M8 12h6M8 15h4"/></svg></button>
@@ -1301,7 +1305,7 @@ function openImageViewer(item){
   const showViewerItem=(nextItem)=>{
     if(!nextItem)return;
     modal.dataset.viewerItemId=nextItem.id;
-    const viewerModel=modal.querySelector(".image-viewer-created-model");if(viewerModel)viewerModel.textContent=/^Sticker Designer(?:\s|$)/i.test(String(nextItem.model||""))?"Sticker Designer":imageModelLabel(nextItem.model||"Модель не указана");const viewerDate=modal.querySelector(".image-viewer-created-date");if(viewerDate)viewerDate.textContent=formatMediaCreationDate(nextItem);
+    const isSticker=/^Sticker Designer(?:\s|$)/i.test(String(nextItem.model||""));const viewerModel=modal.querySelector(".image-viewer-created-model");if(viewerModel)viewerModel.textContent=isSticker?"Sticker Design":imageModelLabel(nextItem.model||"Модель не указана");const viewerStyle=modal.querySelector(".image-viewer-created-style");if(viewerStyle)viewerStyle.textContent=isSticker?stickerStyleDisplayName(nextItem.stickerStyle):"";const viewerDate=modal.querySelector(".image-viewer-created-date");if(viewerDate)viewerDate.textContent=formatMediaCreationDate(nextItem);
     const viewerImg=modal.querySelector(".image-viewer-image");
     viewerImg.src=nextItem.url;
     viewerImg.dataset.zoom="1";viewerImg.dataset.panX="0";viewerImg.dataset.panY="0";
@@ -1366,7 +1370,7 @@ function openImageViewer(item){
  }
  const img=modal.querySelector(".image-viewer-image");
  modal.dataset.viewerItemId=item.id;
- const viewerModel=modal.querySelector(".image-viewer-created-model");if(viewerModel)viewerModel.textContent=/^Sticker Designer(?:\s|$)/i.test(String(item.model||""))?"Sticker Designer":imageModelLabel(item.model||"Модель не указана");
+ const isSticker=/^Sticker Designer(?:\s|$)/i.test(String(item.model||""));const viewerModel=modal.querySelector(".image-viewer-created-model");if(viewerModel)viewerModel.textContent=isSticker?"Sticker Design":imageModelLabel(item.model||"Модель не указана");const viewerStyle=modal.querySelector(".image-viewer-created-style");if(viewerStyle)viewerStyle.textContent=isSticker?stickerStyleDisplayName(item.stickerStyle):"";const viewerDate=modal.querySelector(".image-viewer-created-date");if(viewerDate)viewerDate.textContent=formatMediaCreationDate(item);
  const isAuraModel=/^(Nano Banana|Seedream)$/i.test(String(item.model||"").trim());
  const viewerSource=isAuraModel?jpegImageUrl(item.url):item.url;
  img.src=viewerSource;
@@ -1690,9 +1694,9 @@ function buildMediaCard(item,{video=false,pendingDots=false}={}){
  const isStickerItem=/^Sticker Designer(?:\s|$)/i.test(String(item.model||""));
  {
   const modelBadge=document.createElement("div");
-  modelBadge.className="media-model-badge";
-  modelBadge.textContent=isStickerItem?"Sticker Designer":imageModelLabel(item.model||"Модель не указана");
-  modelBadge.title=isStickerItem?"Sticker Designer":"Модель, которая фактически создала этот материал";
+  modelBadge.className="media-model-badge"+(isStickerItem?" is-sticker-badge":"");
+  modelBadge.textContent=isStickerItem?("Sticker Design"+(stickerStyleDisplayName(item.stickerStyle)?"\n"+stickerStyleDisplayName(item.stickerStyle):"")):imageModelLabel(item.model||"Модель не указана");
+  modelBadge.title=isStickerItem?"Sticker Design · "+(stickerStyleDisplayName(item.stickerStyle)||"стиль не указан"):"Модель, которая фактически создала этот материал";
   card.appendChild(modelBadge);
  }
  const actions=document.createElement("div");actions.className="media-actions";
@@ -3060,7 +3064,7 @@ function showLoading(modelOverride=""){
  card.querySelector(".progress-model").textContent=selectedVideoModel;
  grid.appendChild(card);scrollImagesToTop();
 }
-async function showImage(url,prompt="",model="FLUX Dev",ratio=""){
+async function showImage(url,prompt="",model="FLUX Dev",ratio="",stickerStyle=""){
   const rawUrl=String(url||"").trim();
   if(!rawUrl)throw new Error("Сервер не вернул ссылку на изображение.");
   const isInlineImage=/^data:image\//i.test(rawUrl);
@@ -3075,6 +3079,10 @@ async function showImage(url,prompt="",model="FLUX Dev",ratio=""){
   // This makes the image survive section switches and restores the wall/library arrows.
   const item=saveMedia("image",displayUrl,prompt,model);
   if(!item)throw new Error("Не удалось сохранить готовое изображение.");
+  if(/^Sticker Designer(?:\\s|$)/i.test(String(model||""))){
+   item.stickerStyle=stickerStyleDisplayName(stickerStyle)?String(stickerStyle).trim().toLowerCase():"";
+   try{const stored=getLibrary();const saved=stored.find(x=>String(x.id)===String(item.id));if(saved)saved.stickerStyle=item.stickerStyle;localStorage.setItem(LIB_KEY,JSON.stringify(stored.slice(0,500)))}catch{}
+  }
   if(isInlineImage){
    const cached=await cacheMedia(item.id,rawUrl,"image");
    if(!cached){
@@ -3500,7 +3508,7 @@ async function generateImage(prompt,loaderAlreadyShown=false,modelOverride="",st
    ? data.imageUrls
    : data.imageUrl?[data.imageUrl]:[];
   if(!generatedUrls.length)throw new Error("Сервер не вернул готовое изображение");
-  await Promise.all(generatedUrls.map(url=>showImage(url,prompt,imageModelLabel(actualModel),(useImageFree||useNanoBananA)?selectedRatio:"")));
+  await Promise.all(generatedUrls.map(url=>showImage(url,prompt,imageModelLabel(actualModel),(useImageFree||useNanoBananA)?selectedRatio:"",useStickerDesigner?stickerStyle:"")));
    if(loader){
     setProgress(100);
     const modelLabel=loader.querySelector(".progress-model");
@@ -5499,6 +5507,8 @@ $("#composerModel")?.addEventListener("change",()=>{
    #miyaStickerStylePopup .sticker-style-option{box-sizing:border-box!important;width:100%!important;height:36px!important;min-height:36px!important;display:flex!important;align-items:center!important;justify-content:center!important;padding:0!important;margin:0!important;border:0!important;border-radius:5px!important;background:transparent!important;cursor:pointer!important;overflow:hidden!important}
    #miyaStickerStylePopup .sticker-style-option:hover,#miyaStickerStylePopup .sticker-style-option:focus-visible{background:#153653!important;outline:none!important}
    #miyaStickerStylePopup .sticker-style-option svg{width:18px!important;height:18px!important;max-width:18px!important;max-height:18px!important;flex:0 0 18px!important;display:block!important;overflow:hidden!important;filter:drop-shadow(0 1px 1px rgba(0,0,0,.18))}
+   .media-card .media-model-badge.is-sticker-badge{white-space:pre-line!important;line-height:1.3!important;text-align:left!important}
+   .image-viewer-created-info .image-viewer-created-style{display:block!important}
   `;document.head.appendChild(style);
  }
  const styles=[
