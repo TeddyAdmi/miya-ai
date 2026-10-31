@@ -5523,7 +5523,7 @@ $("#composerModel")?.addEventListener("change",()=>{
   });popup.appendChild(option);
  });
  document.documentElement.appendChild(popup);
- const closePopup=()=>{popup.hidden=true;popup.style.removeProperty("display");popup.style.removeProperty("visibility");button.setAttribute("aria-expanded","false")};
+ const closePopup=()=>{popup.hidden=true;popup.style.setProperty("display","none","important");popup.style.removeProperty("visibility");button.setAttribute("aria-expanded","false")};
  const promptInput=document.querySelector("#composerInput");
  if(promptInput){
   promptInput.addEventListener("pointerdown",closePopup,true);
@@ -5542,8 +5542,9 @@ $("#composerModel")?.addEventListener("change",()=>{
  ["pointerdown","click","focusin","change"].forEach(type=>document.addEventListener(type,closeForOtherControls,true));
  button.setAttribute("aria-haspopup","menu");button.setAttribute("aria-expanded","false");
  button.addEventListener("click",()=>{
-  if(mode!=="images"||button.disabled||$("#composerSend")?.disabled)return;
   if(!popup.hidden){closePopup();return}
+  if(mode!=="images"||button.disabled||$("#composerSend")?.disabled)return;
+  popup.style.removeProperty("display");
   const rect=button.getBoundingClientRect();popup.hidden=false;
   popup.style.setProperty("position","fixed","important");
   popup.style.setProperty("display","grid","important");
