@@ -3079,7 +3079,7 @@ async function showImage(url,prompt="",model="FLUX Dev",ratio="",stickerStyle=""
   // This makes the image survive section switches and restores the wall/library arrows.
   const item=saveMedia("image",displayUrl,prompt,model);
   if(!item)throw new Error("Не удалось сохранить готовое изображение.");
-  if(/^Sticker Designer(?:\\s|$)/i.test(String(model||""))){
+  if(/^Sticker Designer(?:\s|$)/i.test(String(model||""))){
    item.stickerStyle=stickerStyleDisplayName(stickerStyle)?String(stickerStyle).trim().toLowerCase():"";
    try{const stored=getLibrary();const saved=stored.find(x=>String(x.id)===String(item.id));if(saved)saved.stickerStyle=item.stickerStyle;localStorage.setItem(LIB_KEY,JSON.stringify(stored.slice(0,500)))}catch{}
   }
