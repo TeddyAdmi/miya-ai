@@ -5549,7 +5549,7 @@ $("#composerModel")?.addEventListener("change",()=>{
   if(popup.hidden)return;
   const target=event.target;
   if(!(target instanceof Element))return;
-  if(target.closest("#createStickerAI")||target.closest("#miyaStickerStylePopup"))return;
+  if(target.closest("#createStickerAI")||target.closest("#miyaStickerStylePopup")||target.closest("#themeToggle"))return;
   if(target.closest("#composer, #composerOptions, .image-settings, #videoOptions, [data-tool], [data-mode], #workspace"))closePopup();
  };
  ["pointerdown","click","focusin","change"].forEach(type=>document.addEventListener(type,closeForOtherControls,true));
@@ -5575,7 +5575,7 @@ $("#composerModel")?.addEventListener("change",()=>{
   popup.style.setProperty("top",top+"px","important");
   button.setAttribute("aria-expanded","true");
  });
- document.addEventListener("pointerdown",event=>{if(!popup.hidden&&!popup.contains(event.target)&&!button.contains(event.target))closePopup()},true);
+ document.addEventListener("pointerdown",event=>{if(!popup.hidden&&!popup.contains(event.target)&&!button.contains(event.target)&&!event.target?.closest?.("#themeToggle"))closePopup()},true);
  ["change","click"].forEach(type=>document.addEventListener(type,event=>{if(popup.hidden)return;const target=event.target;if(target?.matches?.("#composerModel,#composerRatio,#composerQuality,.composer-options .select-pill,.video-options .select-pill,[data-mode]"))closePopup()},true));
  document.addEventListener("keydown",event=>{if(event.key==="Escape"&&!popup.hidden){closePopup();button.focus()}});
  window.addEventListener("resize",closePopup);
