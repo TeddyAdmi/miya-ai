@@ -5490,7 +5490,7 @@ $("#composerModel")?.addEventListener("change",()=>{
  if(!improve||!options||document.getElementById("createStickerAI"))return;
  const button=document.createElement("button");
  button.type="button";button.id="createStickerAI";
- button.className=improve.className+" sticker-create-action";button.innerHTML=improve.innerHTML;
+ button.className=improve.className+" sticker-create-action";button.innerHTML='<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><defs><linearGradient id="miyaStickerPink" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#ff91c8"/><stop offset="1" stop-color="#ed4e91"/></linearGradient><linearGradient id="miyaStickerBlue" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#78d7ff"/><stop offset="1" stop-color="#3688ee"/></linearGradient><linearGradient id="miyaStickerYellow" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#ffe77c"/><stop offset="1" stop-color="#ffad42"/></linearGradient></defs><g stroke="#fff" stroke-width="1.8" stroke-linejoin="round"><rect x="3.1" y="5.2" width="13.1" height="13.1" rx="2.8" fill="url(#miyaStickerBlue)" transform="rotate(-13 9.65 11.75)"/><rect x="8" y="3.2" width="12.7" height="13" rx="2.8" fill="url(#miyaStickerPink)" transform="rotate(10 14.35 9.7)"/><rect x="6.2" y="8" width="13.2" height="12.5" rx="2.8" fill="url(#miyaStickerYellow)" transform="rotate(-3 12.8 14.25)"/></g><path d="M15.7 16.1h2.1m-1.05-1.05v2.1" stroke="#fff" stroke-width="1.25" stroke-linecap="round"/></svg>';
  button.title="Создать стикер AI";button.setAttribute("aria-label","Создать стикер AI");
  improve.insertAdjacentElement("afterend",button);
  if(!document.getElementById("miyaStickerActionButtonStyle")){
