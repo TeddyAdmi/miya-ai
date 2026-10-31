@@ -5490,14 +5490,14 @@ $("#composerModel")?.addEventListener("change",()=>{
  if(!improve||!options||document.getElementById("createStickerAI"))return;
  const button=document.createElement("button");
  button.type="button";button.id="createStickerAI";
- button.className=improve.className+" sticker-create-action";button.innerHTML='<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><defs><linearGradient id="miyaStickerPink" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#ff91c8"/><stop offset="1" stop-color="#ed4e91"/></linearGradient><linearGradient id="miyaStickerBlue" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#78d7ff"/><stop offset="1" stop-color="#3688ee"/></linearGradient><linearGradient id="miyaStickerYellow" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#ffe77c"/><stop offset="1" stop-color="#ffad42"/></linearGradient></defs><g transform="translate(-2.4 -2.4) scale(1.2)" stroke="#fff" stroke-width="2.15" stroke-linejoin="round"><rect x="3.1" y="5.2" width="13.1" height="13.1" rx="2.8" fill="url(#miyaStickerBlue)" transform="rotate(-13 9.65 11.75)"/><rect x="8" y="3.2" width="12.7" height="13" rx="2.8" fill="url(#miyaStickerPink)" transform="rotate(10 14.35 9.7)"/><rect x="6.2" y="8" width="13.2" height="12.5" rx="2.8" fill="url(#miyaStickerYellow)" transform="rotate(-3 12.8 14.25)"/></g><path d="M17 17.2h2.1m-1.05-1.05v2.1" stroke="#fff" stroke-width="1.4" stroke-linecap="round"/></svg>';
+ button.className=improve.className+" sticker-create-action";button.innerHTML="<svg viewBox=\"0 0 24 24\" aria-hidden=\"true\" focusable=\"false\"><rect x=\"3.5\" y=\"5.5\" width=\"17\" height=\"13\" rx=\"2.2\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.8\" stroke-linejoin=\"round\"/><path d=\"m4.5 7 7.5 6 7.5-6\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.8\" stroke-linecap=\"round\" stroke-linejoin=\"round\"/><path d=\"M9.3 15.2c.7.8 1.6 1.2 2.7 1.2s2-.4 2.7-1.2\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.45\" stroke-linecap=\"round\"/><circle cx=\"10\" cy=\"13.5\" r=\".65\" fill=\"currentColor\"/><circle cx=\"14\" cy=\"13.5\" r=\".65\" fill=\"currentColor\"/></svg>";'<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><defs><linearGradient id="miyaStickerPink" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#ff91c8"/><stop offset="1" stop-color="#ed4e91"/></linearGradient><linearGradient id="miyaStickerBlue" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#78d7ff"/><stop offset="1" stop-color="#3688ee"/></linearGradient><linearGradient id="miyaStickerYellow" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#ffe77c"/><stop offset="1" stop-color="#ffad42"/></linearGradient></defs><g transform="translate(-2.4 -2.4) scale(1.2)" stroke="#fff" stroke-width="2.15" stroke-linejoin="round"><rect x="3.1" y="5.2" width="13.1" height="13.1" rx="2.8" fill="url(#miyaStickerBlue)" transform="rotate(-13 9.65 11.75)"/><rect x="8" y="3.2" width="12.7" height="13" rx="2.8" fill="url(#miyaStickerPink)" transform="rotate(10 14.35 9.7)"/><rect x="6.2" y="8" width="13.2" height="12.5" rx="2.8" fill="url(#miyaStickerYellow)" transform="rotate(-3 12.8 14.25)"/></g><path d="M17 17.2h2.1m-1.05-1.05v2.1" stroke="#fff" stroke-width="1.4" stroke-linecap="round"/></svg>';
  button.title="Создать стикер AI";button.setAttribute("aria-label","Создать стикер AI");
  improve.insertAdjacentElement("afterend",button);
  if(!document.getElementById("miyaStickerActionButtonStyle")){
   const style=document.createElement("style");style.id="miyaStickerActionButtonStyle";
   style.textContent=`
    #composer .image-settings #createStickerAI{appearance:none!important;-webkit-appearance:none!important;box-sizing:border-box!important;position:relative!important;display:grid!important;flex:0 0 30px!important;width:30px!important;min-width:30px!important;max-width:30px!important;height:30px!important;min-height:30px!important;max-height:30px!important;margin:0!important;padding:0!important;place-items:center!important;align-self:center!important;border:0!important;border-radius:8px!important;background:linear-gradient(145deg,#b56aff,#9564ff 30%,#7563ff 56%,#4c79f6)!important;color:#fff!important;box-shadow:inset 0 1px 0 rgba(255,255,255,.34),inset 0 -2px 3px rgba(31,28,112,.28)!important}
-   #composer .image-settings #createStickerAI svg{position:relative!important;z-index:1!important;display:block!important;width:25px!important;height:25px!important;max-width:25px!important;max-height:25px!important;overflow:visible!important;stroke:#fff!important;color:#fff!important;stroke-width:2.15!important;filter:drop-shadow(0 1px 1px rgba(24,20,70,.22))!important}
+   #composer .image-settings #createStickerAI svg{position:relative!important;z-index:1!important;display:block!important;width:19px!important;height:19px!important;max-width:19px!important;max-height:19px!important;overflow:visible!important;stroke:#fff!important;color:#fff!important;stroke-width:2.15!important;filter:drop-shadow(0 1px 1px rgba(24,20,70,.22))!important}
    #composer .image-settings #createStickerAI:disabled{opacity:.55!important;cursor:wait!important}
    #miyaStickerStylePopup{position:fixed!important;inset:auto!important;z-index:2147483000!important;display:grid!important;grid-template-columns:minmax(0,1fr)!important;gap:0!important;box-sizing:border-box!important}
    #miyaStickerStylePopup[hidden]{display:none!important}
@@ -7852,30 +7852,4 @@ document.head.appendChild(musicCardPolish);const oldHero=modeHero;modeHero=funct
 
 
 /* Restore the compact envelope-smile icon for the Stickers navigation item. */
-(function restoreCompactStickerEnvelopeIcon(){
- const svg='<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><rect x="3.5" y="5.5" width="17" height="13" rx="2.2" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><path d="m4.5 7 7.5 6 7.5-6" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><path d="M9.3 15.2c.7.8 1.6 1.2 2.7 1.2s2-.4 2.7-1.2" fill="none" stroke="currentColor" stroke-width="1.45" stroke-linecap="round"/><circle cx="10" cy="13.5" r=".65" fill="currentColor"/><circle cx="14" cy="13.5" r=".65" fill="currentColor"/></svg>';
- const apply=()=>{
-  document.querySelectorAll('button,a,[role="button"]').forEach(button=>{
-   const label=String(button.innerText||button.getAttribute("aria-label")||button.getAttribute("title")||"").trim();
-   if(!/^Стикеры$/i.test(label))return;
-   const icon=button.querySelector(".nav-icon,.tool-icon,.icon");
-   if(!icon||icon.dataset.compactEnvelopeSmile==="1")return;
-   icon.innerHTML=svg;
-   icon.dataset.compactEnvelopeSmile="1";
-   icon.style.width="19px";
-   icon.style.height="19px";
-   icon.style.minWidth="19px";
-   icon.style.minHeight="19px";
-   icon.style.flex="0 0 19px";
-   icon.style.display="inline-grid";
-   icon.style.placeItems="center";
-   icon.style.background="transparent";
-   icon.style.color="inherit";
-   icon.style.transform="none";
-   icon.querySelector("svg").style.cssText="display:block;width:19px;height:19px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round";
-  });
- };
- apply();
- if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",apply,{once:true});
- new MutationObserver(apply).observe(document.documentElement,{childList:true,subtree:true});
-})();
+
