@@ -521,17 +521,125 @@ module.exports = async function imageHandler(req, res) {
           return res.status(413).json({ok:false,error:"STICKERDESIGNER_IMAGE_SIZE",message:"Полученное изображение пустое или слишком большое."});
         }
 
-        const stickerModel = "Sticker Designer · Recraft v4.1 Flash · " + stickerStyles[stickerStyle];
+        // The upstream AI endpoint returns artwork on a plain white canvas.
+        // Its website normally removes that connected white background and
+        // adds a white die-cut border in the browser. Recreate that step here
+        // so Miya receives a real transparent sticker, not a square image.
+        const stickerRaw = await sharp(imageBytes)
+          .rotate()
+          .resize({width:2048,height:2048,fit:"inside",withoutEnlargement:true})
+          .ensureAlpha()
+          .raw()
+          .toBuffer({resolveWithObject:true});
+        const {width:stickerWidth,height:stickerHeight,channels:stickerChannels} = stickerRaw.info;
+        const pixels = stickerWidth * stickerHeight;
+        if (!stickerWidth || !stickerHeight || stickerChannels !== 4 || pixels > 6000000) {
+          return res.status(502).json({ok:false,error:"STICKERDESIGNER_IMAGE_PROCESSING",message:"Не удалось подготовить контур стикера."});
+        }
+        const rgba = stickerRaw.data;
+        const background = new Uint8Array(pixels);
+        const queue = new Int32Array(pixels);
+        let queueHead = 0, queueTail = 0;
+        const isNearWhite = pixel => {
+          const offset = pixel * 4;
+          if (rgba[offset + 3] === 0) return false;
+          const red = rgba[offset], green = rgba[offset + 1], blue = rgba[offset + 2];
+          return Math.min(red,green,blue) >= 230 &&
+            Math.max(red,green,blue) - Math.min(red,green,blue) <= 30;
+        };
+        const addBackgroundPixel = pixel => {
+          if (pixel < 0 || pixel >= pixels || background[pixel] || !isNearWhite(pixel)) return;
+          background[pixel] = 1;
+          queue[queueTail++] = pixel;
+        };
+        for (let x = 0; x < stickerWidth; x++) {
+          addBackgroundPixel(x);
+          addBackgroundPixel((stickerHeight - 1) * stickerWidth + x);
+        }
+        for (let y = 1; y < stickerHeight - 1; y++) {
+          addBackgroundPixel(y * stickerWidth);
+          addBackgroundPixel(y * stickerWidth + stickerWidth - 1);
+        }
+        while (queueHead < queueTail) {
+          const pixel = queue[queueHead++];
+          const x = pixel % stickerWidth;
+          if (x > 0) addBackgroundPixel(pixel - 1);
+          if (x + 1 < stickerWidth) addBackgroundPixel(pixel + 1);
+          if (pixel >= stickerWidth) addBackgroundPixel(pixel - stickerWidth);
+          if (pixel + stickerWidth < pixels) addBackgroundPixel(pixel + stickerWidth);
+        }
+
+        const silhouette = new Uint8Array(pixels);
+        for (let pixel = 0; pixel < pixels; pixel++) {
+          const offset = pixel * 4;
+          if (background[pixel]) rgba[offset + 3] = 0;
+          else if (rgba[offset + 3] > 0) silhouette[pixel] = 255;
+        }
+
+        // A compact two-pass max filter expands the silhouette evenly. The
+        // resulting white layer is the die-cut edge, with transparent pixels
+        // everywhere outside its contour.
+        const outlineRadius = Math.max(5,Math.min(14,Math.round(Math.min(stickerWidth,stickerHeight) * 0.012)));
+        const horizontal = new Uint8Array(pixels);
+        const expanded = new Uint8Array(pixels);
+        for (let y = 0; y < stickerHeight; y++) {
+          const row = y * stickerWidth;
+          for (let x = 0; x < stickerWidth; x++) {
+            let max = 0;
+            const left = Math.max(0,x - outlineRadius);
+            const right = Math.min(stickerWidth - 1,x + outlineRadius);
+            for (let sample = left; sample <= right; sample++) {
+              const value = silhouette[row + sample];
+              if (value > max) max = value;
+              if (max === 255) break;
+            }
+            horizontal[row + x] = max;
+          }
+        }
+        for (let y = 0; y < stickerHeight; y++) {
+          for (let x = 0; x < stickerWidth; x++) {
+            let max = 0;
+            const top = Math.max(0,y - outlineRadius);
+            const bottom = Math.min(stickerHeight - 1,y + outlineRadius);
+            for (let sample = top; sample <= bottom; sample++) {
+              const value = horizontal[sample * stickerWidth + x];
+              if (value > max) max = value;
+              if (max === 255) break;
+            }
+            const pixel = y * stickerWidth + x;
+            if (max) {
+              expanded[pixel] = 255;
+              const offset = pixel * 4;
+              const alpha = rgba[offset + 3];
+              if (alpha === 0) {
+                rgba[offset] = 255; rgba[offset + 1] = 255; rgba[offset + 2] = 255;
+              } else if (alpha < 255) {
+                const inverse = 255 - alpha;
+                rgba[offset] = Math.round((rgba[offset] * alpha + 255 * inverse) / 255);
+                rgba[offset + 1] = Math.round((rgba[offset + 1] * alpha + 255 * inverse) / 255);
+                rgba[offset + 2] = Math.round((rgba[offset + 2] * alpha + 255 * inverse) / 255);
+              }
+              rgba[offset + 3] = 255;
+            } else {
+              rgba[offset + 3] = 0;
+            }
+          }
+        }
+
+        const stickerPng = await sharp(rgba,{raw:{width:stickerWidth,height:stickerHeight,channels:4}})
+          .png({compressionLevel:9})
+          .toBuffer();
+        const stickerDataUrl = "data:image/png;base64," + stickerPng.toString("base64");
         return res.status(200).json({
           ok:true,
           mode:"image",
           status:"completed",
           provider:"Sticker Designer",
-          model:stickerModel,
-          imageUrl:imageData,
-          imageUrls:[imageData],
+          model:"Sticker Designer",
+          imageUrl:stickerDataUrl,
+          imageUrls:[stickerDataUrl],
           count:1,
-          meta:{free:true,modelId:"recraft-v4.1-flash",style:stickerStyle,mime:"image/webp",rateLimit:"5 per hour per visitor"}
+          meta:{free:true,modelId:"recraft-v4.1-flash",style:stickerStyle,mime:"image/png",transparent:true,backgroundRemoved:true,dieCutOutlinePx:outlineRadius,rateLimit:"5 per hour per visitor"}
         });
       } catch (error) {
         const timedOut = error?.name === "TimeoutError" || error?.name === "AbortError" || /timed? ?out|abort/i.test(String(error?.message||""));
