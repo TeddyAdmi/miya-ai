@@ -461,7 +461,7 @@ module.exports = async function imageHandler(req, res) {
 
     if (provider === "stickerdesigner") {
       const stickerPrompt = typeof body.prompt === "string" ? body.prompt.trim() : "";
-      const stickerStyle = typeof body.style === "string" ? body.style.trim().toLowerCase() : "cartoon";
+      const stickerStyle = "watercolour";
       const stickerStyles = {
         "cartoon":"Cartoon",
         "kawaii":"Kawaii",
@@ -541,9 +541,9 @@ module.exports = async function imageHandler(req, res) {
         const queue = new Int32Array(pixels);
         let queueHead = 0, queueTail = 0;
         const isNearWhite = pixel => {
-          const offset = pixel * 4;
-          if (rgba[offset + 3] === 0) return false;
-          const red = rgba[offset], green = rgba[offset + 1], blue = rgba[offset + 2];
+          const pixelOffset = pixel * 4;
+          if (rgba[pixelOffset + 3] === 0) return false;
+          const red = rgba[pixelOffset], green = rgba[pixelOffset + 1], blue = rgba[pixelOffset + 2];
           return Math.min(red,green,blue) >= 230 &&
             Math.max(red,green,blue) - Math.min(red,green,blue) <= 30;
         };
@@ -571,9 +571,9 @@ module.exports = async function imageHandler(req, res) {
 
         const silhouette = new Uint8Array(pixels);
         for (let pixel = 0; pixel < pixels; pixel++) {
-          const offset = pixel * 4;
-          if (background[pixel]) rgba[offset + 3] = 0;
-          else if (rgba[offset + 3] > 0) silhouette[pixel] = 255;
+          const pixelOffset = pixel * 4;
+          if (background[pixel]) rgba[pixelOffset + 3] = 0;
+          else if (rgba[pixelOffset + 3] > 0) silhouette[pixel] = 255;
         }
 
         // A compact two-pass max filter expands the silhouette evenly. The
@@ -609,19 +609,19 @@ module.exports = async function imageHandler(req, res) {
             const max = tail > head ? horizontal[deque[head] * stickerWidth + x] : 0;
             const pixel = y * stickerWidth + x;
             if (max) {
-              const offset = pixel * 4;
-              const alpha = rgba[offset + 3];
+              const pixelOffset = pixel * 4;
+              const alpha = rgba[pixelOffset + 3];
               if (alpha === 0) {
-                rgba[offset] = 255; rgba[offset + 1] = 255; rgba[offset + 2] = 255;
+                rgba[pixelOffset] = 255; rgba[pixelOffset + 1] = 255; rgba[pixelOffset + 2] = 255;
               } else if (alpha < 255) {
                 const inverse = 255 - alpha;
-                rgba[offset] = Math.round((rgba[offset] * alpha + 255 * inverse) / 255);
-                rgba[offset + 1] = Math.round((rgba[offset + 1] * alpha + 255 * inverse) / 255);
-                rgba[offset + 2] = Math.round((rgba[offset + 2] * alpha + 255 * inverse) / 255);
+                rgba[pixelOffset] = Math.round((rgba[pixelOffset] * alpha + 255 * inverse) / 255);
+                rgba[pixelOffset + 1] = Math.round((rgba[pixelOffset + 1] * alpha + 255 * inverse) / 255);
+                rgba[pixelOffset + 2] = Math.round((rgba[pixelOffset + 2] * alpha + 255 * inverse) / 255);
               }
-              rgba[offset + 3] = 255;
+              rgba[pixelOffset + 3] = 255;
             } else {
-              rgba[offset + 3] = 0;
+              rgba[pixelOffset + 3] = 0;
             }
           }
         }
