@@ -998,6 +998,7 @@ function imageModelLabel(model){
  if(/^FLUX Content(?: Dev)?$/i.test(name))return "FLUX Content · I2I";
  return name;
 }
+document.querySelector('#composerModel option[value="Sticker Designer"]')?.remove();
 const imageSmithModelOption=document.querySelector('#composerModel option[value="ImageSmith"]');if(imageSmithModelOption)imageSmithModelOption.textContent="GPT Image 2.5 · T2I / I2I";
 const zImageTurboOption=document.querySelector('#composerModel option[value="Z-Image Turbo (ImageFree)"]');if(zImageTurboOption)zImageTurboOption.textContent="Z-Image Turbo · T2I";
 function syncStickerStyleControls(){
@@ -3036,13 +3037,13 @@ function scrollChatToLatest(behavior="smooth"){
    workspace.scrollTo({top:Math.max(0,Math.min(max,target)),behavior});
   }); });
 }
-function showLoading(){
+function showLoading(modelOverride=""){
  const c=$("#canvas");
  if(mode==="images"){
   let grid=c.querySelector(".result-grid");
   if(!grid){c.innerHTML='<div class="result-grid"></div>';grid=c.querySelector(".result-grid")}
   const old=c.querySelector(".generation-loading");if(old)old.remove();
-  const selectedModel=referenceImage?($("#composerModel")?.value||"ImageSmith"):($("#composerModel")?.value||"FLUX Dev");
+  const selectedModel=String(modelOverride||"").trim()||(referenceImage?($("#composerModel")?.value||"ImageSmith"):($("#composerModel")?.value||"FLUX Dev"));
   const card=document.createElement("div");card.className="generation-loading"+(referenceImage?" has-upload":" no-upload");
   card.dataset.model=selectedModel;
   card.innerHTML='<div class="generation-progress"><div class="progress-circle is-active"><span class="progress-percent">1%</span></div><div class="progress-copy"><b>Создание изображения</b><span class="progress-model"></span></div></div>';
@@ -3257,8 +3258,9 @@ async function generateAgnesImage(prompt,loaderAlreadyShown=false){
 }
 
 
-async function generateImage(prompt,loaderAlreadyShown=false){
- const selectedModel=String($("#composerModel")?.value||"").trim();
+async function generateImage(prompt,loaderAlreadyShown=false,modelOverride=""){
+ const selectedModel=String(modelOverride||$("#composerModel")?.value||"").trim();
+ const userSelectedModel=String($("#composerModel")?.value||"").trim();
  const useAgnesImage=/^Agnes Image/i.test(selectedModel);
  const useImageFree=/^Z-Image Turbo \(ImageFree\)$/i.test(selectedModel);
  const useQwenImage21=selectedModel==="Qwen Image 2.1 · T2I";
@@ -3295,7 +3297,7 @@ async function generateImage(prompt,loaderAlreadyShown=false){
  if(useAgnesImage){
   return generateAgnesImage(prompt,loaderAlreadyShown);
  }
- if(!loaderAlreadyShown)showLoading();$("#composerSend").disabled=true;
+ if(!loaderAlreadyShown)showLoading(useStickerDesigner?"Sticker Designer":"");$("#composerSend").disabled=true;
  const loader=$("#canvas .generation-loading");
  const ring=loader?.querySelector(".progress-circle");
  const percent=ring?.querySelector(".progress-percent");
@@ -3508,7 +3510,7 @@ async function generateImage(prompt,loaderAlreadyShown=false){
    }
   scrollImagesToTop();
   $("#composerInput").value="";syncInput();
-  $("#composerModel").value=modelName;
+  $("#composerModel").value=useStickerDesigner?userSelectedModel:modelName;
   setImageRatio(referenceImage?selectedRatio:$("#composerRatio").value);
   const successStatus=$("#composerStatus");
   if(successStatus){
@@ -5485,6 +5487,55 @@ $("#stickerStyle")?.addEventListener("change",()=>{
     if(status)status.textContent=imageModelLabel("Sticker Designer")+" · "+style+" · готов к созданию";
   }
 });
+
+(function installStickerQuickAction(){
+ const improve=$("#improve"),options=$("#composerOptions");
+ if(!improve||!options||document.getElementById("createStickerAI"))return;
+ const button=document.createElement("button");
+ button.type="button";
+ button.id="createStickerAI";
+ button.className="sticker-quick-action";
+ button.textContent="Создать стикер AI";
+ button.title="Создать стикер в стиле Watercolor";
+ button.setAttribute("aria-label","Создать стикер AI");
+ improve.insertAdjacentElement("afterend",button);
+ if(!document.getElementById("miyaStickerQuickActionStyle")){
+  const style=document.createElement("style");
+  style.id="miyaStickerQuickActionStyle";
+  style.textContent=`
+   #composer .image-settings #createStickerAI{
+    appearance:none!important;-webkit-appearance:none!important;box-sizing:border-box!important;
+    position:relative!important;display:inline-flex!important;flex:0 0 auto!important;
+    align-items:center!important;justify-content:center!important;align-self:center!important;
+    height:30px!important;min-height:30px!important;max-height:30px!important;
+    width:auto!important;min-width:0!important;max-width:none!important;
+    margin:0!important;padding:0 10px!important;border:0!important;border-radius:8px!important;
+    background:radial-gradient(ellipse at 27% 15%,rgba(255,255,255,.32) 0%,rgba(255,255,255,.13) 24%,rgba(255,255,255,0) 62%),linear-gradient(145deg,#b56aff 0%,#9564ff 30%,#7563ff 56%,#4c79f6 100%)!important;
+    box-shadow:inset 0 1px 0 rgba(255,255,255,.34),inset 0 -2px 3px rgba(31,28,112,.28)!important;
+    color:#fff!important;font:800 9px/1 Inter, sans-serif!important;white-space:nowrap!important;
+    cursor:pointer!important;outline:none!important;transform:none!important;filter:none!important;
+    transition:background .12s ease,opacity .12s ease!important;
+   }
+   #composer .image-settings #createStickerAI:hover{filter:brightness(1.06)!important}
+   #composer .image-settings #createStickerAI:disabled{opacity:.55!important;cursor:wait!important}
+   @media(max-width:520px){#composer .image-settings #createStickerAI{display:inline-flex!important;font-size:8px!important;padding:0 7px!important}}
+  `;
+  document.head.appendChild(style);
+ }
+ button.addEventListener("click",async()=>{
+  if(mode!=="images"||button.disabled||$("#composerSend")?.disabled)return;
+  const input=$("#composerInput"),prompt=String(input?.value||"").trim();
+  if(!prompt){input?.focus();toast("Сначала напиши, какой стикер создать");return}
+  if(referenceImage){toast("Для создания стикера убери прикреплённое фото");return}
+  const style=$("#stickerStyle");
+  if(style)style.value="watercolour";
+  button.disabled=true;
+  button.setAttribute("aria-busy","true");
+  try{await generateImage(prompt,false,"Sticker Designer")}
+  finally{button.disabled=false;button.removeAttribute("aria-busy")}
+ });
+})();
+
 $("#improve")?.addEventListener("click",improveImageComposerPrompt);
 $("#improve")?.setAttribute("title","Улучшить промпт AI");
 $("#improve")?.setAttribute("aria-label","Улучшить промпт AI");
