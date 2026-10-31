@@ -5493,6 +5493,9 @@ $("#composerModel")?.addEventListener("change",()=>{
    #composer .image-settings #createStickerAI:disabled{opacity:.55!important;cursor:wait!important}
    #miyaStickerStylePopup{position:fixed!important;inset:auto!important;z-index:2147483000!important;display:grid!important;grid-template-columns:minmax(0,1fr)!important;gap:0!important;box-sizing:border-box!important}
    #miyaStickerStylePopup[hidden]{display:none!important}
+   /* Creation dates belong only to the expanded viewer, never to wall cards. */
+   .media-card .image-viewer-created-date,.media-card .media-created-date{display:none!important}
+   .image-viewer-created-info{position:fixed!important;right:22px!important;bottom:18px!important;top:auto!important;left:auto!important}
    #miyaStickerStylePopup .sticker-style-option{box-sizing:border-box!important;width:100%!important;height:36px!important;min-height:36px!important;display:flex!important;align-items:center!important;justify-content:center!important;padding:0!important;margin:0!important;border:0!important;border-radius:5px!important;background:transparent!important;cursor:pointer!important;overflow:hidden!important}
    #miyaStickerStylePopup .sticker-style-option:hover,#miyaStickerStylePopup .sticker-style-option:focus-visible{background:#153653!important;outline:none!important}
    #miyaStickerStylePopup .sticker-style-option svg{width:18px!important;height:18px!important;max-width:18px!important;max-height:18px!important;flex:0 0 18px!important;display:block!important;overflow:hidden!important;filter:drop-shadow(0 1px 1px rgba(0,0,0,.18))}
@@ -5523,9 +5526,20 @@ $("#composerModel")?.addEventListener("change",()=>{
  const closePopup=()=>{popup.hidden=true;button.setAttribute("aria-expanded","false")};
  const promptInput=document.querySelector("#composerInput");
  if(promptInput){
-  promptInput.addEventListener("pointerenter",closePopup);
+  promptInput.addEventListener("pointerdown",closePopup,true);
   promptInput.addEventListener("focus",closePopup);
  }
+ // Close the style menu as soon as the user interacts with any other
+ // composer control or switches to another workspace block. Keep the
+ // trigger itself excluded so its second click can toggle the menu closed.
+ const closeForOtherControls=event=>{
+  if(popup.hidden)return;
+  const target=event.target;
+  if(!(target instanceof Element))return;
+  if(target.closest("#createStickerAI")||target.closest("#miyaStickerStylePopup"))return;
+  if(target.closest("#composer, #composerOptions, .image-settings, #videoOptions, [data-tool], [data-mode], #workspace"))closePopup();
+ };
+ ["pointerdown","click","focusin","change"].forEach(type=>document.addEventListener(type,closeForOtherControls,true));
  button.setAttribute("aria-haspopup","menu");button.setAttribute("aria-expanded","false");
  button.addEventListener("click",()=>{
   if(mode!=="images"||button.disabled||$("#composerSend")?.disabled)return;
