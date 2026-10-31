@@ -5499,12 +5499,11 @@ $("#composerModel")?.addEventListener("change",()=>{
    #composer .image-settings #createStickerAI{appearance:none!important;-webkit-appearance:none!important;box-sizing:border-box!important;position:relative!important;display:grid!important;flex:0 0 30px!important;width:30px!important;min-width:30px!important;max-width:30px!important;height:30px!important;min-height:30px!important;max-height:30px!important;margin:0!important;padding:0!important;place-items:center!important;align-self:center!important;border:0!important;border-radius:8px!important;background:linear-gradient(145deg,#b56aff,#9564ff 30%,#7563ff 56%,#4c79f6)!important;color:#fff!important;box-shadow:inset 0 1px 0 rgba(255,255,255,.34),inset 0 -2px 3px rgba(31,28,112,.28)!important}
    #composer .image-settings #createStickerAI svg{display:block!important;width:17px!important;height:17px!important;stroke:#fff!important;color:#fff!important;stroke-width:1.8!important}
    #composer .image-settings #createStickerAI:disabled{opacity:.55!important;cursor:wait!important}
-   #miyaStickerStylePopup{position:fixed!important;inset:auto!important;z-index:2147483000!important;display:grid!important;grid-template-columns:minmax(0,1fr)!important;gap:3px!important;box-sizing:border-box!important;padding:3px!important;border:1px solid var(--line,rgba(255,255,255,.16))!important;border-radius:10px!important;background:var(--panel,rgba(24,27,42,.96))!important;box-shadow:0 8px 24px rgba(0,0,0,.24)!important;backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px)}
-   body.light #miyaStickerStylePopup{background:rgba(255,255,255,.97)!important;border-color:rgba(45,35,65,.14)!important;box-shadow:0 8px 24px rgba(35,25,55,.16)!important}
+   #miyaStickerStylePopup{position:fixed!important;inset:auto!important;z-index:2147483000!important;display:grid!important;grid-template-columns:minmax(0,1fr)!important;gap:0!important;box-sizing:border-box!important}
    #miyaStickerStylePopup[hidden]{display:none!important}
-   #miyaStickerStylePopup .sticker-style-option{box-sizing:border-box!important;width:100%!important;height:29px!important;min-height:29px!important;display:grid!important;place-items:center!important;padding:1px!important;border:1px solid transparent!important;border-radius:7px!important;background:transparent!important;cursor:pointer!important}
-   #miyaStickerStylePopup .sticker-style-option:hover,#miyaStickerStylePopup .sticker-style-option:focus-visible{background:rgba(145,125,255,.15)!important;border-color:rgba(145,125,255,.35)!important;outline:none!important}
-   #miyaStickerStylePopup .sticker-style-option svg{width:25px!important;height:25px!important;display:block!important;overflow:visible!important;filter:drop-shadow(0 1px 1px rgba(0,0,0,.22))}
+   #miyaStickerStylePopup .sticker-style-option{box-sizing:border-box!important;width:100%!important;height:36px!important;min-height:36px!important;display:flex!important;align-items:center!important;justify-content:center!important;padding:0!important;margin:0!important;border:0!important;border-radius:5px!important;background:transparent!important;cursor:pointer!important;overflow:hidden!important}
+   #miyaStickerStylePopup .sticker-style-option:hover,#miyaStickerStylePopup .sticker-style-option:focus-visible{background:#153653!important;outline:none!important}
+   #miyaStickerStylePopup .sticker-style-option svg{width:18px!important;height:18px!important;max-width:18px!important;max-height:18px!important;flex:0 0 18px!important;display:block!important;overflow:hidden!important;filter:drop-shadow(0 1px 1px rgba(0,0,0,.18))}
   `;document.head.appendChild(style);
  }
  const styles=[
@@ -5514,9 +5513,9 @@ $("#composerModel")?.addEventListener("change",()=>{
   {id:"line art",name:"Line art",svg:'<svg viewBox="0 0 40 40" aria-hidden="true"><path d="M20 34Q8 27 11 15Q21 13 20 34Z" fill="#a9e8dc" stroke="#fff" stroke-width="2" stroke-linejoin="round"/><path d="M20 34Q32 28 29 15Q19 14 20 34Z" fill="#8ac9f5" stroke="#fff" stroke-width="2" stroke-linejoin="round"/><path d="M20 34V9M20 17Q12 8 9 12M20 22Q28 12 32 16" fill="none" stroke="#3e647f" stroke-width="1.8" stroke-linecap="round"/><circle cx="20" cy="8" r="3.4" fill="#f6c76b" stroke="#fff" stroke-width="1.5"/></svg>'},
   {id:"watercolour",name:"Watercolour",svg:'<svg viewBox="0 0 40 40" aria-hidden="true"><path d="M9 11Q12 3 19 8Q25 2 30 10Q39 13 32 21Q36 30 27 31Q21 39 14 31Q4 32 7 23Q1 16 9 11Z" fill="#78c8e8" opacity=".9" stroke="#fff" stroke-width="2"/><path d="M13 15Q18 8 23 14Q30 14 27 21Q23 27 16 25Q9 22 13 15Z" fill="#f58db8" opacity=".92"/><path d="M17 13Q22 10 25 16Q28 22 21 26Q15 25 14 20" fill="#f6d36d" opacity=".9"/><circle cx="30" cy="8" r="2" fill="#f2a4c5"/><circle cx="7" cy="30" r="2" fill="#f2a4c5"/></svg>'}
  ];
- const popup=document.createElement("div");popup.id="miyaStickerStylePopup";popup.hidden=true;popup.setAttribute("role","menu");popup.setAttribute("aria-label","Стиль стикера");
+ const popup=document.createElement("div");popup.id="miyaStickerStylePopup";popup.className="miya-composer-select-popup";popup.hidden=true;popup.setAttribute("role","menu");popup.setAttribute("aria-label","Стиль стикера");
  styles.forEach(item=>{
-  const option=document.createElement("button");option.type="button";option.className="sticker-style-option";option.setAttribute("role","menuitem");option.title=item.name;option.setAttribute("aria-label",item.name);option.innerHTML=item.svg;
+  const option=document.createElement("button");option.type="button";option.className="miya-composer-select-option sticker-style-option";option.setAttribute("role","menuitem");option.title=item.name;option.setAttribute("aria-label",item.name);option.innerHTML=item.svg;
   option.addEventListener("click",async()=>{
    popup.hidden=true;button.setAttribute("aria-expanded","false");
    if(mode!=="images"||button.disabled||$("#composerSend")?.disabled)return;
@@ -5545,7 +5544,7 @@ $("#composerModel")?.addEventListener("change",()=>{
   const width=rect.width;
   const height=popup.getBoundingClientRect().height||popup.offsetHeight;
   const left=Math.max(8,Math.min(window.innerWidth-width,rect.left));
-  const below=rect.bottom+7,above=rect.top-height-7;
+  const below=rect.bottom+4,above=rect.top-height-4;
   const top=below+height<=window.innerHeight-8?below:Math.max(8,above);
   popup.style.setProperty("left",left+"px","important");
   popup.style.setProperty("top",top+"px","important");
