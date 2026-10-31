@@ -999,16 +999,9 @@ function imageModelLabel(model){
  return name;
 }
 document.querySelector('#composerModel option[value="Sticker Designer"]')?.remove();
+document.querySelector('[aria-label="Стиль стикера"]')?.remove();
 const imageSmithModelOption=document.querySelector('#composerModel option[value="ImageSmith"]');if(imageSmithModelOption)imageSmithModelOption.textContent="GPT Image 2.5 · T2I / I2I";
 const zImageTurboOption=document.querySelector('#composerModel option[value="Z-Image Turbo (ImageFree)"]');if(zImageTurboOption)zImageTurboOption.textContent="Z-Image Turbo · T2I";
-function syncStickerStyleControls(){
- const active=$("#composerModel")?.value==="Sticker Designer";
- const style=$("#stickerStyle"),ratio=$("#composerRatio"),quality=$("#composerQuality");
- if(style)style.style.display=active?"":"none";
- if(ratio)ratio.style.display=active?"none":"";
- if(quality)quality.style.display=active?"none":"";
-}
-syncStickerStyleControls();
 function setComposerAttachment(url){
  const box=$("#composerAttachment"),img=$("#composerAttachmentImage");
  if(!box||!img)return;
@@ -3362,7 +3355,7 @@ async function generateImage(prompt,loaderAlreadyShown=false,modelOverride=""){
        : useImageSmith
        ? JSON.stringify({mode:"image",provider:"imagesmith",prompt,model:modelName,ratio:selectedRatio,...(imageSmithReferenceImage?{referenceImage:imageSmithReferenceImage}:{})})
        : useStickerDesigner
-       ? JSON.stringify({mode:"image",provider:"stickerdesigner",prompt,model:modelName,style:$("#stickerStyle")?.value||"cartoon"})
+       ? JSON.stringify({mode:"image",provider:"stickerdesigner",prompt,model:modelName,style:"watercolour"})
        : useCinel
        ? JSON.stringify({mode:"image",provider:"cinel",prompt,model:modelName,ratio:selectedRatio})
        : useFlux2DevHoodgen
@@ -5163,7 +5156,7 @@ function setMode(next,render=true){
    // so saved cards and image decoding cannot block the first model-menu interaction.
    const imageModel=$("#composerModel");
    if(imageModel&&!referenceImage)imageModel.value="ImageSmith";
-   syncStickerStyleControls();
+
    if(!referenceImage)setImageRatio("16:9");
    const paintImageWall=()=>{if(mode==="images")renderImageLibrary()};
    if("requestIdleCallback" in window)requestIdleCallback(paintImageWall,{timeout:1500});
@@ -5457,7 +5450,7 @@ $("#composerAttachmentRemove")?.addEventListener("click",()=>clearComposerAttach
 $("#composerModel")?.addEventListener("change",()=>{
   const model=$("#composerModel").value;
   const modelLabel=imageModelLabel(model);
-  syncStickerStyleControls();
+
   /* Keep an existing edit image visible while switching models. The selected
      model decides whether that image is actually sent for generation. */
   if(model==="FLUX Kontext Dev"){
@@ -5466,8 +5459,7 @@ $("#composerModel")?.addEventListener("change",()=>{
       ?modelLabel+" · изображение готово к редактированию"
       :modelLabel+" · готов к созданию";
   }else if(model==="Sticker Designer"){
-    const style=$("#stickerStyle")?.value||"cartoon";
-    $("#composerStatus").textContent=modelLabel+" · "+style+" · готов к созданию";
+    $("#composerStatus").textContent=modelLabel+" · готов к созданию";
   }else if(model==="Agnes Image 2.5 Flash"){
     setImageRatio("16:9");
     $("#composerStatus").textContent=referenceImage
@@ -5480,40 +5472,62 @@ $("#composerModel")?.addEventListener("change",()=>{
       :modelLabel+" · готов к созданию";
   }
 });
-$("#stickerStyle")?.addEventListener("change",()=>{
-  if($("#composerModel")?.value==="Sticker Designer"){
-    const style=$("#stickerStyle").value;
-    const status=$("#composerStatus");
-    if(status)status.textContent=imageModelLabel("Sticker Designer")+" · "+style+" · готов к созданию";
-  }
-});
-
 (function installStickerQuickAction(){
  const improve=$("#improve"),options=$("#composerOptions");
  if(!improve||!options||document.getElementById("createStickerAI"))return;
  const button=document.createElement("button");
  button.type="button";
  button.id="createStickerAI";
- button.className=improve.className;
+ button.className=improve.className+" sticker-create-action";
  button.innerHTML=improve.innerHTML;
  button.title="Создать стикер AI";
  button.setAttribute("aria-label","Создать стикер AI");
- button.insertAdjacentText("beforeend","");
  improve.insertAdjacentElement("afterend",button);
+ if(!document.getElementById("miyaStickerActionButtonStyle")){
+  const style=document.createElement("style");
+  style.id="miyaStickerActionButtonStyle";
+  style.textContent=`
+   #composer .image-settings #createStickerAI{
+    appearance:none!important;-webkit-appearance:none!important;box-sizing:border-box!important;
+    position:relative!important;display:grid!important;flex:0 0 30px!important;
+    width:30px!important;min-width:30px!important;max-width:30px!important;
+    height:30px!important;min-height:30px!important;max-height:30px!important;
+    margin:0!important;padding:0!important;place-items:center!important;align-self:center!important;
+    border:0!important;border-radius:8px!important;
+    background:radial-gradient(ellipse at 27% 15%,rgba(255,255,255,.32) 0%,rgba(255,255,255,.13) 24%,rgba(255,255,255,0) 62%),linear-gradient(145deg,#b56aff 0%,#9564ff 30%,#7563ff 56%,#4c79f6 100%)!important;
+    color:#fff!important;
+    box-shadow:inset 0 1px 0 rgba(255,255,255,.34),inset 0 -2px 3px rgba(31,28,112,.28)!important;
+    outline:none!important;transform:none!important;filter:none!important;
+    transition:background .12s ease,opacity .12s ease!important;
+   }
+   #composer .image-settings #createStickerAI svg{
+    display:block!important;width:17px!important;height:17px!important;min-width:17px!important;min-height:17px!important;
+    margin:0!important;fill:none!important;stroke:#fff!important;color:#fff!important;stroke-width:1.8!important;
+    stroke-linecap:round!important;stroke-linejoin:round!important;transform:none!important;filter:none!important;
+   }
+   #composer .image-settings #createStickerAI:hover,
+   #composer .image-settings #createStickerAI:active,
+   body.light #composer .image-settings #createStickerAI{
+    background:radial-gradient(ellipse at 27% 15%,rgba(255,255,255,.32) 0%,rgba(255,255,255,.13) 24%,rgba(255,255,255,0) 62%),linear-gradient(145deg,#b56aff 0%,#9564ff 30%,#7563ff 56%,#4c79f6 100%)!important;
+    color:#fff!important;border:0!important;border-radius:8px!important;
+    box-shadow:inset 0 1px 0 rgba(255,255,255,.34),inset 0 -2px 3px rgba(31,28,112,.28)!important;
+    outline:none!important;transform:none!important;filter:none!important;
+   }
+   #composer .image-settings #createStickerAI:disabled{opacity:.55!important;cursor:wait!important}
+  `;
+  document.head.appendChild(style);
+ }
  button.addEventListener("click",async()=>{
   if(mode!=="images"||button.disabled||$("#composerSend")?.disabled)return;
   const input=$("#composerInput"),prompt=String(input?.value||"").trim();
   if(!prompt){input?.focus();toast("Сначала напиши, какой стикер создать");return}
   if(referenceImage){toast("Для создания стикера убери прикреплённое фото");return}
-  const style=$("#stickerStyle");
-  if(style)style.value="watercolour";
   button.disabled=true;
   button.setAttribute("aria-busy","true");
   try{await generateImage(prompt,false,"Sticker Designer")}
   finally{button.disabled=false;button.removeAttribute("aria-busy")}
  });
-})();;
-
+})();
 $("#improve")?.addEventListener("click",improveImageComposerPrompt);
 $("#improve")?.setAttribute("title","Улучшить промпт AI");
 $("#improve")?.setAttribute("aria-label","Улучшить промпт AI");
