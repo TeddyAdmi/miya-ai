@@ -5512,7 +5512,7 @@ $("#composerModel")?.addEventListener("change",()=>{
  styles.forEach(item=>{
   const option=document.createElement("button");option.type="button";option.className="miya-composer-select-option sticker-style-option";option.setAttribute("role","menuitem");option.title=item.name;option.setAttribute("aria-label",item.name);option.innerHTML=item.svg;
   option.addEventListener("click",async()=>{
-   popup.hidden=true;button.setAttribute("aria-expanded","false");
+   closePopup();
    if(mode!=="images"||button.disabled||$("#composerSend")?.disabled)return;
    const input=$("#composerInput"),prompt=String(input?.value||"").trim();
    if(!prompt){input?.focus();toast("Сначала напиши, какой стикер создать");return}
@@ -5523,7 +5523,7 @@ $("#composerModel")?.addEventListener("change",()=>{
   });popup.appendChild(option);
  });
  document.documentElement.appendChild(popup);
- const closePopup=()=>{popup.hidden=true;button.setAttribute("aria-expanded","false")};
+ const closePopup=()=>{popup.hidden=true;popup.style.removeProperty("display");popup.style.removeProperty("visibility");button.setAttribute("aria-expanded","false")};
  const promptInput=document.querySelector("#composerInput");
  if(promptInput){
   promptInput.addEventListener("pointerdown",closePopup,true);
