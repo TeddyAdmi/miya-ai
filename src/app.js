@@ -7849,3 +7849,33 @@ document.head.appendChild(musicCardPolish);const oldHero=modeHero;modeHero=funct
 
 /* Use a page-styled popup for image/video selects: native Firefox pickers ignore option background colors. */
 
+
+
+/* Restore the compact envelope-smile icon for the Stickers navigation item. */
+(function restoreCompactStickerEnvelopeIcon(){
+ const svg='<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><rect x="3.5" y="5.5" width="17" height="13" rx="2.2" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><path d="m4.5 7 7.5 6 7.5-6" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><path d="M9.3 15.2c.7.8 1.6 1.2 2.7 1.2s2-.4 2.7-1.2" fill="none" stroke="currentColor" stroke-width="1.45" stroke-linecap="round"/><circle cx="10" cy="13.5" r=".65" fill="currentColor"/><circle cx="14" cy="13.5" r=".65" fill="currentColor"/></svg>';
+ const apply=()=>{
+  document.querySelectorAll('button,a,[role="button"]').forEach(button=>{
+   const label=String(button.innerText||button.getAttribute("aria-label")||button.getAttribute("title")||"").trim();
+   if(!/^Стикеры$/i.test(label))return;
+   const icon=button.querySelector(".nav-icon,.tool-icon,.icon");
+   if(!icon||icon.dataset.compactEnvelopeSmile==="1")return;
+   icon.innerHTML=svg;
+   icon.dataset.compactEnvelopeSmile="1";
+   icon.style.width="19px";
+   icon.style.height="19px";
+   icon.style.minWidth="19px";
+   icon.style.minHeight="19px";
+   icon.style.flex="0 0 19px";
+   icon.style.display="inline-grid";
+   icon.style.placeItems="center";
+   icon.style.background="transparent";
+   icon.style.color="inherit";
+   icon.style.transform="none";
+   icon.querySelector("svg").style.cssText="display:block;width:19px;height:19px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round";
+  });
+ };
+ apply();
+ if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",apply,{once:true});
+ new MutationObserver(apply).observe(document.documentElement,{childList:true,subtree:true});
+})();
