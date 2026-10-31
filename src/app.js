@@ -141,7 +141,8 @@ body.light .media-action.media-more{background:rgba(255,255,255,.52)!important;b
 body.light .media-action.media-more:hover{background:rgba(0,0,0,.10)!important;border-color:rgba(40,30,60,.18)!important;color:#17121f!important}
 .image-viewer-created-info{position:fixed!important;right:22px!important;bottom:18px!important;top:auto!important;left:auto!important;z-index:20!important;display:flex!important;flex-direction:column!important;align-items:flex-end!important;gap:3px!important;padding:7px 10px!important;border-radius:9px!important;background:rgba(20,27,38,.78)!important;color:rgba(255,255,255,.88)!important;border:1px solid rgba(255,255,255,.14)!important;backdrop-filter:blur(8px)!important;-webkit-backdrop-filter:blur(8px)!important;pointer-events:none!important;max-width:min(320px,calc(100vw - 24px))!important}
 .image-viewer-created-info .image-viewer-created-model,.image-viewer-created-info .image-viewer-created-date{position:static!important;inset:auto!important;padding:0!important;margin:0!important;border:0!important;border-radius:0!important;background:transparent!important;backdrop-filter:none!important;-webkit-backdrop-filter:none!important;color:inherit!important;font-size:11px!important;line-height:1.25!important;white-space:normal!important;text-align:right!important}
-.image-viewer-created-info .image-viewer-created-model{font-weight:600!important;color:#fff!important;max-width:100%!important;overflow-wrap:anywhere!important}
+.image-viewer-created-info .image-viewer-created-model:empty{display:none!important}
+.image-viewer-created-model{font-weight:600!important;color:#fff!important;max-width:100%!important;overflow-wrap:anywhere!important}
 .image-viewer-created-info .image-viewer-created-date{font-weight:400!important;color:rgba(255,255,255,.72)!important}
 body.light .image-viewer-created-info{background:rgba(255,255,255,.9)!important;color:#52627a!important;border-color:rgba(40,30,60,.14)!important;box-shadow:0 4px 18px rgba(0,0,0,.12)!important}
 body.light .image-viewer-created-info .image-viewer-created-model{color:#273047!important}
@@ -984,7 +985,7 @@ function imageModelLabel(model){
  const name=String(model||"").trim();
  if(name==="Nano BananA")return "Nano BananA · T2I / I2I";
  if(name==="ImageSmith")return "GPT Image 2.5 · T2I / I2I";
- if(name==="Sticker Designer")return "Sticker Designer · Recraft v4.1 Flash · T2I";
+ if(name==="Sticker Designer"||/^Sticker Designer\s*[·|]/i.test(name))return "Sticker Designer";
  if(name==="Kolors")return "Kolors · T2I";
  if(/^Nano Banana$/i.test(name))return "Nano Banana · T2I";
  if(/^Seedream$/i.test(name))return "Seedream · T2I";
@@ -1300,7 +1301,7 @@ function openImageViewer(item){
   const showViewerItem=(nextItem)=>{
     if(!nextItem)return;
     modal.dataset.viewerItemId=nextItem.id;
-    const viewerModel=modal.querySelector(".image-viewer-created-model");if(viewerModel)viewerModel.textContent=imageModelLabel(nextItem.model||"Модель не указана");const viewerDate=modal.querySelector(".image-viewer-created-date");if(viewerDate)viewerDate.textContent=formatMediaCreationDate(nextItem);
+    const viewerModel=modal.querySelector(".image-viewer-created-model");if(viewerModel)viewerModel.textContent=/^Sticker Designer(?:\\s|$)/i.test(String(nextItem.model||""))?"":imageModelLabel(nextItem.model||"Модель не указана");const viewerDate=modal.querySelector(".image-viewer-created-date");if(viewerDate)viewerDate.textContent=formatMediaCreationDate(nextItem);
     const viewerImg=modal.querySelector(".image-viewer-image");
     viewerImg.src=nextItem.url;
     viewerImg.dataset.zoom="1";viewerImg.dataset.panX="0";viewerImg.dataset.panY="0";
@@ -1365,6 +1366,7 @@ function openImageViewer(item){
  }
  const img=modal.querySelector(".image-viewer-image");
  modal.dataset.viewerItemId=item.id;
+ const viewerModel=modal.querySelector(".image-viewer-created-model");if(viewerModel)viewerModel.textContent=/^Sticker Designer(?:\\s|$)/i.test(String(item.model||""))?"":imageModelLabel(item.model||"Модель не указана");
  const isAuraModel=/^(Nano Banana|Seedream)$/i.test(String(item.model||"").trim());
  const viewerSource=isAuraModel?jpegImageUrl(item.url):item.url;
  img.src=viewerSource;
@@ -1685,11 +1687,14 @@ function buildMediaCard(item,{video=false,pendingDots=false}={}){
    media.addEventListener("click",e=>{e.stopPropagation();openImageViewer(item)});
    card.appendChild(media);
  }
- const modelBadge=document.createElement("div");
- modelBadge.className="media-model-badge";
- modelBadge.textContent=imageModelLabel(item.model||"Модель не указана");
- modelBadge.title="Модель, которая фактически создала этот материал";
- card.appendChild(modelBadge);
+ const isStickerItem=/^Sticker Designer(?:\\s|$)/i.test(String(item.model||""));
+ if(!isStickerItem){
+  const modelBadge=document.createElement("div");
+  modelBadge.className="media-model-badge";
+  modelBadge.textContent=imageModelLabel(item.model||"Модель не указана");
+  modelBadge.title="Модель, которая фактически создала этот материал";
+  card.appendChild(modelBadge);
+ }
  const actions=document.createElement("div");actions.className="media-actions";
  const more=document.createElement("button");more.type="button";more.className="media-action media-more";more.removeAttribute("title");more.setAttribute("aria-label","Открыть меню");
  more.innerHTML='<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="5" cy="12" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="19" cy="12" r="1.5"/></svg>';
