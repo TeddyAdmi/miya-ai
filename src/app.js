@@ -5529,6 +5529,11 @@ $("#composerModel")?.addEventListener("change",()=>{
  });
  document.documentElement.appendChild(popup);
  const closePopup=()=>{popup.hidden=true;button.setAttribute("aria-expanded","false")};
+ const promptInput=document.querySelector("#composerInput");
+ if(promptInput){
+  promptInput.addEventListener("pointerenter",closePopup);
+  promptInput.addEventListener("focus",closePopup);
+ }
  button.setAttribute("aria-haspopup","menu");button.setAttribute("aria-expanded","false");
  button.addEventListener("click",()=>{
   if(mode!=="images"||button.disabled||$("#composerSend")?.disabled)return;
