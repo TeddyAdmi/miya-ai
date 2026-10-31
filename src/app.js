@@ -1695,6 +1695,14 @@ function buildMediaCard(item,{video=false,pendingDots=false}={}){
   modelBadge.title=isStickerItem?"Sticker Designer":"Модель, которая фактически создала этот материал";
   card.appendChild(modelBadge);
  }
+ if(item.createdAt){
+  const createdDate=document.createElement("time");
+  createdDate.className="media-created-date";
+  createdDate.dateTime=new Date(Number(item.createdAt)).toISOString();
+  createdDate.textContent=formatMediaCreationDate(item);
+  createdDate.title="Дата создания";
+  card.appendChild(createdDate);
+ }
  const actions=document.createElement("div");actions.className="media-actions";
  const more=document.createElement("button");more.type="button";more.className="media-action media-more";more.removeAttribute("title");more.setAttribute("aria-label","Открыть меню");
  more.innerHTML='<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="5" cy="12" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="19" cy="12" r="1.5"/></svg>';
@@ -5491,21 +5499,20 @@ $("#composerModel")?.addEventListener("change",()=>{
    #composer .image-settings #createStickerAI{appearance:none!important;-webkit-appearance:none!important;box-sizing:border-box!important;position:relative!important;display:grid!important;flex:0 0 30px!important;width:30px!important;min-width:30px!important;max-width:30px!important;height:30px!important;min-height:30px!important;max-height:30px!important;margin:0!important;padding:0!important;place-items:center!important;align-self:center!important;border:0!important;border-radius:8px!important;background:linear-gradient(145deg,#b56aff,#9564ff 30%,#7563ff 56%,#4c79f6)!important;color:#fff!important;box-shadow:inset 0 1px 0 rgba(255,255,255,.34),inset 0 -2px 3px rgba(31,28,112,.28)!important}
    #composer .image-settings #createStickerAI svg{display:block!important;width:17px!important;height:17px!important;stroke:#fff!important;color:#fff!important;stroke-width:1.8!important}
    #composer .image-settings #createStickerAI:disabled{opacity:.55!important;cursor:wait!important}
-   #miyaStickerStylePopup{position:fixed!important;inset:auto!important;z-index:2147483000!important;display:grid!important;transform:none!important;contain:initial!important;grid-template-columns:repeat(5,42px);gap:7px;padding:9px;border:1px solid rgba(255,255,255,.18);border-radius:13px;background:rgba(24,27,42,.96);box-shadow:0 10px 32px rgba(0,0,0,.28);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px)}
-   body.light #miyaStickerStylePopup{background:rgba(255,255,255,.97);border-color:rgba(45,35,65,.14);box-shadow:0 10px 32px rgba(35,25,55,.18)}
+   #miyaStickerStylePopup{position:fixed!important;inset:auto!important;z-index:2147483000!important;display:grid!important;grid-template-columns:minmax(0,1fr)!important;gap:3px!important;box-sizing:border-box!important;padding:3px!important;border:1px solid var(--line,rgba(255,255,255,.16))!important;border-radius:10px!important;background:var(--panel,rgba(24,27,42,.96))!important;box-shadow:0 8px 24px rgba(0,0,0,.24)!important;backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px)}
+   body.light #miyaStickerStylePopup{background:rgba(255,255,255,.97)!important;border-color:rgba(45,35,65,.14)!important;box-shadow:0 8px 24px rgba(35,25,55,.16)!important}
    #miyaStickerStylePopup[hidden]{display:none!important}
-   #miyaStickerStylePopup .sticker-style-option{width:42px;height:42px;display:grid;place-items:center;padding:0;border:1px solid rgba(255,255,255,.13);border-radius:10px;background:rgba(255,255,255,.07);color:#fff;cursor:pointer}
-   body.light #miyaStickerStylePopup .sticker-style-option{background:rgba(90,70,130,.06);border-color:rgba(45,35,65,.12);color:#30243f}
-   #miyaStickerStylePopup .sticker-style-option:hover,#miyaStickerStylePopup .sticker-style-option:focus-visible{background:linear-gradient(145deg,#a66bff,#557cf5);border-color:rgba(255,255,255,.45);color:#fff;outline:none}
-   #miyaStickerStylePopup .sticker-style-option svg{width:25px;height:25px;display:block;fill:none;stroke:currentColor;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
+   #miyaStickerStylePopup .sticker-style-option{box-sizing:border-box!important;width:100%!important;height:29px!important;min-height:29px!important;display:grid!important;place-items:center!important;padding:1px!important;border:1px solid transparent!important;border-radius:7px!important;background:transparent!important;cursor:pointer!important}
+   #miyaStickerStylePopup .sticker-style-option:hover,#miyaStickerStylePopup .sticker-style-option:focus-visible{background:rgba(145,125,255,.15)!important;border-color:rgba(145,125,255,.35)!important;outline:none!important}
+   #miyaStickerStylePopup .sticker-style-option svg{width:25px!important;height:25px!important;display:block!important;overflow:visible!important;filter:drop-shadow(0 1px 1px rgba(0,0,0,.22))}
   `;document.head.appendChild(style);
  }
  const styles=[
-  {id:"cartoon",name:"Cartoon",svg:'<svg viewBox="0 0 32 32" aria-hidden="true"><path d="M7 8.5 9.5 5l3 2 3.5-2 3.5 2 3-2 2.5 3.5-.8 4.2 1.3 4.1-3.1 2.4-2.3 4.2-4.6-1.1-4.6 1.1-2.3-4.2-3.1-2.4 1.3-4.1z"/><path d="M11 13h.1M21 13h.1M12 18c2.5 2 5.5 2 8 0"/></svg>'},
-  {id:"kawaii",name:"Kawaii",svg:'<svg viewBox="0 0 32 32" aria-hidden="true"><path d="M16 25s-10-5.8-10-12a5.4 5.4 0 0 1 10-2.7A5.4 5.4 0 0 1 26 13c0 6.2-10 12-10 12Z"/><path d="M11 15h.1M21 15h.1M13 19c2 1.5 4 1.5 6 0"/></svg>'},
-  {id:"retro badge",name:"Retro badge",svg:'<svg viewBox="0 0 32 32" aria-hidden="true"><path d="m16 3 3.5 3.2 4.7-.2 1.4 4.5 3.8 2.8-1.4 4.5.2 4.7-4.5 1.4-2.8 3.8-4.5-1.4-4.7.2-1.4-4.5-3.8-2.8 1.4-4.5-.2-4.7 4.5-1.4z"/><circle cx="16" cy="15.5" r="7"/><path d="m12 26-1 4 5-2 5 2-1-4"/></svg>'},
-  {id:"line art",name:"Line art",svg:'<svg viewBox="0 0 32 32" aria-hidden="true"><path d="m6 24 2-6L22 4l6 6-14 14-8 2z"/><path d="m19 7 6 6M8 18l6 6M5 28h22"/></svg>'},
-  {id:"watercolour",name:"Watercolour",svg:'<svg viewBox="0 0 32 32" aria-hidden="true"><path d="M16 4C12 10 7 15 7 20a9 9 0 0 0 18 0c0-5-5-10-9-16Z"/><path d="M12 21c.7 2.3 2.1 3.5 4.5 3.8M20 14c1.2 1.7 2 3.2 2.2 4.7"/></svg>'}
+  {id:"cartoon",name:"Cartoon",svg:'<svg viewBox="0 0 40 40" aria-hidden="true"><path d="M7 14Q3 6 12 8Q16 1 22 7Q31 2 32 12Q39 16 33 23L30 32Q20 39 10 31L7 22Z" fill="#ffd34f" stroke="#fff" stroke-width="2.4" stroke-linejoin="round"/><path d="M7 14Q5 5 14 9L19 12 25 7Q33 6 32 15" fill="#ff704d" stroke="#b9434b" stroke-width="1.5"/><ellipse cx="14" cy="21" rx="2.2" ry="3" fill="#26345f"/><ellipse cx="26" cy="21" rx="2.2" ry="3" fill="#26345f"/><path d="M15 28Q20 33 25 28" fill="none" stroke="#b9434b" stroke-width="2.2" stroke-linecap="round"/><circle cx="9" cy="25" r="2.5" fill="#ff8d91"/><circle cx="31" cy="25" r="2.5" fill="#ff8d91"/></svg>'},
+  {id:"kawaii",name:"Kawaii",svg:'<svg viewBox="0 0 40 40" aria-hidden="true"><path d="M20 34S5 25 5 14Q5 5 14 7Q18 7 20 12Q23 5 31 7Q39 9 35 19Q32 27 20 34Z" fill="#ff83b6" stroke="#fff" stroke-width="2.4" stroke-linejoin="round"/><ellipse cx="14" cy="18" rx="1.8" ry="2.5" fill="#633b76"/><ellipse cx="26" cy="18" rx="1.8" ry="2.5" fill="#633b76"/><path d="M17 24Q20 27 23 24" fill="none" stroke="#633b76" stroke-width="1.8" stroke-linecap="round"/><circle cx="10" cy="23" r="2.2" fill="#ffbfd5"/><circle cx="30" cy="23" r="2.2" fill="#ffbfd5"/><path d="m30 4 1.2 3 3 1.2-3 1.2-1.2 3-1.2-3-3-1.2 3-1.2Z" fill="#ffd95a"/></svg>'},
+  {id:"retro badge",name:"Retro badge",svg:'<svg viewBox="0 0 40 40" aria-hidden="true"><path d="m20 3 5 4 7-.3 2.2 6.2 4.8 4.1-2 6.7.2 7-6.7 2.1-4 4.8-6.5-2.1-6.7.2-2.1-6.6-4.8-4.1 2-6.6-.2-7 6.7-2.1Z" fill="#f3a64c" stroke="#fff" stroke-width="2.2" stroke-linejoin="round"/><circle cx="20" cy="19" r="10.5" fill="#6e5a9e" stroke="#ffdf9a" stroke-width="2"/><path d="m20 11 2.2 5 5.4.5-4.1 3.6 1.2 5.3-4.7-2.8-4.7 2.8 1.2-5.3-4.1-3.6 5.4-.5Z" fill="#ffe18a"/><path d="m13 31-2 7 9-4 9 4-2-7" fill="#ed6c64" stroke="#fff" stroke-width="1.6" stroke-linejoin="round"/></svg>'},
+  {id:"line art",name:"Line art",svg:'<svg viewBox="0 0 40 40" aria-hidden="true"><path d="M20 34Q8 27 11 15Q21 13 20 34Z" fill="#a9e8dc" stroke="#fff" stroke-width="2" stroke-linejoin="round"/><path d="M20 34Q32 28 29 15Q19 14 20 34Z" fill="#8ac9f5" stroke="#fff" stroke-width="2" stroke-linejoin="round"/><path d="M20 34V9M20 17Q12 8 9 12M20 22Q28 12 32 16" fill="none" stroke="#3e647f" stroke-width="1.8" stroke-linecap="round"/><circle cx="20" cy="8" r="3.4" fill="#f6c76b" stroke="#fff" stroke-width="1.5"/></svg>'},
+  {id:"watercolour",name:"Watercolour",svg:'<svg viewBox="0 0 40 40" aria-hidden="true"><path d="M9 11Q12 3 19 8Q25 2 30 10Q39 13 32 21Q36 30 27 31Q21 39 14 31Q4 32 7 23Q1 16 9 11Z" fill="#78c8e8" opacity=".9" stroke="#fff" stroke-width="2"/><path d="M13 15Q18 8 23 14Q30 14 27 21Q23 27 16 25Q9 22 13 15Z" fill="#f58db8" opacity=".92"/><path d="M17 13Q22 10 25 16Q28 22 21 26Q15 25 14 20" fill="#f6d36d" opacity=".9"/><circle cx="30" cy="8" r="2" fill="#f2a4c5"/><circle cx="7" cy="30" r="2" fill="#f2a4c5"/></svg>'}
  ];
  const popup=document.createElement("div");popup.id="miyaStickerStylePopup";popup.hidden=true;popup.setAttribute("role","menu");popup.setAttribute("aria-label","Стиль стикера");
  styles.forEach(item=>{
@@ -5532,9 +5539,12 @@ $("#composerModel")?.addEventListener("change",()=>{
   popup.style.setProperty("display","grid","important");
   popup.style.setProperty("z-index","2147483000","important");
   popup.style.setProperty("transform","none","important");
-  const width=popup.getBoundingClientRect().width||popup.offsetWidth;
+  popup.style.setProperty("width",rect.width+"px","important");
+  popup.style.setProperty("min-width",rect.width+"px","important");
+  popup.style.setProperty("max-width",rect.width+"px","important");
+  const width=rect.width;
   const height=popup.getBoundingClientRect().height||popup.offsetHeight;
-  const left=Math.max(8,Math.min(window.innerWidth-width,rect.left+rect.width/2-width/2));
+  const left=Math.max(8,Math.min(window.innerWidth-width,rect.left));
   const below=rect.bottom+7,above=rect.top-height-7;
   const top=below+height<=window.innerHeight-8?below:Math.max(8,above);
   popup.style.setProperty("left",left+"px","important");
