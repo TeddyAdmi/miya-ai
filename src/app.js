@@ -5501,6 +5501,9 @@ $("#composerModel")?.addEventListener("change",()=>{
    #composer .image-settings #createStickerAI:disabled{opacity:.55!important;cursor:wait!important}
    #miyaStickerStylePopup{position:fixed!important;inset:auto!important;z-index:2147483000!important;display:grid!important;grid-template-columns:minmax(0,1fr)!important;gap:0!important;box-sizing:border-box!important}
    #miyaStickerStylePopup[hidden]{display:none!important}
+   html:has(body.light) #miyaStickerStylePopup,html:has(body[data-theme="light"]) #miyaStickerStylePopup{background-color:#f4f7fa!important;color:#52657b!important;border:1px solid #d3deea!important;box-shadow:0 12px 28px rgba(35,55,80,.18)!important}
+   html:has(body.light) #miyaStickerStylePopup .sticker-style-option,html:has(body[data-theme="light"]) #miyaStickerStylePopup .sticker-style-option{background:transparent!important;color:#52657b!important}
+   html:has(body.light) #miyaStickerStylePopup .sticker-style-option:hover,html:has(body.light) #miyaStickerStylePopup .sticker-style-option:focus-visible,html:has(body[data-theme="light"]) #miyaStickerStylePopup .sticker-style-option:hover,html:has(body[data-theme="light"]) #miyaStickerStylePopup .sticker-style-option:focus-visible{background:#e9eef5!important;color:#273047!important;outline:none!important}
    /* Creation dates belong only to the expanded viewer, never to wall cards. */
    .media-card .image-viewer-created-date,.media-card .media-created-date{display:none!important}
    .image-viewer-created-info{position:fixed!important;right:22px!important;bottom:18px!important;top:auto!important;left:auto!important}
