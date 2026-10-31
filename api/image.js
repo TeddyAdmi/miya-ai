@@ -581,7 +581,6 @@ module.exports = async function imageHandler(req, res) {
         // everywhere outside its contour.
         const outlineRadius = Math.max(5,Math.min(14,Math.round(Math.min(stickerWidth,stickerHeight) * 0.012)));
         const horizontal = new Uint8Array(pixels);
-        const expanded = new Uint8Array(pixels);
         const deque = new Int32Array(Math.max(stickerWidth,stickerHeight));
         for (let y = 0; y < stickerHeight; y++) {
           const row = y * stickerWidth;
@@ -610,7 +609,6 @@ module.exports = async function imageHandler(req, res) {
             const max = tail > head ? horizontal[deque[head] * stickerWidth + x] : 0;
             const pixel = y * stickerWidth + x;
             if (max) {
-              expanded[pixel] = 255;
               const offset = pixel * 4;
               const alpha = rgba[offset + 3];
               if (alpha === 0) {
