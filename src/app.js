@@ -1301,7 +1301,7 @@ function openImageViewer(item){
   const showViewerItem=(nextItem)=>{
     if(!nextItem)return;
     modal.dataset.viewerItemId=nextItem.id;
-    const viewerModel=modal.querySelector(".image-viewer-created-model");if(viewerModel)viewerModel.textContent=/^Sticker Designer(?:\s|$)/i.test(String(nextItem.model||""))?"":imageModelLabel(nextItem.model||"Модель не указана");const viewerDate=modal.querySelector(".image-viewer-created-date");if(viewerDate)viewerDate.textContent=formatMediaCreationDate(nextItem);
+    const viewerModel=modal.querySelector(".image-viewer-created-model");if(viewerModel)viewerModel.textContent=/^Sticker Designer(?:\s|$)/i.test(String(nextItem.model||""))?"Sticker Designer":imageModelLabel(nextItem.model||"Модель не указана");const viewerDate=modal.querySelector(".image-viewer-created-date");if(viewerDate)viewerDate.textContent=formatMediaCreationDate(nextItem);
     const viewerImg=modal.querySelector(".image-viewer-image");
     viewerImg.src=nextItem.url;
     viewerImg.dataset.zoom="1";viewerImg.dataset.panX="0";viewerImg.dataset.panY="0";
@@ -1366,7 +1366,7 @@ function openImageViewer(item){
  }
  const img=modal.querySelector(".image-viewer-image");
  modal.dataset.viewerItemId=item.id;
- const viewerModel=modal.querySelector(".image-viewer-created-model");if(viewerModel)viewerModel.textContent=/^Sticker Designer(?:\s|$)/i.test(String(item.model||""))?"":imageModelLabel(item.model||"Модель не указана");
+ const viewerModel=modal.querySelector(".image-viewer-created-model");if(viewerModel)viewerModel.textContent=/^Sticker Designer(?:\s|$)/i.test(String(item.model||""))?"Sticker Designer":imageModelLabel(item.model||"Модель не указана");
  const isAuraModel=/^(Nano Banana|Seedream)$/i.test(String(item.model||"").trim());
  const viewerSource=isAuraModel?jpegImageUrl(item.url):item.url;
  img.src=viewerSource;
@@ -1688,11 +1688,11 @@ function buildMediaCard(item,{video=false,pendingDots=false}={}){
    card.appendChild(media);
  }
  const isStickerItem=/^Sticker Designer(?:\s|$)/i.test(String(item.model||""));
- if(!isStickerItem){
+ {
   const modelBadge=document.createElement("div");
   modelBadge.className="media-model-badge";
-  modelBadge.textContent=imageModelLabel(item.model||"Модель не указана");
-  modelBadge.title="Модель, которая фактически создала этот материал";
+  modelBadge.textContent=isStickerItem?"Sticker Designer":imageModelLabel(item.model||"Модель не указана");
+  modelBadge.title=isStickerItem?"Sticker Designer":"Модель, которая фактически создала этот материал";
   card.appendChild(modelBadge);
  }
  const actions=document.createElement("div");actions.className="media-actions";
@@ -3256,7 +3256,7 @@ async function generateAgnesImage(prompt,loaderAlreadyShown=false){
 }
 
 
-async function generateImage(prompt,loaderAlreadyShown=false,modelOverride=""){
+async function generateImage(prompt,loaderAlreadyShown=false,modelOverride="",stickerStyle="watercolour"){
  const selectedModel=String(modelOverride||$("#composerModel")?.value||"").trim();
  const userSelectedModel=String($("#composerModel")?.value||"").trim();
  const useAgnesImage=/^Agnes Image/i.test(selectedModel);
@@ -3360,7 +3360,7 @@ async function generateImage(prompt,loaderAlreadyShown=false,modelOverride=""){
        : useImageSmith
        ? JSON.stringify({mode:"image",provider:"imagesmith",prompt,model:modelName,ratio:selectedRatio,...(imageSmithReferenceImage?{referenceImage:imageSmithReferenceImage}:{})})
        : useStickerDesigner
-       ? JSON.stringify({mode:"image",provider:"stickerdesigner",prompt,model:modelName,style:"watercolour"})
+       ? JSON.stringify({mode:"image",provider:"stickerdesigner",prompt,model:modelName,style:["cartoon","kawaii","retro badge","line art","watercolour"].includes(String(stickerStyle||"").toLowerCase())?String(stickerStyle).toLowerCase():"watercolour"})
        : useCinel
        ? JSON.stringify({mode:"image",provider:"cinel",prompt,model:modelName,ratio:selectedRatio})
        : useFlux2DevHoodgen
@@ -5481,57 +5481,61 @@ $("#composerModel")?.addEventListener("change",()=>{
  const improve=$("#improve"),options=$("#composerOptions");
  if(!improve||!options||document.getElementById("createStickerAI"))return;
  const button=document.createElement("button");
- button.type="button";
- button.id="createStickerAI";
- button.className=improve.className+" sticker-create-action";
- button.innerHTML=improve.innerHTML;
- button.title="Создать стикер AI";
- button.setAttribute("aria-label","Создать стикер AI");
+ button.type="button";button.id="createStickerAI";
+ button.className=improve.className+" sticker-create-action";button.innerHTML=improve.innerHTML;
+ button.title="Создать стикер AI";button.setAttribute("aria-label","Создать стикер AI");
  improve.insertAdjacentElement("afterend",button);
  if(!document.getElementById("miyaStickerActionButtonStyle")){
-  const style=document.createElement("style");
-  style.id="miyaStickerActionButtonStyle";
+  const style=document.createElement("style");style.id="miyaStickerActionButtonStyle";
   style.textContent=`
-   #composer .image-settings #createStickerAI{
-    appearance:none!important;-webkit-appearance:none!important;box-sizing:border-box!important;
-    position:relative!important;display:grid!important;flex:0 0 30px!important;
-    width:30px!important;min-width:30px!important;max-width:30px!important;
-    height:30px!important;min-height:30px!important;max-height:30px!important;
-    margin:0!important;padding:0!important;place-items:center!important;align-self:center!important;
-    border:0!important;border-radius:8px!important;
-    background:radial-gradient(ellipse at 27% 15%,rgba(255,255,255,.32) 0%,rgba(255,255,255,.13) 24%,rgba(255,255,255,0) 62%),linear-gradient(145deg,#b56aff 0%,#9564ff 30%,#7563ff 56%,#4c79f6 100%)!important;
-    color:#fff!important;
-    box-shadow:inset 0 1px 0 rgba(255,255,255,.34),inset 0 -2px 3px rgba(31,28,112,.28)!important;
-    outline:none!important;transform:none!important;filter:none!important;
-    transition:background .12s ease,opacity .12s ease!important;
-   }
-   #composer .image-settings #createStickerAI svg{
-    display:block!important;width:17px!important;height:17px!important;min-width:17px!important;min-height:17px!important;
-    margin:0!important;fill:none!important;stroke:#fff!important;color:#fff!important;stroke-width:1.8!important;
-    stroke-linecap:round!important;stroke-linejoin:round!important;transform:none!important;filter:none!important;
-   }
-   #composer .image-settings #createStickerAI:hover,
-   #composer .image-settings #createStickerAI:active,
-   body.light #composer .image-settings #createStickerAI{
-    background:radial-gradient(ellipse at 27% 15%,rgba(255,255,255,.32) 0%,rgba(255,255,255,.13) 24%,rgba(255,255,255,0) 62%),linear-gradient(145deg,#b56aff 0%,#9564ff 30%,#7563ff 56%,#4c79f6 100%)!important;
-    color:#fff!important;border:0!important;border-radius:8px!important;
-    box-shadow:inset 0 1px 0 rgba(255,255,255,.34),inset 0 -2px 3px rgba(31,28,112,.28)!important;
-    outline:none!important;transform:none!important;filter:none!important;
-   }
+   #composer .image-settings #createStickerAI{appearance:none!important;-webkit-appearance:none!important;box-sizing:border-box!important;position:relative!important;display:grid!important;flex:0 0 30px!important;width:30px!important;min-width:30px!important;max-width:30px!important;height:30px!important;min-height:30px!important;max-height:30px!important;margin:0!important;padding:0!important;place-items:center!important;align-self:center!important;border:0!important;border-radius:8px!important;background:linear-gradient(145deg,#b56aff,#9564ff 30%,#7563ff 56%,#4c79f6)!important;color:#fff!important;box-shadow:inset 0 1px 0 rgba(255,255,255,.34),inset 0 -2px 3px rgba(31,28,112,.28)!important}
+   #composer .image-settings #createStickerAI svg{display:block!important;width:17px!important;height:17px!important;stroke:#fff!important;color:#fff!important;stroke-width:1.8!important}
    #composer .image-settings #createStickerAI:disabled{opacity:.55!important;cursor:wait!important}
-  `;
-  document.head.appendChild(style);
+   #miyaStickerStylePopup{position:fixed;z-index:1500;display:grid;grid-template-columns:repeat(5,42px);gap:7px;padding:9px;border:1px solid rgba(255,255,255,.18);border-radius:13px;background:rgba(24,27,42,.96);box-shadow:0 10px 32px rgba(0,0,0,.28);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px)}
+   body.light #miyaStickerStylePopup{background:rgba(255,255,255,.97);border-color:rgba(45,35,65,.14);box-shadow:0 10px 32px rgba(35,25,55,.18)}
+   #miyaStickerStylePopup[hidden]{display:none!important}
+   #miyaStickerStylePopup .sticker-style-option{width:42px;height:42px;display:grid;place-items:center;padding:0;border:1px solid rgba(255,255,255,.13);border-radius:10px;background:rgba(255,255,255,.07);color:#fff;cursor:pointer}
+   body.light #miyaStickerStylePopup .sticker-style-option{background:rgba(90,70,130,.06);border-color:rgba(45,35,65,.12);color:#30243f}
+   #miyaStickerStylePopup .sticker-style-option:hover,#miyaStickerStylePopup .sticker-style-option:focus-visible{background:linear-gradient(145deg,#a66bff,#557cf5);border-color:rgba(255,255,255,.45);color:#fff;outline:none}
+   #miyaStickerStylePopup .sticker-style-option svg{width:25px;height:25px;display:block;fill:none;stroke:currentColor;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
+  `;document.head.appendChild(style);
  }
- button.addEventListener("click",async()=>{
-  if(mode!=="images"||button.disabled||$("#composerSend")?.disabled)return;
-  const input=$("#composerInput"),prompt=String(input?.value||"").trim();
-  if(!prompt){input?.focus();toast("Сначала напиши, какой стикер создать");return}
-  if(referenceImage){toast("Для создания стикера убери прикреплённое фото");return}
-  button.disabled=true;
-  button.setAttribute("aria-busy","true");
-  try{await generateImage(prompt,false,"Sticker Designer")}
-  finally{button.disabled=false;button.removeAttribute("aria-busy")}
+ const styles=[
+  {id:"cartoon",name:"Cartoon",svg:'<svg viewBox="0 0 32 32" aria-hidden="true"><path d="M7 8.5 9.5 5l3 2 3.5-2 3.5 2 3-2 2.5 3.5-.8 4.2 1.3 4.1-3.1 2.4-2.3 4.2-4.6-1.1-4.6 1.1-2.3-4.2-3.1-2.4 1.3-4.1z"/><path d="M11 13h.1M21 13h.1M12 18c2.5 2 5.5 2 8 0"/></svg>'},
+  {id:"kawaii",name:"Kawaii",svg:'<svg viewBox="0 0 32 32" aria-hidden="true"><path d="M16 25s-10-5.8-10-12a5.4 5.4 0 0 1 10-2.7A5.4 5.4 0 0 1 26 13c0 6.2-10 12-10 12Z"/><path d="M11 15h.1M21 15h.1M13 19c2 1.5 4 1.5 6 0"/></svg>'},
+  {id:"retro badge",name:"Retro badge",svg:'<svg viewBox="0 0 32 32" aria-hidden="true"><path d="m16 3 3.5 3.2 4.7-.2 1.4 4.5 3.8 2.8-1.4 4.5.2 4.7-4.5 1.4-2.8 3.8-4.5-1.4-4.7.2-1.4-4.5-3.8-2.8 1.4-4.5-.2-4.7 4.5-1.4z"/><circle cx="16" cy="15.5" r="7"/><path d="m12 26-1 4 5-2 5 2-1-4"/></svg>'},
+  {id:"line art",name:"Line art",svg:'<svg viewBox="0 0 32 32" aria-hidden="true"><path d="m6 24 2-6L22 4l6 6-14 14-8 2z"/><path d="m19 7 6 6M8 18l6 6M5 28h22"/></svg>'},
+  {id:"watercolour",name:"Watercolour",svg:'<svg viewBox="0 0 32 32" aria-hidden="true"><path d="M16 4C12 10 7 15 7 20a9 9 0 0 0 18 0c0-5-5-10-9-16Z"/><path d="M12 21c.7 2.3 2.1 3.5 4.5 3.8M20 14c1.2 1.7 2 3.2 2.2 4.7"/></svg>'}
+ ];
+ const popup=document.createElement("div");popup.id="miyaStickerStylePopup";popup.hidden=true;popup.setAttribute("role","menu");popup.setAttribute("aria-label","Стиль стикера");
+ styles.forEach(item=>{
+  const option=document.createElement("button");option.type="button";option.className="sticker-style-option";option.setAttribute("role","menuitem");option.title=item.name;option.setAttribute("aria-label",item.name);option.innerHTML=item.svg;
+  option.addEventListener("click",async()=>{
+   popup.hidden=true;button.setAttribute("aria-expanded","false");
+   if(mode!=="images"||button.disabled||$("#composerSend")?.disabled)return;
+   const input=$("#composerInput"),prompt=String(input?.value||"").trim();
+   if(!prompt){input?.focus();toast("Сначала напиши, какой стикер создать");return}
+   if(referenceImage){toast("Для создания стикера убери прикреплённое фото");return}
+   button.disabled=true;button.setAttribute("aria-busy","true");
+   try{await generateImage(prompt,false,"Sticker Designer",item.id)}
+   finally{button.disabled=false;button.removeAttribute("aria-busy")}
+  });popup.appendChild(option);
  });
+ document.body.appendChild(popup);
+ const closePopup=()=>{popup.hidden=true;button.setAttribute("aria-expanded","false")};
+ button.setAttribute("aria-haspopup","menu");button.setAttribute("aria-expanded","false");
+ button.addEventListener("click",()=>{
+  if(mode!=="images"||button.disabled||$("#composerSend")?.disabled)return;
+  if(!popup.hidden){closePopup();return}
+  const rect=button.getBoundingClientRect();popup.hidden=false;
+  const width=popup.offsetWidth,height=popup.offsetHeight;
+  popup.style.left=Math.max(8,Math.min(window.innerWidth-width,rect.left+rect.width/2-width/2))+"px";
+  popup.style.top=Math.max(8,Math.min(window.innerHeight-height-8,rect.bottom+8))+"px";
+  button.setAttribute("aria-expanded","true");
+ });
+ document.addEventListener("pointerdown",event=>{if(!popup.hidden&&!popup.contains(event.target)&&event.target!==button)closePopup()});
+ document.addEventListener("keydown",event=>{if(event.key==="Escape"&&!popup.hidden){closePopup();button.focus()}});
+ window.addEventListener("resize",closePopup);
 })();
 $("#improve")?.addEventListener("click",improveImageComposerPrompt);
 $("#improve")?.setAttribute("title","Улучшить промпт AI");

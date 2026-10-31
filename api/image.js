@@ -461,7 +461,8 @@ module.exports = async function imageHandler(req, res) {
 
     if (provider === "stickerdesigner") {
       const stickerPrompt = typeof body.prompt === "string" ? body.prompt.trim() : "";
-      const stickerStyle = "watercolour";
+      const requestedStickerStyle = typeof body.style === "string" ? body.style.trim().toLowerCase() : "watercolour";
+      const stickerStyle = requestedStickerStyle;
       const stickerStyles = {
         "cartoon":"Cartoon",
         "kawaii":"Kawaii",
