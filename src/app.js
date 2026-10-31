@@ -1695,14 +1695,6 @@ function buildMediaCard(item,{video=false,pendingDots=false}={}){
   modelBadge.title=isStickerItem?"Sticker Designer":"Модель, которая фактически создала этот материал";
   card.appendChild(modelBadge);
  }
- if(item.createdAt){
-  const createdDate=document.createElement("time");
-  createdDate.className="media-created-date";
-  createdDate.dateTime=new Date(Number(item.createdAt)).toISOString();
-  createdDate.textContent=formatMediaCreationDate(item);
-  createdDate.title="Дата создания";
-  card.appendChild(createdDate);
- }
  const actions=document.createElement("div");actions.className="media-actions";
  const more=document.createElement("button");more.type="button";more.className="media-action media-more";more.removeAttribute("title");more.setAttribute("aria-label","Открыть меню");
  more.innerHTML='<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="5" cy="12" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="19" cy="12" r="1.5"/></svg>';
@@ -5555,7 +5547,8 @@ $("#composerModel")?.addEventListener("change",()=>{
   popup.style.setProperty("top",top+"px","important");
   button.setAttribute("aria-expanded","true");
  });
- document.addEventListener("pointerdown",event=>{if(!popup.hidden&&!popup.contains(event.target)&&event.target!==button)closePopup()});
+ document.addEventListener("pointerdown",event=>{if(!popup.hidden&&!popup.contains(event.target)&&!button.contains(event.target))closePopup()},true);
+ ["change","click"].forEach(type=>document.addEventListener(type,event=>{if(popup.hidden)return;const target=event.target;if(target?.matches?.("#composerModel,#composerRatio,#composerQuality,.composer-options .select-pill,.video-options .select-pill,[data-mode]"))closePopup()},true));
  document.addEventListener("keydown",event=>{if(event.key==="Escape"&&!popup.hidden){closePopup();button.focus()}});
  window.addEventListener("resize",closePopup);
 })();
