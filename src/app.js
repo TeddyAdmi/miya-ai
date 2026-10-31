@@ -1301,7 +1301,7 @@ function openImageViewer(item){
   const showViewerItem=(nextItem)=>{
     if(!nextItem)return;
     modal.dataset.viewerItemId=nextItem.id;
-    const viewerModel=modal.querySelector(".image-viewer-created-model");if(viewerModel)viewerModel.textContent=/^Sticker Designer(?:\\s|$)/i.test(String(nextItem.model||""))?"":imageModelLabel(nextItem.model||"Модель не указана");const viewerDate=modal.querySelector(".image-viewer-created-date");if(viewerDate)viewerDate.textContent=formatMediaCreationDate(nextItem);
+    const viewerModel=modal.querySelector(".image-viewer-created-model");if(viewerModel)viewerModel.textContent=/^Sticker Designer(?:\s|$)/i.test(String(nextItem.model||""))?"":imageModelLabel(nextItem.model||"Модель не указана");const viewerDate=modal.querySelector(".image-viewer-created-date");if(viewerDate)viewerDate.textContent=formatMediaCreationDate(nextItem);
     const viewerImg=modal.querySelector(".image-viewer-image");
     viewerImg.src=nextItem.url;
     viewerImg.dataset.zoom="1";viewerImg.dataset.panX="0";viewerImg.dataset.panY="0";
@@ -1366,7 +1366,7 @@ function openImageViewer(item){
  }
  const img=modal.querySelector(".image-viewer-image");
  modal.dataset.viewerItemId=item.id;
- const viewerModel=modal.querySelector(".image-viewer-created-model");if(viewerModel)viewerModel.textContent=/^Sticker Designer(?:\\s|$)/i.test(String(item.model||""))?"":imageModelLabel(item.model||"Модель не указана");
+ const viewerModel=modal.querySelector(".image-viewer-created-model");if(viewerModel)viewerModel.textContent=/^Sticker Designer(?:\s|$)/i.test(String(item.model||""))?"":imageModelLabel(item.model||"Модель не указана");
  const isAuraModel=/^(Nano Banana|Seedream)$/i.test(String(item.model||"").trim());
  const viewerSource=isAuraModel?jpegImageUrl(item.url):item.url;
  img.src=viewerSource;
@@ -1687,7 +1687,7 @@ function buildMediaCard(item,{video=false,pendingDots=false}={}){
    media.addEventListener("click",e=>{e.stopPropagation();openImageViewer(item)});
    card.appendChild(media);
  }
- const isStickerItem=/^Sticker Designer(?:\\s|$)/i.test(String(item.model||""));
+ const isStickerItem=/^Sticker Designer(?:\s|$)/i.test(String(item.model||""));
  if(!isStickerItem){
   const modelBadge=document.createElement("div");
   modelBadge.className="media-model-badge";
