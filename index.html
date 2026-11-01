@@ -108,13 +108,14 @@
           <option value="Nano Banana">Nano Banana · T2I</option>
           <option value="Seedream">Seedream · T2I</option>
           <option value="Agnes Image 2.5 Flash">Agnes Image · T2I / I2I</option>
-          <option value="Z-Image Turbo (ImageFree)">Z-Image Turbo · ImageFree · бесплатно</option>
           <option value="Qwen Image 2.1 · T2I">Qwen Image 2.1 · T2I</option>
           <option value="Kolors">Kolors · T2I</option>
           <option value="Flux 2 Dev · T2I">Flux 2 Dev · T2I</option>
           <option value="FLUX Dev">FLUX Dev · T2I</option>
           <option value="FLUX Kontext Dev">FLUX Kontext · I2I</option>
-        </select>
+        
+          <option value="Miya Image t2i">Miya Image t2i</option>
+</select>
         <select class="select-pill" id="stickerStyle" aria-label="Стиль стикера" style="display:none">
           <option value="cartoon" selected>Cartoon</option>
           <option value="kawaii">Kawaii</option>
@@ -495,6 +496,7 @@ body.light #composer.mode-images .miya-model-logo{
   if(v==="imagesmith"||v.includes("gpt image"))return "openai.com";
   if(v.includes("seedream"))return "seed.bytedance.com";
   if(v.includes("agnes"))return "agnes-ai.com";
+  if(v.includes("miya image"))return "imagefree.net";
   if(v.includes("z-image"))return "tongyi.aliyun.com";
   if(v.includes("qwen"))return "qwen.ai";
   if(v.includes("kolors"))return "kuaishou.com";

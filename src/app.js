@@ -985,6 +985,7 @@ function imageModelLabel(model){
  const name=String(model||"").trim();
  if(name==="Nano BananA")return "Nano BananA · T2I / I2I";
  if(name==="ImageSmith")return "GPT Image 2.5 · T2I / I2I";
+ if(name==="Miya Image t2i")return "Miya Image t2i";
  if(name==="Sticker Designer"||/^Sticker Designer\s*[·|]/i.test(name))return "Sticker Designer";
  if(name==="Kolors")return "Kolors · T2I";
  if(/^Nano Banana$/i.test(name))return "Nano Banana · T2I";
@@ -1002,7 +1003,7 @@ function imageModelLabel(model){
 document.querySelector('#composerModel option[value="Sticker Designer"]')?.remove();
 document.querySelector('[aria-label="Стиль стикера"]')?.remove();
 const imageSmithModelOption=document.querySelector('#composerModel option[value="ImageSmith"]');if(imageSmithModelOption)imageSmithModelOption.textContent="GPT Image 2.5 · T2I / I2I";
-const zImageTurboOption=document.querySelector('#composerModel option[value="Z-Image Turbo (ImageFree)"]');if(zImageTurboOption)zImageTurboOption.textContent="Z-Image Turbo · T2I";
+const miyaImageT2IOption=document.querySelector('#composerModel option[value="Miya Image t2i"]');if(miyaImageT2IOption)miyaImageT2IOption.textContent="Miya Image t2i";
 function setComposerAttachment(url){
  const box=$("#composerAttachment"),img=$("#composerAttachmentImage");
  if(!box||!img)return;
@@ -3269,7 +3270,8 @@ async function generateImage(prompt,loaderAlreadyShown=false,modelOverride="",st
  const selectedModel=String(modelOverride||$("#composerModel")?.value||"").trim();
  const userSelectedModel=String($("#composerModel")?.value||"").trim();
  const useAgnesImage=/^Agnes Image/i.test(selectedModel);
- const useImageFree=/^Z-Image Turbo \(ImageFree\)$/i.test(selectedModel);
+ const useImageFree=selectedModel==="Miya Image t2i" || /^Z-Image Turbo \\(ImageFree\\)$/i.test(selectedModel);
+ const useMiyaImageT2I=selectedModel==="Miya Image t2i";
  const useQwenImage21=selectedModel==="Qwen Image 2.1 · T2I";
  const useNanoBananA=selectedModel==="Nano BananA";
  const useImageSmith=selectedModel==="ImageSmith";
@@ -3313,10 +3315,11 @@ async function generateImage(prompt,loaderAlreadyShown=false,modelOverride="",st
  const timeoutMs=70000;
  const progressDurationMs=40000;
  const usesReferenceImage=Boolean(referenceImage);
+  const originalUserPrompt=String(prompt||"").trim();
 
  const composerProgress=$("#composerProgress");
  let fakeTimer=null;
- const progressStartedAt=Date.now();
+ let progressStartedAt=Date.now();
  const setProgress=(p)=>{
   const value=Math.max(0,Math.min(100,Math.round(p)));
   if(ring){ring.classList.remove("is-active");ring.style.setProperty("--progress",value+"%");}
@@ -3334,6 +3337,16 @@ async function generateImage(prompt,loaderAlreadyShown=false,modelOverride="",st
   fakeTimer=setInterval(updateProgress,400);
  $("#composerStatus").textContent=displayModel+" · Создание изображения · 0%";
  try{
+  if(useMiyaImageT2I){
+    if(fakeTimer){clearInterval(fakeTimer);fakeTimer=null;}
+    const enhanceStatus=$("#composerStatus");
+    if(enhanceStatus)enhanceStatus.textContent=displayModel+" · AI улучшает промпт…";
+    prompt=await improveMiyaImagePromptForGeneration(originalUserPrompt);
+    progressStartedAt=Date.now();
+    setProgress(0);
+    fakeTimer=setInterval(updateProgress,400);
+    if(enhanceStatus)enhanceStatus.textContent=displayModel+" · Создание изображения · 0%";
+   }
   const payload={
    prompt,
    // Kontext is more reliable with 's native "auto" sizing when
@@ -3509,7 +3522,7 @@ async function generateImage(prompt,loaderAlreadyShown=false,modelOverride="",st
    ? data.imageUrls
    : data.imageUrl?[data.imageUrl]:[];
   if(!generatedUrls.length)throw new Error("Сервер не вернул готовое изображение");
-  await Promise.all(generatedUrls.map(url=>showImage(url,prompt,imageModelLabel(actualModel),(useImageFree||useNanoBananA)?selectedRatio:"",useStickerDesigner?stickerStyle:"")));
+  await Promise.all(generatedUrls.map(url=>showImage(url,useMiyaImageT2I?originalUserPrompt:prompt,imageModelLabel(actualModel),(useImageFree||useNanoBananA)?selectedRatio:"",useStickerDesigner?stickerStyle:"")));
    if(loader){
     setProgress(100);
     const modelLabel=loader.querySelector(".progress-model");
@@ -5440,6 +5453,42 @@ async function improveImageComposerPrompt(){
   button.setAttribute("aria-label","Улучшить промпт AI");
  }
 }
+
+async function improveMiyaImagePromptForGeneration(originalPrompt){
+ const source=String(originalPrompt||"").trim();
+ if(!source)throw new Error("Сначала введи промпт");
+ const controller=new AbortController();
+ const timeout=setTimeout(()=>controller.abort(),26000);
+ try{
+  const response=await fetch("/api/chat",{
+   method:"POST",
+   headers:{"Content-Type":"application/json","Accept":"application/json"},
+   cache:"no-store",
+   signal:controller.signal,
+   body:JSON.stringify({
+    mode:"improve_miya_image_prompt",
+    prompt:source,
+    messages:[{role:"user",content:source}]
+   })
+  });
+  const data=await response.json().catch(()=>null);
+  if(!response.ok||!data?.ok||typeof data.text!=="string"||!data.text.trim()){
+   throw new Error(data?.message||data?.error||"AI временно недоступен");
+  }
+  const improved=String(data.text||"").trim()
+   .replace(/^\s*Промпт для изображения\s*:\s*/i,"")
+   .replace(/^\s*```(?:\w+)?\s*/,"")
+   .replace(/\s*```\s*$/,"")
+   .trim();
+  if(improved.length<Math.max(12,source.length*0.45)){
+   throw new Error("AI вернул слишком короткий промпт");
+  }
+  return improved;
+ }finally{
+  clearTimeout(timeout);
+ }
+}
+
 $("#voiceGender")?.addEventListener("change",refreshVoiceSelects);
 $("#voiceRate")?.addEventListener("input",e=>$("#voiceRateValue").textContent=e.target.value);
 $("#voicePitch")?.addEventListener("input",e=>$("#voicePitchValue").textContent=e.target.value);

@@ -1111,7 +1111,8 @@ module.exports = async function imageHandler(req, res) {
       const aspectRatio = allowedRatios.includes(String(body.ratio || "")) ? String(body.ratio) : "16:9";
       const action = String(body.action || "start").toLowerCase();
       const taskIdInput = String(body.taskId || "").trim();
-      if (requestedModel !== "Z-Image Turbo (ImageFree)") {
+      const imageFreeModelName = requestedModel === "Miya Image t2i" ? "Miya Image t2i" : "Z-Image Turbo (ImageFree)";
+      if (!["Miya Image t2i", "Z-Image Turbo (ImageFree)"].includes(requestedModel)) {
         return res.status(400).json({ok:false,error:"IMAGEFREE_MODEL_UNSUPPORTED",message:"Неизвестная модель ImageFree."});
       }
       if (action !== "status" && !userPrompt) return res.status(400).json({ok:false,error:"PROMPT_REQUIRED"});
@@ -1167,17 +1168,17 @@ module.exports = async function imageHandler(req, res) {
           if (normalized.completed) {
             return res.status(200).json({
               ok:true,mode:"image",status:"completed",provider:"ImageFree",
-              model:"Z-Image Turbo (ImageFree)",imageUrl:normalized.imageUrl,imageUrls:[normalized.imageUrl],count:1,
-              meta:{free:true,aspectRatio,taskId:taskIdInput,upstream:"imagefree.net"}
+              model:imageFreeModelName,imageUrl:normalized.imageUrl,imageUrls:[normalized.imageUrl],count:1,
+              meta:{free:true,aspectRatio,taskId:taskIdInput,modelId:"Z-Image-Turbo",promptEnhanced:requestedModel==="Miya Image t2i",upstream:"imagefree.net"}
             });
           }
-          return res.status(200).json({ok:true,status:normalized.status,provider:"ImageFree",model:"Z-Image Turbo (ImageFree)",taskId:taskIdInput});
+          return res.status(200).json({ok:true,status:normalized.status,provider:"ImageFree",model:imageFreeModelName,taskId:taskIdInput});
         }
 
         const created = await requestImageFree("https://imagefree.net/api/generate", {
           method:"POST",
           headers:{"Content-Type":"application/json"},
-          body:JSON.stringify({prompt:userPrompt,aspect_ratio:aspectRatio,turnstile_token:""})
+          body:JSON.stringify({prompt:userPrompt,aspect_ratio:aspectRatio,turnstile_token:null})
         });
         const taskId = String(created?.taskId || "").trim();
         if (!taskId) {
@@ -1188,8 +1189,8 @@ module.exports = async function imageHandler(req, res) {
           });
         }
         return res.status(200).json({
-          ok:true,status:"processing",provider:"ImageFree",model:"Z-Image Turbo (ImageFree)",taskId,
-          meta:{free:true,aspectRatio,upstream:"imagefree.net"}
+          ok:true,status:"processing",provider:"ImageFree",model:imageFreeModelName,taskId,
+          meta:{free:true,aspectRatio,modelId:"Z-Image-Turbo",promptEnhanced:requestedModel==="Miya Image t2i",upstream:"imagefree.net"}
         });
       } catch (error) {
         return res.status(502).json({
