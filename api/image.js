@@ -1178,7 +1178,7 @@ module.exports = async function imageHandler(req, res) {
         const created = await requestImageFree("https://imagefree.net/api/generate", {
           method:"POST",
           headers:{"Content-Type":"application/json"},
-          body:JSON.stringify({prompt:userPrompt,aspect_ratio:aspectRatio,turnstile_token:null})
+          body:JSON.stringify({prompt:userPrompt,aspect_ratio:aspectRatio,turnstile_token:requestedModel==="Miya Image t2i"?null:""})
         });
         const taskId = String(created?.taskId || "").trim();
         if (!taskId) {

@@ -985,7 +985,7 @@ function imageModelLabel(model){
  const name=String(model||"").trim();
  if(name==="Nano BananA")return "Nano BananA · T2I / I2I";
  if(name==="ImageSmith")return "GPT Image 2.5 · T2I / I2I";
- if(name==="Miya Image t2i")return "Miya Image t2i";
+ if(name==="Miya Image t2i")return "Miya Image · T2I";
  if(name==="Sticker Designer"||/^Sticker Designer\s*[·|]/i.test(name))return "Sticker Designer";
  if(name==="Kolors")return "Kolors · T2I";
  if(/^Nano Banana$/i.test(name))return "Nano Banana · T2I";
@@ -1003,7 +1003,8 @@ function imageModelLabel(model){
 document.querySelector('#composerModel option[value="Sticker Designer"]')?.remove();
 document.querySelector('[aria-label="Стиль стикера"]')?.remove();
 const imageSmithModelOption=document.querySelector('#composerModel option[value="ImageSmith"]');if(imageSmithModelOption)imageSmithModelOption.textContent="GPT Image 2.5 · T2I / I2I";
-const miyaImageT2IOption=document.querySelector('#composerModel option[value="Miya Image t2i"]');if(miyaImageT2IOption)miyaImageT2IOption.textContent="Miya Image t2i";
+const zImageTurboOption=document.querySelector('#composerModel option[value="Z-Image Turbo (ImageFree)"]');if(zImageTurboOption)zImageTurboOption.textContent="Z-Image Turbo · T2I";
+const miyaImageT2IOption=document.querySelector('#composerModel option[value="Miya Image t2i"]');if(miyaImageT2IOption)miyaImageT2IOption.textContent="Miya Image · T2I";
 function setComposerAttachment(url){
  const box=$("#composerAttachment"),img=$("#composerAttachmentImage");
  if(!box||!img)return;
@@ -3270,8 +3271,9 @@ async function generateImage(prompt,loaderAlreadyShown=false,modelOverride="",st
  const selectedModel=String(modelOverride||$("#composerModel")?.value||"").trim();
  const userSelectedModel=String($("#composerModel")?.value||"").trim();
  const useAgnesImage=/^Agnes Image/i.test(selectedModel);
- const useImageFree=selectedModel==="Miya Image t2i" || /^Z-Image Turbo \\(ImageFree\\)$/i.test(selectedModel);
+ const useLegacyImageFree=/^Z-Image Turbo \(ImageFree\)$/i.test(selectedModel);
  const useMiyaImageT2I=selectedModel==="Miya Image t2i";
+ const useImageFree=useLegacyImageFree||useMiyaImageT2I;
  const useQwenImage21=selectedModel==="Qwen Image 2.1 · T2I";
  const useNanoBananA=selectedModel==="Nano BananA";
  const useImageSmith=selectedModel==="ImageSmith";
@@ -3298,8 +3300,15 @@ async function generateImage(prompt,loaderAlreadyShown=false,modelOverride="",st
    return;
   }
  }
- // These providers do not accept an uploaded reference through their current route; ImageSmith handles I2I natively.
- if(referenceImage && (useImageFree || useQwenImage21 || useCinel)){
+ // Miya Image is T2I only; keep its selection stable if a reference photo is attached.
+ if(referenceImage && useMiyaImageT2I){
+  const notice="Miya Image · T2I поддерживает создание только по текстовому промпту. Убери прикреплённое фото или выбери модель с I2I.";
+  if($("#composerStatus"))$("#composerStatus").textContent=notice;
+  toast(notice);
+  return;
+ }
+ // Preserve the original fallback behavior of the existing Z-Image Turbo and other T2I-only providers.
+ if(referenceImage && (useLegacyImageFree || useQwenImage21 || useCinel)){
   $("#composerModel").value="Agnes Image 2.5 Flash";
   return generateAgnesImage(prompt,loaderAlreadyShown);
  }
