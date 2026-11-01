@@ -3314,7 +3314,6 @@ async function generateImage(prompt,loaderAlreadyShown=false,modelOverride="",st
  const timeoutMs=70000;
  const progressDurationMs=40000;
  const usesReferenceImage=Boolean(referenceImage);
-  const originalUserPrompt=String(prompt||"").trim();
 
  const composerProgress=$("#composerProgress");
  let fakeTimer=null;
@@ -3336,16 +3335,6 @@ async function generateImage(prompt,loaderAlreadyShown=false,modelOverride="",st
   fakeTimer=setInterval(updateProgress,400);
  $("#composerStatus").textContent=displayModel+" · Создание изображения · 0%";
  try{
-  if(useMiyaImageT2I){
-    if(fakeTimer){clearInterval(fakeTimer);fakeTimer=null;}
-    const enhanceStatus=$("#composerStatus");
-    if(enhanceStatus)enhanceStatus.textContent=displayModel+" · AI улучшает промпт…";
-    prompt=await improveMiyaImagePromptForGeneration(originalUserPrompt);
-    progressStartedAt=Date.now();
-    setProgress(0);
-    fakeTimer=setInterval(updateProgress,400);
-    if(enhanceStatus)enhanceStatus.textContent=displayModel+" · Создание изображения · 0%";
-   }
   const payload={
    prompt,
    // Kontext is more reliable with 's native "auto" sizing when
@@ -3521,7 +3510,7 @@ async function generateImage(prompt,loaderAlreadyShown=false,modelOverride="",st
    ? data.imageUrls
    : data.imageUrl?[data.imageUrl]:[];
   if(!generatedUrls.length)throw new Error("Сервер не вернул готовое изображение");
-  await Promise.all(generatedUrls.map(url=>showImage(url,useMiyaImageT2I?originalUserPrompt:prompt,imageModelLabel(actualModel),(useImageFree||useNanoBananA)?selectedRatio:"",useStickerDesigner?stickerStyle:"")));
+  await Promise.all(generatedUrls.map(url=>showImage(url,prompt,imageModelLabel(actualModel),(useImageFree||useNanoBananA)?selectedRatio:"",useStickerDesigner?stickerStyle:"")));
    if(loader){
     setProgress(100);
     const modelLabel=loader.querySelector(".progress-model");
