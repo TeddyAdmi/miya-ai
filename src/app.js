@@ -996,10 +996,16 @@ function imageModelLabel(model){
  if(name==="Flux 2 Dev · T2I")return "Flux 2 Dev · T2I";
  if(/^FLUX Dev$/i.test(name))return "FLUX Dev · T2I";
  if(/^FLUX Kontext(?: Dev)?$/i.test(name))return "FLUX Kontext · I2I";
+ if(name==="Flux Chroma · T2I")return "Flux Chroma · T2I";
  if(/^FLUX Content(?: Dev)?$/i.test(name))return "FLUX Content · I2I";
  return name;
 }
 document.querySelector('#composerModel option[value="Sticker Designer"]')?.remove();
+const fluxChromaOption=document.createElement("option");
+fluxChromaOption.value="Flux Chroma · T2I";
+fluxChromaOption.textContent="Flux Chroma · T2I";
+const fluxKontextOption=document.querySelector('#composerModel option[value="FLUX Kontext Dev"]');
+if(fluxKontextOption&&!document.querySelector('#composerModel option[value="Flux Chroma · T2I"]'))fluxKontextOption.insertAdjacentElement("afterend",fluxChromaOption);
 document.querySelector('[aria-label="Стиль стикера"]')?.remove();
 const imageSmithModelOption=document.querySelector('#composerModel option[value="ImageSmith"]');if(imageSmithModelOption)imageSmithModelOption.textContent="GPT Image 2.5 · T2I / I2I";
 const zImageTurboOption=document.querySelector('#composerModel option[value="Z-Image Turbo (ImageFree)"]');if(zImageTurboOption)zImageTurboOption.textContent="Z-Image Turbo · T2I";
@@ -3264,6 +3270,87 @@ async function generateAgnesImage(prompt,loaderAlreadyShown=false){
 }
 
 
+
+let perchanceWarmupPromise=null;
+function warmPerchanceSession(){
+ if(perchanceWarmupPromise)return perchanceWarmupPromise;
+ perchanceWarmupPromise=new Promise(resolve=>{
+  const frame=document.createElement("iframe");
+  let finished=false;
+  const finish=()=>{
+   if(finished)return;
+   finished=true;
+   clearTimeout(timer);
+   frame.remove();
+   resolve();
+  };
+  const timer=setTimeout(finish,8000);
+  frame.onload=finish;
+  frame.onerror=finish;
+  frame.setAttribute("aria-hidden","true");
+  frame.tabIndex=-1;
+  frame.style.cssText="position:fixed;left:-10000px;top:0;width:1px;height:1px;border:0;opacity:0;pointer-events:none";
+  frame.src="https://perchance.org/";
+  document.body.appendChild(frame);
+ });
+ return perchanceWarmupPromise;
+}
+async function generatePerchanceFluxChroma(prompt,ratio){
+ await warmPerchanceSession();
+ const resolution=ratio==="9:16"?"512x768":ratio==="1:1"?"768x768":"768x512";
+ const generateOne=index=>new Promise((resolve,reject)=>{
+  const id="miya-"+Date.now().toString(36)+"-"+index+"-"+Math.random().toString(36).slice(2);
+  const params=new URLSearchParams({
+   prompt:String(prompt||""),
+   format:"json",
+   id,
+   resolution,
+   guidanceScale:"7",
+   seed:"-1"
+  });
+  const frame=document.createElement("iframe");
+  let finished=false;
+  const cleanup=()=>{
+   if(finished)return;
+   finished=true;
+   clearTimeout(timer);
+   window.removeEventListener("message",onMessage);
+   frame.remove();
+  };
+  const timer=setTimeout(()=>{
+   cleanup();
+   reject(new Error("Perchance не вернул изображение за отведённое время"));
+  },60000);
+  const onMessage=event=>{
+   if(event.origin!=="https://perchance.org"&&event.origin!=="https://www.perchance.org")return;
+   if(event.source!==frame.contentWindow)return;
+   const message=event.data;
+   if(!message||message.api!=="perchance-image-api"||!message.result||message.result.id!==id)return;
+   const result=message.result;
+   const image=typeof result.url==="string"&&/^https:\/\//i.test(result.url)
+    ? result.url
+    : typeof result.dataUrl==="string"&&/^data:image\//i.test(result.dataUrl)
+     ? result.dataUrl : "";
+   cleanup();
+   if(result.ok&&image)resolve({url:image,seed:result.seed});
+   else reject(new Error(String(result.error||result.message||"Perchance не смог создать изображение").slice(0,240)));
+  };
+  window.addEventListener("message",onMessage);
+  frame.setAttribute("aria-hidden","true");
+  frame.tabIndex=-1;
+  frame.style.cssText="position:fixed;left:-10000px;top:0;width:1px;height:1px;border:0;opacity:0;pointer-events:none";
+  frame.src="https://perchance.org/perchance-ai-api?"+params.toString();
+  document.body.appendChild(frame);
+ });
+ const results=await Promise.all([0,1,2,3].map(generateOne));
+ const imageUrls=results.map(item=>item.url);
+ return {
+  ok:true,mode:"image",status:"completed",provider:"Perchance",
+  model:"Flux Chroma · T2I",imageUrl:imageUrls[0],imageUrls,count:imageUrls.length,
+  meta:{free:true,api:"perchance-image-api",resolution,ratio,seed:results.map(item=>item.seed)}
+ };
+}
+
 async function generateImage(prompt,loaderAlreadyShown=false,modelOverride="",stickerStyle="watercolour"){
  const selectedModel=String(modelOverride||$("#composerModel")?.value||"").trim();
  const userSelectedModel=String($("#composerModel")?.value||"").trim();
@@ -3275,7 +3362,14 @@ async function generateImage(prompt,loaderAlreadyShown=false,modelOverride="",st
  const useStickerDesigner=selectedModel==="Sticker Designer";
  const useCinel=selectedModel==="Kolors";
  const useFlux2DevHoodgen=selectedModel==="Flux 2 Dev · T2I";
+ const usePerchanceFluxChroma=selectedModel==="Flux Chroma · T2I";
  const useAuraImage=!useNanoBananA&&/^(?:Nano Banana|Seedream)$/i.test(selectedModel);
+ if(usePerchanceFluxChroma && referenceImage){
+  const notice="Flux Chroma поддерживает только генерацию по тексту (T2I), загрузка фотографии не поддерживается.";
+  if($("#composerStatus"))$("#composerStatus").textContent=notice;
+  toast(notice);
+  return;
+ }
  if(useStickerDesigner && referenceImage){
   const notice="Sticker Designer поддерживает только генерацию по тексту (T2I), загрузка фотографии пока не поддерживается.";
   if($("#composerStatus"))$("#composerStatus").textContent=notice;
@@ -3419,7 +3513,9 @@ async function generateImage(prompt,loaderAlreadyShown=false,modelOverride="",st
   // Image creation/editing is routed through the original AHM7/ API.
   // Do not call public Hugging Face FLUX Spaces here: they were only a fallback
   // experiment and bypass the provider that this app originally used.
-  if(useAuraImage){
+  if(usePerchanceFluxChroma){
+   data=await generatePerchanceFluxChroma(prompt,selectedRatio);
+  }else if(useAuraImage){
    const requestAuraJson=async(payload,timeoutMs)=>{
     const response=await fetch("/api/image",{
      method:"POST",headers:{"Content-Type":"application/json","Accept":"application/json"},
