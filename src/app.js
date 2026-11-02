@@ -3039,7 +3039,7 @@ function scrollChatToLatest(behavior="smooth"){
    workspace.scrollTo({top:Math.max(0,Math.min(max,target)),behavior});
   }); });
 }
-function showLoading(modelOverride=""){
+function showLoading(modelOverride="",generationInfo=null){
  const c=$("#canvas");
  if(mode==="images"){
   let grid=c.querySelector(".result-grid");
@@ -3049,7 +3049,8 @@ function showLoading(modelOverride=""){
   const card=document.createElement("div");card.className="generation-loading"+(referenceImage?" has-upload":" no-upload");
   card.dataset.model=selectedModel;
   card.innerHTML='<div class="generation-progress"><div class="progress-circle is-active"><span class="progress-percent">1%</span></div><div class="progress-copy"><b>Создание изображения</b><span class="progress-model"></span></div></div>';
-  card.querySelector(".progress-model").textContent=imageModelLabel(selectedModel);
+  card.querySelector(".progress-copy b").textContent=String(generationInfo?.title||"Создание изображения");
+  card.querySelector(".progress-model").textContent=String(generationInfo?.name||imageModelLabel(selectedModel));
   grid.prepend(card);scrollImagesToTop();return;
  }
  const selectedVideoModelRaw=$("#videoModel")?.value||"LTX-2.3 Distilled";
@@ -3265,7 +3266,7 @@ async function generateAgnesImage(prompt,loaderAlreadyShown=false){
 
 
 
-async function generateImage(prompt,loaderAlreadyShown=false,modelOverride="",stickerStyle="watercolour"){
+async function generateImage(prompt,loaderAlreadyShown=false,modelOverride="",stickerStyle="watercolour",effectName=""){
  const selectedModel=String(modelOverride||$("#composerModel")?.value||"").trim();
  const userSelectedModel=String($("#composerModel")?.value||"").trim();
  const useAgnesImage=/^Agnes Image/i.test(selectedModel);
@@ -3275,6 +3276,8 @@ async function generateImage(prompt,loaderAlreadyShown=false,modelOverride="",st
  const useNanoBananA=selectedModel==="Nano BananA";
  const useImageSmith=selectedModel==="ImageSmith";
  const useStickerDesigner=selectedModel==="Sticker Designer";
+ const isImageEffect=String(effectName||"").trim().length>0;
+ const effectTitle=String(effectName||"").trim();
  const useCinel=selectedModel==="Kolors";
  const useFlux2DevHoodgen=selectedModel==="Flux 2 Dev · T2I";
  const useAuraImage=!useNanoBananA&&/^(?:Nano Banana|Seedream)$/i.test(selectedModel);
@@ -3297,6 +3300,13 @@ async function generateImage(prompt,loaderAlreadyShown=false,modelOverride="",st
    return;
   }
  }
+ // Effects use the ImageFree text-to-image route and never silently fall back to another image model.
+ if(isImageEffect&&referenceImage){
+  const notice="Эффекты Z-Image Turbo пока работают по текстовому промпту. Убери прикреплённое фото и попробуй ещё раз.";
+  if($("#composerStatus"))$("#composerStatus").textContent=notice;
+  toast(notice);
+  return;
+ }
  // Preserve the original fallback behavior of the existing Z-Image Turbo and other T2I-only providers.
  if(referenceImage && (useLegacyImageFree || useQwenImage21 || useCinel)){
   $("#composerModel").value="Agnes Image 2.5 Flash";
@@ -3305,12 +3315,13 @@ async function generateImage(prompt,loaderAlreadyShown=false,modelOverride="",st
  if(useAgnesImage){
   return generateAgnesImage(prompt,loaderAlreadyShown);
  }
- if(!loaderAlreadyShown)showLoading(useStickerDesigner?"Sticker Designer":"");$("#composerSend").disabled=true;
+ if(!loaderAlreadyShown)showLoading(useStickerDesigner?"Sticker Designer":isImageEffect?"Z-Image Turbo (ImageFree)":"",isImageEffect?{title:"Создание эффекта",name:effectTitle}:null);$("#composerSend").disabled=true;
  const loader=$("#canvas .generation-loading");
  const ring=loader?.querySelector(".progress-circle");
  const percent=ring?.querySelector(".progress-percent");
  const modelName=selectedModel||"FLUX Dev";
  const displayModel=imageModelLabel(modelName);
+ const progressLabel=isImageEffect?"Создание эффекта · "+effectTitle:displayModel+" · Создание изображения";
  const timeoutMs=70000;
  const progressDurationMs=40000;
  const usesReferenceImage=Boolean(referenceImage);
@@ -3324,7 +3335,7 @@ async function generateImage(prompt,loaderAlreadyShown=false,modelOverride="",st
   const bar=loader?.querySelector(".generation-progress-bar span");if(bar)bar.style.width=value+"%";
   if(percent)percent.textContent=value+"%";
   if(composerProgress)composerProgress.textContent=value+"%";
-  const status=$("#composerStatus");if(status)status.textContent=displayModel+" · Создание изображения · "+value+"%";
+  const status=$("#composerStatus");if(status)status.textContent=progressLabel+" · "+value+"%";
  };
  const updateProgress=()=>{
   const elapsed=Math.max(0,Date.now()-progressStartedAt);
@@ -3496,7 +3507,7 @@ async function generateImage(prompt,loaderAlreadyShown=false,modelOverride="",st
     // The shared progress timer is the only writer of numeric progress.
     if(status.status==="queued" && $("#composerStatus")){
       const current=Number.parseInt(String(composerProgress?.textContent||"").replace("%",""),10)||1;
-      $("#composerStatus").textContent=displayModel+" · Создание изображения · "+current+"%";
+      $("#composerStatus").textContent=progressLabel+" · "+current+"%";
     }
    }
    if(!completed)throw new Error("Подождите минуту и попробуйте снова.");
@@ -3514,15 +3525,15 @@ async function generateImage(prompt,loaderAlreadyShown=false,modelOverride="",st
    if(loader){
     setProgress(100);
     const modelLabel=loader.querySelector(".progress-model");
-    if(modelLabel)modelLabel.textContent=imageModelLabel(actualModel);
+    if(modelLabel)modelLabel.textContent=isImageEffect?effectTitle:imageModelLabel(actualModel);
    }
   scrollImagesToTop();
   $("#composerInput").value="";syncInput();
-  $("#composerModel").value=useStickerDesigner?userSelectedModel:modelName;
+  $("#composerModel").value=(useStickerDesigner||isImageEffect)?userSelectedModel:modelName;
   setImageRatio(referenceImage?selectedRatio:$("#composerRatio").value);
   const successStatus=$("#composerStatus");
   if(successStatus){
-   const successText=imageModelLabel(actualModel)+" · готово";
+   const successText=isImageEffect?"Эффект · "+effectTitle+" · готово":imageModelLabel(actualModel)+" · готово";
    successStatus.textContent=successText;
    runComposerStatusShimmer(successStatus,successText);
   }
@@ -3533,7 +3544,7 @@ async function generateImage(prompt,loaderAlreadyShown=false,modelOverride="",st
   if(fakeTimer){clearInterval(fakeTimer);fakeTimer=null;}
   $("#canvas .generation-loading")?.remove();
   if(composerProgress)composerProgress.textContent="";
-  if(useCinel){const notice=displayModel+" · Подождите минуту";toast(notice);$("#composerStatus").textContent=notice;return;}
+  if(useCinel){const notice=isImageEffect?progressLabel+" · Подождите минуту":displayModel+" · Подождите минуту";toast(notice);$("#composerStatus").textContent=notice;return;}
   if(useStickerDesigner && (e?.status===429 || e?.code==="STICKERDESIGNER_RATE_LIMIT")){
    const notice="Sticker Designer · лимит 5 генераций в час. Попробуйте позже.";
    if($("#composerStatus"))$("#composerStatus").textContent=notice;
@@ -3541,7 +3552,7 @@ async function generateImage(prompt,loaderAlreadyShown=false,modelOverride="",st
    return;
   }
   if(useFlux2DevHoodgen && (e?.name==="TimeoutError" || e?.name==="AbortError" || /HOODGEN_UPSTREAM_TIMEOUT|не ответил вовремя|timed? ?out|timeout/i.test(String(e?.message||"")))){
-   const notice=displayModel+" · Подождите минуту";
+   const notice=isImageEffect?progressLabel+" · Подождите минуту":displayModel+" · Подождите минуту";
    if($("#composerStatus"))$("#composerStatus").textContent=notice;
    toast(notice);
    return;
@@ -3564,7 +3575,7 @@ async function generateImage(prompt,loaderAlreadyShown=false,modelOverride="",st
   const moderationBlocked=e?.code==="PROMPT_MODERATION_BLOCKED"||e?.status===403||/PROMPT_MODERATION_BLOCKED|промпт отклон[её]н модерацией/i.test(String(e?.message||""));
   if(moderationBlocked){const notice="Промпт отклонён модерацией. Измените формулировку запроса и попробуйте снова.";$("#composerStatus").textContent=notice;toast(notice);return;}
   const timedOut=e?.message==="Сервер генерации не ответил вовремя";
-  const notice=displayModel+" · Подождите минуту";
+  const notice=isImageEffect?progressLabel+" · Подождите минуту":displayModel+" · Подождите минуту";
   toast(notice);
   $("#composerStatus").textContent=notice;
  }finally{
@@ -5534,7 +5545,7 @@ $("#composerModel")?.addEventListener("change",()=>{
  if(!document.getElementById("miyaStickerActionButtonStyle")){
   const style=document.createElement("style");style.id="miyaStickerActionButtonStyle";
   style.textContent=`
-   #composer .image-settings #createStickerAI{appearance:none!important;-webkit-appearance:none!important;box-sizing:border-box!important;position:relative!important;display:grid!important;flex:0 0 30px!important;width:30px!important;min-width:30px!important;max-width:30px!important;height:30px!important;min-height:30px!important;max-height:30px!important;margin:0!important;padding:0!important;place-items:center!important;align-self:center!important;border:0!important;border-radius:8px!important;background:linear-gradient(145deg,#b56aff,#9564ff 30%,#7563ff 56%,#4c79f6)!important;color:#fff!important;box-shadow:inset 0 1px 0 rgba(255,255,255,.34),inset 0 -2px 3px rgba(31,28,112,.28)!important}
+   #composer .image-settings #createStickerAI{appearance:none!important;-webkit-appearance:none!important;box-sizing:border-box!important;position:relative!important;display:grid!important;flex:0 0 30px!important;width:30px!important;min-width:30px!important;max-width:30px!important;height:30px!important;min-height:30px!important;max-height:30px!important;margin:0!important;padding:0!important;place-items:center!important;align-self:center!important;border:0!important;border-radius:8px!important;background:radial-gradient(ellipse at 27% 15%,rgba(255,255,255,.32) 0%,rgba(255,255,255,.13) 24%,rgba(255,255,255,0) 62%),linear-gradient(145deg,#b56aff 0%,#9564ff 30%,#7563ff 56%,#4c79f6 100%)!important;color:#fff!important;box-shadow:inset 0 1px 0 rgba(255,255,255,.34),inset 0 -2px 3px rgba(31,28,112,.28)!important}
    #composer .image-settings #createStickerAI svg{position:relative!important;z-index:1!important;display:block!important;width:19px!important;height:19px!important;max-width:19px!important;max-height:19px!important;overflow:visible!important;stroke:none!important;filter:none!important}
    #composer .image-settings #createStickerAI:disabled{opacity:.55!important;cursor:wait!important}
    #miyaStickerStylePopup{position:fixed!important;inset:auto!important;z-index:2147483000!important;display:grid!important;grid-template-columns:minmax(0,1fr)!important;gap:0!important;box-sizing:border-box!important}
@@ -5617,6 +5628,23 @@ $("#composerModel")?.addEventListener("change",()=>{
  ["change","click"].forEach(type=>document.addEventListener(type,event=>{if(popup.hidden)return;const target=event.target;if(target?.matches?.("#composerModel,#composerRatio,#composerQuality,.composer-options .select-pill,.video-options .select-pill,[data-mode]"))closePopup()},true));
  document.addEventListener("keydown",event=>{if(event.key==="Escape"&&!popup.hidden){closePopup();button.focus()}});
  window.addEventListener("resize",closePopup);
+})();
+(function installImageEffectQuickAction(){
+ const sticker=document.querySelector("#createStickerAI"),options=document.querySelector("#composerOptions");if(!sticker||!options||document.getElementById("createEffectAI"))return;
+ const button=document.createElement("button");button.type="button";button.id="createEffectAI";button.className="improve composer-trash effect-create-action";button.innerHTML='<span class="effect-action-icon" aria-hidden="true">✨</span>';button.title="Создать эффект AI";button.setAttribute("aria-label","Создать эффект AI");sticker.insertAdjacentElement("afterend",button);
+ const style=document.createElement("style");style.id="miyaImageEffectActionStyle";style.textContent="\n#composer .image-settings #createStickerAI,#composer .image-settings #createEffectAI{appearance:none!important;-webkit-appearance:none!important;box-sizing:border-box!important;position:relative!important;display:grid!important;flex:0 0 30px!important;width:30px!important;min-width:30px!important;max-width:30px!important;height:30px!important;min-height:30px!important;max-height:30px!important;margin:0!important;padding:0!important;place-items:center!important;align-self:center!important;justify-self:center!important;border:0!important;border-radius:8px!important;background:radial-gradient(ellipse at 27% 15%,rgba(255,255,255,.32) 0%,rgba(255,255,255,.13) 24%,rgba(255,255,255,0) 62%),linear-gradient(145deg,#b56aff 0%,#9564ff 30%,#7563ff 56%,#4c79f6 100%)!important;background-clip:padding-box!important;color:#fff!important;box-shadow:inset 0 1px 0 rgba(255,255,255,.34),inset 0 -2px 3px rgba(31,28,112,.28)!important;outline:none!important;transform:none!important;filter:none!important;transition:background .12s ease!important}\n#composer .image-settings #createStickerAI:hover,#composer .image-settings #createStickerAI:active,#composer .image-settings #createEffectAI:hover,#composer .image-settings #createEffectAI:active,body.light #composer .image-settings #createStickerAI:hover,body.light #composer .image-settings #createStickerAI:active,body.light #composer .image-settings #createEffectAI:hover,body.light #composer .image-settings #createEffectAI:active{background:radial-gradient(ellipse at 27% 15%,rgba(255,255,255,.32) 0%,rgba(255,255,255,.13) 24%,rgba(255,255,255,0) 62%),linear-gradient(145deg,#b56aff 0%,#9564ff 30%,#7563ff 56%,#4c79f6 100%)!important;color:#fff!important;border:0!important;border-radius:8px!important;box-shadow:inset 0 1px 0 rgba(255,255,255,.34),inset 0 -2px 3px rgba(31,28,112,.28)!important;outline:none!important;transform:none!important;filter:none!important}\n#composer .image-settings #createStickerAI:disabled,#composer .image-settings #createEffectAI:disabled{opacity:.55!important;cursor:wait!important}\n#composer .image-settings #createEffectAI .effect-action-icon{display:grid!important;place-items:center!important;width:20px!important;height:20px!important;font-size:19px!important;line-height:1!important}\n#miyaImageEffectPopup{position:fixed!important;z-index:2147483000!important;display:grid!important;grid-template-columns:minmax(0,1fr)!important;gap:2px!important;width:42px!important;min-width:42px!important;max-width:42px!important;max-height:368px!important;overflow-x:hidden!important;overflow-y:auto!important;overscroll-behavior:contain!important;box-sizing:border-box!important;padding:4px!important;border:1px solid rgba(157,122,220,.42)!important;border-radius:10px!important;background:rgba(10,22,41,.98)!important;box-shadow:0 12px 30px rgba(0,0,0,.38),inset 0 1px 0 rgba(255,255,255,.08)!important;scrollbar-width:thin!important;scrollbar-color:rgba(169,125,255,.65) transparent!important}\n#miyaImageEffectPopup[hidden]{display:none!important}\n#miyaImageEffectPopup .image-effect-option{box-sizing:border-box!important;width:100%!important;height:34px!important;min-height:34px!important;display:grid!important;place-items:center!important;padding:0!important;margin:0!important;border:0!important;border-radius:7px!important;background:transparent!important;color:#fff!important;font-size:20px!important;line-height:1!important;cursor:pointer!important}\n#miyaImageEffectPopup .image-effect-option:hover,#miyaImageEffectPopup .image-effect-option:focus-visible{background:rgba(157,111,255,.22)!important;outline:1px solid rgba(191,160,255,.42)!important}\n#miyaImageEffectPopup::-webkit-scrollbar{width:5px!important}#miyaImageEffectPopup::-webkit-scrollbar-thumb{background:rgba(169,125,255,.65)!important;border-radius:8px!important}\nbody.light #miyaImageEffectPopup{background:rgba(246,248,252,.99)!important;color:#34445a!important;border-color:#d1dbea!important;box-shadow:0 12px 28px rgba(35,55,80,.20)!important}\nbody.light #miyaImageEffectPopup .image-effect-option{color:#34445a!important}\nbody.light #miyaImageEffectPopup .image-effect-option:hover,body.light #miyaImageEffectPopup .image-effect-option:focus-visible{background:#e9e4ff!important;outline:1px solid #c7b8f3!important}";document.head.appendChild(style);
+ const effects=[{"id":"knitted","name":"Вязаный мир","icon":"🧶","prompt":"Transform the entire image into a luxurious handcrafted knitted universe. Every visible character, face, body, hair, object, animal, building, vehicle, plant, landscape and background detail becomes intricately knitted or crocheted from yarn. Render realistic wool fibers, fine and chunky stitches, layered crochet patterns, soft sculptural volume, rich harmonious colors, refined textile craftsmanship, cinematic soft lighting and crisp tactile detail. The complete scene must look like one coherent world made entirely from yarn. Preserve the original subjects, poses and composition."},{"id":"candy","name":"Мир сладостей","icon":"🍬","prompt":"Transform the entire image into a spectacular fantasy kingdom made entirely from sweets and confectionery. Every character, object, animal, building, vehicle, plant, landscape and background element becomes an imaginative edible creation of chocolate, caramel, sugar, marshmallow, gummies and candy. Add glossy caramel, translucent sugar crystals, colorful jelly, delicate chocolate ornament, layered candy sculptures and delicious vibrant colors. Use magical reflections, rich textures, cinematic lighting and exquisite detail. Preserve the original scene, characters, poses and composition."},{"id":"origami","name":"Мир оригами","icon":"📄","prompt":"Transform the entire image into an intricate three-dimensional origami universe folded entirely from beautifully colored paper. Every character, object, animal, building, vehicle, plant, landscape and background detail becomes a carefully engineered paper sculpture. Create precise geometric folds, elegant angular silhouettes, layered paper structures, delicate creases, complex folded volume, sophisticated paper craftsmanship and harmonious colors. Add dramatic cinematic lighting, refined shadows and exceptional detail. Preserve the original scene, characters, poses and composition."},{"id":"egypt","name":"Древний Египет","icon":"🏛️","prompt":"Reimagine the entire image as an immersive cinematic masterpiece from ancient Egyptian civilization. Integrate authentic Egyptian architecture, monumental sandstone, carved reliefs, hieroglyphic inscriptions, majestic columns, temple ornaments and ornamental geometry throughout the scene. Use lapis lazuli blue, turquoise, deep red, warm sandstone and radiant gold. Create historical craftsmanship, dramatic desert sunlight, long shadows, subtle golden dust, atmospheric depth and extraordinary detail. Every element belongs naturally to the same ancient Egyptian world. Preserve the original characters, roles, poses and composition."},{"id":"clay","name":"Пластилиновый мир","icon":"🧸","prompt":"Transform the entire image into a fully handcrafted plasticine universe, as if sculpted by an expert stop-motion animation artist. Every character, face, body, hair, object, animal, building, vehicle, plant, landscape and background element is made entirely from colorful modeling clay. Create expressive sculpted shapes, smooth hand-molded surfaces, subtle fingerprints, delicate impressions, layered clay details and convincing three-dimensional volume. Use saturated colors, realistic clay texture, cinematic lighting, beautiful shadows and premium stop-motion film quality. Preserve the original scene and arrangement."},{"id":"plush","name":"Плюшевый мир","icon":"🧸","prompt":"Transform the entire image into an enchanting plush universe handcrafted from soft stuffed materials. Every character, face, body, hair, object, animal, building, vehicle, plant, landscape and background detail becomes a plush creation. Use luxurious velvet, fluffy fibers, soft fleece, fine textile surfaces, delicate seams, realistic stitching, rounded stuffed forms and tactile depth. Apply rich coordinated colors, warm cinematic illumination, soft ambient shadows and exquisite craftsmanship. The complete scene should resemble a premium collection of plush sculptures. Preserve the original scene, poses and arrangement."},{"id":"pixel","name":"Ретро 8-bit","icon":"👾","prompt":"Recreate the entire image as a richly detailed retro 8-bit pixel-art universe. Every character, object, animal, building, vehicle, plant, landscape and background element is constructed entirely from crisp square pixels. Use authentic arcade aesthetics, carefully arranged pixel clusters, sophisticated pixel shading, layered colors, geometric silhouettes and pixel-based highlights and shadows. Create strong visual depth, a vivid nostalgic palette and the craftsmanship of a premium classic videogame environment. Keep a consistent pixel scale throughout the complete composition and preserve the original scene and poses."},{"id":"lego","name":"Мир LEGO","icon":"🧱","prompt":"Transform the entire image into an impressive fully constructed LEGO universe. Every character, body, face, hair, object, animal, building, vehicle, plant, landscape and background detail is assembled entirely from authentic LEGO bricks and miniature construction pieces. Create recognizable studs, interlocking geometry, modular structures, precise brick-built contours, realistic plastic surfaces and carefully engineered details. Use vibrant colors, beautiful miniature architecture, cinematic lighting, natural reflections and convincing toy-scale depth. Preserve the original scene, subjects, poses and arrangement."},{"id":"sand","name":"Песочный мир","icon":"⏳","prompt":"Transform the entire image into a magnificent world sculpted entirely from sand. Every character, body, face, hair, object, animal, building, vehicle, plant, landscape and background element is formed from detailed sand sculpture. Render fine grains, compacted surfaces, delicate carved patterns, sculpted contours and layered granular structures. Use warm golden, beige and amber tones, natural sunlight, soft atmospheric haze, dramatic shadows, cinematic depth and astonishing handcrafted detail. The complete scene should resemble a master sculptor’s sand-art exhibition. Preserve the original subjects and composition."},{"id":"flowers","name":"Мир гигантских цветов","icon":"🌺","prompt":"Transform the entire image into a breathtaking giant-flower wonderland. Enormous blossoms, oversized petals, towering stems, magnificent leaves, intricate pollen structures and lush botanical forms define the complete environment. Extend the floral world through every part of the composition, creating an immersive sense of scale as though the scene takes place inside a garden of colossal flowers. Use realistic petal veins, layered translucent petals, rich botanical colors, cinematic sunlight, atmospheric depth and extraordinary natural detail. Preserve the original characters, poses and composition."},{"id":"wood","name":"Деревянный мир","icon":"🪵","prompt":"Transform the entire image into an extraordinary handcrafted wooden universe. Every character, face, body, hair, object, animal, building, vehicle, plant, landscape and background detail is carved entirely from natural wood. Render realistic wood grain, intricate carved patterns, sculpted contours, layered wooden structures, fine engraved details and polished timber surfaces. Use warm natural wood tones while maintaining a unified material appearance. Add masterful craftsmanship, dramatic cinematic illumination, realistic shadows and exquisite sculptural depth. Preserve the original scene, poses and arrangement."},{"id":"embroidery","name":"Мир вышивки","icon":"🪡","prompt":"Transform the entire image into a magnificent embroidered textile masterpiece. Every character, face, body, hair, object, animal, building, vehicle, plant, landscape and background element is created entirely from embroidery threads and needlework. Build the full scene from dense stitches, layered thread, satin stitching, cross-stitch patterns, decorative embroidery and richly woven surfaces. Show realistic thread direction, visible fibers, dimensional stitched contours, intricate patterns and vibrant harmonious colors. Add exceptional textile craftsmanship, cinematic lighting and impressive surface depth. Preserve the original scene and arrangement."},{"id":"porcelain","name":"Фарфоровый мир","icon":"🏺","prompt":"Transform the entire image into an exquisite porcelain universe. Every character, face, body, hair, object, animal, building, vehicle, plant, landscape and background detail is formed entirely from finely glazed porcelain. Create refined sculptural shapes, smooth ceramic surfaces, delicate translucent glaze, elegant glossy reflections, intricate painted decorations and beautifully modeled details. Use sophisticated colors, subtle highlights, realistic ceramic depth and masterful craftsmanship. The complete scene should resemble a collection of exceptional porcelain sculptures, illuminated with elegant cinematic light. Preserve the original scene and composition."},{"id":"beads","name":"Мир бисера","icon":"📿","prompt":"Transform the entire image into an extraordinary three-dimensional beaded artwork. Every character, face, body, hair, object, animal, building, vehicle, plant, landscape and background detail is constructed entirely from thousands of tiny colorful beads. Create dense beadwork, carefully aligned patterns, dimensional bead surfaces, delicate ornamental geometry and individual bead reflections. Use varied bead sizes and rich coordinated colors to reproduce the original forms with precision. Add sparkling highlights, layered depth, exquisite handmade craftsmanship and cinematic lighting. Preserve the original scene and composition."},{"id":"marble","name":"Мраморный мир","icon":"🪨","prompt":"Transform the entire image into a magnificent world sculpted entirely from natural marble. Every character, face, body, hair, object, animal, building, vehicle, plant, landscape and background detail is carved from marble stone. Create elegant sculptural forms, realistic natural marble veins, fine mineral patterns, polished surfaces, subtle crystalline structures and beautifully carved contours. Use refined variations of white, cream, gray and richly veined marble while maintaining a consistent stone material. Add monumental depth, expert craftsmanship, dramatic cinematic lighting and exquisite shadows. Preserve the original scene and arrangement."},{"id":"bronze","name":"Мир кованой меди и бронзы","icon":"⚒️","prompt":"Transform the entire image into a spectacular handcrafted world forged entirely from copper and bronze. Every character, face, body, hair, object, animal, building, vehicle, plant, landscape and background element is sculpted from copper and bronze metal. Create intricate hammered surfaces, finely worked metal reliefs, engraved patterns, forged contours and realistic metallic reflections. Use warm copper reds, golden bronze, antique bronze and subtle patina with a consistent forged-metal appearance throughout. Add authentic metalworking craftsmanship, dramatic golden cinematic lighting and deep atmospheric shadows. Preserve the original scene and composition."},{"id":"miniature","name":"Миниатюрный мир","icon":"🏙️","prompt":"Transform the entire image into an incredibly realistic miniature diorama, as if the original scene were recreated as meticulously handcrafted scale models and photographed with a professional macro camera. All characters, objects, buildings, vehicles, plants and surroundings appear as tiny, highly detailed models while retaining their original shapes and arrangement. Create convincing miniature scale, exquisite model-making craftsmanship, realistic tiny textures and finely detailed architecture. Use professional macro photography, tilt-shift lens effect, selective shallow depth of field, a precise focal plane, softly blurred foreground and background, realistic perspective, subtle bokeh, bright cinematic lighting and vivid natural colors. Preserve the original scene and composition."}];
+ const popup=document.createElement("div");popup.id="miyaImageEffectPopup";popup.className="miya-composer-select-popup";popup.hidden=true;popup.setAttribute("role","menu");popup.setAttribute("aria-label","Эффекты AI");
+ effects.forEach(item=>{const option=document.createElement("button");option.type="button";option.className="image-effect-option";option.setAttribute("role","menuitem");option.title=item.name;option.setAttribute("aria-label",item.name);option.textContent=item.icon;option.addEventListener("click",async()=>{closeMenu();if(mode!=="images"||button.disabled||$("#composerSend")?.disabled)return;const input=$("#composerInput"),prompt=String(input?.value||"").trim();if(!prompt){input?.focus();toast("Сначала напиши, что нужно создать");return}if(referenceImage){toast("Для эффектов Z-Image Turbo пока используй текстовый промпт без прикреплённого фото");return}button.disabled=true;button.setAttribute("aria-busy","true");toast("Создание эффекта · "+item.name);try{const finalPrompt=prompt+String.fromCharCode(10,10)+item.prompt;await generateImage(finalPrompt,false,"Z-Image Turbo (ImageFree)","",item.name)}finally{button.disabled=false;button.removeAttribute("aria-busy")}});popup.appendChild(option)});
+ document.documentElement.appendChild(popup);
+ function closeMenu(){popup.hidden=true;popup.style.setProperty("display","none","important");button.setAttribute("aria-expanded","false")}
+ function openMenu(){if(mode!=="images"||button.disabled||$("#composerSend")?.disabled)return;popup.hidden=false;popup.style.setProperty("display","grid","important");const r=button.getBoundingClientRect();popup.style.setProperty("position","fixed","important");popup.style.setProperty("width","42px","important");popup.style.setProperty("max-height",Math.min(368,Math.max(68,r.top-16))+"px","important");const h=popup.getBoundingClientRect().height||popup.offsetHeight;popup.style.setProperty("left",Math.max(8,Math.min(window.innerWidth-50,r.left-6))+"px","important");popup.style.setProperty("top",Math.max(8,r.top-h-5)+"px","important");popup.scrollTop=0;button.setAttribute("aria-expanded","true")}
+ button.setAttribute("aria-haspopup","menu");button.setAttribute("aria-expanded","false");button.addEventListener("click",()=>{if(!popup.hidden){closeMenu();return}openMenu()});
+ document.addEventListener("pointerdown",e=>{if(popup.hidden||popup.contains(e.target)||button.contains(e.target)||e.target?.closest?.("#themeToggle"))return;closeMenu()},true);
+ const input=$("#composerInput");input?.addEventListener("focus",closeMenu);input?.addEventListener("pointerdown",closeMenu,true);
+ ["change","click","focusin"].forEach(type=>document.addEventListener(type,e=>{if(popup.hidden)return;const t=e.target;if(t instanceof Element&&t.closest("#composerModel,#composerRatio,#composerQuality,.composer-options .select-pill,[data-mode],[data-tool]"))closeMenu()},true));
+ document.addEventListener("keydown",e=>{if(popup.hidden)return;if(e.key==="Escape"){closeMenu();button.focus();return}if(e.key==="ArrowDown"||e.key==="ArrowUp"){const a=Array.from(popup.querySelectorAll(".image-effect-option")),i=a.indexOf(document.activeElement),n=e.key==="ArrowDown"?(i+1+a.length)%a.length:(i-1+a.length)%a.length;e.preventDefault();a[n]?.focus()}});
+ window.addEventListener("resize",closeMenu);
 })();
 $("#improve")?.addEventListener("click",improveImageComposerPrompt);
 $("#improve")?.setAttribute("title","Улучшить промпт AI");
