@@ -1120,7 +1120,7 @@ module.exports = async function imageHandler(req, res) {
 
       const requestImageFree = async (url, init) => {
         const isStatusRequest = String(url).includes("/status?");
-        const attempts = isStatusRequest ? 2 : 1;
+        const attempts = 2;
         let lastError = null;
         for (let attempt = 0; attempt < attempts; attempt++) {
           try {
@@ -1138,7 +1138,8 @@ module.exports = async function imageHandler(req, res) {
               error.status = upstream.status;
               error.body = raw.slice(0, 900);
               const retryable = upstream.status === 429 || upstream.status >= 500;
-              if (isStatusRequest && retryable && attempt + 1 < attempts) {
+              const retryableModeration = upstream.status === 503 && /Prompt moderation is temporarily unavailable/i.test(raw);
+              if (((isStatusRequest && retryable) || retryableModeration) && attempt + 1 < attempts) {
                 lastError = error;
                 await new Promise(resolve => setTimeout(resolve, 650));
                 continue;
@@ -1151,7 +1152,8 @@ module.exports = async function imageHandler(req, res) {
             const statusCode = Number(error?.status) || 0;
             const retryableStatus = statusCode === 429 || statusCode >= 500;
             const retryableNetwork = !statusCode || error?.name === "TimeoutError" || error?.name === "AbortError";
-            if (isStatusRequest && attempt + 1 < attempts && (retryableStatus || retryableNetwork)) {
+            const retryableModeration = statusCode === 503 && /Prompt moderation is temporarily unavailable/i.test(String(error?.body || ""));
+            if (attempt + 1 < attempts && ((isStatusRequest && (retryableStatus || retryableNetwork)) || retryableModeration)) {
               await new Promise(resolve => setTimeout(resolve, 650));
               continue;
             }
