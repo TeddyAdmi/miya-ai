@@ -1128,7 +1128,7 @@ module.exports = async function imageHandler(req, res) {
               ...init,
               headers: { Accept:"application/json", ...(init?.headers || {}) },
               cache:"no-store",
-              signal:AbortSignal.timeout(isStatusRequest ? 5200 : 20000)
+              signal:AbortSignal.timeout(isStatusRequest ? 5200 : 35000)
             });
             const raw = await upstream.text();
             let data = {};
@@ -1301,9 +1301,11 @@ module.exports = async function imageHandler(req, res) {
           meta:{free:true,aspectRatio,modelId:"Z-Image-Turbo",promptEnhanced:requestedModel==="Miya Image t2i",upstream:"imagefree.net"}
         });
       } catch (error) {
-        return res.status(502).json({
-          ok:false,error:"IMAGEFREE_HANDLER_ERROR",
-          message:String(error?.message || error || "Ошибка обращения к ImageFree."),
+        const timedOut = error?.name === "TimeoutError" || error?.name === "AbortError" || /timed? ?out|abort/i.test(String(error?.message || ""));
+        return res.status(timedOut ? 504 : 502).json({
+          ok:false,
+          error:timedOut ? "IMAGEFREE_UPSTREAM_TIMEOUT" : "IMAGEFREE_HANDLER_ERROR",
+          message:timedOut ? "Сервис изображений не ответил в отведённое время." : "Не удалось обратиться к сервису изображений.",
           upstreamStatus:error?.status || null,
           upstreamBody:error?.body || ""
         });
