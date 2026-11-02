@@ -1119,38 +1119,123 @@ module.exports = async function imageHandler(req, res) {
       if (action === "status" && !taskIdInput) return res.status(400).json({ok:false,error:"IMAGEFREE_TASK_ID_REQUIRED"});
 
       const requestImageFree = async (url, init) => {
-        const isStatusRequest = /\/status\?/.test(url);
-        const upstream = await fetch(url, {
-          ...init,
-          headers: { Accept:"application/json", ...(init?.headers || {}) },
-          cache:"no-store",
-          signal:AbortSignal.timeout(isStatusRequest ? 9000 : 20000)
-        });
-        const raw = await upstream.text();
-        let data = {};
-        try { data = raw ? JSON.parse(raw) : {}; } catch {}
-        if (!upstream.ok) {
-          const error = new Error("ImageFree вернул HTTP " + upstream.status + (data?.message ? ": " + String(data.message) : ""));
-          error.status = upstream.status;
-          error.body = raw.slice(0, 900);
-          throw error;
+        const isStatusRequest = String(url).includes("/status?");
+        const attempts = isStatusRequest ? 2 : 1;
+        let lastError = null;
+        for (let attempt = 0; attempt < attempts; attempt++) {
+          try {
+            const upstream = await fetch(url, {
+              ...init,
+              headers: { Accept:"application/json", ...(init?.headers || {}) },
+              cache:"no-store",
+              signal:AbortSignal.timeout(isStatusRequest ? 5200 : 20000)
+            });
+            const raw = await upstream.text();
+            let data = {};
+            try { data = raw ? JSON.parse(raw) : {}; } catch {}
+            if (!upstream.ok) {
+              const error = new Error("ImageFree вернул HTTP " + upstream.status + (data?.message ? ": " + String(data.message) : ""));
+              error.status = upstream.status;
+              error.body = raw.slice(0, 900);
+              const retryable = upstream.status === 429 || upstream.status >= 500;
+              if (isStatusRequest && retryable && attempt + 1 < attempts) {
+                lastError = error;
+                await new Promise(resolve => setTimeout(resolve, 650));
+                continue;
+              }
+              throw error;
+            }
+            return data;
+          } catch (error) {
+            lastError = error;
+            const statusCode = Number(error?.status) || 0;
+            const retryableStatus = statusCode === 429 || statusCode >= 500;
+            const retryableNetwork = !statusCode || error?.name === "TimeoutError" || error?.name === "AbortError";
+            if (isStatusRequest && attempt + 1 < attempts && (retryableStatus || retryableNetwork)) {
+              await new Promise(resolve => setTimeout(resolve, 650));
+              continue;
+            }
+            throw error;
+          }
         }
-        return data;
+        throw lastError || new Error("ImageFree status request failed");
       };
 
       const normalizeImageFreeStatus = statusData => {
-        const status = String(statusData?.status || statusData?.state || "processing").toLowerCase();
-        const imageUrl = String(statusData?.image || statusData?.imageUrl || statusData?.image_url || "").trim();
-        if (["failed","error","cancelled","canceled"].includes(status)) {
-          return {failed:true,status,message:String(statusData?.message || statusData?.error || "ImageFree не смог создать изображение."),upstreamBody:JSON.stringify(statusData).slice(0,900)};
-        }
-        if (status === "completed" && /^https:\/\//i.test(imageUrl)) {
-          let parsed;
-          try { parsed = new URL(imageUrl); } catch {}
-          if (!parsed || parsed.hostname !== "pub-62e693a7058040f98bba94ed1d6f880b.r2.dev") {
-            return {failed:true,status:"error",message:"ImageFree вернул ссылку с неожиданного домена."};
+        const nodes = [];
+        const queue = [{value:statusData,depth:0}];
+        const seen = new Set();
+        while (queue.length) {
+          const current = queue.shift();
+          const value = current?.value;
+          if (!value || typeof value !== "object" || seen.has(value) || current.depth > 4) continue;
+          seen.add(value);
+          nodes.push(value);
+          for (const key of ["data","result","task","job","output","response","images","outputs","works"]) {
+            const child = value[key];
+            if (!child || typeof child !== "object") continue;
+            if (Array.isArray(child)) child.forEach(item => queue.push({value:item,depth:current.depth+1}));
+            else queue.push({value:child,depth:current.depth+1});
           }
-          return {completed:true,status:"completed",imageUrl};
+        }
+        const readString = keys => {
+          for (const node of nodes) {
+            for (const key of keys) {
+              if (typeof node[key] === "string" && node[key].trim()) return node[key].trim();
+            }
+          }
+          return "";
+        };
+        const status = String(readString(["status","state","taskStatus","task_status","phase"]) || "processing")
+          .trim().toLowerCase().replaceAll(" ","_").replaceAll("-","_");
+        const candidates = [];
+        const scanOutput = (value,depth=0) => {
+          if (!value || depth > 5) return;
+          if (typeof value === "string") {
+            const candidate = value.trim();
+            if (candidate.toLowerCase().startsWith("https://")) candidates.push(candidate);
+            return;
+          }
+          if (Array.isArray(value)) {
+            value.forEach(item => scanOutput(item,depth+1));
+            return;
+          }
+          if (typeof value !== "object") return;
+          for (const key of ["image","imageUrl","image_url","outputUrl","output_url","assetUrl","asset_url","url","src"]) {
+            const child = value[key];
+            if (typeof child === "string" && child.trim()) candidates.push(child.trim());
+            else if (child && typeof child === "object") scanOutput(child,depth+1);
+          }
+          for (const key of ["images","outputs","output","result","response","works","data","task","job"]) {
+            if (value[key] && typeof value[key] === "object") scanOutput(value[key],depth+1);
+          }
+        };
+        scanOutput(statusData);
+        const imageUrl = [...new Set(candidates)].find(candidate => {
+          try {
+            const parsed = new URL(candidate);
+            return parsed.protocol === "https:" &&
+              parsed.hostname.toLowerCase() === "pub-62e693a7058040f98bba94ed1d6f880b.r2.dev";
+          } catch { return false; }
+        }) || "";
+        const failedStatuses = ["failed","error","cancelled","canceled","rejected","timeout","timed_out","failure"];
+        const completedStatuses = ["completed","complete","success","succeeded","done","finished"];
+        if (failedStatuses.includes(status)) {
+          return {
+            failed:true,
+            status,
+            message:readString(["errorMessage","error_message","reason","message","error"]) || "ImageFree не смог создать изображение.",
+            upstreamBody:JSON.stringify(statusData).slice(0,900)
+          };
+        }
+        if (imageUrl) return {completed:true,status:"completed",imageUrl};
+        if (completedStatuses.includes(status)) {
+          return {
+            failed:true,
+            status:"error",
+            message:"ImageFree сообщил о завершении задания, но не вернул допустимую ссылку на изображение.",
+            upstreamBody:JSON.stringify(statusData).slice(0,900)
+          };
         }
         return {status};
       };
@@ -1180,11 +1265,34 @@ module.exports = async function imageHandler(req, res) {
           headers:{"Content-Type":"application/json"},
           body:JSON.stringify({prompt:userPrompt,aspect_ratio:aspectRatio,turnstile_token:requestedModel==="Miya Image t2i"?null:""})
         });
-        const taskId = String(created?.taskId || "").trim();
+        const immediate = normalizeImageFreeStatus(created);
+        if (immediate.failed) {
+          return res.status(502).json({
+            ok:false,error:"IMAGEFREE_GENERATION_FAILED",
+            message:immediate.message,
+            upstreamBody:immediate.upstreamBody || JSON.stringify(created).slice(0,900)
+          });
+        }
+        if (immediate.completed) {
+          return res.status(200).json({
+            ok:true,mode:"image",status:"completed",provider:"ImageFree",
+            model:imageFreeModelName,imageUrl:immediate.imageUrl,imageUrls:[immediate.imageUrl],count:1,
+            meta:{free:true,aspectRatio,modelId:"Z-Image-Turbo",promptEnhanced:requestedModel==="Miya Image t2i",upstream:"imagefree.net"}
+          });
+        }
+        let createdTask = created;
+        for (let depth = 0; depth < 4 && createdTask?.data && typeof createdTask.data === "object"; depth++) {
+          createdTask = createdTask.data;
+        }
+        const taskId = String(
+          createdTask?.taskId || createdTask?.task_id ||
+          createdTask?.jobId || createdTask?.job_id ||
+          createdTask?.id || created?.taskId || ""
+        ).trim();
         if (!taskId) {
           return res.status(502).json({
             ok:false,error:"IMAGEFREE_TASK_ID_MISSING",
-            message:String(created?.message || created?.error || "ImageFree не вернул taskId."),
+            message:String(createdTask?.message || createdTask?.error || created?.message || created?.error || "ImageFree не вернул taskId."),
             upstreamBody:JSON.stringify(created).slice(0,900)
           });
         }
