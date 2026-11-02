@@ -3048,7 +3048,7 @@ function showLoading(modelOverride="",generationInfo=null){
   const selectedModel=String(modelOverride||"").trim()||(referenceImage?($("#composerModel")?.value||"ImageSmith"):($("#composerModel")?.value||"FLUX Dev"));
   const card=document.createElement("div");card.className="generation-loading"+(referenceImage?" has-upload":" no-upload");
   card.dataset.model=selectedModel;
-  card.innerHTML='<div class="generation-progress"><div class="progress-circle is-active"><span class="progress-percent">1%</span></div><div class="progress-copy"><b>Создание изображения</b><span class="progress-model"></span></div></div>';
+  card.innerHTML='<div class="generation-progress"><div class="progress-circle"><span class="progress-percent">0%</span></div><div class="progress-copy"><b>Создание изображения</b><span class="progress-model"></span></div></div>';
   card.querySelector(".progress-copy b").textContent=String(generationInfo?.title||"Создание изображения");
   card.querySelector(".progress-model").textContent=String(generationInfo?.name||imageModelLabel(selectedModel));
   grid.prepend(card);scrollImagesToTop();return;
@@ -3329,8 +3329,13 @@ async function generateImage(prompt,loaderAlreadyShown=false,modelOverride="",st
  const composerProgress=$("#composerProgress");
  let fakeTimer=null;
  let progressStartedAt=Date.now();
+ const progressClockStartedAt=performance.now();
+ let lastProgress=-1;
  const setProgress=(p)=>{
-  const value=Math.max(0,Math.min(100,Math.round(p)));
+  const requested=Math.max(0,Math.min(100,Math.floor(Number(p)||0)));
+  const value=Math.max(lastProgress,requested);
+  if(value===lastProgress)return;
+  lastProgress=value;
   if(ring){ring.classList.remove("is-active");ring.style.setProperty("--progress",value+"%");}
   const bar=loader?.querySelector(".generation-progress-bar span");if(bar)bar.style.width=value+"%";
   if(percent)percent.textContent=value+"%";
@@ -3338,12 +3343,13 @@ async function generateImage(prompt,loaderAlreadyShown=false,modelOverride="",st
   const status=$("#composerStatus");if(status)status.textContent=progressLabel+" · "+value+"%";
  };
  const updateProgress=()=>{
-  const elapsed=Math.max(0,Date.now()-progressStartedAt);
-  setProgress(Math.min(99,elapsed/40000*99));
+  const elapsed=Math.max(0,performance.now()-progressClockStartedAt);
+  const nextProgress=Math.min(99,Math.floor(elapsed/40000*99));
+  if(nextProgress>lastProgress)setProgress(nextProgress);
  };
  setProgress(0);
- // All image models share one clock: 0→99% in 40 seconds, then wait up to 30 seconds.
-  fakeTimer=setInterval(updateProgress,400);
+ // One monotonic clock drives every image model: 0→99% in 40 seconds.
+ fakeTimer=setInterval(updateProgress,50);
  $("#composerStatus").textContent=displayModel+" · Создание изображения · 0%";
  try{
   const payload={
@@ -3512,10 +3518,6 @@ async function generateImage(prompt,loaderAlreadyShown=false,modelOverride="",st
      failure.code="IMAGEFREE_GENERATION_FAILED";failure.status=502;
      failure.upstreamBody=String(status.upstreamBody||"").slice(0,900);throw failure;
     }
-    if(["queued","processing","pending","running","submitted"].includes(String(status.status||"").toLowerCase())&&$("#composerStatus")){
-     const current=Number.parseInt(String(composerProgress?.textContent||"").replace("%",""),10)||1;
-     $("#composerStatus").textContent=progressLabel+" · "+current+"%";
-    }
    }
    if(!completed){
     const timeout=new Error("ImageFree не вернул готовое изображение за 70 секунд. Задание могло остаться в очереди.");
@@ -3557,12 +3559,10 @@ async function generateImage(prompt,loaderAlreadyShown=false,modelOverride="",st
   $("#canvas .generation-loading")?.remove();
   if(composerProgress)composerProgress.textContent="";
   if(isImageEffect){
-   const detail=String(e?.message||"ImageFree не вернул пояснение ошибки").replaceAll("\n"," ").replaceAll("\r"," ").trim().slice(0,180);
-   const timedOut=e?.code==="IMAGEFREE_TASK_TIMEOUT"||/timeout|timed out|aborted/i.test(detail);
-   const notice=timedOut?"Эффект · "+effectTitle+" · тайм-аут ImageFree":"Эффект · "+effectTitle+" · ошибка ImageFree";
-   console.error("Miya Studio ImageFree effect failed",{code:String(e?.code||""),httpStatus:Number(e?.status)||null,upstreamStatus:Number(e?.upstreamStatus)||null,message:detail});
+   const notice="Эффект · "+effectTitle+" · не удалось создать";
+   console.error("Miya Studio effect generation failed",{code:String(e?.code||""),httpStatus:Number(e?.status)||null,upstreamStatus:Number(e?.upstreamStatus)||null});
    if($("#composerStatus"))$("#composerStatus").textContent=notice;
-   toast(timedOut?"Эффект не создан: ImageFree не успел вернуть изображение за 70 секунд.":"Эффект не создан: "+detail.slice(0,130));
+   toast("Не удалось создать эффект. Попробуй ещё раз.");
    return;
   }
   if(useCinel){const notice=isImageEffect?progressLabel+" · Подождите минуту":displayModel+" · Подождите минуту";toast(notice);$("#composerStatus").textContent=notice;return;}
