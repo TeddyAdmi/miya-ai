@@ -3167,7 +3167,7 @@ async function generateAgnesImage(prompt,loaderAlreadyShown=false){
  let progressTimer=null;
  const progressStartedAt=Date.now();
  const progressClockStartedAt=performance.now();
- const generationDeadline=progressStartedAt+70000;
+ const generationDeadline=progressStartedAt+80000;
  let lastProgress=0;
  const setProgress=p=>{
    const v=Math.max(lastProgress,Math.max(1,Math.min(99,Math.floor(Number(p)||1))));
@@ -3326,7 +3326,7 @@ async function generateImage(prompt,loaderAlreadyShown=false,modelOverride="",st
  const modelName=selectedModel||"FLUX Dev";
  const displayModel=imageModelLabel(modelName);
  const progressLabel=isImageEffect?"Создание эффекта · "+effectTitle:displayModel+" · Создание изображения";
- const timeoutMs=70000;
+ const timeoutMs=80000;
  const progressDurationMs=40000;
  const usesReferenceImage=Boolean(referenceImage);
 
@@ -3433,8 +3433,8 @@ async function generateImage(prompt,loaderAlreadyShown=false,modelOverride="",st
       reject(requestError);
     }
    };
-   // All image models: hard cap 70 seconds from click = 40 seconds to 99% + 30 seconds waiting.
-   const post99WaitMs=30000;
+   // All image models: hard cap 80 seconds from click = 40 seconds to 99% + 40 seconds waiting.
+   const post99WaitMs=40000;
    xhr.timeout=Math.max(1,progressStartedAt+40000+post99WaitMs-Date.now());
    xhr.send(body);
   });
@@ -3459,7 +3459,7 @@ async function generateImage(prompt,loaderAlreadyShown=false,modelOverride="",st
    if(!completed&&!taskId)throw new Error("Aura не вернула номер задания");
    // Keep generation asynchronous: Vercel functions can return the task ID quickly,
    // while the browser polls status without holding one serverless invocation open.
-   const deadline=progressStartedAt+70000;
+   const deadline=progressStartedAt+80000;
    while(!completed&&Date.now()<deadline){
     await new Promise(resolve=>setTimeout(resolve,1600));
     const status=await requestAuraJson({mode:"image",provider:"aura",model:modelName,action:"status",taskId},Math.min(10000,Math.max(1,deadline-Date.now())));
@@ -3479,7 +3479,7 @@ async function generateImage(prompt,loaderAlreadyShown=false,modelOverride="",st
     return result;
    };
    const basePayload=JSON.parse(body);
-   const deadline=progressStartedAt+70000;
+   const deadline=progressStartedAt+80000;
    const started=await requestCinelJson({...basePayload,action:"start"},Math.min(58000,Math.max(1,deadline-Date.now())));
    let completed=started.status==="completed"&&started.imageUrl?started:null;
    const taskId=String(started.taskId||"").trim();
@@ -3512,7 +3512,7 @@ async function generateImage(prompt,loaderAlreadyShown=false,modelOverride="",st
    let completed=started.imageUrl&&String(started.imageUrl).toLowerCase().startsWith("https://")?started:null;
    const taskId=String(started.taskId||started.task_id||"").trim();
    if(!completed&&!taskId)throw new Error("ImageFree не вернул номер задания");
-   const deadline=progressStartedAt+70000;
+   const deadline=progressStartedAt+80000;
    while(!completed&&Date.now()<deadline){
     await new Promise(resolve=>setTimeout(resolve,2400));
     const status=await requestImageFreeJson({mode:"image",provider:"imagefree",model:modelName,ratio:selectedRatio,action:"status",taskId},Math.min(15000,Math.max(1,deadline-Date.now())));
