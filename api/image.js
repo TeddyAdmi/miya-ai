@@ -1120,7 +1120,9 @@ module.exports = async function imageHandler(req, res) {
 
       const requestImageFree = async (url, init) => {
         const isStatusRequest = String(url).includes("/status?");
-        const attempts = 2;
+        // A status check is a short, independent poll. Do not retry it inside
+        // one Vercel invocation: the browser will poll again with the same taskId.
+        const attempts = isStatusRequest ? 1 : 2;
         let lastError = null;
         for (let attempt = 0; attempt < attempts; attempt++) {
           try {
@@ -1303,7 +1305,22 @@ module.exports = async function imageHandler(req, res) {
           meta:{free:true,aspectRatio,modelId:"Z-Image-Turbo",promptEnhanced:requestedModel==="Miya Image t2i",upstream:"imagefree.net"}
         });
       } catch (error) {
+        const statusCode = Number(error?.status) || 0;
         const timedOut = error?.name === "TimeoutError" || error?.name === "AbortError" || /timed? ?out|abort/i.test(String(error?.message || ""));
+        const transientStatusFailure = statusCode === 429 || statusCode >= 500 || (!statusCode && (timedOut || error?.name === "TypeError"));
+        // Temporary upstream failures must not turn a still-running generation
+        // into a failed one. Keep the taskId and let the next browser poll retry.
+        if (action === "status" && transientStatusFailure) {
+          return res.status(200).json({
+            ok:true,
+            status:"processing",
+            provider:"ImageFree",
+            model:imageFreeModelName,
+            taskId:taskIdInput,
+            retryAfter:2,
+            transient:true
+          });
+        }
         return res.status(timedOut ? 504 : 502).json({
           ok:false,
           error:timedOut ? "IMAGEFREE_UPSTREAM_TIMEOUT" : "IMAGEFREE_HANDLER_ERROR",
