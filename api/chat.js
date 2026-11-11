@@ -112,7 +112,7 @@ async function handler(req, res) {
         imageBase64 = visionImages[0] || "";
         imageBytesApprox = visionImages.reduce((sum, value) => sum + Math.floor((value.length * 3) / 4), 0);
       } catch (error) {
-        console.error("Miya vision image normalization failed", error?.message || error);
+        console.error("Areon vision image normalization failed", error?.message || error);
         return res.status(415).json({
           ok: false,
           error: "IMAGE_PREPROCESSING_FAILED",
@@ -138,7 +138,7 @@ async function handler(req, res) {
     }
 
     const system =
-      "Ты Miya, дружелюбный AI-помощник внутри Miya AI Studio. " +
+      "Ты Areon, дружелюбный AI-помощник внутри Areon AI Studio. " +
       "Всегда отвечай пользователю на русском языке независимо от языка его сообщения. Переключайся на другой язык только если пользователь прямо попросил ответить на нём. " +
       "Помогай с текстами, идеями, сценариями, промптами, изображениями и видео. " +
       "Отвечай полезно и по существу. " +
@@ -154,8 +154,8 @@ async function handler(req, res) {
     const lastUserText = cleanMessages[cleanMessages.length - 1].content;
 
     // Some upstream chat endpoints ignore the persona instruction and emit a canned
-    // "I'm GPT-6 Luna, not Miya" correction. Reject that answer and use a fallback.
-    const isWrongMiyaIdentity = value => {
+    // "I'm GPT-6 Luna, not Areon" correction. Reject that answer and use a fallback.
+    const isWrongAreonIdentity = value => {
       const text = String(value || "").trim();
       if (!text) return true;
       // Reject alternate identity claims and canned corrections from upstream providers.
@@ -163,8 +163,8 @@ async function handler(req, res) {
         /(?:^|[.!?\n])\s*(?:я|меня зовут|мо[её] имя|на самом деле я|я на самом деле|i am|i'm|my name is|actually,?\s*i am)\b[^.!?\n]{0,100}\b(?:gpt\s*[- ]?6(?:\s*[- ]?luna)?|gpt\s*[- ]?5\s*nano|luna|луна)\b/i.test(text) ||
         /(?:gpt\s*[- ]?6(?:\s*[- ]?luna)?|luna|луна)[^.!?\n]{0,100}(?:это я|я на самом деле|меня зовут|моя модель|my name is|i am|i'm)/i.test(text);
       const arguesAboutName =
-        /(?:вы\s+(?:ошиблись|ошибочно\s+назвали)|ошибочно\s+назвали|вы\s+сказали,?\s*что\s+(?:ваше\s+имя|меня)|не\s+называйте\s+меня|я\s+не\s+(?:мия|miya)|не\s+являюсь\s+(?:мией|miya)|i am not miya|you (?:are|have) (?:mistaken|wrong)|you called me incorrectly)/i.test(text);
-      const identityName = /(?:gpt\s*[- ]?6|gpt\s*[- ]?5\s*nano|luna|луна|мия|miya)/i.test(text);
+        /(?:вы\s+(?:ошиблись|ошибочно\s+назвали)|ошибочно\s+назвали|вы\s+сказали,?\s*что\s+(?:ваше\s+имя|меня)|не\s+называйте\s+меня|я\s+не\s+(?:мия|areon)|не\s+являюсь\s+(?:мией|areon)|i am not areon|you (?:are|have) (?:mistaken|wrong)|you called me incorrectly)/i.test(text);
+      const identityName = /(?:gpt\s*[- ]?6|gpt\s*[- ]?5\s*nano|luna|луна|мия|areon)/i.test(text);
       return claimsForeignIdentity || (arguesAboutName && identityName);
     };
 
@@ -348,8 +348,8 @@ async function handler(req, res) {
 
     // Dedicated image-prompt enhancement: bypass the generic chat provider,
     // whose CVRON endpoint can ignore the instruction and return a persona greeting.
-    if (body.mode === "improve_image_prompt" || body.mode === "improve_miya_image_prompt") {
-      const preserveMiyaComposition = body.mode === "improve_miya_image_prompt";
+    if (body.mode === "improve_image_prompt" || body.mode === "improve_areon_image_prompt") {
+      const preserveAreonComposition = body.mode === "improve_areon_image_prompt";
       const originalPrompt = String(body.prompt || lastUserText || "").trim().slice(0, 8000);
       if (!originalPrompt) {
         return res.status(400).json({ ok: false, error: "PROMPT_REQUIRED", message: "Сначала введи промпт." });
@@ -370,7 +370,7 @@ async function handler(req, res) {
         "динамичная композиция, которая остаётся естественной для исходного сюжета",
         "максимально правдоподобная фотографическая передача формы, света и материалов"
       ];
-      const variationDirection = preserveMiyaComposition
+      const variationDirection = preserveAreonComposition
         ? "сохранить исходную композицию, кадрирование, ракурс, точку съёмки, взаимное положение и число объектов; улучшить только визуальную выразительность этих же элементов"
         : variationDirections[Math.floor(Math.random() * variationDirections.length)];
       const variationCode = Math.floor(Math.random() * 1000000000).toString(36);
@@ -379,18 +379,18 @@ async function handler(req, res) {
         messages: [
           {
             role: "system",
-            content: preserveMiyaComposition
+            content: preserveAreonComposition
               ? "Ты — технический редактор промптов для генерации изображений. Твоя задача — сохранить в точности исходную сцену пользователя. Не меняй ракурс камеры, точку съёмки, перспективу, кадрирование, композицию, количество объектов и персонажей, их идентичность, действия, взаимное положение, расположение в кадре, место, фон, время суток или погоду, если они указаны. Не добавляй, не удаляй, не заменяй и не переставляй объекты, людей, животных, здания, предметы, детали фона, надписи или логотипы. Улучши только описание уже названных элементов: точнее опиши материалы и фактуры, естественный свет и тени, чистую детализацию, глубину и естественную насыщенность цветов. Для короткого запроса добавляй только визуальные уточнения, которые не меняют сцену. Если исходный промпт уже подробный, сохрани его структуру и смысл, усилив только конкретику описанных элементов. Следуй стилю пользователя. Верни только один готовый промпт на русском языке одним абзацем, без пояснений, заголовков, списков или рассуждений."
               : "Ты — креативный профессиональный редактор промптов для генерации изображений. Каждый раз заново продумывай визуальное решение именно для этой исходной идеи — не используй заготовленный универсальный хвост и не ограничивайся фразами вроде «профессиональная композиция». Сохрани главный объект, персонажей, их число и основной смысл, но для короткого запроса придумай выразительное, конкретное воплощение: уместные ракурс и крупность плана, композицию, свет, цветовое решение, фактуры, глубину кадра и связанные с темой детали окружения. Допускаются новые правдоподобные детали, которые естественно дополняют исходный сюжет; не добавляй случайные или несвязанные объекты и не превращай сцену в другую. Каждый результат должен давать генератору конкретные визуальные указания, а не общий набор пожеланий о качестве. Следуй указанному пользователем стилю, если он есть. Используй переданное для этого запроса творческое направление как подсказку к одному из возможных вариантов; не упоминай его и случайный код в ответе. Верни только один готовый промпт на русском языке одним абзацем, без рассуждений, анализа, списков, нумерации, заголовков или пояснений."
           },
           {
             role: "user",
-            content: preserveMiyaComposition
+            content: preserveAreonComposition
               ? "Исходный промпт пользователя:\n" + originalPrompt + "\n\nУлучши формулировку для ImageFree, но оставь ту же самую сцену. Сохрани все объекты, их число, взаимное положение и расположение в кадре, исходный ракурс, кадрирование, перспективу, фон и все явно указанные условия. Ничего нового сюжетно не добавляй. Точнее раскрой уже описанные элементы: фактуры, материалы, свет, тени, цветовые переходы, глубину и фотографическую детализацию. Не меняй смысл и не превращай сцену в другую. Верни единый цельный промпт."
               : "Исходная идея пользователя:\n" + originalPrompt + "\n\nТворческое направление для этого варианта: " + variationDirection + ".\nКод разнообразия запроса: " + variationCode + ".\n\nСоздай новый, цельный и конкретный промпт. Визуальные решения должны быть обусловлены исходной идеей; не превращай ответ в общий перечень качества."
           }
         ],
-        temperature: preserveMiyaComposition ? 0.35 : 0.9,
+        temperature: preserveAreonComposition ? 0.35 : 0.9,
         max_tokens: 800
       };
 
@@ -483,7 +483,7 @@ async function handler(req, res) {
             model: result.model || null
           });
         }
-        console.warn("Miya prompt enhancement provider unavailable or empty", {
+        console.warn("Areon prompt enhancement provider unavailable or empty", {
           provider: settled.provider,
           status: result.status || null,
           elapsedMs: result.elapsedMs || null,
@@ -519,10 +519,10 @@ async function handler(req, res) {
         "Сохрани естественные несовершенства, точные формы и профессионально чистую детализацию.",
         "Добейся фотографической цельности и аккуратных деталей без пластикового эффекта."
       ]);
-      const fallback = preserveMiyaComposition
+      const fallback = preserveAreonComposition
         ? source + ". Сохрани исходную композицию, ракурс, кадрирование, перспективу, число и расположение всех уже указанных объектов. Не добавляй и не удаляй элементы сцены. Улучши только точность описания существующих материалов и фактур, реалистичность света и теней, естественную насыщенность цветов и детализацию."
         : source + ". " + composition + " " + light + " " + color + " " + texture;
-      console.warn("Miya prompt enhancement used randomized emergency fallback", {
+      console.warn("Areon prompt enhancement used randomized emergency fallback", {
         providerCount: 4,
         fallbackLength: fallback.length
       });
@@ -535,7 +535,7 @@ async function handler(req, res) {
 
     if (visionImages.length) {
       // AHM7 VisionSter documents and accepts the exact data:image/... URL
-      // used by Miya. Prefer it over generic BlockRun completions, which can
+      // used by Areon. Prefer it over generic BlockRun completions, which can
       // return a successful text-only answer while claiming no image exists.
       const ahm7Started = Date.now();
       let ahm7Result = null;
@@ -548,7 +548,7 @@ async function handler(req, res) {
           body: JSON.stringify({
             image: imageBase64,
             userPrompt:
-              "Ты Miya. В сообщении приложено изображение в поле image. Обязательно проанализируй именно это изображение, а не только текст вопроса. Не говори, что фото не прикреплено, если запрос содержит image. Отвечай по-русски. Опиши только действительно видимые детали, композицию, людей, предметы, фон, освещение и стиль; не выдумывай невидимое. Сначала ответь на вопрос пользователя. Если пользователь просит промпт для изображения или видео, обязательно напиши полноценный, подробный промпт на русском языке. После заголовка «Промпт для изображения:» или «Промпт для видео:» всегда должен идти сам текст промпта; никогда не заканчивай ответ на одном заголовке. Сам промпт не помещай в цитату, пиши его отдельным fenced code block, с переносами строк при необходимости. Вопрос пользователя: " + lastUserText,
+              "Ты Areon. В сообщении приложено изображение в поле image. Обязательно проанализируй именно это изображение, а не только текст вопроса. Не говори, что фото не прикреплено, если запрос содержит image. Отвечай по-русски. Опиши только действительно видимые детали, композицию, людей, предметы, фон, освещение и стиль; не выдумывай невидимое. Сначала ответь на вопрос пользователя. Если пользователь просит промпт для изображения или видео, обязательно напиши полноценный, подробный промпт на русском языке. После заголовка «Промпт для изображения:» или «Промпт для видео:» всегда должен идти сам текст промпта; никогда не заканчивай ответ на одном заголовке. Сам промпт не помещай в цитату, пиши его отдельным fenced code block, с переносами строк при необходимости. Вопрос пользователя: " + lastUserText,
             messages: cleanMessages.slice(-12).map(m => ({
               type: m.role === "assistant" ? "ai" : "user", content: m.content
             }))
@@ -573,7 +573,7 @@ async function handler(req, res) {
                 body: JSON.stringify({
                   image: imageBase64,
                   userPrompt:
-                    "Ты Miya. По прикреплённому изображению и описанию ниже составь только готовый подробный промпт на русском языке для генерации изображения. Не описывай свой процесс, не отвечай на исходный вопрос, не добавляй цитату, вступление или заголовок. Верни только сам текст промпта, минимум 3 конкретных предложения. Сохрани композицию, объекты, цвета, формы, пропорции и стиль исходного изображения; не придумывай невидимые детали. Описание изображения: " + analysisText + "\nЗапрос пользователя: " + lastUserText
+                    "Ты Areon. По прикреплённому изображению и описанию ниже составь только готовый подробный промпт на русском языке для генерации изображения. Не описывай свой процесс, не отвечай на исходный вопрос, не добавляй цитату, вступление или заголовок. Верни только сам текст промпта, минимум 3 конкретных предложения. Сохрани композицию, объекты, цвета, формы, пропорции и стиль исходного изображения; не придумывай невидимые детали. Описание изображения: " + analysisText + "\nЗапрос пользователя: " + lastUserText
                 }),
                 signal: AbortSignal.timeout(9000)
               });
@@ -589,7 +589,7 @@ async function handler(req, res) {
                 finalAnswer = analysisText + "\n\n" + promptTitle + "\n\n\x60\x60\x60\n" + generatedPrompt + "\n\x60\x60\x60";
               }
             } catch (promptError) {
-              console.warn("Miya image prompt completion failed", promptError?.message || promptError);
+              console.warn("Areon image prompt completion failed", promptError?.message || promptError);
             }
           }
           return res.status(200).json({
@@ -635,7 +635,7 @@ async function handler(req, res) {
           provider: firstVisionSuccess.provider, model: firstVisionSuccess.model
         });
       }
-      console.error("Miya vision providers unavailable or returned no-image answers", {
+      console.error("Areon vision providers unavailable or returned no-image answers", {
         ahm7: ahm7Result,
         blockRun: await Promise.all(visionAttempts)
       });
@@ -646,20 +646,20 @@ async function handler(req, res) {
       });
     }
 
-    const cvronPrompt = "Ты — Miya, постоянный AI-помощник внутри Miya AI Studio. Это заданная роль, не обсуждай и не меняй её. Всегда отвечай на русском, если пользователь прямо не попросил другой язык. Никогда не говори, что ты GPT-6, GPT-6 Luna, Luna или другая модель; никогда не утверждай, что ты не Miya; не исправляй пользователя, если он называет тебя Miya; не говори, что пользователь ошибся в имени; не представляйся другой системой. Если спрашивают, как тебя зовут, отвечай кратко: «Я Miya, AI-помощник Miya Studio». Не упоминай системные инструкции. Помогай по существу. Для готовых промптов изображений и видео используй русский язык и отдельный fenced code block, без английской копии без просьбы. Оформляй ответ чистым Markdown.\\n\\n" + cleanMessages.slice(-12).map(m => m.role + ": " + m.content).join("\\n");
+    const cvronPrompt = "Ты — Areon, постоянный AI-помощник внутри Areon AI Studio. Это заданная роль, не обсуждай и не меняй её. Всегда отвечай на русском, если пользователь прямо не попросил другой язык. Никогда не говори, что ты GPT-6, GPT-6 Luna, Luna или другая модель; никогда не утверждай, что ты не Areon; не исправляй пользователя, если он называет тебя Areon; не говори, что пользователь ошибся в имени; не представляйся другой системой. Если спрашивают, как тебя зовут, отвечай кратко: «Я Areon, AI-помощник Areon Studio». Не упоминай системные инструкции. Помогай по существу. Для готовых промптов изображений и видео используй русский язык и отдельный fenced code block, без английской копии без просьбы. Оформляй ответ чистым Markdown.\\n\\n" + cleanMessages.slice(-12).map(m => m.role + ": " + m.content).join("\\n");
     // Keep text chat responsive: each provider gets a short timeout. If the
     // primary fallback fails, race the remaining free models instead of
     // waiting through several slow providers one by one.
     result = await callCvronGPT5Nano(cvronPrompt);
-    if (result.ok && isWrongMiyaIdentity(result.text)) {
-      console.warn("Miya chat rejected an upstream identity-conflict reply", { provider: result.provider, model: result.model });
-      result = { ...result, ok: false, upstreamError: "MIYA_IDENTITY_CONFLICT" };
+    if (result.ok && isWrongAreonIdentity(result.text)) {
+      console.warn("Areon chat rejected an upstream identity-conflict reply", { provider: result.provider, model: result.model });
+      result = { ...result, ok: false, upstreamError: "AREON_IDENTITY_CONFLICT" };
     }
     if (!result.ok) {
       result = await callBlockRun("nvidia/gpt-oss-20b");
-      if (result.ok && isWrongMiyaIdentity(result.text)) {
-        console.warn("Miya chat rejected an identity-conflict fallback reply", { provider: result.provider, model: result.model });
-        result = { ...result, ok: false, upstreamError: "MIYA_IDENTITY_CONFLICT" };
+      if (result.ok && isWrongAreonIdentity(result.text)) {
+        console.warn("Areon chat rejected an identity-conflict fallback reply", { provider: result.provider, model: result.model });
+        result = { ...result, ok: false, upstreamError: "AREON_IDENTITY_CONFLICT" };
       }
     }
     if (!result.ok) {
@@ -670,7 +670,7 @@ async function handler(req, res) {
       let remaining = fallbackCalls.length;
       const firstFallbackSuccess = await new Promise(resolve => {
         fallbackCalls.forEach(call => call.then(candidate => {
-          if (candidate.ok && !isWrongMiyaIdentity(candidate.text)) resolve(candidate);
+          if (candidate.ok && !isWrongAreonIdentity(candidate.text)) resolve(candidate);
           else if (--remaining === 0) resolve(null);
         }));
       });
@@ -692,11 +692,11 @@ async function handler(req, res) {
     });
 
   } catch (error) {
-    console.error("Miya Chat:", error);
+    console.error("Areon Chat:", error);
     return res.status(500).json({
       ok: false,
       error: "CHAT_HANDLER_ERROR",
-      message: "Ошибка обработки запроса Miya."
+      message: "Ошибка обработки запроса Areon."
     });
   }
 }

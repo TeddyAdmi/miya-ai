@@ -30,8 +30,8 @@ module.exports = async function handler(req, res) {
       if (length > 100 * 1024 * 1024) return res.status(413).json({ ok: false, error: "AUDIO_TOO_LARGE" });
       const audioBytes = Buffer.from(await upstreamAudio.arrayBuffer());
       if (!audioBytes.length || audioBytes.length > 100 * 1024 * 1024) return res.status(413).json({ ok: false, error: "AUDIO_TOO_LARGE" });
-      const requestedName = typeof req.query?.filename === "string" ? req.query.filename : "miya-song.mp3";
-      const filename = requestedName.replace(/[^a-zA-Z0-9._ -]/g, "_").slice(0, 120) || "miya-song.mp3";
+      const requestedName = typeof req.query?.filename === "string" ? req.query.filename : "areon-song.mp3";
+      const filename = requestedName.replace(/[^a-zA-Z0-9._ -]/g, "_").slice(0, 120) || "areon-song.mp3";
       res.setHeader("Cache-Control", "no-store");
       res.setHeader("Content-Type", audioType);
       res.setHeader("Content-Length", String(audioBytes.length));
@@ -53,7 +53,7 @@ module.exports = async function handler(req, res) {
     }
     const host = target.hostname.toLowerCase();
 
-    // Only allow image hosts used by Miya/providers. This prevents turning the
+    // Only allow image hosts used by Areon/providers. This prevents turning the
     // endpoint into an arbitrary internal-network fetcher.
     const allowed = [
       "ahm7xmakki.com",
@@ -123,7 +123,7 @@ module.exports = async function handler(req, res) {
       res.setHeader("X-Content-Type-Options", "nosniff");
       res.setHeader("Content-Type", normalizedType);
       res.setHeader("Content-Length", String(input.length));
-      res.setHeader("Content-Disposition", 'inline; filename="miya-image"');
+      res.setHeader("Content-Disposition", 'inline; filename="areon-image"');
       return res.status(200).send(input);
     }
 
@@ -151,7 +151,7 @@ module.exports = async function handler(req, res) {
 
     res.setHeader("Content-Type", "image/jpeg");
     res.setHeader("Content-Length", String(jpeg.length));
-    res.setHeader("Content-Disposition", 'inline; filename="miya-image.jpg"');
+    res.setHeader("Content-Disposition", 'inline; filename="areon-image.jpg"');
     return res.status(200).send(jpeg);
   } catch (e) {
     return res.status(e?.name === "TimeoutError" ? 504 : 502).json({

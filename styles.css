@@ -37,7 +37,7 @@ body.light .floating-theme:hover,body.light .floating-wall-clear:hover{color:#ff
 .workspace-head{background:transparent;box-shadow:none;}
 @media(max-width:800px){.plain-studio{padding:0 0 16px}.plain-studio h2{font-size:17px}}
 
-/* Miya clean workspace: content starts immediately below the floating title. */
+/* Areon clean workspace: content starts immediately below the floating title. */
 .chat-room{padding-top:0}
 .studio-room,.plain-studio{min-height:100%;display:block}
 .clean-canvas{min-height:100%}
@@ -1605,7 +1605,7 @@ html,body{
 .delete-confirm-modal{position:fixed;inset:0;z-index:10000;display:none;align-items:center;justify-content:center}
 .delete-confirm-modal.open{display:flex}
 .delete-confirm-backdrop{position:absolute;inset:0;background:rgba(5,12,22,.62);backdrop-filter:blur(9px)}
-.delete-confirm-dialog{position:relative;width:min(430px,calc(100vw - 32px));padding:26px 26px 22px;border:1px solid rgba(148,163,184,.2);border-radius:26px;background:linear-gradient(180deg,rgba(24,35,52,.98),rgba(12,20,33,.98));box-shadow:0 28px 90px rgba(0,0,0,.46);color:#f8fafc;animation:miyaDeleteIn .18s ease-out}
+.delete-confirm-dialog{position:relative;width:min(430px,calc(100vw - 32px));padding:26px 26px 22px;border:1px solid rgba(148,163,184,.2);border-radius:26px;background:linear-gradient(180deg,rgba(24,35,52,.98),rgba(12,20,33,.98));box-shadow:0 28px 90px rgba(0,0,0,.46);color:#f8fafc;animation:areonDeleteIn .18s ease-out}
 body.light .delete-confirm-dialog{background:linear-gradient(180deg,rgba(255,255,255,.99),rgba(246,249,253,.99));border-color:rgba(15,23,42,.1);color:#172033;box-shadow:0 28px 80px rgba(15,23,42,.2)}
 .delete-confirm-loader{display:flex;justify-content:center;margin-bottom:15px}
 .delete-confirm-ring{width:72px;height:72px;border-radius:50%;display:grid;place-items:center;background:conic-gradient(from -40deg,rgba(91,164,255,.08),#5ca7ff,rgba(91,164,255,.08));padding:2px;box-shadow:0 0 28px rgba(76,145,220,.2)}
@@ -1624,7 +1624,7 @@ body.light .delete-confirm-ring::before{background:#fff}
 .delete-confirm-submit{display:flex;align-items:center;justify-content:center;gap:8px;background:#ef4444;color:#fff;border-color:#ef4444!important}
 .delete-confirm-submit:hover{background:#dc2626;transform:translateY(-1px)}
 .delete-confirm-submit .action-svg svg{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
-@keyframes miyaDeleteIn{from{opacity:0;transform:translateY(8px) scale(.98)}to{opacity:1;transform:none}}
+@keyframes areonDeleteIn{from{opacity:0;transform:translateY(8px) scale(.98)}to{opacity:1;transform:none}}
 
 /* Final chat positioning: the newest message sits immediately above the fixed composer. */
 .chat-stream{
@@ -1923,7 +1923,7 @@ body.light .generation-progress-bar{background:#e7edf5}
  .video-generation-loading{min-height:112px!important}
 }
 
-/* Final Miya generation/media cleanup */
+/* Final Areon generation/media cleanup */
 .media-action[data-tooltip]::after,.media-action::after{display:none!important}
 .media-action-menu{
   position:absolute!important;top:calc(100% + 5px)!important;right:0!important;left:auto!important;
@@ -2743,8 +2743,8 @@ body.light .composer-quote-label{color:#674bb4}
 
 /* Animated one-two-three dots while a status is waiting on a result. */
 .thinking-dots{display:inline-block;min-width:1.25em;height:1em;vertical-align:baseline;color:currentColor}
-.thinking-dots::after{content:"";display:inline-block;animation:miya-thinking-dots 1.2s steps(1,end) infinite}
-@keyframes miya-thinking-dots{
+.thinking-dots::after{content:"";display:inline-block;animation:areon-thinking-dots 1.2s steps(1,end) infinite}
+@keyframes areon-thinking-dots{
   0%,100%{content:""}
   25%{content:"."}
   50%{content:".."}
@@ -3950,15 +3950,15 @@ body.light .media-action.media-more svg circle{r:1.5px!important}
  content:none!important;display:none!important;background:none!important;mask-image:none!important;-webkit-mask-image:none!important;
 }
 .ico.icon-music,.nav-icon.icon-music{display:inline-grid!important;place-items:center!important;line-height:0!important}
-.ico.icon-music .miya-music-note-svg,.nav-icon.icon-music .miya-music-note-svg{
+.ico.icon-music .areon-music-note-svg,.nav-icon.icon-music .areon-music-note-svg{
  display:block!important;width:18px!important;height:18px!important;min-width:18px!important;min-height:18px!important;
  margin:0!important;padding:0!important;position:static!important;transform:none!important;overflow:visible!important;
 }
-.ico.icon-music .miya-music-note-svg path,.nav-icon.icon-music .miya-music-note-svg path{
+.ico.icon-music .areon-music-note-svg path,.nav-icon.icon-music .areon-music-note-svg path{
  fill:none!important;stroke:currentColor!important;stroke-width:1.8!important;stroke-linecap:round!important;stroke-linejoin:round!important;
 }
-.ico.icon-music .miya-music-note-svg circle,.nav-icon.icon-music .miya-music-note-svg circle{fill:currentColor!important;stroke:none!important}
-.chat-welcome.section-welcome.music-welcome .hero-mark.music .nav-icon.icon-music .miya-music-note-svg{
+.ico.icon-music .areon-music-note-svg circle,.nav-icon.icon-music .areon-music-note-svg circle{fill:currentColor!important;stroke:none!important}
+.chat-welcome.section-welcome.music-welcome .hero-mark.music .nav-icon.icon-music .areon-music-note-svg{
  width:22px!important;height:22px!important;transform:translate(-1px,1px)!important;
 }
 
@@ -4035,12 +4035,12 @@ body.light .media-action.media-more svg circle{r:1.5px!important}
 
 
 /* Music cover loading fallback: never expose a white card while a remote cover is pending. */
-.miya-music-wall .miya-music-card,.library-music-wall .miya-music-card{background-color:#111827!important;background-image:linear-gradient(135deg,#17243a 0%,#202b40 52%,#101827 100%)!important}
-.miya-music-card.has-cover .miya-music-card-cover{opacity:0!important;transition:opacity .18s ease!important;background:transparent!important}
-.miya-music-card.has-cover.cover-loaded .miya-music-card-cover{opacity:1!important}
-.miya-music-card.has-cover:not(.cover-loaded):before{content:"";display:block;position:absolute;inset:0;pointer-events:none;background:linear-gradient(135deg,rgba(34,48,70,.20),rgba(8,14,26,.10))}
-body.light .miya-music-wall .miya-music-card,body.light .library-music-wall .miya-music-card{background-color:#e9edf5!important;background-image:linear-gradient(135deg,#dce5f0 0%,#edf1f7 55%,#d6dfeb 100%)!important}
-body.light .miya-music-brand a{color:#7152dc!important}
+.areon-music-wall .areon-music-card,.library-music-wall .areon-music-card{background-color:#111827!important;background-image:linear-gradient(135deg,#17243a 0%,#202b40 52%,#101827 100%)!important}
+.areon-music-card.has-cover .areon-music-card-cover{opacity:0!important;transition:opacity .18s ease!important;background:transparent!important}
+.areon-music-card.has-cover.cover-loaded .areon-music-card-cover{opacity:1!important}
+.areon-music-card.has-cover:not(.cover-loaded):before{content:"";display:block;position:absolute;inset:0;pointer-events:none;background:linear-gradient(135deg,rgba(34,48,70,.20),rgba(8,14,26,.10))}
+body.light .areon-music-wall .areon-music-card,body.light .library-music-wall .areon-music-card{background-color:#e9edf5!important;background-image:linear-gradient(135deg,#dce5f0 0%,#edf1f7 55%,#d6dfeb 100%)!important}
+body.light .areon-music-brand a{color:#7152dc!important}
 
 
 /* Final audio-player alignment: raise the progress axis and volume slider slightly so their centerlines meet the play-circle and speaker-icon centers. */
@@ -4050,22 +4050,22 @@ body.light .miya-music-brand a{color:#7152dc!important}
 /* Dedicated poetry and song-lyrics workspaces. */
 #composer.mode-poems .composer-left-actions .attach,#composer.mode-lyrics .composer-left-actions .attach{display:none!important}
 #composer.mode-poems .composer-options,#composer.mode-lyrics .composer-options{display:flex!important;align-items:center!important;gap:8px!important;padding-top:5px!important;min-width:0!important}
-#composer.mode-poems .miya-text-style-select,#composer.mode-lyrics .miya-text-style-select{display:block!important;flex:0 1 auto!important;width:auto!important;min-width:150px!important;max-width:100%!important}
-.miya-text-grid{align-items:stretch!important;grid-auto-rows:minmax(210px,auto)!important}
-.miya-text-card{display:flex;flex-direction:column;min-width:0;min-height:210px;padding:14px;border:1px solid var(--line);border-radius:13px;background:var(--card,rgba(255,255,255,.035));color:var(--text);box-shadow:0 6px 20px rgba(18,24,40,.06);overflow:hidden}
-.miya-text-card-head{display:flex;align-items:flex-start;justify-content:space-between;gap:8px;margin-bottom:10px}
-.miya-text-card-meta{font-size:12px;font-weight:800;line-height:1.35;overflow-wrap:anywhere}
-.miya-text-card-date{font-size:10px;opacity:.68;white-space:nowrap}
-.miya-text-card-body{flex:1;min-height:90px;max-height:300px;overflow:auto;white-space:pre-wrap;overflow-wrap:anywhere;font-size:12px;line-height:1.65;scrollbar-width:thin}
-.miya-text-card-actions{display:flex;justify-content:flex-end;gap:6px;padding-top:10px;margin-top:10px;border-top:1px solid var(--line)}
-.miya-text-card-actions button{border:1px solid var(--line);border-radius:7px;padding:6px 9px;background:transparent;color:inherit;font-size:10px;cursor:pointer}
-.miya-text-card-actions button:hover{border-color:#9270e8;color:#9b7cf3}
-.miya-text-empty{margin:8vh auto;max-width:460px;text-align:center;padding:30px 20px;color:var(--text)}
-.miya-text-empty-title{font-size:18px;font-weight:800;margin-bottom:8px}
-.miya-text-empty p{font-size:12px;opacity:.7;line-height:1.6}
-.miya-library-text-wall{width:100%;min-width:0}
-@media(max-width:800px){.miya-text-grid{grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:8px!important}.miya-text-card{padding:10px;min-height:180px}.miya-text-card-body{font-size:11px}.miya-text-card-head{flex-wrap:wrap}.miya-text-card-date{font-size:9px}}
-@media(max-width:520px){.miya-text-grid{grid-template-columns:1fr 1fr!important}.miya-text-card-actions{flex-wrap:wrap}.miya-text-card-actions button{padding:5px 7px}}
+#composer.mode-poems .areon-text-style-select,#composer.mode-lyrics .areon-text-style-select{display:block!important;flex:0 1 auto!important;width:auto!important;min-width:150px!important;max-width:100%!important}
+.areon-text-grid{align-items:stretch!important;grid-auto-rows:minmax(210px,auto)!important}
+.areon-text-card{display:flex;flex-direction:column;min-width:0;min-height:210px;padding:14px;border:1px solid var(--line);border-radius:13px;background:var(--card,rgba(255,255,255,.035));color:var(--text);box-shadow:0 6px 20px rgba(18,24,40,.06);overflow:hidden}
+.areon-text-card-head{display:flex;align-items:flex-start;justify-content:space-between;gap:8px;margin-bottom:10px}
+.areon-text-card-meta{font-size:12px;font-weight:800;line-height:1.35;overflow-wrap:anywhere}
+.areon-text-card-date{font-size:10px;opacity:.68;white-space:nowrap}
+.areon-text-card-body{flex:1;min-height:90px;max-height:300px;overflow:auto;white-space:pre-wrap;overflow-wrap:anywhere;font-size:12px;line-height:1.65;scrollbar-width:thin}
+.areon-text-card-actions{display:flex;justify-content:flex-end;gap:6px;padding-top:10px;margin-top:10px;border-top:1px solid var(--line)}
+.areon-text-card-actions button{border:1px solid var(--line);border-radius:7px;padding:6px 9px;background:transparent;color:inherit;font-size:10px;cursor:pointer}
+.areon-text-card-actions button:hover{border-color:#9270e8;color:#9b7cf3}
+.areon-text-empty{margin:8vh auto;max-width:460px;text-align:center;padding:30px 20px;color:var(--text)}
+.areon-text-empty-title{font-size:18px;font-weight:800;margin-bottom:8px}
+.areon-text-empty p{font-size:12px;opacity:.7;line-height:1.6}
+.areon-library-text-wall{width:100%;min-width:0}
+@media(max-width:800px){.areon-text-grid{grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:8px!important}.areon-text-card{padding:10px;min-height:180px}.areon-text-card-body{font-size:11px}.areon-text-card-head{flex-wrap:wrap}.areon-text-card-date{font-size:9px}}
+@media(max-width:520px){.areon-text-grid{grid-template-columns:1fr 1fr!important}.areon-text-card-actions{flex-wrap:wrap}.areon-text-card-actions button{padding:5px 7px}}
 
 
 /* Keep all three image prompt controls on the same readable font as Nano Banana. */
@@ -4136,8 +4136,8 @@ body.light .miya-music-brand a{color:#7152dc!important}
   font-family:Inter,system-ui,sans-serif!important;font-size:12px!important;
   font-weight:700!important;line-height:18px!important;
 }
-#composer.mode-poems #miyaPoemCategory{min-width:120px!important;max-width:170px!important}
-#composer.mode-poems #miyaPoemAuthor{min-width:145px!important;max-width:205px!important}
+#composer.mode-poems #areonPoemCategory{min-width:120px!important;max-width:170px!important}
+#composer.mode-poems #areonPoemAuthor{min-width:145px!important;max-width:205px!important}
 #composer.mode-poems #composerQuality{min-width:120px!important;max-width:155px!important}
 #composer.mode-lyrics #composerModel{min-width:145px!important;max-width:205px!important;flex:0 1 205px!important}
 #composer.mode-poems #composerOptions .composer-copy,
@@ -4180,38 +4180,38 @@ body.light .miya-music-brand a{color:#7152dc!important}
 }
 #composer.mode-poems .composer-left-actions,
 #composer.mode-lyrics .composer-left-actions{display:none!important}
-#composer.mode-poems .miya-text-grid,
-#composer.mode-lyrics .miya-text-grid{
+#composer.mode-poems .areon-text-grid,
+#composer.mode-lyrics .areon-text-grid{
   grid-template-columns:repeat(auto-fill,minmax(220px,1fr))!important;
   gap:10px!important;align-items:stretch!important;
 }
-#composer.mode-poems .miya-text-card,
-#composer.mode-lyrics .miya-text-card{
+#composer.mode-poems .areon-text-card,
+#composer.mode-lyrics .areon-text-card{
   min-height:170px!important;padding:11px!important;border-radius:11px!important;
 }
-#composer.mode-poems .miya-text-card-meta,
-#composer.mode-lyrics .miya-text-card-meta{font-size:13px!important;line-height:1.4!important}
-#composer.mode-poems .miya-text-card-body,
-#composer.mode-lyrics .miya-text-card-body{
+#composer.mode-poems .areon-text-card-meta,
+#composer.mode-lyrics .areon-text-card-meta{font-size:13px!important;line-height:1.4!important}
+#composer.mode-poems .areon-text-card-body,
+#composer.mode-lyrics .areon-text-card-body{
   font-size:14px!important;line-height:1.55!important;min-height:70px!important;max-height:240px!important;
 }
-#composer.mode-poems .miya-text-card-date,
-#composer.mode-lyrics .miya-text-card-date{font-size:11px!important}
-#composer.mode-poems .miya-text-card-actions button,
-#composer.mode-lyrics .miya-text-card-actions button{font-size:11px!important;padding:5px 8px!important}
+#composer.mode-poems .areon-text-card-date,
+#composer.mode-lyrics .areon-text-card-date{font-size:11px!important}
+#composer.mode-poems .areon-text-card-actions button,
+#composer.mode-lyrics .areon-text-card-actions button{font-size:11px!important;padding:5px 8px!important}
 @media(max-width:800px){
   #composer.mode-poems,#composer.mode-lyrics{grid-template-columns:minmax(0,1fr) 30px auto!important;column-gap:3px!important;padding:8px!important}
   #composer.mode-poems #composerOptions,#composer.mode-lyrics #composerOptions{gap:4px!important}
   #composer.mode-poems #composerOptions .select-pill,#composer.mode-lyrics #composerOptions .select-pill{font-size:12px!important;max-width:32vw!important;padding-left:7px!important;padding-right:19px!important}
-  #composer.mode-poems #miyaPoemCategory{min-width:100px!important;max-width:125px!important}
-  #composer.mode-poems #miyaPoemAuthor{min-width:120px!important;max-width:155px!important}
+  #composer.mode-poems #areonPoemCategory{min-width:100px!important;max-width:125px!important}
+  #composer.mode-poems #areonPoemAuthor{min-width:120px!important;max-width:155px!important}
   #composer.mode-poems #composerQuality{min-width:105px!important;max-width:125px!important}
   #composer.mode-lyrics #composerModel{min-width:125px!important;max-width:155px!important}
   #composer.mode-poems #composerMic,#composer.mode-lyrics #composerMic{width:30px!important;min-width:30px!important;max-width:30px!important;flex-basis:30px!important}
   #composer.mode-poems #composerSend,#composer.mode-lyrics #composerSend{min-width:82px!important;padding:0 7px!important;font-size:11px!important}
   #composer.mode-poems #composerVoiceVisualizer,#composer.mode-lyrics #composerVoiceVisualizer{right:110px!important;width:clamp(25px,7vw,70px)!important}
-  #composer.mode-poems .miya-text-grid,#composer.mode-lyrics .miya-text-grid{grid-template-columns:repeat(auto-fill,minmax(190px,1fr))!important;gap:8px!important}
-  #composer.mode-poems .miya-text-card-body,#composer.mode-lyrics .miya-text-card-body{font-size:13px!important}
+  #composer.mode-poems .areon-text-grid,#composer.mode-lyrics .areon-text-grid{grid-template-columns:repeat(auto-fill,minmax(190px,1fr))!important;gap:8px!important}
+  #composer.mode-poems .areon-text-card-body,#composer.mode-lyrics .areon-text-card-body{font-size:13px!important}
 }
 
 
@@ -4261,7 +4261,7 @@ body.light .miya-music-brand a{color:#7152dc!important}
   background-size:250% 100%;
   background-position:100% 0;
   background-repeat:no-repeat;
-  animation:miya-prompt-success-shimmer 2.5s linear 1 both;
+  animation:areon-prompt-success-shimmer 2.5s linear 1 both;
 }
 /* Match the dark-theme sweep's bright highlight, tuned only for light-theme text. */
 body.light #composerStatus.composer-status-shimmer::after{
@@ -4276,7 +4276,7 @@ body.light #composerStatus.composer-status-shimmer::after{
     transparent 100%
   );
 }
-@keyframes miya-prompt-success-shimmer{
+@keyframes areon-prompt-success-shimmer{
   from{background-position:100% 0}
   to{background-position:0 0}
 }
@@ -4311,12 +4311,12 @@ body.light #composerStatus.composer-status-shimmer::after{
  opacity:.24;
  transform:scale(.78);
  transform-origin:center;
- animation:miya-new-image-dot-pulse 3.42s ease-in-out infinite;
+ animation:areon-new-image-dot-pulse 3.42s ease-in-out infinite;
 }
 body.light .media-new-image-dots span{
  background:rgba(32,58,91,.9);
 }
-@keyframes miya-new-image-dot-pulse{
+@keyframes areon-new-image-dot-pulse{
  0%,100%{opacity:.24;transform:scale(.78)}
  50%{opacity:.88;transform:scale(1.65)}
 }
@@ -4518,7 +4518,7 @@ body.light .composer.mode-video #videoRatio option{
 
 
 /* Browser-colored composer select menus: custom popup guarantees the dark navy background in Firefox. */
-.miya-composer-select-popup{
+.areon-composer-select-popup{
  position:fixed!important;z-index:2147483647!important;display:block!important;
  box-sizing:border-box!important;overflow-x:hidden!important;overflow-y:auto!important;
  padding:4px!important;border:1px solid #1a4b78!important;border-radius:8px!important;
@@ -4527,8 +4527,8 @@ body.light .composer.mode-video #videoRatio option{
  scrollbar-width:thin!important;scrollbar-color:#285579 #0b223b!important;
  font-family:Inter,system-ui,sans-serif!important;
 }
-.miya-composer-select-popup[hidden]{display:none!important}
-.miya-composer-select-option{
+.areon-composer-select-popup[hidden]{display:none!important}
+.areon-composer-select-option{
  appearance:none!important;-webkit-appearance:none!important;
  display:block!important;box-sizing:border-box!important;width:100%!important;min-width:0!important;
  min-height:30px!important;margin:0!important;padding:7px 10px!important;
@@ -4537,55 +4537,55 @@ body.light .composer.mode-video #videoRatio option{
  text-align:left!important;white-space:normal!important;overflow-wrap:anywhere!important;
  cursor:pointer!important;box-shadow:none!important;transform:none!important;
 }
-.miya-composer-select-option:hover,.miya-composer-select-option.is-active,
-.miya-composer-select-option:focus-visible{background:#153653!important;color:#f4f8ff!important;outline:none!important}
-.miya-composer-select-option[aria-selected="true"]{color:#fff!important;background:#12314f!important}
-.miya-composer-select-option:disabled{opacity:.45!important;cursor:not-allowed!important}
-body.light .miya-composer-select-popup{
+.areon-composer-select-option:hover,.areon-composer-select-option.is-active,
+.areon-composer-select-option:focus-visible{background:#153653!important;color:#f4f8ff!important;outline:none!important}
+.areon-composer-select-option[aria-selected="true"]{color:#fff!important;background:#12314f!important}
+.areon-composer-select-option:disabled{opacity:.45!important;cursor:not-allowed!important}
+body.light .areon-composer-select-popup{
  background-color:#f4f7fa!important;color:#52657b!important;border-color:#d3deea!important;
  box-shadow:0 12px 28px rgba(35,55,80,.18)!important;scrollbar-color:#c1cedc #f4f7fa!important;
 }
-body.light .miya-composer-select-option{
+body.light .areon-composer-select-option{
  background:transparent!important;color:#52657b!important;
 }
-body.light .miya-composer-select-option:hover,
-body.light .miya-composer-select-option.is-active,
-body.light .miya-composer-select-option:focus-visible{
+body.light .areon-composer-select-option:hover,
+body.light .areon-composer-select-option.is-active,
+body.light .areon-composer-select-option:focus-visible{
  background:#e9eef5!important;color:#273047!important;
 }
-body.light .miya-composer-select-option[aria-selected="true"]{
+body.light .areon-composer-select-option[aria-selected="true"]{
  background:#e1e9f2!important;color:#273047!important;
 }
 
 /* Hide the visible scrollbar in custom composer dropdowns without reducing their rounded popup corners. */
-.miya-composer-select-popup{
+.areon-composer-select-popup{
  scrollbar-width:none!important;
  -ms-overflow-style:none!important;
  scrollbar-color:transparent transparent!important;
 }
-.miya-composer-select-popup::-webkit-scrollbar{
+.areon-composer-select-popup::-webkit-scrollbar{
  display:none!important;width:0!important;height:0!important;
 }
-body.light .miya-composer-select-popup{
+body.light .areon-composer-select-popup{
  scrollbar-width:none!important;
  scrollbar-color:transparent transparent!important;
 }
 
 
 /* Model dropdown: hide the scrollbar while preserving the popup's rounded right corners. */
-.miya-composer-select-popup,
-.miya-composer-select-popup *{
+.areon-composer-select-popup,
+.areon-composer-select-popup *{
   scrollbar-width:none!important;
   -ms-overflow-style:none!important;
 }
-.miya-composer-select-popup::-webkit-scrollbar,
-.miya-composer-select-popup *::-webkit-scrollbar{
+.areon-composer-select-popup::-webkit-scrollbar,
+.areon-composer-select-popup *::-webkit-scrollbar{
   display:none!important;
   width:0!important;
   height:0!important;
   background:transparent!important;
 }
-.miya-composer-select-popup{
+.areon-composer-select-popup{
   border-radius:8px!important;
   overflow-x:hidden!important;
   clip-path:inset(0 round 8px)!important;
@@ -4687,7 +4687,7 @@ html body #composer #videoRatio.select-pill{
   background-color:#0b223b!important;
   border-color:#1a4b78!important;
 }
-html body #composer.composer.mode-images .miya-model-control{
+html body #composer.composer.mode-images .areon-model-control{
   background:#0b223b!important;
   border-color:#1a4b78!important;
 }
@@ -4698,7 +4698,7 @@ html body #composer #composerModel.select-pill{
 }
 
 /* Dark-theme dropdown menu matches the dark composer controls. */
-html body #miyaComposerSelectPopup.miya-composer-select-popup{
+html body #areonComposerSelectPopup.areon-composer-select-popup{
   background-color:#0b223b!important;
   border-color:#1a4b78!important;
   color:#edf5ff!important;
@@ -4708,9 +4708,9 @@ html body #miyaComposerSelectPopup.miya-composer-select-popup{
   opacity:1!important;
   filter:none!important;
 }
-html body #miyaComposerSelectPopup.miya-composer-select-popup .miya-composer-select-option,
-html body #miyaComposerSelectPopup.miya-composer-select-popup .miya-composer-select-option .miya-ratio-label,
-html body #miyaComposerSelectPopup.miya-composer-select-popup .miya-composer-select-option .miya-model-option-label{
+html body #areonComposerSelectPopup.areon-composer-select-popup .areon-composer-select-option,
+html body #areonComposerSelectPopup.areon-composer-select-popup .areon-composer-select-option .areon-ratio-label,
+html body #areonComposerSelectPopup.areon-composer-select-popup .areon-composer-select-option .areon-model-option-label{
   font-family:Inter,system-ui,sans-serif!important;
   font-size:12px!important;
   font-style:normal!important;
@@ -4726,14 +4726,14 @@ html body #miyaComposerSelectPopup.miya-composer-select-popup .miya-composer-sel
   opacity:1!important;
   filter:none!important;
 }
-html body #miyaComposerSelectPopup.miya-composer-select-popup .miya-composer-select-option[aria-selected="true"]{
+html body #areonComposerSelectPopup.areon-composer-select-popup .areon-composer-select-option[aria-selected="true"]{
   background:#12314f!important;
   color:#edf5ff!important;
   -webkit-text-fill-color:#edf5ff!important;
 }
-html body #miyaComposerSelectPopup.miya-composer-select-popup .miya-composer-select-option:hover,
-html body #miyaComposerSelectPopup.miya-composer-select-popup .miya-composer-select-option.is-active,
-html body #miyaComposerSelectPopup.miya-composer-select-popup .miya-composer-select-option:focus-visible{
+html body #areonComposerSelectPopup.areon-composer-select-popup .areon-composer-select-option:hover,
+html body #areonComposerSelectPopup.areon-composer-select-popup .areon-composer-select-option.is-active,
+html body #areonComposerSelectPopup.areon-composer-select-popup .areon-composer-select-option:focus-visible{
   background:#153653!important;
   color:#edf5ff!important;
   -webkit-text-fill-color:#edf5ff!important;
@@ -4755,7 +4755,7 @@ html body.light #composer #videoRatio.select-pill{
   background-color:#f4f7fa!important;
   border-color:#d3deea!important;
 }
-html body.light #composer.composer.mode-images .miya-model-control{
+html body.light #composer.composer.mode-images .areon-model-control{
   background:#f4f7fa!important;
   border-color:#d3deea!important;
 }
@@ -4764,26 +4764,26 @@ html body.light #composer #composerModel.select-pill{
   color:#111111!important;
   -webkit-text-fill-color:#111111!important;
 }
-html body.light #miyaComposerSelectPopup.miya-composer-select-popup{
+html body.light #areonComposerSelectPopup.areon-composer-select-popup{
   background-color:#f4f7fa!important;
   border-color:#d3deea!important;
   color:#111111!important;
   color-scheme:light!important;
   -webkit-text-fill-color:#111111!important;
 }
-html body.light #miyaComposerSelectPopup.miya-composer-select-popup .miya-composer-select-option,
-html body.light #miyaComposerSelectPopup.miya-composer-select-popup .miya-composer-select-option .miya-ratio-label,
-html body.light #miyaComposerSelectPopup.miya-composer-select-popup .miya-composer-select-option .miya-model-option-label{
+html body.light #areonComposerSelectPopup.areon-composer-select-popup .areon-composer-select-option,
+html body.light #areonComposerSelectPopup.areon-composer-select-popup .areon-composer-select-option .areon-ratio-label,
+html body.light #areonComposerSelectPopup.areon-composer-select-popup .areon-composer-select-option .areon-model-option-label{
   color:#111111!important;
   -webkit-text-fill-color:#111111!important;
   opacity:1!important;
   text-shadow:none!important;
   filter:none!important;
 }
-html body.light #miyaComposerSelectPopup.miya-composer-select-popup .miya-composer-select-option[aria-selected="true"],
-html body.light #miyaComposerSelectPopup.miya-composer-select-popup .miya-composer-select-option:hover,
-html body.light #miyaComposerSelectPopup.miya-composer-select-popup .miya-composer-select-option.is-active,
-html body.light #miyaComposerSelectPopup.miya-composer-select-popup .miya-composer-select-option:focus-visible{
+html body.light #areonComposerSelectPopup.areon-composer-select-popup .areon-composer-select-option[aria-selected="true"],
+html body.light #areonComposerSelectPopup.areon-composer-select-popup .areon-composer-select-option:hover,
+html body.light #areonComposerSelectPopup.areon-composer-select-popup .areon-composer-select-option.is-active,
+html body.light #areonComposerSelectPopup.areon-composer-select-popup .areon-composer-select-option:focus-visible{
   color:#111111!important;
   -webkit-text-fill-color:#111111!important;
   opacity:1!important;

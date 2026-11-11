@@ -128,7 +128,7 @@ module.exports = async function handler(req, res) {
         return res.status(429).json({
           ok:false,
           error:"AGNES_IMAGE_RATE_LIMITED",
-          message:"Agnes временно ограничил бесплатные запросы. Это лимит сервиса, а не ошибка Miya. Подожди перед следующей генерацией и попробуй ещё раз; повторные запросы подряд могут снова получить 429.",
+          message:"Agnes временно ограничил бесплатные запросы. Это лимит сервиса, а не ошибка Areon. Подожди перед следующей генерацией и попробуй ещё раз; повторные запросы подряд могут снова получить 429.",
           upstreamStatus:429,
           upstreamMessage:upstreamMessage.slice(0,500)
         });
@@ -137,7 +137,7 @@ module.exports = async function handler(req, res) {
         return res.status(502).json({
           ok:false,
           error:"AGNES_IMAGE_SIZE_LIMIT",
-          message:"Agnes отклонил размер изображения. Размеры 4K в Miya исправлены с учётом ограничения 4096×4096. Обнови страницу после деплоя и повтори запрос.",
+          message:"Agnes отклонил размер изображения. Размеры 4K в Areon исправлены с учётом ограничения 4096×4096. Обнови страницу после деплоя и повтори запрос.",
           upstreamStatus:400,
           upstreamMessage:upstreamMessage.slice(0,300)
         });

@@ -174,7 +174,7 @@ async function handler(req, res) {
       return res.status(502).json({
         ok: false,
         error: "FLUX_UPSTREAM_UNREACHABLE",
-        message: "Сервер Miya не смог подключиться к PixelSter. Попробована резервная точка API.",
+        message: "Сервер Areon не смог подключиться к PixelSter. Попробована резервная точка API.",
         detail: lastNetworkError?.message || "Upstream connection failed"
       });
     }
@@ -225,7 +225,7 @@ async function handler(req, res) {
       }
     });
   } catch (error) {
-    console.warn("Miya FLUX:", error?.message || error);
+    console.warn("Areon FLUX:", error?.message || error);
     return res.status(500).json({
       ok: false,
       error: "GENERATION_ERROR",

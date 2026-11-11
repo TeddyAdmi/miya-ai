@@ -4,11 +4,11 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#061426">
-<meta name="description" content="Miya — AI Chat, images and video creation">
+<meta name="description" content="Areon — AI Chat, images and video creation">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap">
-<title>Miya — AI Creative Studio</title>
+<title>Areon — AI Creative Studio</title>
 <link rel="icon" href="/favicon.svg" type="image/svg+xml">
 <link rel="manifest" href="/b_manifest.json">
 <link rel="stylesheet" href="/styles.css">
@@ -27,7 +27,7 @@
             <path d="m32 22 2.8 7.2L42 32l-7.2 2.8L32 42l-2.8-7.2L22 32l7.2-2.8L32 22Z" fill="#9c63ff"/>
           </svg>
         </span>
-        <div><b>Miya AI Studio</b></div>
+        <div><b>Areon AI Studio</b></div>
       </div>
 
       <div class="chat-nav-wrap" id="chatNavWrap">
@@ -42,7 +42,7 @@
 
       <button class="side-btn" data-mode="images" type="button"><span class="ico icon-image" aria-hidden="true"></span><b>Картинки</b></button>
       <button class="side-btn" data-mode="video" type="button"><span class="ico icon-video" aria-hidden="true"></span><b>Видео</b></button>
-      <button class="side-btn" data-mode="music" type="button"><span class="ico icon-music" aria-hidden="true"><svg class="miya-music-note-svg" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg></span><b>Музыка</b></button>
+      <button class="side-btn" data-mode="music" type="button"><span class="ico icon-music" aria-hidden="true"><svg class="areon-music-note-svg" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg></span><b>Музыка</b></button>
       <button class="side-btn" data-mode="voice" type="button"><span class="ico icon-voice" aria-hidden="true"></span><b>Голос</b></button>
 
       <div class="side-label tools-label">ИНСТРУМЕНТЫ</div>
@@ -53,22 +53,22 @@
             <button class="tool-btn" data-tool="library"><span class="nav-icon icon-library" aria-hidden="true"></span>Мои файлы</button>
 
       <div class="sidebar-spacer"></div>
-      <button class="side-user" id="profileButton"><span class="profile-icon" aria-hidden="true">M</span><div><b>Miya User</b><small>0 PKOIN</small></div><i class="icon-more" aria-hidden="true"></i></button>
+      <button class="side-user" id="profileButton"><span class="profile-icon" aria-hidden="true">M</span><div><b>Areon User</b><small>0 PKOIN</small></div><i class="icon-more" aria-hidden="true"></i></button>
     </aside>
 
     <section class="workspace" id="workspace">
       <div class="workspace-head">
         <div class="workspace-copy">
-          <div class="eyebrow" id="workspaceEyebrow">AI CHAT · MIYA</div>
+          <div class="eyebrow" id="workspaceEyebrow">AI CHAT · AREON</div>
           <h1 id="workspaceTitle">Твоя AI-комната</h1>
-          <p id="workspaceSubtitle">Общайся с Miya, придумывай идеи и управляй созданием контента.</p>
+          <p id="workspaceSubtitle">Общайся с Areon, придумывай идеи и управляй созданием контента.</p>
           <div class="active-chat-title" id="activeChatTitle" hidden></div>
         </div>
       </div>
       <div class="canvas chat-canvas" id="canvas"><div class="studio-room clean-canvas">
   <div class="chat-welcome section-welcome">
-    <div class="mini-badge">MIYA CHAT</div>
-    <h2>Общайся с Miya</h2>
+    <div class="mini-badge">AREON CHAT</div>
+    <h2>Общайся с Areon</h2>
     <p>Задавай вопросы, придумывай идеи, создавай промпты и работай с контентом.</p>
     <div class="hero-mark"><svg class="welcome-chat-symbol" viewBox="0 0 64 64" aria-hidden="true" focusable="false"><path d="M32 8C18.7 8 8 17.5 8 29.3c0 5.1 2 9.8 5.5 13.4L11 54l12.2-4.6c2.8.8 5.7 1.2 8.8 1.2 13.3 0 24-9.5 24-21.3S45.3 8 32 8Z" fill="none" stroke="currentColor" stroke-width="4.2" stroke-linecap="round" stroke-linejoin="round"/><circle cx="22" cy="29" r="2.7" fill="currentColor"/><circle cx="32" cy="29" r="2.7" fill="currentColor"/><circle cx="42" cy="29" r="2.7" fill="currentColor"/></svg></div>
   </div>
@@ -95,7 +95,7 @@
         <button class="composer-paste" id="chatPastePrompt" type="button" title="Вставить" aria-label="Вставить"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 4.5h6a2 2 0 0 1 2 2V8H7V6.5a2 2 0 0 1 2-2Z"/><rect x="5" y="8" width="14" height="13" rx="2"/><path d="M9 12h6M9 16h4"/></svg></button>
         <button class="composer-trash" id="chatTrash" type="button" title="Очистить текст" aria-label="Очистить текст"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M9 7V4h6v3M7 7l1 13h8l1-13M10 11v5M14 11v5"/></svg></button>
       </div>
-        <textarea id="composerInput" class="prompt-chat" data-mode="chat" style="min-height:30px!important;height:30px!important" rows="1" maxlength="4000" placeholder="Напишите сообщение или задайте вопрос Miya…"></textarea>        <button class="mic" id="composerMic" type="button" title="Голосовой ввод" aria-label="Начать голосовой ввод">
+        <textarea id="composerInput" class="prompt-chat" data-mode="chat" style="min-height:30px!important;height:30px!important" rows="1" maxlength="4000" placeholder="Напишите сообщение или задайте вопрос Areon…"></textarea>        <button class="mic" id="composerMic" type="button" title="Голосовой ввод" aria-label="Начать голосовой ввод">
           <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 14.5a3.5 3.5 0 0 0 3.5-3.5V6a3.5 3.5 0 0 0-7 0v5a3.5 3.5 0 0 0 3.5 3.5Z"/><path d="M19 11a7 7 0 0 1-14 0"/><path d="M12 18v3M8 21h8"/></svg>
         </button>
         <button class="send" id="composerSend"><span class="send-icon icon-arrow-up" aria-hidden="true"></span><span id="composerSendText">Отправить</span></button>
@@ -166,7 +166,7 @@
     <button class="active" data-mode="chat"><span class="nav-icon icon-chat" aria-hidden="true"></span><small>AI Chat</small></button>
     <button data-mode="images"><span class="nav-icon icon-image" aria-hidden="true"></span><small>Картинки</small></button>
     <button data-mode="video"><span class="nav-icon icon-video" aria-hidden="true"></span><small>Видео</small></button>
-    <button data-mode="music"><span class="nav-icon icon-music" aria-hidden="true"><svg class="miya-music-note-svg" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg></span><small>Музыка</small></button>
+    <button data-mode="music"><span class="nav-icon icon-music" aria-hidden="true"><svg class="areon-music-note-svg" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg></span><small>Музыка</small></button>
     <button data-mode="voice"><span class="nav-icon icon-voice" aria-hidden="true"></span><small>Голос</small></button>
   </nav>
 </div>
@@ -216,13 +216,13 @@ body.light .chat-history-actions svg,
 body.light .chat-history-menu svg{color:currentColor!important;stroke:currentColor}
 body.light .composer textarea::placeholder{opacity:1!important;color:#111111!important;-webkit-text-fill-color:#111111!important}
 /* Popup colors are shared by all composer dropdowns; the six closed controls are normalized below. */
-body.light .miya-composer-select-popup,
-body.light .miya-composer-select-option,
-body.light .miya-composer-select-option .miya-ratio-label{color:#111111!important}
-body.light .miya-composer-select-option[aria-selected="true"],
-body.light .miya-composer-select-option:hover,
-body.light .miya-composer-select-option.is-active,
-body.light .miya-composer-select-option:focus-visible{color:#111111!important}
+body.light .areon-composer-select-popup,
+body.light .areon-composer-select-option,
+body.light .areon-composer-select-option .areon-ratio-label{color:#111111!important}
+body.light .areon-composer-select-option[aria-selected="true"],
+body.light .areon-composer-select-option:hover,
+body.light .areon-composer-select-option.is-active,
+body.light .areon-composer-select-option:focus-visible{color:#111111!important}
 body.light .side-btn.active,
 body.light .side-btn.active .ico,
 body.light .side-btn.active .nav-icon,
@@ -230,17 +230,17 @@ body.light .mobile-tabs button.active,
 body.light .library-tab.active{color:#111111!important}
 
 /* Final ratio-menu normalization: stable text/icon columns and one text color in light mode. */
-.miya-composer-select-popup .miya-composer-select-option.miya-ratio-option{
+.areon-composer-select-popup .areon-composer-select-option.areon-ratio-option{
  color:inherit!important;
 }
-body.light .miya-composer-select-popup .miya-composer-select-option.miya-ratio-option,
-body.light .miya-composer-select-popup .miya-composer-select-option.miya-ratio-option .miya-ratio-label{
+body.light .areon-composer-select-popup .areon-composer-select-option.areon-ratio-option,
+body.light .areon-composer-select-popup .areon-composer-select-option.areon-ratio-option .areon-ratio-label{
  color:#111111!important;
 }
-body.light .miya-composer-select-popup .miya-composer-select-option.miya-ratio-option[aria-selected="true"],
-body.light .miya-composer-select-popup .miya-composer-select-option.miya-ratio-option:hover,
-body.light .miya-composer-select-popup .miya-composer-select-option.miya-ratio-option.is-active,
-body.light .miya-composer-select-popup .miya-composer-select-option.miya-ratio-option:focus-visible{
+body.light .areon-composer-select-popup .areon-composer-select-option.areon-ratio-option[aria-selected="true"],
+body.light .areon-composer-select-popup .areon-composer-select-option.areon-ratio-option:hover,
+body.light .areon-composer-select-popup .areon-composer-select-option.areon-ratio-option.is-active,
+body.light .areon-composer-select-popup .areon-composer-select-option.areon-ratio-option:focus-visible{
  color:#111111!important;
 }
 
@@ -319,25 +319,25 @@ body.light #composer.mode-video #videoDuration.select-pill[aria-expanded="true"]
   font-size:12px!important;
   font-weight:600!important;
 }
-.miya-composer-select-popup .miya-composer-select-option{
+.areon-composer-select-popup .areon-composer-select-option{
   font-family:Inter,system-ui,sans-serif!important;
   font-size:12px!important;
   font-weight:600!important;
   line-height:16px!important;
 }
-body.light .miya-composer-select-popup .miya-composer-select-option{
+body.light .areon-composer-select-popup .areon-composer-select-option{
   color:#111111!important;
 }
 
 
 /* Image model selector: one source of truth for tile size, alignment and artwork scale. */
-#composer.mode-images .miya-model-control{
+#composer.mode-images .areon-model-control{
   display:inline-flex!important;align-items:center!important;flex:0 0 auto!important;
   height:34px!important;min-height:34px!important;box-sizing:border-box!important;
   border:1px solid #1a4b78!important;border-radius:7px!important;
   background:#0b223b!important;overflow:visible!important;vertical-align:middle!important;
 }
-#composer.mode-images .miya-model-logo{
+#composer.mode-images .areon-model-logo{
   position:relative!important;display:inline-flex!important;align-items:center!important;justify-content:center!important;
   width:26px!important;height:26px!important;min-width:26px!important;flex:0 0 26px!important;
   margin:0 .5px!important;padding:0!important;box-sizing:border-box!important;
@@ -346,17 +346,17 @@ body.light .miya-composer-select-popup .miya-composer-select-option{
   box-shadow:inset 0 1px 0 rgba(255,255,255,.98),inset 0 -1px 0 rgba(148,163,184,.16),0 2px 4px rgba(0,0,0,.22)!important;
   overflow:hidden!important;pointer-events:none!important;line-height:0!important;
 }
-#composer.mode-images .miya-model-logo img{
+#composer.mode-images .areon-model-logo img{
   position:absolute!important;left:50%!important;top:50%!important;display:block!important;
   width:22px!important;height:22px!important;max-width:none!important;max-height:none!important;
   margin:0!important;padding:0!important;flex:none!important;object-fit:contain!important;
   border:0!important;border-radius:0!important;background:transparent!important;
   transform:translate(-50%,-50%)!important;mix-blend-mode:normal!important;
 }
-body.light #composer.mode-images .miya-model-control{
+body.light #composer.mode-images .areon-model-control{
   border-color:#d3deea!important;background:#f4f7fa!important;
 }
-body.light #composer.mode-images .miya-model-logo{
+body.light #composer.mode-images .areon-model-logo{
   background:linear-gradient(145deg,#fff 0%,#fff 54%,#edf2f7 100%)!important;
 }
 #composer.mode-images #composerModel.select-pill{
@@ -367,12 +367,12 @@ body.light #composer.mode-images .miya-model-logo{
   align-self:center!important;background-position:calc(100% - 10px) 50%!important;
 }
 /* Dropdown rows keep their current dimensions; only the artwork inside each tile grows. */
-.miya-composer-select-popup .miya-composer-select-option.miya-model-option{
+.areon-composer-select-popup .areon-composer-select-option.areon-model-option{
   display:flex!important;align-items:center!important;gap:8px!important;
   height:40px!important;min-height:40px!important;padding:3px 28px 3px 3px!important;
   box-sizing:border-box!important;white-space:nowrap!important;
 }
-.miya-composer-select-popup .miya-model-option .miya-model-option-logo-tile{
+.areon-composer-select-popup .areon-model-option .areon-model-option-logo-tile{
   position:relative!important;display:inline-flex!important;align-items:center!important;justify-content:center!important;
   flex:0 0 24px!important;width:24px!important;height:24px!important;min-width:24px!important;min-height:24px!important;
   margin:0 1.5px!important;padding:0!important;box-sizing:border-box!important;overflow:hidden!important;
@@ -381,14 +381,14 @@ body.light #composer.mode-images .miya-model-logo{
   box-shadow:inset 0 1px 0 rgba(255,255,255,.98),inset 0 -1px 0 rgba(148,163,184,.16),0 2px 4px rgba(0,0,0,.22)!important;
   line-height:0!important;isolation:isolate!important;
 }
-.miya-composer-select-popup .miya-model-option .miya-model-option-logo{
+.areon-composer-select-popup .areon-model-option .areon-model-option-logo{
   position:absolute!important;left:50%!important;top:50%!important;display:block!important;
   width:20px!important;height:20px!important;max-width:none!important;max-height:none!important;
   margin:0!important;padding:0!important;flex:none!important;object-fit:contain!important;
   border:0!important;border-radius:0!important;background:transparent!important;
   transform:translate(-50%,-50%)!important;mix-blend-mode:normal!important;
 }
-.miya-composer-select-popup .miya-model-option .miya-model-option-label{
+.areon-composer-select-popup .areon-model-option .areon-model-option-label{
   min-width:max-content!important;flex:0 0 auto!important;overflow:visible!important;text-overflow:clip!important;white-space:nowrap!important;
 }
 
@@ -400,9 +400,9 @@ body.light #composer.mode-images .miya-model-logo{
 
 <script>
 /* Use a page-styled popup for image/video selects: native Firefox pickers ignore option background colors. */
-(function miyaComposerDropdownPopupV1(){
- if(window.__miyaComposerDropdownPopupV1)return;
- window.__miyaComposerDropdownPopupV1=true;
+(function areonComposerDropdownPopupV1(){
+ if(window.__areonComposerDropdownPopupV1)return;
+ window.__areonComposerDropdownPopupV1=true;
  const ids=["composerModel","composerRatio","composerQuality","videoModel","videoDuration","videoRatio"];
  const ratioValues=new Set(["16:9","9:16","1:1"]);
  let ratioSvgInstance=0;
@@ -410,9 +410,9 @@ body.light #composer.mode-images .miya-model-logo{
    const ratio=ratioValues.has(value)?value:"16:9";
    const suffix=++ratioSvgInstance;
    const shapes={
-    "16:9":`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 70"><defs><linearGradient id="miyaWideScreen${suffix}" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#35D6FF"/><stop offset="1" stop-color="#168BFF"/></linearGradient></defs><rect x="8" y="7" width="84" height="49" rx="8" fill="#172E50" stroke="#35B8FF" stroke-width="6"/><rect x="15" y="14" width="70" height="35" rx="4" fill="url(#miyaWideScreen${suffix})"/><path d="M39 58v4h22v-4M30 65h40" fill="none" stroke="#35B8FF" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/></svg>`,
-    "9:16":`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 70 100"><defs><linearGradient id="miyaPhoneScreen${suffix}" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#35D6FF"/><stop offset="1" stop-color="#168BFF"/></linearGradient></defs><rect x="12" y="4" width="46" height="92" rx="10" fill="#172E50" stroke="#35B8FF" stroke-width="5"/><rect x="17" y="14" width="36" height="68" rx="4" fill="url(#miyaPhoneScreen${suffix})"/><rect x="27" y="8" width="16" height="2.5" rx="1.25" fill="#35D6FF"/><circle cx="35" cy="88" r="3" fill="#35B8FF"/></svg>`,
-    "1:1":`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><defs><linearGradient id="miyaSquareScreen${suffix}" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#35D6FF"/><stop offset="1" stop-color="#168BFF"/></linearGradient></defs><rect x="8" y="6" width="84" height="73" rx="8" fill="#172E50" stroke="#35B8FF" stroke-width="6"/><rect x="15" y="13" width="70" height="59" rx="4" fill="url(#miyaSquareScreen${suffix})"/><path d="M39 80v7h22v-7M30 93h40" fill="none" stroke="#35B8FF" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/></svg>`
+    "16:9":`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 70"><defs><linearGradient id="areonWideScreen${suffix}" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#35D6FF"/><stop offset="1" stop-color="#168BFF"/></linearGradient></defs><rect x="8" y="7" width="84" height="49" rx="8" fill="#172E50" stroke="#35B8FF" stroke-width="6"/><rect x="15" y="14" width="70" height="35" rx="4" fill="url(#areonWideScreen${suffix})"/><path d="M39 58v4h22v-4M30 65h40" fill="none" stroke="#35B8FF" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/></svg>`,
+    "9:16":`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 70 100"><defs><linearGradient id="areonPhoneScreen${suffix}" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#35D6FF"/><stop offset="1" stop-color="#168BFF"/></linearGradient></defs><rect x="12" y="4" width="46" height="92" rx="10" fill="#172E50" stroke="#35B8FF" stroke-width="5"/><rect x="17" y="14" width="36" height="68" rx="4" fill="url(#areonPhoneScreen${suffix})"/><rect x="27" y="8" width="16" height="2.5" rx="1.25" fill="#35D6FF"/><circle cx="35" cy="88" r="3" fill="#35B8FF"/></svg>`,
+    "1:1":`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><defs><linearGradient id="areonSquareScreen${suffix}" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#35D6FF"/><stop offset="1" stop-color="#168BFF"/></linearGradient></defs><rect x="8" y="6" width="84" height="73" rx="8" fill="#172E50" stroke="#35B8FF" stroke-width="6"/><rect x="15" y="13" width="70" height="59" rx="4" fill="url(#areonSquareScreen${suffix})"/><path d="M39 80v7h22v-7M30 93h40" fill="none" stroke="#35B8FF" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/></svg>`
    };
    return shapes[ratio];
   };
@@ -427,18 +427,18 @@ body.light #composer.mode-images .miya-model-logo{
   const arrowPath=open?"M2 6L6 2L10 6":"M2 2L6 6L10 2";
   const arrow='url("data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 12 8%27 fill=%27none%27%3E%3Cpath d=%27'+arrowPath.replace(/ /g,"%20")+'%27 stroke=%27'+arrowStroke+'%27 stroke-width=%271.8%27 stroke-linecap=%27round%27 stroke-linejoin=%27round%27/%3E%3C/svg%3E")';
   let wrap=select.parentElement;
-  if(!wrap||!wrap.classList.contains("miya-ratio-control")){
+  if(!wrap||!wrap.classList.contains("areon-ratio-control")){
    wrap=document.createElement("span");
-   wrap.className="miya-ratio-control";
+   wrap.className="areon-ratio-control";
    select.parentNode.insertBefore(wrap,select);
    wrap.appendChild(select);
    const icon=document.createElement("span");
-   icon.className="miya-ratio-trigger-icon";
+   icon.className="areon-ratio-trigger-icon";
    icon.setAttribute("aria-hidden","true");
    wrap.appendChild(icon);
   }
-  let iconNode=wrap.querySelector(":scope > .miya-ratio-trigger-icon");
-  if(!iconNode){iconNode=document.createElement("span");iconNode.className="miya-ratio-trigger-icon";iconNode.setAttribute("aria-hidden","true");wrap.appendChild(iconNode);}
+  let iconNode=wrap.querySelector(":scope > .areon-ratio-trigger-icon");
+  if(!iconNode){iconNode=document.createElement("span");iconNode.className="areon-ratio-trigger-icon";iconNode.setAttribute("aria-hidden","true");wrap.appendChild(iconNode);}
   /* Inline SVG nodes are decoded as DOM, not as CSS background images, so the icon switches with the label in the same paint. */
   iconNode.innerHTML=isAuto?"":ratioSvg(value);
   iconNode.style.display=isAuto?"none":"flex";
@@ -458,11 +458,11 @@ body.light #composer.mode-images .miya-model-logo{
   select.setAttribute("aria-label",select.id==="videoRatio"?"Соотношение сторон видео: "+value:"Соотношение сторон изображения: "+value);
  };
  const ratioTriggerStyle=document.createElement("style");
- ratioTriggerStyle.textContent='.miya-ratio-control{position:relative!important;display:inline-flex!important;flex:0 0 90px!important;width:90px!important;min-width:90px!important;max-width:90px!important;height:31px!important;vertical-align:middle!important}.miya-ratio-control>select.select-pill{width:100%!important;min-width:0!important;max-width:100%!important;flex:1 1 auto!important}.miya-ratio-trigger-icon{position:absolute;top:50%;transform:translateY(-50%);display:flex;align-items:center;justify-content:center;width:19px;height:19px;pointer-events:none;z-index:2}.miya-ratio-trigger-icon svg{display:block;width:19px;height:13px;overflow:visible}.miya-ratio-trigger-icon:empty{display:none!important}';
+ ratioTriggerStyle.textContent='.areon-ratio-control{position:relative!important;display:inline-flex!important;flex:0 0 90px!important;width:90px!important;min-width:90px!important;max-width:90px!important;height:31px!important;vertical-align:middle!important}.areon-ratio-control>select.select-pill{width:100%!important;min-width:0!important;max-width:100%!important;flex:1 1 auto!important}.areon-ratio-trigger-icon{position:absolute;top:50%;transform:translateY(-50%);display:flex;align-items:center;justify-content:center;width:19px;height:19px;pointer-events:none;z-index:2}.areon-ratio-trigger-icon svg{display:block;width:19px;height:13px;overflow:visible}.areon-ratio-trigger-icon:empty{display:none!important}';
  document.head.appendChild(ratioTriggerStyle);
  const ratioStyle=document.createElement("style");
- ratioStyle.id="miyaRatioIconStyles";
- ratioStyle.textContent='.miya-composer-select-popup .miya-composer-select-option{display:flex!important;align-items:center!important;min-height:36px!important;height:36px!important;padding:7px 28px 7px 10px!important;box-sizing:border-box!important;white-space:nowrap!important;font:600 12px/16px Inter,system-ui,sans-serif!important;border-radius:6px!important}.miya-composer-select-popup .miya-composer-select-option.miya-ratio-option{justify-content:flex-start!important;gap:7px!important;padding:7px 28px 7px 8px!important;color:inherit!important}.miya-composer-select-popup .miya-composer-select-option.miya-ratio-option .miya-ratio-label{display:block;flex:0 0 32px;width:32px;white-space:nowrap;text-align:left;font:600 12px/16px Inter,system-ui,sans-serif!important;color:inherit!important}.miya-composer-select-popup .miya-composer-select-option.miya-ratio-option[data-value="1:1"] .miya-ratio-label{text-indent:6px}.miya-composer-select-popup .miya-composer-select-option.miya-ratio-option .miya-ratio-icon{display:flex;align-items:center;justify-content:center;flex:none;width:19px;height:19px;position:absolute;left:43px;margin:0}.miya-composer-select-popup .miya-composer-select-option.miya-ratio-option .miya-ratio-icon svg{display:block;width:19px;height:13px;overflow:visible}.miya-composer-select-popup .miya-composer-select-option.miya-ratio-option[data-value="9:16"] svg{width:13px;height:16px}.miya-composer-select-popup .miya-composer-select-option.miya-ratio-option[data-value="1:1"] svg{width:13px;height:13px}.miya-composer-select-popup .miya-composer-select-option.miya-ratio-option[data-value="auto"] .miya-ratio-icon{visibility:hidden}';
+ ratioStyle.id="areonRatioIconStyles";
+ ratioStyle.textContent='.areon-composer-select-popup .areon-composer-select-option{display:flex!important;align-items:center!important;min-height:36px!important;height:36px!important;padding:7px 28px 7px 10px!important;box-sizing:border-box!important;white-space:nowrap!important;font:600 12px/16px Inter,system-ui,sans-serif!important;border-radius:6px!important}.areon-composer-select-popup .areon-composer-select-option.areon-ratio-option{justify-content:flex-start!important;gap:7px!important;padding:7px 28px 7px 8px!important;color:inherit!important}.areon-composer-select-popup .areon-composer-select-option.areon-ratio-option .areon-ratio-label{display:block;flex:0 0 32px;width:32px;white-space:nowrap;text-align:left;font:600 12px/16px Inter,system-ui,sans-serif!important;color:inherit!important}.areon-composer-select-popup .areon-composer-select-option.areon-ratio-option[data-value="1:1"] .areon-ratio-label{text-indent:6px}.areon-composer-select-popup .areon-composer-select-option.areon-ratio-option .areon-ratio-icon{display:flex;align-items:center;justify-content:center;flex:none;width:19px;height:19px;position:absolute;left:43px;margin:0}.areon-composer-select-popup .areon-composer-select-option.areon-ratio-option .areon-ratio-icon svg{display:block;width:19px;height:13px;overflow:visible}.areon-composer-select-popup .areon-composer-select-option.areon-ratio-option[data-value="9:16"] svg{width:13px;height:16px}.areon-composer-select-popup .areon-composer-select-option.areon-ratio-option[data-value="1:1"] svg{width:13px;height:13px}.areon-composer-select-popup .areon-composer-select-option.areon-ratio-option[data-value="auto"] .areon-ratio-icon{visibility:hidden}';
  document.head.appendChild(ratioStyle);
  ["composerRatio","videoRatio"].forEach(id=>{
   const select=document.getElementById(id);
@@ -474,8 +474,8 @@ body.light #composer.mode-images .miya-model-logo{
  new MutationObserver(()=>{["composerRatio","videoRatio"].forEach(id=>syncRatioTrigger(document.getElementById(id)));if(!popup.hidden&&activeSelect)openPopup(activeSelect,activeIndex)}).observe(document.body,{attributes:true,attributeFilter:["class"]});
 
  const popup=document.createElement("div");
- popup.className="miya-composer-select-popup";
- popup.id="miyaComposerSelectPopup";
+ popup.className="areon-composer-select-popup";
+ popup.id="areonComposerSelectPopup";
  popup.setAttribute("role","listbox");
  popup.setAttribute("aria-label","Выберите значение");
  popup.hidden=true;
@@ -496,7 +496,7 @@ body.light #composer.mode-images .miya-model-logo{
   if(v==="imagesmith"||v.includes("gpt image"))return "openai.com";
   if(v.includes("seedream"))return "seed.bytedance.com";
   if(v.includes("agnes"))return "agnes-ai.com";
-  if(v.includes("miya image"))return "imagefree.net";
+  if(v.includes("areon image"))return "imagefree.net";
   if(v.includes("z-image"))return "tongyi.aliyun.com";
   if(v.includes("qwen"))return "qwen.ai";
   if(v.includes("kolors"))return "kuaishou.com";
@@ -542,16 +542,16 @@ body.light #composer.mode-images .miya-model-logo{
  function ensureModelTriggerLogo(select){
   if(!select||select.id!=="composerModel")return;
   let control=select.parentElement;
-  if(!control||!control.classList.contains("miya-model-control")){
-   control=document.createElement("span");control.className="miya-model-control";
-   const oldLogo=select.previousElementSibling&&select.previousElementSibling.classList.contains("miya-model-logo")?select.previousElementSibling:null;
+  if(!control||!control.classList.contains("areon-model-control")){
+   control=document.createElement("span");control.className="areon-model-control";
+   const oldLogo=select.previousElementSibling&&select.previousElementSibling.classList.contains("areon-model-logo")?select.previousElementSibling:null;
    select.parentNode.insertBefore(control,oldLogo||select);
    if(oldLogo)control.appendChild(oldLogo);
    control.appendChild(select);
   }
-  let logo=control.querySelector(":scope > .miya-model-logo");
+  let logo=control.querySelector(":scope > .areon-model-logo");
   if(!logo){
-   logo=document.createElement("span");logo.className="miya-model-logo";logo.setAttribute("aria-hidden","true");
+   logo=document.createElement("span");logo.className="areon-model-logo";logo.setAttribute("aria-hidden","true");
    control.insertBefore(logo,select);
   }
   let img=logo.querySelector("img");
@@ -583,7 +583,7 @@ body.light #composer.mode-images .miya-model-logo{
   activeIndex=-1;
  }
  function moveActive(nextIndex){
-  const items=Array.from(popup.querySelectorAll(".miya-composer-select-option:not(:disabled)"));
+  const items=Array.from(popup.querySelectorAll(".areon-composer-select-option:not(:disabled)"));
   if(!items.length)return;
   activeIndex=(nextIndex+items.length)%items.length;
   items.forEach((item,index)=>{
@@ -609,10 +609,10 @@ body.light #composer.mode-images .miya-model-logo{
  }
  function positionPopup(select){
   const selectRect=select.getBoundingClientRect();
-  const control=select.id==="composerModel"&&select.parentElement&&select.parentElement.classList.contains("miya-model-control")?select.parentElement:null;
+  const control=select.id==="composerModel"&&select.parentElement&&select.parentElement.classList.contains("areon-model-control")?select.parentElement:null;
   const controlRect=control?control.getBoundingClientRect():null;
   const oldLogo=select.id==="composerModel"&&!control?select.previousElementSibling:null;
-  const oldLogoRect=oldLogo&&oldLogo.classList.contains("miya-model-logo")?oldLogo.getBoundingClientRect():null;
+  const oldLogoRect=oldLogo&&oldLogo.classList.contains("areon-model-logo")?oldLogo.getBoundingClientRect():null;
   const left=controlRect?controlRect.left:(oldLogoRect?oldLogoRect.left:selectRect.left);
   let desiredWidth=Math.ceil(controlRect?controlRect.width:(selectRect.width+(oldLogoRect?oldLogoRect.width:0)));
   // Ratio menus must exactly match their closed 90px trigger; only model menus expand to fit long labels.
@@ -624,8 +624,8 @@ body.light #composer.mode-images .miya-model-logo{
     const style=getComputedStyle(modelSelect);
     ctx.font="700 "+(style.fontSize||"12px")+" "+(style.fontFamily||"Inter,system-ui,sans-serif");
     const longest=availableOptions(modelSelect).reduce((max,option)=>Math.max(max,ctx.measureText(String(option.label||option.textContent||option.value)).width),0);
-    const modelControl=modelSelect.parentElement&&modelSelect.parentElement.classList.contains("miya-model-control")?modelSelect.parentElement:null;
-    const logoWidth=modelControl&&modelControl.querySelector(".miya-model-logo")?modelControl.querySelector(".miya-model-logo").getBoundingClientRect().width:27;
+    const modelControl=modelSelect.parentElement&&modelSelect.parentElement.classList.contains("areon-model-control")?modelSelect.parentElement:null;
+    const logoWidth=modelControl&&modelControl.querySelector(".areon-model-logo")?modelControl.querySelector(".areon-model-logo").getBoundingClientRect().width:27;
     desiredWidth=Math.max(desiredWidth,Math.ceil(logoWidth+7.5+longest+28));
    }
   }
@@ -655,16 +655,16 @@ body.light #composer.mode-images .miya-model-logo{
   options.forEach((option,index)=>{
    const item=document.createElement("button");
    item.type="button";
-   item.className="miya-composer-select-option";
+   item.className="areon-composer-select-option";
    item.setAttribute("role","option");
    item.setAttribute("aria-selected",String(option.value===select.value));
    item.dataset.value=option.value;
    item.dataset.index=String(index);
-   if((select.id==="composerRatio"||select.id==="videoRatio")&&(ratioValues.has(option.value)||option.value==="auto")){item.classList.add("miya-ratio-option");const label=document.createElement("span");label.className="miya-ratio-label";label.textContent=option.value;const icon=document.createElement("span");icon.className="miya-ratio-icon";if(ratioValues.has(option.value))icon.innerHTML=ratioSvg(option.value);item.append(label,icon);item.setAttribute("aria-label",option.value);}else if(select.id==="composerModel"){
-    item.classList.add("miya-model-option");
-    const tile=document.createElement("span");tile.className="miya-model-option-logo-tile";tile.setAttribute("aria-hidden","true");
-    const img=document.createElement("img");img.className="miya-model-option-logo";img.alt="";img.draggable=false;img.loading="eager";img.fetchPriority="high";img.decoding="sync";img.src=modelLogoUrl(option.value);
-    const label=document.createElement("span");label.className="miya-model-option-label";label.textContent=String(option.label||option.textContent||option.value);
+   if((select.id==="composerRatio"||select.id==="videoRatio")&&(ratioValues.has(option.value)||option.value==="auto")){item.classList.add("areon-ratio-option");const label=document.createElement("span");label.className="areon-ratio-label";label.textContent=option.value;const icon=document.createElement("span");icon.className="areon-ratio-icon";if(ratioValues.has(option.value))icon.innerHTML=ratioSvg(option.value);item.append(label,icon);item.setAttribute("aria-label",option.value);}else if(select.id==="composerModel"){
+    item.classList.add("areon-model-option");
+    const tile=document.createElement("span");tile.className="areon-model-option-logo-tile";tile.setAttribute("aria-hidden","true");
+    const img=document.createElement("img");img.className="areon-model-option-logo";img.alt="";img.draggable=false;img.loading="eager";img.fetchPriority="high";img.decoding="sync";img.src=modelLogoUrl(option.value);
+    const label=document.createElement("span");label.className="areon-model-option-label";label.textContent=String(option.label||option.textContent||option.value);
     tile.appendChild(img);item.append(tile,label);
    }else{item.textContent=String(option.label||option.textContent||option.value);}
    item.disabled=option.disabled;
@@ -691,8 +691,8 @@ body.light #composer.mode-images .miya-model-logo{
  }
  ids.forEach(id=>{
   const select=document.getElementById(id);
-  if(!select||select.dataset.miyaCustomPopupBound)return;
-  select.dataset.miyaCustomPopupBound="1";
+  if(!select||select.dataset.areonCustomPopupBound)return;
+  select.dataset.areonCustomPopupBound="1";
   select.setAttribute("aria-haspopup","listbox");
   select.setAttribute("aria-expanded","false");
   if(select.id==="composerModel"){

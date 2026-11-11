@@ -83,7 +83,7 @@ module.exports = async function imageHandler(req, res) {
           typeof job?.output_url === "string" ? job.output_url : "";
 
         // CleverUtils may report done before /output leaves its short cooldown.
-        // Keep the provider output behind Miya's backend and retry 429s here.
+        // Keep the provider output behind Areon's backend and retry 429s here.
         if (status.toLowerCase() === "done" && providerOutputUrl) {
           return res.status(200).json({
             ok:true,
@@ -156,7 +156,7 @@ module.exports = async function imageHandler(req, res) {
       if (["2","3","4"].includes(scale) === false) return res.status(400).json({ok:false,error:"INVALID_SCALE"});
       if (!["fast","quality"].includes(model)) return res.status(400).json({ok:false,error:"INVALID_MODEL"});
 
-      // Prefer the already-cached Miya image bytes when available. This avoids
+      // Prefer the already-cached Areon image bytes when available. This avoids
       // another request to expiring/slow provider URLs such as Vheer.
       let mcpFile = imageData;
       if (!mcpFile) {
@@ -241,7 +241,7 @@ module.exports = async function imageHandler(req, res) {
         params:{
           protocolVersion:"2025-06-18",
           capabilities:{},
-          clientInfo:{name:"Miya Studio",version:"1.0"}
+          clientInfo:{name:"Areon Studio",version:"1.0"}
         }
       });
 
@@ -357,7 +357,7 @@ module.exports = async function imageHandler(req, res) {
     if (action === "upscale") {
       let bytes;
       let mime = "image/jpeg";
-      let filename = "miya-image.jpg";
+      let filename = "areon-image.jpg";
       const dataInput = typeof body.imageData === "string" ? body.imageData.trim() : "";
       const urlInput = typeof body.imageUrl === "string" ? body.imageUrl.trim() : "";
 
@@ -366,7 +366,7 @@ module.exports = async function imageHandler(req, res) {
         if (!match) return res.status(400).json({ ok:false, error:"INVALID_IMAGE_DATA" });
         mime = match[1].toLowerCase();
         bytes = Buffer.from(match[2].replace(/\s+/g,""), "base64");
-        filename = "miya-upload." + (mime.split("/")[1] === "jpeg" ? "jpg" : mime.split("/")[1]);
+        filename = "areon-upload." + (mime.split("/")[1] === "jpeg" ? "jpg" : mime.split("/")[1]);
       } else if (urlInput) {
         let target;
         try { target = new URL(urlInput); } catch {
@@ -389,7 +389,7 @@ module.exports = async function imageHandler(req, res) {
         if (!/^image\//i.test(mime)) return res.status(400).json({ ok:false, error:"SOURCE_NOT_IMAGE" });
         bytes = Buffer.from(await source.arrayBuffer());
         const ext = mime.split("/")[1] || "jpeg";
-        filename = "miya-source." + (ext === "jpeg" ? "jpg" : ext);
+        filename = "areon-source." + (ext === "jpeg" ? "jpg" : ext);
       } else {
         return res.status(400).json({ ok:false, error:"IMAGE_REQUIRED" });
       }
@@ -408,7 +408,7 @@ module.exports = async function imageHandler(req, res) {
         try {
           bytes = await sharp(bytes).rotate().png().toBuffer();
           mime = "image/png";
-          filename = "miya-source.png";
+          filename = "areon-source.png";
         } catch (error) {
           return res.status(415).json({ok:false,error:"QUALITY_IMAGE_NORMALIZE_FAILED",message:String(error?.message||error)});
         }
@@ -525,7 +525,7 @@ module.exports = async function imageHandler(req, res) {
         // The upstream AI endpoint returns artwork on a plain white canvas.
         // Its website normally removes that connected white background and
         // adds a white die-cut border in the browser. Recreate that step here
-        // so Miya receives a real transparent sticker, not a square image.
+        // so Areon receives a real transparent sticker, not a square image.
         const stickerRaw = await sharp(imageBytes)
           .rotate()
           .resize({width:2048,height:2048,fit:"inside",withoutEnlargement:true})
@@ -1111,8 +1111,8 @@ module.exports = async function imageHandler(req, res) {
       const aspectRatio = allowedRatios.includes(String(body.ratio || "")) ? String(body.ratio) : "16:9";
       const action = String(body.action || "start").toLowerCase();
       const taskIdInput = String(body.taskId || "").trim();
-      const imageFreeModelName = requestedModel === "Miya Image t2i" ? "Miya Image t2i" : "Z-Image Turbo (ImageFree)";
-      if (!["Miya Image t2i", "Z-Image Turbo (ImageFree)"].includes(requestedModel)) {
+      const imageFreeModelName = requestedModel === "Areon Image t2i" ? "Areon Image t2i" : "Z-Image Turbo (ImageFree)";
+      if (!["Areon Image t2i", "Z-Image Turbo (ImageFree)"].includes(requestedModel)) {
         return res.status(400).json({ok:false,error:"IMAGEFREE_MODEL_UNSUPPORTED",message:"Неизвестная модель ImageFree."});
       }
       if (action !== "status" && !userPrompt) return res.status(400).json({ok:false,error:"PROMPT_REQUIRED"});
@@ -1258,7 +1258,7 @@ module.exports = async function imageHandler(req, res) {
             return res.status(200).json({
               ok:true,mode:"image",status:"completed",provider:"ImageFree",
               model:imageFreeModelName,imageUrl:normalized.imageUrl,imageUrls:[normalized.imageUrl],count:1,
-              meta:{free:true,aspectRatio,taskId:taskIdInput,modelId:"Z-Image-Turbo",promptEnhanced:requestedModel==="Miya Image t2i",upstream:"imagefree.net"}
+              meta:{free:true,aspectRatio,taskId:taskIdInput,modelId:"Z-Image-Turbo",promptEnhanced:requestedModel==="Areon Image t2i",upstream:"imagefree.net"}
             });
           }
           return res.status(200).json({ok:true,status:normalized.status,provider:"ImageFree",model:imageFreeModelName,taskId:taskIdInput});
@@ -1267,7 +1267,7 @@ module.exports = async function imageHandler(req, res) {
         const created = await requestImageFree("https://imagefree.net/api/generate", {
           method:"POST",
           headers:{"Content-Type":"application/json"},
-          body:JSON.stringify({prompt:userPrompt,aspect_ratio:aspectRatio,turnstile_token:requestedModel==="Miya Image t2i"?null:""})
+          body:JSON.stringify({prompt:userPrompt,aspect_ratio:aspectRatio,turnstile_token:requestedModel==="Areon Image t2i"?null:""})
         });
         const immediate = normalizeImageFreeStatus(created);
         if (immediate.failed) {
@@ -1281,7 +1281,7 @@ module.exports = async function imageHandler(req, res) {
           return res.status(200).json({
             ok:true,mode:"image",status:"completed",provider:"ImageFree",
             model:imageFreeModelName,imageUrl:immediate.imageUrl,imageUrls:[immediate.imageUrl],count:1,
-            meta:{free:true,aspectRatio,modelId:"Z-Image-Turbo",promptEnhanced:requestedModel==="Miya Image t2i",upstream:"imagefree.net"}
+            meta:{free:true,aspectRatio,modelId:"Z-Image-Turbo",promptEnhanced:requestedModel==="Areon Image t2i",upstream:"imagefree.net"}
           });
         }
         let createdTask = created;
@@ -1302,7 +1302,7 @@ module.exports = async function imageHandler(req, res) {
         }
         return res.status(200).json({
           ok:true,status:"processing",provider:"ImageFree",model:imageFreeModelName,taskId,
-          meta:{free:true,aspectRatio,modelId:"Z-Image-Turbo",promptEnhanced:requestedModel==="Miya Image t2i",upstream:"imagefree.net"}
+          meta:{free:true,aspectRatio,modelId:"Z-Image-Turbo",promptEnhanced:requestedModel==="Areon Image t2i",upstream:"imagefree.net"}
         });
       } catch (error) {
         const statusCode = Number(error?.status) || 0;
@@ -1424,7 +1424,7 @@ module.exports = async function imageHandler(req, res) {
         if (!finalImageUrl || !/^https:\/\//i.test(finalImageUrl)) {
           return res.status(502).json({
             ok:false, error:"KAPY_IMAGE_URL_MISSING",
-            message:"Kapy принял задание, но Miya не смогла получить ссылку на готовую картинку.",
+            message:"Kapy принял задание, но Areon не смогла получить ссылку на готовую картинку.",
             jobId
           });
         }
@@ -1941,8 +1941,8 @@ module.exports = async function imageHandler(req, res) {
     }
 
     // Normalize source images before sending them to AHM7. Generated PNGs can
-    // exceed the upstream size limit, and Miya proxy URLs must be unwrapped first.
-    const unwrapMiyaImageUrl = value => {
+    // exceed the upstream size limit, and Areon proxy URLs must be unwrapped first.
+    const unwrapAreonImageUrl = value => {
       const raw=String(value||"").trim();
       if(!raw)return "";
       try {
@@ -1972,7 +1972,7 @@ module.exports = async function imageHandler(req, res) {
     let sourceBytes=null;
     let sourceMime="image/jpeg";
     if(imageUrl) {
-      const sourceUrl=unwrapMiyaImageUrl(imageUrl);
+      const sourceUrl=unwrapAreonImageUrl(imageUrl);
       if(!sourceUrl) return res.status(400).json({ok:false,error:"INVALID_SOURCE_IMAGE_URL"});
       let parsedSource;
       try{parsedSource=new URL(sourceUrl)}catch{return res.status(400).json({ok:false,error:"INVALID_SOURCE_IMAGE_URL"})}
