@@ -8561,107 +8561,119 @@ document.head.appendChild(musicCardPolish);const oldHero=modeHero;modeHero=funct
     "#composerMic.transcribing,.mic.transcribing{position:relative!important;isolation:isolate!important}",
     "#composerMic.transcribing svg,.mic.transcribing svg{display:none!important}",
     "#composerMic.transcribing::after,.mic.transcribing::after{content:''!important;display:block!important;box-sizing:border-box!important;width:16px!important;height:16px!important;min-width:16px!important;min-height:16px!important;border:2px solid currentColor!important;border-top-color:transparent!important;border-right-color:transparent!important;border-radius:50%!important;animation:areonMicRecognitionRotate .7s linear infinite!important;animation-play-state:running!important;transform-origin:50% 50%!important;will-change:transform!important;opacity:1!important}",
-    ".composer #composerSend .send-icon,.composer #composerSend .send-icon::before{box-sizing:border-box!important;width:16px!important;height:16px!important;min-width:16px!important;min-height:16px!important;max-width:16px!important;max-height:16px!important;margin:0!important;padding:0!important}",
-    ".composer #composerSend .send-icon::before{display:block!important;background-size:contain!important;mask-size:contain!important;-webkit-mask-size:contain!important}"
+    "#composerMic.transcribing::after,.mic.transcribing::after{content:''!important;display:block!important;box-sizing:border-box!important;width:16px!important;height:16px!important;min-width:16px!important;min-height:16px!important;border:2px solid currentColor!important;border-top-color:transparent!important;border-right-color:transparent!important;border-radius:50%!important;animation:areonMicRecognitionRotate .7s linear infinite!important;animation-play-state:running!important;transform-origin:50% 50%!important;will-change:transform!important;opacity:1!important}"
   ].join(String.fromCharCode(10));
   document.head.appendChild(style);
 })();
 
 
 
-/* Match only the Music prompt field and send arrow to the live Images reference geometry. */
-(function matchMusicPromptAndArrowToImagesReference(){
+/* Mirror the complete Images composer and prompt rectangles in Music. */
+(function mirrorMusicComposerToImagesGeometry(){
   const composer=$("#composer"),input=$("#composerInput");
   if(!composer||!input)return;
-  const lockClass="areon-music-images-rect-lock";
-  const arrowStyleId="areon-music-arrow-from-images-reference";
-  const wrapperProps=[
-    "display","position","box-sizing","width","height","min-width","max-width","min-height","max-height",
-    "flex","flex-basis","flex-grow","flex-shrink","align-self","justify-self","align-items","justify-content",
-    "margin-top","margin-right","margin-bottom","margin-left","padding-top","padding-right","padding-bottom","padding-left",
-    "vertical-align","transform","transform-origin","color","opacity","line-height"
-  ];
-  const glyphProps=[
-    "content","display","position","box-sizing","width","height","min-width","max-width","min-height","max-height",
-    "margin-top","margin-right","margin-bottom","margin-left","padding-top","padding-right","padding-bottom","padding-left",
-    "background-color","background-image","background-size","background-position","background-repeat",
-    "mask-image","mask-size","mask-position","mask-repeat","-webkit-mask-image","-webkit-mask-size","-webkit-mask-position","-webkit-mask-repeat",
-    "transform","transform-origin","opacity"
-  ];
-  let savedInputStyle=null,hasSavedInputStyle=false,working=false,frame=0;
-  const setAttr=(el,value)=>{if(value===null)el.removeAttribute("style");else el.setAttribute("style",value)};
-  const release=()=>{
-    if(!hasSavedInputStyle)return;
-    input.classList.remove(lockClass);
-    input.style.removeProperty("--areon-image-prompt-left");
-    input.style.removeProperty("--areon-image-prompt-top");
-    input.style.removeProperty("--areon-image-prompt-width");
-    input.style.removeProperty("--areon-image-prompt-height");
-    setAttr(input,savedInputStyle);
-    savedInputStyle=null;hasSavedInputStyle=false;
+  const composerLock="areon-music-images-composer-lock";
+  const inputLock="areon-music-images-input-lock";
+  const composerVars=["--areon-ref-composer-left","--areon-ref-composer-top","--areon-ref-composer-width","--areon-ref-composer-height"];
+  const inputVars=["--areon-ref-input-left","--areon-ref-input-top","--areon-ref-input-width","--areon-ref-input-height"];
+  let measuring=false,frame=0;
+  const clearVars=(el,names)=>names.forEach(name=>el.style.removeProperty(name));
+  const unlock=()=>{
+    composer.classList.remove(composerLock);
+    input.classList.remove(inputLock);
+    clearVars(composer,composerVars);
+    clearVars(input,inputVars);
   };
-  const declarations=(style,props)=>props.map(name=>{
-    const value=style.getPropertyValue(name);
-    return value?name+":"+value+"!important;":"";
-  }).filter(Boolean).join("");
-  function measureImagesReference(){
-    if(working||!composer.isConnected||!input.isConnected)return;
-    if(!composer.classList.contains("mode-music")){release();return}
-    working=true;
+  const computedDeclarations=style=>{
+    const declarations=[];
+    for(let i=0;i<style.length;i++){
+      const property=style.item(i);
+      if(!property||property.startsWith("--"))continue;
+      const value=style.getPropertyValue(property);
+      if(value)declarations.push(property+":"+value+"!important;");
+    }
+    return declarations.join("");
+  };
+  function measureAndApply(){
+    if(measuring||!composer.isConnected||!input.isConnected)return;
+    if(!composer.classList.contains("mode-music")){unlock();return}
+    measuring=true;
+    unlock();
     const originalComposerClass=composer.className;
     const originalInputClass=input.className;
     const originalInputStyle=input.getAttribute("style");
     const originalInputValue=input.value;
     const row=input.closest(".composer-input-row");
     const originalRowStyle=row?row.getAttribute("style"):null;
-    let rect=null,wrapperCss="",glyphCss="";
+    let composerRect=null,inputRect=null,borderLeft=0,borderTop=0,iconCss="",glyphCss="";
     try{
-      if(!hasSavedInputStyle){savedInputStyle=originalInputStyle;hasSavedInputStyle=true;}
       composer.classList.remove("mode-chat","mode-video","mode-voice","mode-music","mode-poems","mode-lyrics");
       composer.classList.add("mode-images");
-      input.classList.remove("prompt-chat","prompt-video","prompt-voice","prompt-music","prompt-poems","prompt-lyrics",lockClass);
+      input.classList.remove("prompt-chat","prompt-video","prompt-voice","prompt-music","prompt-poems","prompt-lyrics",inputLock);
       input.classList.add("prompt-images");
       input.value="";
       input.removeAttribute("style");
       if(row)row.removeAttribute("style");
       try{syncInput()}catch{}
-      rect=input.getBoundingClientRect();
+      composerRect=composer.getBoundingClientRect();
+      inputRect=input.getBoundingClientRect();
+      const composerStyle=getComputedStyle(composer);
+      borderLeft=parseFloat(composerStyle.borderLeftWidth)||0;
+      borderTop=parseFloat(composerStyle.borderTopWidth)||0;
       const icon=composer.querySelector("#composerSend .send-icon");
       if(icon){
-        wrapperCss=declarations(getComputedStyle(icon),wrapperProps);
-        glyphCss=declarations(getComputedStyle(icon,"::before"),glyphProps);
+        iconCss=computedDeclarations(getComputedStyle(icon));
+        glyphCss=computedDeclarations(getComputedStyle(icon,"::before"));
       }
-    }catch(error){console.warn("Music/Images reference measurement failed",error)}
+    }catch(error){console.warn("Images reference geometry could not be measured",error)}
     finally{
       composer.className=originalComposerClass;
       input.className=originalInputClass;
       input.value=originalInputValue;
-      setAttr(input,originalInputStyle);
-      if(row)setAttr(row,originalRowStyle);
-      working=false;
+      if(originalInputStyle===null)input.removeAttribute("style");else input.setAttribute("style",originalInputStyle);
+      if(row){if(originalRowStyle===null)row.removeAttribute("style");else row.setAttribute("style",originalRowStyle)}
+      measuring=false;
     }
-    if(!rect||rect.width<1||rect.height<1)return;
-    /* Fix only the editable field to the same viewport rectangle; leave the Music panel and controls in place. */
-    input.classList.add(lockClass);
-    input.style.setProperty("--areon-image-prompt-left",rect.left+"px");
-    input.style.setProperty("--areon-image-prompt-top",rect.top+"px");
-    input.style.setProperty("--areon-image-prompt-width",rect.width+"px");
-    input.style.setProperty("--areon-image-prompt-height",rect.height+"px");
-    if(wrapperCss&&glyphCss){
-      let style=document.getElementById(arrowStyleId);
-      if(!style){style=document.createElement("style");style.id=arrowStyleId;document.head.appendChild(style)}
-      style.textContent=
-        "html body #composer.mode-music #composerSend .send-icon{"+wrapperCss+"}"+
+    if(!composerRect||!inputRect||composerRect.width<1||composerRect.height<1||inputRect.width<1||inputRect.height<1)return;
+    /* Pin the whole Music panel to the Images panel rectangle. */
+    composer.classList.add(composerLock);
+    composer.style.setProperty(composerVars[0],composerRect.left+"px");
+    composer.style.setProperty(composerVars[1],composerRect.top+"px");
+    composer.style.setProperty(composerVars[2],composerRect.width+"px");
+    composer.style.setProperty(composerVars[3],composerRect.height+"px");
+    /* Pin the textarea to the same four viewport edges inside that panel. */
+    input.classList.add(inputLock);
+    input.style.setProperty(inputVars[0],(inputRect.left-composerRect.left-borderLeft)+"px");
+    input.style.setProperty(inputVars[1],(inputRect.top-composerRect.top-borderTop)+"px");
+    input.style.setProperty(inputVars[2],inputRect.width+"px");
+    input.style.setProperty(inputVars[3],inputRect.height+"px");
+    /* Copy every computed wrapper/glyph property from the actual Images arrow,
+       including the mask, color, dimensions and alignment; never alter Images. */
+    if(iconCss&&glyphCss){
+      let arrowStyle=document.getElementById("areon-music-arrow-from-images-reference");
+      if(!arrowStyle){arrowStyle=document.createElement("style");arrowStyle.id="areon-music-arrow-from-images-reference";document.head.appendChild(arrowStyle)}
+      arrowStyle.textContent=
+        "html body #composer.mode-music #composerSend .send-icon{"+iconCss+"}"+
         "html body #composer.mode-music #composerSend .send-icon::before{"+glyphCss+"}";
     }
   }
-  const style=document.createElement("style");
-  style.id="areonMusicImagesRectLockStyle";
-  style.textContent='#composer.mode-music #composerInput.areon-music-images-rect-lock{position:fixed!important;inset:auto!important;left:var(--areon-image-prompt-left)!important;top:var(--areon-image-prompt-top)!important;right:auto!important;bottom:auto!important;width:var(--areon-image-prompt-width)!important;min-width:var(--areon-image-prompt-width)!important;max-width:var(--areon-image-prompt-width)!important;height:var(--areon-image-prompt-height)!important;min-height:var(--areon-image-prompt-height)!important;max-height:var(--areon-image-prompt-height)!important;box-sizing:border-box!important;margin:0!important;align-self:start!important;grid-column:auto!important;grid-row:auto!important;transform:none!important;z-index:100002!important;pointer-events:auto!important}';
-  document.head.appendChild(style);
+  const geometryStyle=document.createElement("style");
+  geometryStyle.id="areonMusicImagesGeometryLock";
+  geometryStyle.textContent=
+    "#composer.mode-music."+composerLock+"{"+
+      "position:fixed!important;inset:auto!important;left:var(--areon-ref-composer-left)!important;top:var(--areon-ref-composer-top)!important;right:auto!important;bottom:auto!important;"+
+      "box-sizing:border-box!important;width:var(--areon-ref-composer-width)!important;min-width:var(--areon-ref-composer-width)!important;max-width:var(--areon-ref-composer-width)!important;"+
+      "height:var(--areon-ref-composer-height)!important;min-height:var(--areon-ref-composer-height)!important;max-height:var(--areon-ref-composer-height)!important;"+
+      "margin:0!important;flex:none!important;flex-basis:auto!important;transform:none!important;contain:none!important}"+
+    "#composer.mode-music #composerInput."+inputLock+"{"+
+      "position:absolute!important;inset:auto!important;left:var(--areon-ref-input-left)!important;top:var(--areon-ref-input-top)!important;right:auto!important;bottom:auto!important;"+
+      "box-sizing:border-box!important;width:var(--areon-ref-input-width)!important;min-width:var(--areon-ref-input-width)!important;max-width:var(--areon-ref-input-width)!important;"+
+      "height:var(--areon-ref-input-height)!important;min-height:var(--areon-ref-input-height)!important;max-height:var(--areon-ref-input-height)!important;"+
+      "margin:0!important;align-self:start!important;grid-column:auto!important;grid-row:auto!important;transform:none!important;z-index:2!important;pointer-events:auto!important}";
+  document.head.appendChild(geometryStyle);
   const schedule=()=>{
     if(frame)cancelAnimationFrame(frame);
-    frame=requestAnimationFrame(()=>{frame=requestAnimationFrame(()=>{frame=0;measureImagesReference()})});
+    frame=requestAnimationFrame(()=>{frame=requestAnimationFrame(()=>{frame=0;measureAndApply()})});
   };
   const previousSetMode=setMode;
   setMode=function(next,render=true){
@@ -8671,6 +8683,7 @@ document.head.appendChild(musicCardPolish);const oldHero=modeHero;modeHero=funct
   };
   window.addEventListener("resize",schedule,{passive:true});
   window.visualViewport?.addEventListener("resize",schedule,{passive:true});
+  window.visualViewport?.addEventListener("scroll",schedule,{passive:true});
   const wrap=composer.closest(".composer-wrap");
   if(window.ResizeObserver&&wrap){
     const observer=new ResizeObserver(schedule);
