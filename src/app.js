@@ -8508,23 +8508,40 @@ document.head.appendChild(musicCardPolish);const oldHero=modeHero;modeHero=funct
   style.id=id;
   style.textContent=`
   @media (min-width:801px){
-    /* Use positional offset because later layout rules reset transform:none. */
+    /* Match the Images composer box and anchor it to the same bottom edge. */
+    .composer-wrap:has(#composer.mode-music){
+      position:fixed!important;left:205px!important;right:0!important;bottom:0!important;
+      height:169px!important;padding:0 24px 17px!important;display:flex!important;
+      align-items:flex-end!important;justify-content:center!important;transform:none!important;
+    }
     #composer.mode-music{
-      position:relative!important;
-      top:32px!important;
+      position:relative!important;inset:auto!important;top:auto!important;bottom:auto!important;
+      box-sizing:border-box!important;flex:0 1 auto!important;flex-basis:auto!important;
+      width:min(900px,calc(100vw - 265px))!important;max-width:900px!important;min-width:0!important;
+      height:110px!important;min-height:110px!important;max-height:110px!important;
+      margin:0 auto!important;padding:9px 10px 7px!important;
+      grid-template-columns:minmax(0,1fr)!important;grid-template-rows:34px 34px 14px!important;
+      row-gap:5px!important;align-content:start!important;align-items:center!important;
+      overflow:visible!important;transform:none!important;contain:none!important;
+    }
+    #composer.mode-music .composer-input-row{display:contents!important;}
+    #composer.mode-music #composerInput{
+      grid-column:1/-1!important;grid-row:1!important;display:block!important;
+      box-sizing:border-box!important;width:100%!important;min-width:0!important;
+      height:34px!important;min-height:34px!important;max-height:34px!important;
+      margin:0!important;padding:9px 3px 10px!important;line-height:15px!important;
+      align-self:stretch!important;overflow:hidden!important;resize:none!important;transform:none!important;
     }
   }
-  /* Music arrow is the CSS mask on ::before, not an SVG element. */
+  /* The Images arrow is exactly 17px: match its mask box, not the button. */
   #composer.mode-music #composerSend .send-icon,
   #composer.mode-music #composerSend .send-icon::before{
-    width:18px!important;
-    height:18px!important;
-    min-width:18px!important;
-    min-height:18px!important;
+    box-sizing:border-box!important;width:17px!important;height:17px!important;
+    min-width:17px!important;min-height:17px!important;max-width:17px!important;max-height:17px!important;
+    margin:0!important;padding:0!important;
   }
   #composer.mode-music #composerSend .send-icon::before{
-    display:block!important;
-    background-size:contain!important;
+    display:block!important;background-size:contain!important;mask-size:contain!important;-webkit-mask-size:contain!important;
   }
   `;
   document.head.appendChild(style);
