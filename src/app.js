@@ -8568,97 +8568,101 @@ document.head.appendChild(musicCardPolish);const oldHero=modeHero;modeHero=funct
 })();
 
 
-/* Match Music prompt to the measured Images composer and textarea rectangles. */
-(function lockMusicPromptToImagesCoordinates(){
+
+/* Match only the Music prompt field and send arrow to the live Images reference geometry. */
+(function matchMusicPromptAndArrowToImagesReference(){
   const composer=$("#composer"),input=$("#composerInput");
   if(!composer||!input)return;
-  const row=input.closest(".composer-input-row");
-  const lockClass="areon-music-images-geometry";
-  const composerProps=["position","left","top","right","bottom","inset","width","height","min-width","max-width","min-height","max-height","margin","flex","flex-basis","transform"];
-  const inputProps=["position","left","top","right","bottom","inset","width","height","min-width","max-width","min-height","max-height","margin","align-self","grid-column","grid-row","transform","z-index","box-sizing"];
-  let saved=null,working=false;
-  const capture=(el,props)=>props.map(name=>[name,el.style.getPropertyValue(name),el.style.getPropertyPriority(name)]);
-  const restore=(el,values)=>values.forEach(([name,value,priority])=>{if(value)el.style.setProperty(name,value,priority);else el.style.removeProperty(name)});
+  const lockClass="areon-music-images-rect-lock";
+  const arrowStyleId="areon-music-arrow-from-images-reference";
+  const wrapperProps=[
+    "display","position","box-sizing","width","height","min-width","max-width","min-height","max-height",
+    "flex","flex-basis","flex-grow","flex-shrink","align-self","justify-self","align-items","justify-content",
+    "margin-top","margin-right","margin-bottom","margin-left","padding-top","padding-right","padding-bottom","padding-left",
+    "vertical-align","transform","transform-origin","color","opacity","line-height"
+  ];
+  const glyphProps=[
+    "content","display","position","box-sizing","width","height","min-width","max-width","min-height","max-height",
+    "margin-top","margin-right","margin-bottom","margin-left","padding-top","padding-right","padding-bottom","padding-left",
+    "background-color","background-image","background-size","background-position","background-repeat",
+    "mask-image","mask-size","mask-position","mask-repeat","-webkit-mask-image","-webkit-mask-size","-webkit-mask-position","-webkit-mask-repeat",
+    "transform","transform-origin","opacity"
+  ];
+  let savedInputStyle=null,hasSavedInputStyle=false,working=false,frame=0;
+  const setAttr=(el,value)=>{if(value===null)el.removeAttribute("style");else el.setAttribute("style",value)};
   const release=()=>{
-    if(!saved)return;
-    composer.classList.remove(lockClass);
-    restore(composer,saved.composer);
-    restore(input,saved.input);
-    saved=null;
-    try{syncInput()}catch{}
+    if(!hasSavedInputStyle)return;
+    input.classList.remove(lockClass);
+    input.style.removeProperty("--areon-image-prompt-left");
+    input.style.removeProperty("--areon-image-prompt-top");
+    input.style.removeProperty("--areon-image-prompt-width");
+    input.style.removeProperty("--areon-image-prompt-height");
+    setAttr(input,savedInputStyle);
+    savedInputStyle=null;hasSavedInputStyle=false;
   };
-  function syncMusicPromptToImagesRect(){
+  const declarations=(style,props)=>props.map(name=>{
+    const value=style.getPropertyValue(name);
+    return value?name+":"+value+"!important;":"";
+  }).filter(Boolean).join("");
+  function measureImagesReference(){
     if(working||!composer.isConnected||!input.isConnected)return;
     if(!composer.classList.contains("mode-music")){release();return}
     working=true;
+    const originalComposerClass=composer.className;
+    const originalInputClass=input.className;
+    const originalInputStyle=input.getAttribute("style");
+    const originalInputValue=input.value;
+    const row=input.closest(".composer-input-row");
+    const originalRowStyle=row?row.getAttribute("style"):null;
+    let rect=null,wrapperCss="",glyphCss="";
     try{
-      if(!saved)saved={composer:capture(composer,composerProps),input:capture(input,inputProps)};
-      restore(composer,saved.composer);
-      restore(input,saved.input);
-      const originalComposerClass=composer.className;
-      const originalInputClass=input.className;
-      const originalInputStyle=input.getAttribute("style");
-      const originalRowStyle=row?row.getAttribute("style"):null;
-      let composerRect=null,inputRect=null,borderLeft=0,borderTop=0;
-      try{
-        composer.classList.remove("mode-chat","mode-video","mode-voice","mode-music");
-        composer.classList.add("mode-images");
-        composer.classList.remove(lockClass);
-        input.classList.remove("prompt-chat","prompt-video","prompt-voice","prompt-music");
-        input.classList.add("prompt-images");
-        try{syncInput()}catch{}
-        composerRect=composer.getBoundingClientRect();
-        inputRect=input.getBoundingClientRect();
-        const cs=getComputedStyle(composer);
-        borderLeft=parseFloat(cs.borderLeftWidth)||0;
-        borderTop=parseFloat(cs.borderTopWidth)||0;
-      }finally{
-        composer.className=originalComposerClass;
-        input.className=originalInputClass;
-        if(originalInputStyle===null)input.removeAttribute("style");else input.setAttribute("style",originalInputStyle);
-        if(row){if(originalRowStyle===null)row.removeAttribute("style");else row.setAttribute("style",originalRowStyle)}
+      if(!hasSavedInputStyle){savedInputStyle=originalInputStyle;hasSavedInputStyle=true;}
+      composer.classList.remove("mode-chat","mode-video","mode-voice","mode-music","mode-poems","mode-lyrics");
+      composer.classList.add("mode-images");
+      input.classList.remove("prompt-chat","prompt-video","prompt-voice","prompt-music","prompt-poems","prompt-lyrics",lockClass);
+      input.classList.add("prompt-images");
+      input.value="";
+      input.removeAttribute("style");
+      if(row)row.removeAttribute("style");
+      try{syncInput()}catch{}
+      rect=input.getBoundingClientRect();
+      const icon=composer.querySelector("#composerSend .send-icon");
+      if(icon){
+        wrapperCss=declarations(getComputedStyle(icon),wrapperProps);
+        glyphCss=declarations(getComputedStyle(icon,"::before"),glyphProps);
       }
-      if(!composerRect||!inputRect||composerRect.width<1||composerRect.height<1||inputRect.width<1||inputRect.height<1)return;
-      /* Pin the whole Music panel to the measured Images panel coordinates. */
-      composer.classList.add(lockClass);
-      composer.style.setProperty("position","fixed","important");
-      composer.style.setProperty("left",composerRect.left+"px","important");
-      composer.style.setProperty("top",composerRect.top+"px","important");
-      composer.style.setProperty("right","auto","important");
-      composer.style.setProperty("bottom","auto","important");
-      composer.style.setProperty("inset","auto","important");
-      composer.style.setProperty("width",composerRect.width+"px","important");
-      composer.style.setProperty("min-width",composerRect.width+"px","important");
-      composer.style.setProperty("max-width",composerRect.width+"px","important");
-      composer.style.setProperty("height",composerRect.height+"px","important");
-      composer.style.setProperty("min-height",composerRect.height+"px","important");
-      composer.style.setProperty("max-height",composerRect.height+"px","important");
-      composer.style.setProperty("margin","0","important");
-      composer.style.setProperty("flex","none","important");
-      composer.style.setProperty("transform","none","important");
-      /* Pin the editable prompt itself to the same measured X/Y/width/height. */
-      input.style.setProperty("position","absolute","important");
-      input.style.setProperty("left",(inputRect.left-composerRect.left-borderLeft)+"px","important");
-      input.style.setProperty("top",(inputRect.top-composerRect.top-borderTop)+"px","important");
-      input.style.setProperty("right","auto","important");
-      input.style.setProperty("bottom","auto","important");
-      input.style.setProperty("inset","auto","important");
-      input.style.setProperty("width",inputRect.width+"px","important");
-      input.style.setProperty("min-width",inputRect.width+"px","important");
-      input.style.setProperty("max-width",inputRect.width+"px","important");
-      input.style.setProperty("height",inputRect.height+"px","important");
-      input.style.setProperty("min-height",inputRect.height+"px","important");
-      input.style.setProperty("max-height",inputRect.height+"px","important");
-      input.style.setProperty("margin","0","important");
-      input.style.setProperty("align-self","start","important");
-      input.style.setProperty("grid-column","auto","important");
-      input.style.setProperty("grid-row","auto","important");
-      input.style.setProperty("transform","none","important");
-      input.style.setProperty("z-index","1","important");
-      input.style.setProperty("box-sizing","border-box","important");
-    }finally{working=false}
+    }catch(error){console.warn("Music/Images reference measurement failed",error)}
+    finally{
+      composer.className=originalComposerClass;
+      input.className=originalInputClass;
+      input.value=originalInputValue;
+      setAttr(input,originalInputStyle);
+      if(row)setAttr(row,originalRowStyle);
+      working=false;
+    }
+    if(!rect||rect.width<1||rect.height<1)return;
+    /* Fix only the editable field to the same viewport rectangle; leave the Music panel and controls in place. */
+    input.classList.add(lockClass);
+    input.style.setProperty("--areon-image-prompt-left",rect.left+"px");
+    input.style.setProperty("--areon-image-prompt-top",rect.top+"px");
+    input.style.setProperty("--areon-image-prompt-width",rect.width+"px");
+    input.style.setProperty("--areon-image-prompt-height",rect.height+"px");
+    if(wrapperCss&&glyphCss){
+      let style=document.getElementById(arrowStyleId);
+      if(!style){style=document.createElement("style");style.id=arrowStyleId;document.head.appendChild(style)}
+      style.textContent=
+        "html body #composer.mode-music #composerSend .send-icon{"+wrapperCss+"}"+
+        "html body #composer.mode-music #composerSend .send-icon::before{"+glyphCss+"}";
+    }
   }
-  const schedule=()=>requestAnimationFrame(syncMusicPromptToImagesRect);
+  const style=document.createElement("style");
+  style.id="areonMusicImagesRectLockStyle";
+  style.textContent='#composer.mode-music #composerInput.areon-music-images-rect-lock{position:fixed!important;inset:auto!important;left:var(--areon-image-prompt-left)!important;top:var(--areon-image-prompt-top)!important;right:auto!important;bottom:auto!important;width:var(--areon-image-prompt-width)!important;min-width:var(--areon-image-prompt-width)!important;max-width:var(--areon-image-prompt-width)!important;height:var(--areon-image-prompt-height)!important;min-height:var(--areon-image-prompt-height)!important;max-height:var(--areon-image-prompt-height)!important;box-sizing:border-box!important;margin:0!important;align-self:start!important;grid-column:auto!important;grid-row:auto!important;transform:none!important;z-index:100002!important;pointer-events:auto!important}';
+  document.head.appendChild(style);
+  const schedule=()=>{
+    if(frame)cancelAnimationFrame(frame);
+    frame=requestAnimationFrame(()=>{frame=requestAnimationFrame(()=>{frame=0;measureImagesReference()})});
+  };
   const previousSetMode=setMode;
   setMode=function(next,render=true){
     const result=previousSetMode(next,render);
@@ -8667,5 +8671,10 @@ document.head.appendChild(musicCardPolish);const oldHero=modeHero;modeHero=funct
   };
   window.addEventListener("resize",schedule,{passive:true});
   window.visualViewport?.addEventListener("resize",schedule,{passive:true});
+  const wrap=composer.closest(".composer-wrap");
+  if(window.ResizeObserver&&wrap){
+    const observer=new ResizeObserver(schedule);
+    observer.observe(wrap);
+  }
   schedule();
 })();
