@@ -6185,7 +6185,7 @@ async function finishSpeechRecording(){
     mic.classList.add("transcribing");
     mic.setAttribute("aria-label","Распознаю голос");
     mic.title="Распознаю голос…";
-    mic.innerHTML='<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8.5" stroke-dasharray="34 18"/></svg>';
+    mic.innerHTML="";
   }
   if(status)status.textContent="Распознаю голос…";
 
@@ -8511,7 +8511,7 @@ document.head.appendChild(musicCardPolish);const oldHero=modeHero;modeHero=funct
     /* Use positional offset because later layout rules reset transform:none. */
     #composer.mode-music{
       position:relative!important;
-      top:16px!important;
+      top:32px!important;
     }
   }
   /* Music arrow is the CSS mask on ::before, not an SVG element. */
@@ -8527,5 +8527,23 @@ document.head.appendChild(musicCardPolish);const oldHero=modeHero;modeHero=funct
     background-size:contain!important;
   }
   `;
+  document.head.appendChild(style);
+})();
+
+
+/* Final shared microphone recognition spinner and exact composer arrow sizing. */
+(function finalizeComposerMicSpinnerAndArrowParity(){
+  const id="areonComposerMicSpinnerAndArrowParity";
+  if(document.getElementById(id))return;
+  const style=document.createElement("style");
+  style.id=id;
+  style.textContent=[
+    "@keyframes areonMicRecognitionRotate{to{transform:rotate(360deg)}}",
+    "#composerMic.transcribing,.mic.transcribing{position:relative!important;isolation:isolate!important}",
+    "#composerMic.transcribing svg,.mic.transcribing svg{display:none!important}",
+    "#composerMic.transcribing::after,.mic.transcribing::after{content:''!important;display:block!important;box-sizing:border-box!important;width:16px!important;height:16px!important;min-width:16px!important;min-height:16px!important;border:2px solid currentColor!important;border-top-color:transparent!important;border-right-color:transparent!important;border-radius:50%!important;animation:areonMicRecognitionRotate .7s linear infinite!important;animation-play-state:running!important;transform-origin:50% 50%!important;will-change:transform!important;opacity:1!important}",
+    ".composer #composerSend .send-icon,.composer #composerSend .send-icon::before{box-sizing:border-box!important;width:16px!important;height:16px!important;min-width:16px!important;min-height:16px!important;max-width:16px!important;max-height:16px!important;margin:0!important;padding:0!important}",
+    ".composer #composerSend .send-icon::before{display:block!important;background-size:contain!important;mask-size:contain!important;-webkit-mask-size:contain!important}"
+  ].join(String.fromCharCode(10));
   document.head.appendChild(style);
 })();
