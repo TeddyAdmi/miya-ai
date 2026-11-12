@@ -7020,10 +7020,9 @@ body.light #composer.mode-music .music-options #composerMic:focus-visible{
   min-width:17px!important;min-height:17px!important;margin:0!important;
   background-color:#fff!important;
 }
-/* Pin the Music composer to the wrapper's bottom edge so added textarea height grows upward. */
+/* Keep the expanding Music composer at the wrapper's bottom edge; cancel the legacy 42px downward offset. */
 #composer.mode-music{
-  align-self:flex-end!important;
-  margin-top:auto!important;
+  transform:none!important;
 }
 `;
 document.head.appendChild(musicFinalAlignment);
