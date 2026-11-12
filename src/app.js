@@ -7138,6 +7138,12 @@ musicFinalAlignment.textContent += `
   width:6px!important;height:6px!important;min-width:6px!important;min-height:6px!important;
   margin:0!important;transform:none!important;
 }
+/* Match the Images send arrow exactly: same 17px glyph, white, centered in the 18px icon slot. */
+#composer.mode-music #composerSend .send-icon::before{
+  display:block!important;width:17px!important;height:17px!important;
+  min-width:17px!important;min-height:17px!important;margin:0!important;
+  background-color:#fff!important;
+}
 @media(max-width:800px){
   #composer.mode-music{width:100%!important;max-width:100%!important;padding:9px 8px 7px!important}
 }
