@@ -8011,3 +8011,117 @@ document.head.appendChild(musicCardPolish);const oldHero=modeHero;modeHero=funct
 
 /* Restore the compact envelope-smile icon for the Stickers navigation item. */
 
+
+
+/* Align the Music prompt/status baseline to the exact desktop coordinates used by Images. */
+(function alignMusicComposerToImagesBaseline(){
+  const id="areonMusicImagesBaselineAlignment";
+  if(document.getElementById(id))return;
+  const style=document.createElement("style");
+  style.id=id;
+  style.textContent=`
+  @media (min-width:801px){
+    .composer-wrap:has(#composer.mode-music){
+      position:fixed!important;
+      left:205px!important;
+      right:0!important;
+      bottom:0!important;
+      height:169px!important;
+      padding:0 24px 17px!important;
+      display:flex!important;
+      align-items:flex-end!important;
+      justify-content:center!important;
+      transform:none!important;
+    }
+    #composer.mode-music{
+      position:relative!important;
+      inset:auto!important;
+      box-sizing:border-box!important;
+      flex:0 1 auto!important;
+      flex-basis:auto!important;
+      width:min(900px,calc(100vw - 265px))!important;
+      max-width:900px!important;
+      min-width:0!important;
+      height:152px!important;
+      min-height:152px!important;
+      max-height:152px!important;
+      margin:0 auto!important;
+      padding:9px 10px 7px!important;
+      grid-template-columns:minmax(0,1fr)!important;
+      grid-template-rows:76px 34px 14px!important;
+      row-gap:5px!important;
+      align-content:start!important;
+      align-items:center!important;
+      overflow:visible!important;
+      transform:none!important;
+      contain:none!important;
+    }
+    #composer.mode-music .composer-input-row{display:contents!important}
+    #composer.mode-music #composerInput{
+      grid-column:1/-1!important;
+      grid-row:1!important;
+      box-sizing:border-box!important;
+      width:100%!important;
+      min-width:0!important;
+      height:76px!important;
+      min-height:76px!important;
+      max-height:76px!important;
+      margin:0!important;
+      padding:9px 3px 10px!important;
+      line-height:1.5!important;
+      align-self:stretch!important;
+      overflow-y:auto!important;
+      resize:none!important;
+      transform:none!important;
+    }
+    #composer.mode-music .music-options{
+      grid-column:1/-1!important;
+      grid-row:2!important;
+      align-self:center!important;
+      display:flex!important;
+      align-items:center!important;
+      width:100%!important;
+      min-width:0!important;
+      max-width:100%!important;
+      height:34px!important;
+      min-height:34px!important;
+      max-height:34px!important;
+      margin:0!important;
+      padding:0!important;
+      transform:none!important;
+    }
+    #composer.mode-music .composer-status{
+      position:static!important;
+      grid-column:1/-1!important;
+      grid-row:3!important;
+      align-self:stretch!important;
+      display:flex!important;
+      align-items:center!important;
+      gap:5px!important;
+      width:100%!important;
+      min-width:0!important;
+      height:14px!important;
+      min-height:14px!important;
+      max-height:14px!important;
+      margin:0!important;
+      padding:2px 2px 0!important;
+      box-sizing:border-box!important;
+      line-height:1.2!important;
+      overflow:hidden!important;
+      transform:none!important;
+      white-space:nowrap!important;
+    }
+    #composer.mode-music .composer-status .status-dot{
+      position:static!important;
+      align-self:center!important;
+      flex:0 0 6px!important;
+      width:6px!important;
+      height:6px!important;
+      min-width:6px!important;
+      min-height:6px!important;
+      margin:0!important;
+      transform:none!important;
+    }
+  }`;
+  document.head.appendChild(style);
+})();
