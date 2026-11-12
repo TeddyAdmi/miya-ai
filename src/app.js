@@ -6937,6 +6937,7 @@ musicFinalAlignment.textContent += `
   grid-template-columns:minmax(0,1fr)!important;grid-template-rows:auto 34px auto!important;
   row-gap:5px!important;align-content:start!important;align-items:center!important;
   padding:9px 10px 7px!important;overflow:visible!important;transform:none!important;contain:none!important;
+  align-self:flex-end!important;margin:0 auto 0!important;
 }
 #composer.mode-music .composer-input-row{
   display:contents!important;height:auto!important;min-height:0!important;max-height:none!important;
