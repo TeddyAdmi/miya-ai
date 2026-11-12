@@ -2937,7 +2937,6 @@ function toast(message){
 function syncInput(){
  const i=$("#composerInput");if(!i)return;
  const composer=i.closest("#composer");
- const isMusic=Boolean(composer?.classList.contains("mode-music"));
  const cs=getComputedStyle(i);
  const lineHeight=Number.parseFloat(cs.lineHeight)||15;
  const padding=(Number.parseFloat(cs.paddingTop)||0)+(Number.parseFloat(cs.paddingBottom)||0);
@@ -2950,12 +2949,8 @@ function syncInput(){
  const h=Math.min(maxHeight,contentHeight);
  i.style.setProperty("height",h+"px","important");
  i.style.setProperty("overflow-y",contentHeight>maxHeight?"auto":"hidden","important");
- if(isMusic){
-  // Size the first grid row to the textarea itself so the whole Music panel grows upward.
-  composer.style.setProperty("grid-template-rows",h+"px 34px 14px","important");
- }else{
-  composer?.style.removeProperty("grid-template-rows");
- }
+ // The Images layout lets its auto grid track follow the textarea; Music uses the same flow.
+ composer?.style.removeProperty("grid-template-rows");
  const row=i.closest(".composer-input-row");if(row)row.style.height="";
 }
 function renderAssistantQuoteBlock(){
@@ -7142,7 +7137,7 @@ musicFinalAlignment.textContent += `
   width:min(900px,calc(100vw - 265px))!important;max-width:900px!important;min-width:0!important;
   height:auto!important;min-height:110px!important;max-height:none!important;
   margin:0 auto!important;padding:9px 10px 7px!important;
-  grid-template-columns:minmax(0,1fr)!important;grid-template-rows:34px 34px 14px!important;
+  grid-template-columns:minmax(0,1fr)!important;grid-template-rows:minmax(34px,auto) 34px 14px!important;
   row-gap:5px!important;align-content:start!important;align-items:center!important;overflow:visible!important;
 }
 #composer.mode-music .composer-input-row{display:contents!important;height:auto!important;min-height:0!important;max-height:none!important}
@@ -7151,7 +7146,7 @@ musicFinalAlignment.textContent += `
   box-sizing:border-box!important;width:100%!important;min-width:0!important;
   height:auto!important;min-height:34px!important;max-height:none!important;
   margin:0!important;padding:9px 3px 10px!important;line-height:15px!important;
-  align-self:end!important;overflow-x:hidden!important;overflow-y:hidden!important;resize:none!important;transform:none!important;
+  align-self:stretch!important;overflow-x:hidden!important;overflow-y:hidden!important;resize:none!important;transform:none!important;
 }
 #composer.mode-music .music-options{
   grid-column:1/-1!important;grid-row:2!important;align-self:center!important;
