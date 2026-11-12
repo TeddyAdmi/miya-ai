@@ -588,6 +588,7 @@ body.light #composer.mode-images .areon-model-logo{
  function closePopup(){
   if(activeSelect){activeSelect.setAttribute("aria-expanded","false");syncRatioTrigger(activeSelect);}
   popup.hidden=true;
+  popup.classList.remove("areon-music-scroll-popup");
   popup.replaceChildren();
   activeSelect=null;
   activeIndex=-1;
@@ -678,6 +679,7 @@ body.light #composer.mode-images .areon-model-logo{
   if(!select||!belongsToActiveSection(select))return;
   if(activeSelect&&activeSelect!==select)activeSelect.setAttribute("aria-expanded","false");
   activeSelect=select;
+  popup.classList.toggle("areon-music-scroll-popup",["musicOccasion","musicRecipient","musicGenre"].includes(select.id));
   const options=availableOptions(select);
   popup.replaceChildren();
   activeIndex=Number.isInteger(initialIndex)?initialIndex:options.findIndex(option=>option.value===select.value);

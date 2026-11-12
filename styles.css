@@ -4862,3 +4862,37 @@ html body.light #areonComposerSelectPopup.areon-composer-select-popup .areon-com
     height:100%!important;
   }
 }
+
+
+/* Keep the long Music menus visibly scrollable; other dropdowns retain their existing scrollbar treatment. */
+#areonComposerSelectPopup.areon-music-scroll-popup{
+  overflow-x:hidden!important;
+  overflow-y:scroll!important;
+  scrollbar-width:auto!important;
+  scrollbar-color:#6687a8 #0b223b!important;
+  overscroll-behavior:contain!important;
+}
+#areonComposerSelectPopup.areon-music-scroll-popup::-webkit-scrollbar{
+  display:block!important;
+  width:9px!important;
+  height:9px!important;
+}
+#areonComposerSelectPopup.areon-music-scroll-popup::-webkit-scrollbar-track{
+  background:#0b223b!important;
+  border-radius:8px!important;
+}
+#areonComposerSelectPopup.areon-music-scroll-popup::-webkit-scrollbar-thumb{
+  background:#6687a8!important;
+  border:2px solid #0b223b!important;
+  border-radius:8px!important;
+}
+body.light #areonComposerSelectPopup.areon-music-scroll-popup{
+  scrollbar-color:#91a5ba #f4f7fa!important;
+}
+body.light #areonComposerSelectPopup.areon-music-scroll-popup::-webkit-scrollbar-track{
+  background:#f4f7fa!important;
+}
+body.light #areonComposerSelectPopup.areon-music-scroll-popup::-webkit-scrollbar-thumb{
+  background:#91a5ba!important;
+  border-color:#f4f7fa!important;
+}
