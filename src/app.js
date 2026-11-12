@@ -8472,3 +8472,29 @@ document.head.appendChild(musicCardPolish);const oldHero=modeHero;modeHero=funct
   ].join(String.fromCharCode(10));
   document.head.appendChild(style);
 })();
+
+
+/* Final Music alignment correction: lower the whole composer and match the Images/Video send glyph. */
+(function finalizeMusicPromptBaselineAndSendIcon(){
+  const id="areonMusicPromptBaselineAndSendIcon";
+  if(document.getElementById(id))return;
+  const style=document.createElement("style");
+  style.id=id;
+  style.textContent=`
+  @media (min-width:801px){
+    /* The Music composer was shortened, so move the complete block down
+       while preserving its compact prompt height and internal layout. */
+    #composer.mode-music{
+      transform:translateY(16px)!important;
+    }
+  }
+  /* Match the actual arrow glyph size used by Images and Video. */
+  #composer.mode-music #composerSend .send-icon svg{
+    width:16px!important;
+    height:16px!important;
+    min-width:16px!important;
+    min-height:16px!important;
+  }
+  `;
+  document.head.appendChild(style);
+})();
