@@ -8125,3 +8125,51 @@ document.head.appendChild(musicCardPolish);const oldHero=modeHero;modeHero=funct
   }`;
   document.head.appendChild(style);
 })();
+
+
+/* Give Poems and Song Lyrics the same bottom status-row coordinates as Images and Music. */
+(function alignTextToolsStatusToSharedBaseline(){
+  const id="areonPoemsLyricsStatusBaselineAlignment";
+  if(document.getElementById(id))return;
+  const style=document.createElement("style");
+  style.id=id;
+  style.textContent=`
+  @media (min-width:801px){
+    #composer.mode-poems .composer-status,
+    #composer.mode-lyrics .composer-status{
+      position:static!important;
+      grid-column:1/-1!important;
+      grid-row:3!important;
+      align-self:stretch!important;
+      display:flex!important;
+      align-items:center!important;
+      gap:5px!important;
+      width:100%!important;
+      min-width:0!important;
+      height:14px!important;
+      min-height:14px!important;
+      max-height:14px!important;
+      margin:0!important;
+      padding:2px 2px 0!important;
+      box-sizing:border-box!important;
+      line-height:14px!important;
+      overflow:hidden!important;
+      transform:none!important;
+      white-space:nowrap!important;
+    }
+    #composer.mode-poems .composer-status .status-dot,
+    #composer.mode-lyrics .composer-status .status-dot{
+      position:static!important;
+      display:block!important;
+      align-self:center!important;
+      flex:0 0 6px!important;
+      width:6px!important;
+      height:6px!important;
+      min-width:6px!important;
+      min-height:6px!important;
+      margin:0!important;
+      transform:none!important;
+    }
+  }`;
+  document.head.appendChild(style);
+})();
