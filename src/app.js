@@ -7014,13 +7014,13 @@ body.light #composer.mode-music .music-options #composerMic:focus-visible{
   #composer.mode-music .music-options .music-spacer{min-width:3px!important}
   #composer.mode-music #composerInput{min-height:30px!important}
 }
-`;
 /* Match the Images send arrow exactly: same 17px glyph, white, centered in the 18px icon slot. */
 #composer.mode-music #composerSend .send-icon::before{
   display:block!important;width:17px!important;height:17px!important;
   min-width:17px!important;min-height:17px!important;margin:0!important;
   background-color:#fff!important;
 }
+`;
 document.head.appendChild(musicFinalAlignment);
  const musicPlayerPrecision=document.createElement("style");musicPlayerPrecision.id="areonMusicPlayerPrecision";musicPlayerPrecision.textContent=`
 .areon-audio-player{display:flex!important;align-items:center!important;gap:10px!important;width:100%!important;min-width:0!important;box-sizing:border-box!important;padding:8px 10px!important;border:0!important;border-radius:12px!important;background:transparent!important;color:inherit!important;backdrop-filter:none!important;box-shadow:none!important}
