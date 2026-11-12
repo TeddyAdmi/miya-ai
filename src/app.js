@@ -7104,7 +7104,7 @@ musicFinalAlignment.textContent += `
 /* One canonical Music composer layout, matching Chat, Images and Video. */
 musicFinalAlignment.textContent += `
 #composer.mode-music{
-  position:relative!important;inset:auto!important;transform:none!important;contain:none!important;
+  position:relative!important;inset:auto!important;transform:translateY(42px)!important;contain:none!important;
   display:grid!important;box-sizing:border-box!important;flex:0 1 auto!important;flex-basis:auto!important;
   width:min(900px,calc(100vw - 265px))!important;max-width:900px!important;min-width:0!important;
   height:110px!important;min-height:110px!important;max-height:110px!important;
