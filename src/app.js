@@ -5980,7 +5980,7 @@ function ensureSpeechVisualizer(){
     canvas.setAttribute("aria-hidden","true");
     composer.appendChild(canvas);
   }
-  composer.style.setProperty("position","relative","important");
+  if(!composer.classList.contains("areon-music-images-geometry"))composer.style.setProperty("position","relative","important");
   const composerRect=composer.getBoundingClientRect();
   const mic=composer.querySelector("#composerMic"),micRect=mic?.getBoundingClientRect();
   // Re-measure continuously: attached images and section-specific controls
@@ -8533,15 +8533,17 @@ document.head.appendChild(musicCardPolish);const oldHero=modeHero;modeHero=funct
       align-self:stretch!important;overflow:hidden!important;resize:none!important;transform:none!important;
     }
   }
-  /* The Images arrow is exactly 17px: match its mask box, not the button. */
-  #composer.mode-music #composerSend .send-icon,
-  #composer.mode-music #composerSend .send-icon::before{
-    box-sizing:border-box!important;width:17px!important;height:17px!important;
-    min-width:17px!important;min-height:17px!important;max-width:17px!important;max-height:17px!important;
-    margin:0!important;padding:0!important;
+  /* Images uses an 18px arrow wrapper with a 16px CSS-mask glyph. Match both separately. */
+  html body #composer.mode-music #composerSend .send-icon{
+    display:flex!important;align-items:center!important;justify-content:center!important;
+    box-sizing:border-box!important;width:18px!important;height:18px!important;
+    min-width:18px!important;min-height:18px!important;max-width:18px!important;max-height:18px!important;
+    flex:0 0 18px!important;margin:0!important;padding:0!important;transform:none!important;color:inherit!important;
   }
-  #composer.mode-music #composerSend .send-icon::before{
-    display:block!important;background-size:contain!important;mask-size:contain!important;-webkit-mask-size:contain!important;
+  html body #composer.mode-music #composerSend .send-icon::before{
+    display:block!important;box-sizing:border-box!important;width:16px!important;height:16px!important;
+    min-width:16px!important;min-height:16px!important;max-width:16px!important;max-height:16px!important;
+    margin:0!important;padding:0!important;background-size:contain!important;mask-size:contain!important;-webkit-mask-size:contain!important;
   }
   `;
   document.head.appendChild(style);
@@ -8563,4 +8565,107 @@ document.head.appendChild(musicCardPolish);const oldHero=modeHero;modeHero=funct
     ".composer #composerSend .send-icon::before{display:block!important;background-size:contain!important;mask-size:contain!important;-webkit-mask-size:contain!important}"
   ].join(String.fromCharCode(10));
   document.head.appendChild(style);
+})();
+
+
+/* Match Music prompt to the measured Images composer and textarea rectangles. */
+(function lockMusicPromptToImagesCoordinates(){
+  const composer=$("#composer"),input=$("#composerInput");
+  if(!composer||!input)return;
+  const row=input.closest(".composer-input-row");
+  const lockClass="areon-music-images-geometry";
+  const composerProps=["position","left","top","right","bottom","inset","width","height","min-width","max-width","min-height","max-height","margin","flex","flex-basis","transform"];
+  const inputProps=["position","left","top","right","bottom","inset","width","height","min-width","max-width","min-height","max-height","margin","align-self","grid-column","grid-row","transform","z-index","box-sizing"];
+  let saved=null,working=false;
+  const capture=(el,props)=>props.map(name=>[name,el.style.getPropertyValue(name),el.style.getPropertyPriority(name)]);
+  const restore=(el,values)=>values.forEach(([name,value,priority])=>{if(value)el.style.setProperty(name,value,priority);else el.style.removeProperty(name)});
+  const release=()=>{
+    if(!saved)return;
+    composer.classList.remove(lockClass);
+    restore(composer,saved.composer);
+    restore(input,saved.input);
+    saved=null;
+    try{syncInput()}catch{}
+  };
+  function syncMusicPromptToImagesRect(){
+    if(working||!composer.isConnected||!input.isConnected)return;
+    if(!composer.classList.contains("mode-music")){release();return}
+    working=true;
+    try{
+      if(!saved)saved={composer:capture(composer,composerProps),input:capture(input,inputProps)};
+      restore(composer,saved.composer);
+      restore(input,saved.input);
+      const originalComposerClass=composer.className;
+      const originalInputClass=input.className;
+      const originalInputStyle=input.getAttribute("style");
+      const originalRowStyle=row?row.getAttribute("style"):null;
+      let composerRect=null,inputRect=null,borderLeft=0,borderTop=0;
+      try{
+        composer.classList.remove("mode-chat","mode-video","mode-voice","mode-music");
+        composer.classList.add("mode-images");
+        composer.classList.remove(lockClass);
+        input.classList.remove("prompt-chat","prompt-video","prompt-voice","prompt-music");
+        input.classList.add("prompt-images");
+        try{syncInput()}catch{}
+        composerRect=composer.getBoundingClientRect();
+        inputRect=input.getBoundingClientRect();
+        const cs=getComputedStyle(composer);
+        borderLeft=parseFloat(cs.borderLeftWidth)||0;
+        borderTop=parseFloat(cs.borderTopWidth)||0;
+      }finally{
+        composer.className=originalComposerClass;
+        input.className=originalInputClass;
+        if(originalInputStyle===null)input.removeAttribute("style");else input.setAttribute("style",originalInputStyle);
+        if(row){if(originalRowStyle===null)row.removeAttribute("style");else row.setAttribute("style",originalRowStyle)}
+      }
+      if(!composerRect||!inputRect||composerRect.width<1||composerRect.height<1||inputRect.width<1||inputRect.height<1)return;
+      /* Pin the whole Music panel to the measured Images panel coordinates. */
+      composer.classList.add(lockClass);
+      composer.style.setProperty("position","fixed","important");
+      composer.style.setProperty("left",composerRect.left+"px","important");
+      composer.style.setProperty("top",composerRect.top+"px","important");
+      composer.style.setProperty("right","auto","important");
+      composer.style.setProperty("bottom","auto","important");
+      composer.style.setProperty("inset","auto","important");
+      composer.style.setProperty("width",composerRect.width+"px","important");
+      composer.style.setProperty("min-width",composerRect.width+"px","important");
+      composer.style.setProperty("max-width",composerRect.width+"px","important");
+      composer.style.setProperty("height",composerRect.height+"px","important");
+      composer.style.setProperty("min-height",composerRect.height+"px","important");
+      composer.style.setProperty("max-height",composerRect.height+"px","important");
+      composer.style.setProperty("margin","0","important");
+      composer.style.setProperty("flex","none","important");
+      composer.style.setProperty("transform","none","important");
+      /* Pin the editable prompt itself to the same measured X/Y/width/height. */
+      input.style.setProperty("position","absolute","important");
+      input.style.setProperty("left",(inputRect.left-composerRect.left-borderLeft)+"px","important");
+      input.style.setProperty("top",(inputRect.top-composerRect.top-borderTop)+"px","important");
+      input.style.setProperty("right","auto","important");
+      input.style.setProperty("bottom","auto","important");
+      input.style.setProperty("inset","auto","important");
+      input.style.setProperty("width",inputRect.width+"px","important");
+      input.style.setProperty("min-width",inputRect.width+"px","important");
+      input.style.setProperty("max-width",inputRect.width+"px","important");
+      input.style.setProperty("height",inputRect.height+"px","important");
+      input.style.setProperty("min-height",inputRect.height+"px","important");
+      input.style.setProperty("max-height",inputRect.height+"px","important");
+      input.style.setProperty("margin","0","important");
+      input.style.setProperty("align-self","start","important");
+      input.style.setProperty("grid-column","auto","important");
+      input.style.setProperty("grid-row","auto","important");
+      input.style.setProperty("transform","none","important");
+      input.style.setProperty("z-index","1","important");
+      input.style.setProperty("box-sizing","border-box","important");
+    }finally{working=false}
+  }
+  const schedule=()=>requestAnimationFrame(syncMusicPromptToImagesRect);
+  const previousSetMode=setMode;
+  setMode=function(next,render=true){
+    const result=previousSetMode(next,render);
+    schedule();
+    return result;
+  };
+  window.addEventListener("resize",schedule,{passive:true});
+  window.visualViewport?.addEventListener("resize",schedule,{passive:true});
+  schedule();
 })();
