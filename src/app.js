@@ -6933,11 +6933,12 @@ body.light #composer.mode-voice .voice-options .voice-tool:focus-visible{
 musicFinalAlignment.textContent += `
 #composer.mode-music{
   box-sizing:border-box!important;display:grid!important;
+  flex:0 0 auto!important;flex-basis:auto!important;
   height:auto!important;min-height:0!important;max-height:none!important;
-  grid-template-columns:minmax(0,1fr)!important;grid-template-rows:auto 34px auto!important;
+  grid-template-columns:minmax(0,1fr)!important;grid-template-rows:minmax(34px,auto) 34px 14px!important;
   row-gap:5px!important;align-content:start!important;align-items:center!important;
-  padding:9px 10px 7px!important;overflow:visible!important;transform:none!important;contain:none!important;
-  align-self:flex-end!important;margin:0 auto 0!important;
+  padding:9px 10px 7px!important;overflow:visible!important;transform:translateY(42px)!important;contain:none!important;
+  margin:0 auto!important;
 }
 #composer.mode-music .composer-input-row{
   display:contents!important;height:auto!important;min-height:0!important;max-height:none!important;
