@@ -8042,13 +8042,13 @@ document.head.appendChild(musicCardPolish);const oldHero=modeHero;modeHero=funct
       width:min(900px,calc(100vw - 265px))!important;
       max-width:900px!important;
       min-width:0!important;
-      height:152px!important;
-      min-height:152px!important;
-      max-height:152px!important;
+      height:110px!important;
+      min-height:110px!important;
+      max-height:110px!important;
       margin:0 auto!important;
       padding:9px 10px 7px!important;
       grid-template-columns:minmax(0,1fr)!important;
-      grid-template-rows:76px 34px 14px!important;
+      grid-template-rows:34px 34px 14px!important;
       row-gap:5px!important;
       align-content:start!important;
       align-items:center!important;
@@ -8368,3 +8368,107 @@ document.head.appendChild(musicCardPolish);const oldHero=modeHero;modeHero=funct
   document.head.appendChild(style);
 })();
 
+
+
+/* Areon sitewide composer icon parity: equal tool geometry, shared muted color, background-only hover. */
+(function applyComposerIconParity(){
+  const id="areonComposerIconParityFinal";
+  if(document.getElementById(id))return;
+  const style=document.createElement("style");
+  style.id=id;
+  style.textContent=[
+    /* Copy / paste / clear controls use the same 30px hit area and 17px glyph in every section. */
+    "#composer.mode-chat .chat-options .composer-copy,#composer.mode-chat .chat-options .composer-paste,#composer.mode-chat .chat-options .composer-trash,",
+    "#composer.mode-images .image-settings .composer-copy,#composer.mode-images .image-settings .composer-paste,#composer.mode-images .image-settings .composer-trash,",
+    "#composer.mode-video .video-options .composer-copy,#composer.mode-video .video-options .composer-paste,#composer.mode-video .video-options .composer-trash,#composer.mode-video .video-options .video-tool,",
+    "#composer.mode-voice .voice-options .composer-copy,#composer.mode-voice .voice-options .composer-paste,#composer.mode-voice .voice-options .composer-trash,#composer.mode-voice .voice-options .voice-tool,",
+    "#composer.mode-music .music-options .music-tool{",
+    "  appearance:none!important;-webkit-appearance:none!important;box-sizing:border-box!important;",
+    "  display:grid!important;place-items:center!important;",
+    "  flex:0 0 30px!important;width:30px!important;min-width:30px!important;max-width:30px!important;",
+    "  height:30px!important;min-height:30px!important;max-height:30px!important;",
+    "  margin:0!important;padding:0!important;border:0!important;border-radius:7px!important;",
+    "  outline:0!important;background:transparent!important;background-color:transparent!important;",
+    "  box-shadow:none!important;color:var(--muted)!important;transform:none!important;",
+    "}",
+    "#composer.mode-chat .chat-options .composer-copy svg,#composer.mode-chat .chat-options .composer-paste svg,#composer.mode-chat .chat-options .composer-trash svg,",
+    "#composer.mode-images .image-settings .composer-copy svg,#composer.mode-images .image-settings .composer-paste svg,#composer.mode-images .image-settings .composer-trash svg,",
+    "#composer.mode-video .video-options .composer-copy svg,#composer.mode-video .video-options .composer-paste svg,#composer.mode-video .video-options .composer-trash svg,#composer.mode-video .video-options .video-tool svg,",
+    "#composer.mode-voice .voice-options .composer-copy svg,#composer.mode-voice .voice-options .composer-paste svg,#composer.mode-voice .voice-options .composer-trash svg,#composer.mode-voice .voice-options .voice-tool svg,",
+    "#composer.mode-music .music-options .music-tool svg{",
+    "  display:block!important;width:17px!important;height:17px!important;",
+    "  min-width:17px!important;min-height:17px!important;margin:0!important;padding:0!important;",
+    "  fill:none!important;stroke:currentColor!important;stroke-width:1.8!important;",
+    "  stroke-linecap:round!important;stroke-linejoin:round!important;transform:none!important;",
+    "}",
+    /* Same 4px gap in all prompt toolbars. */
+    "#composer.mode-chat .chat-options,#composer.mode-images .image-settings,#composer.mode-video .video-options,#composer.mode-voice .voice-options,#composer.mode-music .music-options{gap:4px!important;column-gap:4px!important;align-items:center!important;}",
+    /* Microphone shares the same muted color in dark and light themes, with no frame. */
+    "#composer.mode-chat #composerMic,#composer.mode-images #composerMic,#composer.mode-video #composerMic,#composer.mode-voice #composerMic,#composer.mode-music #composerMic{",
+    "  appearance:none!important;-webkit-appearance:none!important;box-sizing:border-box!important;",
+    "  display:grid!important;place-items:center!important;",
+    "  flex:0 0 34px!important;width:34px!important;min-width:34px!important;max-width:34px!important;",
+    "  height:34px!important;min-height:34px!important;max-height:34px!important;",
+    "  margin:0!important;padding:0!important;border:0!important;outline:0!important;",
+    "  border-radius:7px!important;background:transparent!important;background-color:transparent!important;",
+    "  box-shadow:none!important;color:var(--muted)!important;transform:none!important;",
+    "}",
+    "#composer.mode-chat #composerMic svg,#composer.mode-images #composerMic svg,#composer.mode-video #composerMic svg,#composer.mode-voice #composerMic svg,#composer.mode-music #composerMic svg{display:block!important;width:18px!important;height:18px!important;min-width:18px!important;min-height:18px!important;stroke:currentColor!important;fill:none!important;}",
+    /* Remove every border/outline on hover and keyboard focus; only the background changes. */
+    "#composer.mode-chat .chat-options .composer-copy:hover,#composer.mode-chat .chat-options .composer-copy:focus,#composer.mode-chat .chat-options .composer-copy:focus-visible,#composer.mode-chat .chat-options .composer-copy:active,",
+    "#composer.mode-chat .chat-options .composer-paste:hover,#composer.mode-chat .chat-options .composer-paste:focus,#composer.mode-chat .chat-options .composer-paste:focus-visible,#composer.mode-chat .chat-options .composer-paste:active,",
+    "#composer.mode-chat .chat-options .composer-trash:hover,#composer.mode-chat .chat-options .composer-trash:focus,#composer.mode-chat .chat-options .composer-trash:focus-visible,#composer.mode-chat .chat-options .composer-trash:active,",
+    "#composer.mode-images .image-settings .composer-copy:hover,#composer.mode-images .image-settings .composer-copy:focus,#composer.mode-images .image-settings .composer-copy:focus-visible,#composer.mode-images .image-settings .composer-copy:active,",
+    "#composer.mode-images .image-settings .composer-paste:hover,#composer.mode-images .image-settings .composer-paste:focus,#composer.mode-images .image-settings .composer-paste:focus-visible,#composer.mode-images .image-settings .composer-paste:active,",
+    "#composer.mode-images .image-settings .composer-trash:hover,#composer.mode-images .image-settings .composer-trash:focus,#composer.mode-images .image-settings .composer-trash:focus-visible,#composer.mode-images .image-settings .composer-trash:active,",
+    "#composer.mode-video .video-options .composer-copy:hover,#composer.mode-video .video-options .composer-copy:focus,#composer.mode-video .video-options .composer-copy:focus-visible,#composer.mode-video .video-options .composer-copy:active,",
+    "#composer.mode-video .video-options .composer-paste:hover,#composer.mode-video .video-options .composer-paste:focus,#composer.mode-video .video-options .composer-paste:focus-visible,#composer.mode-video .video-options .composer-paste:active,",
+    "#composer.mode-video .video-options .composer-trash:hover,#composer.mode-video .video-options .composer-trash:focus,#composer.mode-video .video-options .composer-trash:focus-visible,#composer.mode-video .video-options .composer-trash:active,",
+    "#composer.mode-video .video-options .video-tool:hover,#composer.mode-video .video-options .video-tool:focus,#composer.mode-video .video-options .video-tool:focus-visible,#composer.mode-video .video-options .video-tool:active,",
+    "#composer.mode-voice .voice-options .composer-copy:hover,#composer.mode-voice .voice-options .composer-copy:focus,#composer.mode-voice .voice-options .composer-copy:focus-visible,#composer.mode-voice .voice-options .composer-copy:active,",
+    "#composer.mode-voice .voice-options .composer-paste:hover,#composer.mode-voice .voice-options .composer-paste:focus,#composer.mode-voice .voice-options .composer-paste:focus-visible,#composer.mode-voice .voice-options .composer-paste:active,",
+    "#composer.mode-voice .voice-options .composer-trash:hover,#composer.mode-voice .voice-options .composer-trash:focus,#composer.mode-voice .voice-options .composer-trash:focus-visible,#composer.mode-voice .voice-options .composer-trash:active,",
+    "#composer.mode-voice .voice-options .voice-tool:hover,#composer.mode-voice .voice-options .voice-tool:focus,#composer.mode-voice .voice-options .voice-tool:focus-visible,#composer.mode-voice .voice-options .voice-tool:active,",
+    "#composer.mode-music .music-options .music-tool:hover,#composer.mode-music .music-options .music-tool:focus,#composer.mode-music .music-options .music-tool:focus-visible,#composer.mode-music .music-options .music-tool:active,",
+    "#composer.mode-chat #composerMic:hover,#composer.mode-chat #composerMic:focus,#composer.mode-chat #composerMic:focus-visible,#composer.mode-chat #composerMic:active,",
+    "#composer.mode-images #composerMic:hover,#composer.mode-images #composerMic:focus,#composer.mode-images #composerMic:focus-visible,#composer.mode-images #composerMic:active,",
+    "#composer.mode-video #composerMic:hover,#composer.mode-video #composerMic:focus,#composer.mode-video #composerMic:focus-visible,#composer.mode-video #composerMic:active,",
+    "#composer.mode-voice #composerMic:hover,#composer.mode-voice #composerMic:focus,#composer.mode-voice #composerMic:focus-visible,#composer.mode-voice #composerMic:active,",
+    "#composer.mode-music #composerMic:hover,#composer.mode-music #composerMic:focus,#composer.mode-music #composerMic:focus-visible,#composer.mode-music #composerMic:active{",
+    "  border:0!important;outline:0!important;box-shadow:none!important;transform:none!important;",
+    "  background:rgba(157,112,255,.12)!important;background-color:rgba(157,112,255,.12)!important;",
+    "  color:var(--muted)!important;",
+    "}",
+    /* Light-theme mode-specific microphone colors must not override the shared muted palette. */
+    "body.light #composer.mode-chat #composerMic,body.light #composer.mode-images #composerMic,body.light #composer.mode-video #composerMic,body.light #composer.mode-voice #composerMic,body.light #composer.mode-music #composerMic{color:var(--muted)!important;}",
+    /* More-specific light-theme hover rules also stay borderless: only the surface changes. */
+    "body.light #composer.mode-chat .chat-options .composer-copy:hover,body.light #composer.mode-chat .chat-options .composer-copy:focus-visible,body.light #composer.mode-chat .chat-options .composer-copy:active,",
+    "body.light #composer.mode-chat .chat-options .composer-paste:hover,body.light #composer.mode-chat .chat-options .composer-paste:focus-visible,body.light #composer.mode-chat .chat-options .composer-paste:active,",
+    "body.light #composer.mode-chat .chat-options .composer-trash:hover,body.light #composer.mode-chat .chat-options .composer-trash:focus-visible,body.light #composer.mode-chat .chat-options .composer-trash:active,",
+    "body.light #composer.mode-images .image-settings .composer-copy:hover,body.light #composer.mode-images .image-settings .composer-copy:focus-visible,body.light #composer.mode-images .image-settings .composer-copy:active,",
+    "body.light #composer.mode-images .image-settings .composer-paste:hover,body.light #composer.mode-images .image-settings .composer-paste:focus-visible,body.light #composer.mode-images .image-settings .composer-paste:active,",
+    "body.light #composer.mode-images .image-settings .composer-trash:hover,body.light #composer.mode-images .image-settings .composer-trash:focus-visible,body.light #composer.mode-images .image-settings .composer-trash:active,",
+    "body.light #composer.mode-video .video-options .composer-copy:hover,body.light #composer.mode-video .video-options .composer-copy:focus-visible,body.light #composer.mode-video .video-options .composer-copy:active,",
+    "body.light #composer.mode-video .video-options .composer-paste:hover,body.light #composer.mode-video .video-options .composer-paste:focus-visible,body.light #composer.mode-video .video-options .composer-paste:active,",
+    "body.light #composer.mode-video .video-options .composer-trash:hover,body.light #composer.mode-video .video-options .composer-trash:focus-visible,body.light #composer.mode-video .video-options .composer-trash:active,",
+    "body.light #composer.mode-video .video-options .video-tool:hover,body.light #composer.mode-video .video-options .video-tool:focus-visible,body.light #composer.mode-video .video-options .video-tool:active,",
+    "body.light #composer.mode-voice .voice-options .composer-copy:hover,body.light #composer.mode-voice .voice-options .composer-copy:focus-visible,body.light #composer.mode-voice .voice-options .composer-copy:active,",
+    "body.light #composer.mode-voice .voice-options .composer-paste:hover,body.light #composer.mode-voice .voice-options .composer-paste:focus-visible,body.light #composer.mode-voice .voice-options .composer-paste:active,",
+    "body.light #composer.mode-voice .voice-options .composer-trash:hover,body.light #composer.mode-voice .voice-options .composer-trash:focus-visible,body.light #composer.mode-voice .voice-options .composer-trash:active,",
+    "body.light #composer.mode-voice .voice-options .voice-tool:hover,body.light #composer.mode-voice .voice-options .voice-tool:focus-visible,body.light #composer.mode-voice .voice-options .voice-tool:active,",
+    "body.light #composer.mode-music .music-options .music-tool:hover,body.light #composer.mode-music .music-options .music-tool:focus-visible,body.light #composer.mode-music .music-options .music-tool:active,",
+    "body.light #composer.mode-chat #composerMic:hover,body.light #composer.mode-chat #composerMic:focus-visible,body.light #composer.mode-chat #composerMic:active,",
+    "body.light #composer.mode-images #composerMic:hover,body.light #composer.mode-images #composerMic:focus-visible,body.light #composer.mode-images #composerMic:active,",
+    "body.light #composer.mode-video #composerMic:hover,body.light #composer.mode-video #composerMic:focus-visible,body.light #composer.mode-video #composerMic:active,",
+    "body.light #composer.mode-voice #composerMic:hover,body.light #composer.mode-voice #composerMic:focus-visible,body.light #composer.mode-voice #composerMic:active,",
+    "body.light #composer.mode-music #composerMic:hover,body.light #composer.mode-music #composerMic:focus-visible,body.light #composer.mode-music #composerMic:active{",
+    "  border:0!important;outline:0!important;box-shadow:none!important;transform:none!important;",
+    "  background:rgba(123,97,200,.10)!important;background-color:rgba(123,97,200,.10)!important;color:var(--muted)!important;",
+    "}",
+    /* Enlarge the actual CSS-mask arrow used by the Music send button, not an SVG wrapper. */
+    "#composer.mode-music #composerSend .send-icon{display:inline-grid!important;place-items:center!important;width:20px!important;height:20px!important;min-width:20px!important;min-height:20px!important;}",
+    "#composer.mode-music #composerSend .send-icon::before{display:block!important;width:20px!important;height:20px!important;}",
+    "#composer.mode-music #composerSend{border:0!important;outline:0!important;}",
+  ].join(String.fromCharCode(10));
+  document.head.appendChild(style);
+})();

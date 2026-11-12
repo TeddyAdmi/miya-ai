@@ -4868,31 +4868,32 @@ html body.light #areonComposerSelectPopup.areon-composer-select-popup .areon-com
 #areonComposerSelectPopup.areon-music-scroll-popup{
   overflow-x:hidden!important;
   overflow-y:scroll!important;
-  scrollbar-width:auto!important;
-  scrollbar-color:#6687a8 #0b223b!important;
+  scrollbar-width:thin!important;
+  scrollbar-color:#245c8f transparent!important;
   overscroll-behavior:contain!important;
 }
 #areonComposerSelectPopup.areon-music-scroll-popup::-webkit-scrollbar{
   display:block!important;
-  width:9px!important;
-  height:9px!important;
+  width:5px!important;
+  height:5px!important;
 }
 #areonComposerSelectPopup.areon-music-scroll-popup::-webkit-scrollbar-track{
-  background:#0b223b!important;
+  background:transparent!important;
   border-radius:8px!important;
 }
 #areonComposerSelectPopup.areon-music-scroll-popup::-webkit-scrollbar-thumb{
-  background:#6687a8!important;
-  border:2px solid #0b223b!important;
+  background:#245c8f!important;
+  border:0!important;
   border-radius:8px!important;
 }
 body.light #areonComposerSelectPopup.areon-music-scroll-popup{
-  scrollbar-color:#91a5ba #f4f7fa!important;
+  scrollbar-color:#9aaabd transparent!important;
 }
 body.light #areonComposerSelectPopup.areon-music-scroll-popup::-webkit-scrollbar-track{
-  background:#f4f7fa!important;
+  background:transparent!important;
 }
 body.light #areonComposerSelectPopup.areon-music-scroll-popup::-webkit-scrollbar-thumb{
-  background:#91a5ba!important;
-  border-color:#f4f7fa!important;
+  background:#9aaabd!important;
+  border:0!important;
+  border-radius:8px!important;
 }
