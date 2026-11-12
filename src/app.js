@@ -2934,7 +2934,7 @@ function toast(message){
  t.textContent=message;t.classList.add("show");clearTimeout(window.__toast);
  window.__toast=setTimeout(()=>t.classList.remove("show"),2600)
 }
-function syncInput(){const i=$("#composerInput");if(!i)return;const cs=getComputedStyle(i);const lineHeight=Number.parseFloat(cs.lineHeight)||15;const padding=(Number.parseFloat(cs.paddingTop)||0)+(Number.parseFloat(cs.paddingBottom)||0);const minHeight=34;const maxLines=10;const maxHeight=Math.ceil(lineHeight*maxLines+padding);i.style.setProperty("min-height",minHeight+"px","important");i.style.setProperty("max-height",maxHeight+"px","important");i.style.setProperty("overflow-y","hidden","important");i.style.setProperty("height","0px","important");const contentHeight=Math.max(minHeight,i.scrollHeight);const h=Math.min(maxHeight,contentHeight);i.style.setProperty("height",h+"px","important");i.style.setProperty("overflow-y",contentHeight>maxHeight?"auto":"hidden","important");const row=i.closest(".composer-input-row");if(row)row.style.height=""}
+function syncInput(){const i=$("#composerInput");if(!i)return;if(i.closest("#composer")?.classList.contains("mode-music")){i.style.setProperty("min-height","34px","important");i.style.setProperty("max-height","34px","important");i.style.setProperty("height","34px","important");i.style.setProperty("overflow-y","auto","important");const row=i.closest(".composer-input-row");if(row)row.style.height="";return}const cs=getComputedStyle(i);const lineHeight=Number.parseFloat(cs.lineHeight)||15;const padding=(Number.parseFloat(cs.paddingTop)||0)+(Number.parseFloat(cs.paddingBottom)||0);const minHeight=34;const maxLines=10;const maxHeight=Math.ceil(lineHeight*maxLines+padding);i.style.setProperty("min-height",minHeight+"px","important");i.style.setProperty("max-height",maxHeight+"px","important");i.style.setProperty("overflow-y","hidden","important");i.style.setProperty("height","0px","important");const contentHeight=Math.max(minHeight,i.scrollHeight);const h=Math.min(maxHeight,contentHeight);i.style.setProperty("height",h+"px","important");i.style.setProperty("overflow-y",contentHeight>maxHeight?"auto":"hidden","important");const row=i.closest(".composer-input-row");if(row)row.style.height=""}
 function renderAssistantQuoteBlock(){
  const composer=$("#composer");if(!composer)return;
  let block=composer.querySelector(".composer-quote-block");
@@ -8254,3 +8254,117 @@ document.head.appendChild(musicCardPolish);const oldHero=modeHero;modeHero=funct
   `;
   document.head.appendChild(style);
 })();
+
+/* Final exact parity for Music prompt, select text, copy tools, microphone and send arrow. */
+(function applyMusicExactComposerParity(){
+  const id="areonMusicExactComposerParity";
+  if(document.getElementById(id))return;
+  const style=document.createElement("style");
+  style.id=id;
+  style.textContent=`
+  /* Keep Music prompt on the same single-line height; long text scrolls inside it. */
+  #composer.mode-music #composerInput{
+    box-sizing:border-box!important;
+    width:100%!important;
+    height:34px!important;
+    min-height:34px!important;
+    max-height:34px!important;
+    align-self:end!important;
+    overflow-x:hidden!important;
+    overflow-y:auto!important;
+    resize:none!important;
+  }
+  /* Match the gray closed-select labels used by Images and Video. */
+  #composer.mode-music .music-options .select-pill{
+    color:#a9bad0!important;
+    -webkit-text-fill-color:#a9bad0!important;
+  }
+  body.light #composer.mode-music .music-options .select-pill{
+    color:#52657b!important;
+    -webkit-text-fill-color:#52657b!important;
+  }
+  /* Copy / paste / clear use the same 29px hit areas and 17px glyphs as Images. */
+  #composer.mode-music .music-options .music-tool{
+    box-sizing:border-box!important;
+    display:grid!important;
+    place-items:center!important;
+    flex:0 0 29px!important;
+    width:29px!important;
+    min-width:29px!important;
+    max-width:29px!important;
+    height:29px!important;
+    min-height:29px!important;
+    max-height:29px!important;
+    margin:0!important;
+    padding:0!important;
+    border:0!important;
+    border-radius:7px!important;
+    background:transparent!important;
+    background-color:transparent!important;
+    box-shadow:none!important;
+    color:var(--muted)!important;
+    transform:none!important;
+  }
+  #composer.mode-music .music-options .music-tool svg{
+    display:block!important;
+    width:17px!important;
+    height:17px!important;
+    min-width:17px!important;
+    min-height:17px!important;
+    margin:0!important;
+    padding:0!important;
+    fill:none!important;
+    stroke:currentColor!important;
+    stroke-width:1.8!important;
+    stroke-linecap:round!important;
+    stroke-linejoin:round!important;
+    transform:none!important;
+  }
+  #composer.mode-music .music-options{
+    gap:4px!important;
+    column-gap:4px!important;
+  }
+  /* Reserve the same 34px microphone/send columns and 8px separation as Images. */
+  #composer.mode-music .music-options #composerMic{
+    box-sizing:border-box!important;
+    flex:0 0 34px!important;
+    width:34px!important;
+    min-width:34px!important;
+    max-width:34px!important;
+    height:34px!important;
+    min-height:34px!important;
+    max-height:34px!important;
+    margin:0!important;
+    padding:0!important;
+    color:var(--muted)!important;
+  }
+  #composer.mode-music .music-options #composerSend{
+    box-sizing:border-box!important;
+    flex:0 0 34px!important;
+    width:34px!important;
+    min-width:34px!important;
+    max-width:34px!important;
+    height:34px!important;
+    min-height:34px!important;
+    max-height:34px!important;
+    margin:0 0 0 4px!important;
+    padding:0!important;
+    align-self:center!important;
+  }
+  #composer.mode-music #composerSend .send-icon,
+  #composer.mode-music #composerSend .send-icon svg{
+    display:flex!important;
+    align-items:center!important;
+    justify-content:center!important;
+    width:18px!important;
+    height:18px!important;
+    min-width:18px!important;
+    min-height:18px!important;
+    margin:0!important;
+    padding:0!important;
+    transform:none!important;
+  }
+  `;
+  document.head.appendChild(style);
+})();
+
