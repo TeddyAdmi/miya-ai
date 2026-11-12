@@ -2934,7 +2934,7 @@ function toast(message){
  t.textContent=message;t.classList.add("show");clearTimeout(window.__toast);
  window.__toast=setTimeout(()=>t.classList.remove("show"),2600)
 }
-function syncInput(){const i=$("#composerInput");if(!i)return;if(i.closest("#composer")?.classList.contains("mode-music")){i.style.setProperty("min-height","34px","important");i.style.setProperty("max-height","34px","important");i.style.setProperty("height","34px","important");i.style.setProperty("overflow-y","auto","important");const row=i.closest(".composer-input-row");if(row)row.style.height="";return}const cs=getComputedStyle(i);const lineHeight=Number.parseFloat(cs.lineHeight)||15;const padding=(Number.parseFloat(cs.paddingTop)||0)+(Number.parseFloat(cs.paddingBottom)||0);const minHeight=34;const maxLines=10;const maxHeight=Math.ceil(lineHeight*maxLines+padding);i.style.setProperty("min-height",minHeight+"px","important");i.style.setProperty("max-height",maxHeight+"px","important");i.style.setProperty("overflow-y","hidden","important");i.style.setProperty("height","0px","important");const contentHeight=Math.max(minHeight,i.scrollHeight);const h=Math.min(maxHeight,contentHeight);i.style.setProperty("height",h+"px","important");i.style.setProperty("overflow-y",contentHeight>maxHeight?"auto":"hidden","important");const row=i.closest(".composer-input-row");if(row)row.style.height=""}
+function syncInput(){const i=$("#composerInput");if(!i)return;const cs=getComputedStyle(i);const lineHeight=Number.parseFloat(cs.lineHeight)||15;const padding=(Number.parseFloat(cs.paddingTop)||0)+(Number.parseFloat(cs.paddingBottom)||0);const minHeight=34;const maxLines=10;const maxHeight=Math.ceil(lineHeight*maxLines+padding);i.style.setProperty("min-height",minHeight+"px","important");i.style.setProperty("max-height",maxHeight+"px","important");i.style.setProperty("overflow-y","hidden","important");i.style.setProperty("height","0px","important");const contentHeight=Math.max(minHeight,i.scrollHeight);const h=Math.min(maxHeight,contentHeight);i.style.setProperty("height",h+"px","important");i.style.setProperty("overflow-y",contentHeight>maxHeight?"auto":"hidden","important");const row=i.closest(".composer-input-row");if(row)row.style.height=""}
 function renderAssistantQuoteBlock(){
  const composer=$("#composer");if(!composer)return;
  let block=composer.querySelector(".composer-quote-block");
@@ -7015,6 +7015,12 @@ body.light #composer.mode-music .music-options #composerMic:focus-visible{
   #composer.mode-music #composerInput{min-height:30px!important}
 }
 `;
+/* Match the Images send arrow exactly: same 17px glyph, white, centered in the 18px icon slot. */
+#composer.mode-music #composerSend .send-icon::before{
+  display:block!important;width:17px!important;height:17px!important;
+  min-width:17px!important;min-height:17px!important;margin:0!important;
+  background-color:#fff!important;
+}
 document.head.appendChild(musicFinalAlignment);
  const musicPlayerPrecision=document.createElement("style");musicPlayerPrecision.id="areonMusicPlayerPrecision";musicPlayerPrecision.textContent=`
 .areon-audio-player{display:flex!important;align-items:center!important;gap:10px!important;width:100%!important;min-width:0!important;box-sizing:border-box!important;padding:8px 10px!important;border:0!important;border-radius:12px!important;background:transparent!important;color:inherit!important;backdrop-filter:none!important;box-shadow:none!important}
@@ -7105,18 +7111,18 @@ musicFinalAlignment.textContent += `
 musicFinalAlignment.textContent += `
 #composer.mode-music{
   position:relative!important;inset:auto!important;transform:translateY(42px)!important;contain:none!important;
-  display:grid!important;box-sizing:border-box!important;flex:0 1 auto!important;flex-basis:auto!important;
+  display:grid!important;box-sizing:border-box!important;flex:0 0 auto!important;flex-basis:auto!important;
   width:min(900px,calc(100vw - 265px))!important;max-width:900px!important;min-width:0!important;
-  height:110px!important;min-height:110px!important;max-height:110px!important;
+  height:auto!important;min-height:110px!important;max-height:none!important;
   margin:0 auto!important;padding:9px 10px 7px!important;
-  grid-template-columns:minmax(0,1fr)!important;grid-template-rows:34px 34px 14px!important;
+  grid-template-columns:minmax(0,1fr)!important;grid-template-rows:minmax(34px,auto) 34px 14px!important;
   row-gap:5px!important;align-content:start!important;align-items:center!important;overflow:visible!important;
 }
 #composer.mode-music .composer-input-row{display:contents!important;height:auto!important;min-height:0!important;max-height:none!important}
 #composer.mode-music #composerInput{
   position:relative!important;grid-column:1/-1!important;grid-row:1!important;display:block!important;
   box-sizing:border-box!important;width:100%!important;min-width:0!important;
-  height:34px!important;min-height:34px!important;max-height:34px!important;
+  height:auto!important;min-height:34px!important;max-height:none!important;
   margin:0!important;padding:9px 3px 10px!important;line-height:15px!important;
   align-self:stretch!important;overflow-x:hidden!important;overflow-y:hidden!important;resize:none!important;transform:none!important;
 }
