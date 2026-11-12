@@ -1,12 +1,12 @@
 {
   "manifest_version":1,
-  "id":"miya-ai.vercel.app",
+  "id":"areon-ai.vercel.app",
   "name":"Areon AI",
   "short_name":"Areon AI",
   "description":"Areon AI — Image & Video Studio",
   "version":"1.0.0",
   "author":"TeddyAdmi",
-  "scope":"miya-ai.vercel.app",
+  "scope":"areon-ai.vercel.app",
   "permissions":["account"],
   "start_url":"/",
   "display":"standalone"
