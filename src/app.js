@@ -8173,3 +8173,63 @@ document.head.appendChild(musicCardPolish);const oldHero=modeHero;modeHero=funct
   }`;
   document.head.appendChild(style);
 })();
+
+
+/* Music dropdowns use the exact field height, chevron geometry, and palette of Images. */
+(function installMusicDropdownImagesParity(){
+  const id="areonMusicDropdownImagesParity";
+  if(document.getElementById(id))return;
+  const style=document.createElement("style");
+  style.id=id;
+  style.textContent=`
+  #composer.mode-music .music-options .select-pill{
+    appearance:none!important;
+    -webkit-appearance:none!important;
+    box-sizing:border-box!important;
+    height:34px!important;
+    min-height:34px!important;
+    max-height:34px!important;
+    padding:0 27px 0 8px!important;
+    border:1px solid #1a4b78!important;
+    border-radius:6px!important;
+    color-scheme:dark!important;
+    color:#edf5ff!important;
+    -webkit-text-fill-color:#edf5ff!important;
+    background-color:#0b223b!important;
+    background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 8' fill='none'%3E%3Cpath d='M2 2L6 6L10 2' stroke='%237690ad' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E")!important;
+    background-repeat:no-repeat!important;
+    background-size:10px 7px!important;
+    background-position:calc(100% - 8px) 50%!important;
+    font-family:Inter,system-ui,sans-serif!important;
+    font-size:12px!important;
+    font-weight:700!important;
+    line-height:16px!important;
+    font-variant-numeric:lining-nums tabular-nums!important;
+    font-feature-settings:"lnum" 1,"tnum" 1!important;
+    text-shadow:none!important;
+    opacity:1!important;
+    filter:none!important;
+  }
+  #composer.mode-music .music-options .select-pill[aria-expanded="true"]{
+    background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 8' fill='none'%3E%3Cpath d='M2 6L6 2L10 6' stroke='%237690ad' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E")!important;
+  }
+  #composer.mode-music .music-options #musicLyricsOpen{
+    height:34px!important;
+    min-height:34px!important;
+    max-height:34px!important;
+    box-sizing:border-box!important;
+    align-self:center!important;
+  }
+  body.light #composer.mode-music .music-options .select-pill{
+    color-scheme:light!important;
+    color:#111111!important;
+    -webkit-text-fill-color:#111111!important;
+    background-color:#f4f7fa!important;
+    background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 8' fill='none'%3E%3Cpath d='M2 2L6 6L10 2' stroke='%2352657b' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E")!important;
+    border-color:#d3deea!important;
+  }
+  body.light #composer.mode-music .music-options .select-pill[aria-expanded="true"]{
+    background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 8' fill='none'%3E%3Cpath d='M2 6L6 2L10 6' stroke='%2352657b' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E")!important;
+  }`;
+  document.head.appendChild(style);
+})();

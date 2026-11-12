@@ -413,7 +413,7 @@ body.light #composer.mode-images .areon-model-logo{
 (function areonComposerDropdownPopupV1(){
  if(window.__areonComposerDropdownPopupV1)return;
  window.__areonComposerDropdownPopupV1=true;
- const ids=["composerModel","composerRatio","composerQuality","videoModel","videoDuration","videoRatio"];
+ const ids=["composerModel","composerRatio","composerQuality","videoModel","videoDuration","videoRatio","musicOccasion","musicRecipient","musicGenre","musicVocal"];
  const ratioValues=new Set(["16:9","9:16","1:1"]);
  let ratioSvgInstance=0;
  const ratioSvg=value=>{
@@ -495,9 +495,9 @@ body.light #composer.mode-images .areon-model-logo{
  const belongsToActiveSection=select=>{
   const composer=document.getElementById("composer");
   if(!composer)return false;
-  return select.id.startsWith("video")
-   ? composer.classList.contains("mode-video")
-   : composer.classList.contains("mode-images");
+  if(select.id.startsWith("video"))return composer.classList.contains("mode-video");
+  if(select.id.startsWith("music"))return composer.classList.contains("mode-music");
+  return composer.classList.contains("mode-images");
  };
  const availableOptions=select=>Array.from(select.options).filter(option=>!option.disabled);
  const modelBrandDomain=value=>{
@@ -699,9 +699,8 @@ body.light #composer.mode-images .areon-model-logo{
   if(activeSelect===select&&!popup.hidden)closePopup();
   else openPopup(select);
  }
- ids.forEach(id=>{
-  const select=document.getElementById(id);
-  if(!select||select.dataset.areonCustomPopupBound)return;
+ const bindSelect=select=>{
+  if(!select||!ids.includes(select.id)||select.dataset.areonCustomPopupBound)return;
   select.dataset.areonCustomPopupBound="1";
   select.setAttribute("aria-haspopup","listbox");
   select.setAttribute("aria-expanded","false");
@@ -718,8 +717,6 @@ body.light #composer.mode-images .areon-model-logo{
    togglePopup(select);
   };
   select.addEventListener("mousedown",onMouseDown,true);
-  // Mouse clicks are toggled on mousedown/pointerdown above. Do not reopen here:
-  // the click event follows the same press and used to undo a just-closed popup.
   select.addEventListener("click",event=>{
    if(!belongsToActiveSection(select))return;
    event.preventDefault();
@@ -753,7 +750,20 @@ body.light #composer.mode-images .areon-model-logo{
     chooseOption(option);
    }
   });
+ };
+ ids.forEach(id=>bindSelect(document.getElementById(id)));
+ // Music option selects are inserted by the module script after this inline script.
+ // Bind them as soon as their container is attached to the document.
+ const selectBinder=new MutationObserver(records=>{
+  for(const record of records){
+   for(const node of record.addedNodes){
+    if(node.nodeType!==1)continue;
+    if(node.matches?.("select"))bindSelect(node);
+    node.querySelectorAll?.("select").forEach(bindSelect);
+   }
+  }
  });
+ selectBinder.observe(document.body,{childList:true,subtree:true});
  document.addEventListener("mousedown",event=>{
   if(popup.hidden)return;
   if(popup.contains(event.target)||event.target===activeSelect||event.target.closest("#themeToggle"))return;
