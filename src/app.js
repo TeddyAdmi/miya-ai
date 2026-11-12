@@ -8568,126 +8568,118 @@ document.head.appendChild(musicCardPolish);const oldHero=modeHero;modeHero=funct
 
 
 
-/* Mirror the complete Images composer and prompt rectangles in Music. */
-(function mirrorMusicComposerToImagesGeometry(){
+/* Cache the real Images layout, then apply that unchanged reference to Music. */
+(function keepMusicComposerOnImagesReference(){
   const composer=$("#composer"),input=$("#composerInput");
   if(!composer||!input)return;
-  const composerLock="areon-music-images-composer-lock";
-  const inputLock="areon-music-images-input-lock";
-  const composerVars=["--areon-ref-composer-left","--areon-ref-composer-top","--areon-ref-composer-width","--areon-ref-composer-height"];
-  const inputVars=["--areon-ref-input-left","--areon-ref-input-top","--areon-ref-input-width","--areon-ref-input-height"];
-  let measuring=false,frame=0;
-  const clearVars=(el,names)=>names.forEach(name=>el.style.removeProperty(name));
-  const unlock=()=>{
-    composer.classList.remove(composerLock);
-    input.classList.remove(inputLock);
-    clearVars(composer,composerVars);
-    clearVars(input,inputVars);
+  const lockClass="areon-music-image-reference-lock";
+  const layoutStyleId="areonMusicImagesReferenceLayout";
+  const arrowStyleId="areonMusicArrowImagesReference";
+  let imageReference=null,frame=0;
+  const imageLayoutProps=[
+    "box-sizing","display","padding-top","padding-right","padding-bottom","padding-left",
+    "grid-template-columns","grid-template-rows","row-gap","column-gap","align-content","align-items"
+  ];
+  const inputLayoutProps=[
+    "box-sizing","display","width","height","min-width","max-width","min-height","max-height",
+    "margin-top","margin-right","margin-bottom","margin-left","padding-top","padding-right","padding-bottom","padding-left",
+    "grid-column-start","grid-column-end","grid-row-start","grid-row-end","align-self",
+    "font-family","font-size","font-weight","line-height","letter-spacing","color","caret-color",
+    "background-color","border-top-width","border-right-width","border-bottom-width","border-left-width",
+    "border-top-style","border-right-style","border-bottom-style","border-left-style",
+    "outline-style","outline-width","resize","white-space","overflow-x","overflow-y","text-align"
+  ];
+  const serialize=(style,properties)=>properties.map(name=>{
+    const value=style.getPropertyValue(name);
+    return value?name+":"+value+"!important;":"";
+  }).filter(Boolean).join("");
+  const release=()=>{
+    composer.classList.remove(lockClass);
+    ["--areon-images-ref-left","--areon-images-ref-top","--areon-images-ref-width","--areon-images-ref-height"].forEach(name=>composer.style.removeProperty(name));
   };
-  const computedDeclarations=style=>{
-    const declarations=[];
-    for(let i=0;i<style.length;i++){
-      const property=style.item(i);
-      if(!property||property.startsWith("--"))continue;
-      const value=style.getPropertyValue(property);
-      if(value)declarations.push(property+":"+value+"!important;");
-    }
-    return declarations.join("");
-  };
-  function measureAndApply(){
-    if(measuring||!composer.isConnected||!input.isConnected)return;
-    if(!composer.classList.contains("mode-music")){unlock();return}
-    measuring=true;
-    unlock();
-    const originalComposerClass=composer.className;
-    const originalInputClass=input.className;
-    const originalInputStyle=input.getAttribute("style");
-    const originalInputValue=input.value;
-    const row=input.closest(".composer-input-row");
-    const originalRowStyle=row?row.getAttribute("style"):null;
-    let composerRect=null,inputRect=null,borderLeft=0,borderTop=0,iconCss="",glyphCss="";
-    try{
-      composer.classList.remove("mode-chat","mode-video","mode-voice","mode-music","mode-poems","mode-lyrics");
-      composer.classList.add("mode-images");
-      input.classList.remove("prompt-chat","prompt-video","prompt-voice","prompt-music","prompt-poems","prompt-lyrics",inputLock);
-      input.classList.add("prompt-images");
-      input.value="";
-      input.removeAttribute("style");
-      if(row)row.removeAttribute("style");
-      try{syncInput()}catch{}
-      composerRect=composer.getBoundingClientRect();
-      inputRect=input.getBoundingClientRect();
-      const composerStyle=getComputedStyle(composer);
-      borderLeft=parseFloat(composerStyle.borderLeftWidth)||0;
-      borderTop=parseFloat(composerStyle.borderTopWidth)||0;
-      const icon=composer.querySelector("#composerSend .send-icon");
-      if(icon){
-        iconCss=computedDeclarations(getComputedStyle(icon));
-        glyphCss=computedDeclarations(getComputedStyle(icon,"::before"));
-      }
-    }catch(error){console.warn("Images reference geometry could not be measured",error)}
-    finally{
-      composer.className=originalComposerClass;
-      input.className=originalInputClass;
-      input.value=originalInputValue;
-      if(originalInputStyle===null)input.removeAttribute("style");else input.setAttribute("style",originalInputStyle);
-      if(row){if(originalRowStyle===null)row.removeAttribute("style");else row.setAttribute("style",originalRowStyle)}
-      measuring=false;
-    }
-    if(!composerRect||!inputRect||composerRect.width<1||composerRect.height<1||inputRect.width<1||inputRect.height<1)return;
-    /* Pin the whole Music panel to the Images panel rectangle. */
-    composer.classList.add(composerLock);
-    composer.style.setProperty(composerVars[0],composerRect.left+"px");
-    composer.style.setProperty(composerVars[1],composerRect.top+"px");
-    composer.style.setProperty(composerVars[2],composerRect.width+"px");
-    composer.style.setProperty(composerVars[3],composerRect.height+"px");
-    /* Pin the textarea to the same four viewport edges inside that panel. */
-    input.classList.add(inputLock);
-    input.style.setProperty(inputVars[0],(inputRect.left-composerRect.left-borderLeft)+"px");
-    input.style.setProperty(inputVars[1],(inputRect.top-composerRect.top-borderTop)+"px");
-    input.style.setProperty(inputVars[2],inputRect.width+"px");
-    input.style.setProperty(inputVars[3],inputRect.height+"px");
-    /* Copy every computed wrapper/glyph property from the actual Images arrow,
-       including the mask, color, dimensions and alignment; never alter Images. */
-    if(iconCss&&glyphCss){
-      let arrowStyle=document.getElementById("areon-music-arrow-from-images-reference");
-      if(!arrowStyle){arrowStyle=document.createElement("style");arrowStyle.id="areon-music-arrow-from-images-reference";document.head.appendChild(arrowStyle)}
-      arrowStyle.textContent=
-        "html body #composer.mode-music #composerSend .send-icon{"+iconCss+"}"+
-        "html body #composer.mode-music #composerSend .send-icon::before{"+glyphCss+"}";
+  function captureImagesReference(){
+    if(!composer.isConnected||!input.isConnected||!composer.classList.contains("mode-images"))return;
+    const panel=composer.getBoundingClientRect(),field=input.getBoundingClientRect();
+    if(panel.width<1||panel.height<1||field.width<1||field.height<1)return;
+    const panelCss=getComputedStyle(composer),fieldCss=getComputedStyle(input);
+    const icon=composer.querySelector("#composerSend .send-icon");
+    const iconCss=icon?getComputedStyle(icon):null;
+    const glyphCss=icon?getComputedStyle(icon,"::before"):null;
+    imageReference={
+      left:panel.left,top:panel.top,width:panel.width,height:panel.height,
+      fieldLeft:field.left-panel.left-(parseFloat(panelCss.borderLeftWidth)||0),
+      fieldTop:field.top-panel.top-(parseFloat(panelCss.borderTopWidth)||0),
+      fieldWidth:field.width,fieldHeight:field.height,
+      panelCss:serialize(panelCss,imageLayoutProps),
+      fieldCss:serialize(fieldCss,inputLayoutProps),
+      arrowCss:iconCss?serialize(iconCss,Array.from({length:iconCss.length},(_,i)=>iconCss.item(i))):"",
+      glyphCss:glyphCss?serialize(glyphCss,Array.from({length:glyphCss.length},(_,i)=>glyphCss.item(i))):"",
+      viewportWidth:window.innerWidth,viewportHeight:window.innerHeight
+    };
+    applyReferenceStyles();
+  }
+  function makeFallbackReference(){
+    const width=Math.max(1,Math.min(900,window.innerWidth-265));
+    const usableWidth=Math.max(1,window.innerWidth-253);
+    const left=229+(usableWidth-width)/2;
+    const height=110,top=window.innerHeight-17-height;
+    imageReference={
+      left,top,width,height,fieldLeft:11,fieldTop:10,fieldWidth:Math.max(1,width-22),fieldHeight:34,
+      panelCss:"box-sizing:border-box!important;display:grid!important;padding:9px 10px 7px!important;grid-template-columns:minmax(0,1fr)!important;grid-template-rows:34px 34px 14px!important;row-gap:5px!important;align-content:start!important;align-items:center!important;",
+      fieldCss:"box-sizing:border-box!important;display:block!important;width:100%!important;height:34px!important;min-height:34px!important;max-height:34px!important;margin:0!important;padding:9px 3px 10px!important;grid-column:1/-1!important;grid-row:1!important;align-self:stretch!important;line-height:15px!important;overflow-x:hidden!important;overflow-y:auto!important;resize:none!important;",
+      arrowCss:"",glyphCss:"",viewportWidth:window.innerWidth,viewportHeight:window.innerHeight
+    };
+  }
+  function applyReferenceStyles(){
+    if(!imageReference||!composer.isConnected||!input.isConnected)return;
+    if(window.innerWidth<=800){release();return}
+    const ref=imageReference;
+    /* The reference is bottom-anchored in Images. Keep its measured edges locked in Music. */
+    const width=Math.max(1,Math.min(900,window.innerWidth-265));
+    const usableWidth=Math.max(1,window.innerWidth-253);
+    const left=229+(usableWidth-width)/2;
+    const top=window.innerHeight-17-ref.height;
+    composer.classList.add(lockClass);
+    composer.style.setProperty("--areon-images-ref-left",left+"px");
+    composer.style.setProperty("--areon-images-ref-top",top+"px");
+    composer.style.setProperty("--areon-images-ref-width",width+"px");
+    composer.style.setProperty("--areon-images-ref-height",ref.height+"px");
+    let style=document.getElementById(layoutStyleId);
+    if(!style){style=document.createElement("style");style.id=layoutStyleId;document.head.appendChild(style)}
+    style.textContent=
+      "#composer.mode-music."+lockClass+"{"+
+        "position:fixed!important;inset:auto!important;left:var(--areon-images-ref-left)!important;top:var(--areon-images-ref-top)!important;right:auto!important;bottom:auto!important;"+
+        "width:var(--areon-images-ref-width)!important;min-width:var(--areon-images-ref-width)!important;max-width:var(--areon-images-ref-width)!important;"+
+        "height:var(--areon-images-ref-height)!important;min-height:var(--areon-images-ref-height)!important;max-height:var(--areon-images-ref-height)!important;"+
+        "margin:0!important;flex:none!important;flex-basis:auto!important;z-index:100001!important;transform:none!important;contain:none!important;"+ref.panelCss+"}"+
+      "#composer.mode-music."+lockClass+" #composerInput{"+ref.fieldCss+"width:100%!important;min-width:0!important;max-width:100%!important;}";
+    if(ref.arrowCss&&ref.glyphCss){
+      let arrow=document.getElementById(arrowStyleId);
+      if(!arrow){arrow=document.createElement("style");arrow.id=arrowStyleId;document.head.appendChild(arrow)}
+      arrow.textContent=
+        "html body #composer.mode-music #composerSend .send-icon{"+ref.arrowCss+"}"+
+        "html body #composer.mode-music #composerSend .send-icon::before{"+ref.glyphCss+"}";
     }
   }
-  const geometryStyle=document.createElement("style");
-  geometryStyle.id="areonMusicImagesGeometryLock";
-  geometryStyle.textContent=
-    "#composer.mode-music."+composerLock+"{"+
-      "position:fixed!important;inset:auto!important;left:var(--areon-ref-composer-left)!important;top:var(--areon-ref-composer-top)!important;right:auto!important;bottom:auto!important;"+
-      "box-sizing:border-box!important;width:var(--areon-ref-composer-width)!important;min-width:var(--areon-ref-composer-width)!important;max-width:var(--areon-ref-composer-width)!important;"+
-      "height:var(--areon-ref-composer-height)!important;min-height:var(--areon-ref-composer-height)!important;max-height:var(--areon-ref-composer-height)!important;"+
-      "margin:0!important;flex:none!important;flex-basis:auto!important;transform:none!important;contain:none!important}"+
-    "#composer.mode-music #composerInput."+inputLock+"{"+
-      "position:absolute!important;inset:auto!important;left:var(--areon-ref-input-left)!important;top:var(--areon-ref-input-top)!important;right:auto!important;bottom:auto!important;"+
-      "box-sizing:border-box!important;width:var(--areon-ref-input-width)!important;min-width:var(--areon-ref-input-width)!important;max-width:var(--areon-ref-input-width)!important;"+
-      "height:var(--areon-ref-input-height)!important;min-height:var(--areon-ref-input-height)!important;max-height:var(--areon-ref-input-height)!important;"+
-      "margin:0!important;align-self:start!important;grid-column:auto!important;grid-row:auto!important;transform:none!important;z-index:2!important;pointer-events:auto!important}";
-  document.head.appendChild(geometryStyle);
   const schedule=()=>{
     if(frame)cancelAnimationFrame(frame);
-    frame=requestAnimationFrame(()=>{frame=requestAnimationFrame(()=>{frame=0;measureAndApply()})});
+    frame=requestAnimationFrame(()=>{frame=requestAnimationFrame(()=>{
+      frame=0;
+      if(composer.classList.contains("mode-images"))captureImagesReference();
+      else if(composer.classList.contains("mode-music")){if(!imageReference)makeFallbackReference();applyReferenceStyles()}
+    })});
   };
   const previousSetMode=setMode;
   setMode=function(next,render=true){
+    const target=String(next||"");
     const result=previousSetMode(next,render);
-    schedule();
+    if(target==="images"){release();schedule()}
+    else if(target==="music"){schedule()}
+    else release();
     return result;
   };
   window.addEventListener("resize",schedule,{passive:true});
   window.visualViewport?.addEventListener("resize",schedule,{passive:true});
   window.visualViewport?.addEventListener("scroll",schedule,{passive:true});
-  const wrap=composer.closest(".composer-wrap");
-  if(window.ResizeObserver&&wrap){
-    const observer=new ResizeObserver(schedule);
-    observer.observe(wrap);
-  }
   schedule();
 })();
