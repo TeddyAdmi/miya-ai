@@ -8498,3 +8498,34 @@ document.head.appendChild(musicCardPolish);const oldHero=modeHero;modeHero=funct
   `;
   document.head.appendChild(style);
 })();
+
+
+/* Override conflicting Music geometry at the final cascade layer. */
+(function lockMusicPromptPositionAndArrowGlyph(){
+  const id="areonMusicPromptPositionArrowFinal";
+  if(document.getElementById(id))return;
+  const style=document.createElement("style");
+  style.id=id;
+  style.textContent=`
+  @media (min-width:801px){
+    /* Use positional offset because later layout rules reset transform:none. */
+    #composer.mode-music{
+      position:relative!important;
+      top:16px!important;
+    }
+  }
+  /* Music arrow is the CSS mask on ::before, not an SVG element. */
+  #composer.mode-music #composerSend .send-icon,
+  #composer.mode-music #composerSend .send-icon::before{
+    width:18px!important;
+    height:18px!important;
+    min-width:18px!important;
+    min-height:18px!important;
+  }
+  #composer.mode-music #composerSend .send-icon::before{
+    display:block!important;
+    background-size:contain!important;
+  }
+  `;
+  document.head.appendChild(style);
+})();
