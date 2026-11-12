@@ -623,9 +623,10 @@ body.light #composer.mode-images .areon-model-logo{
   const controlRect=control?control.getBoundingClientRect():null;
   const oldLogo=select.id==="composerModel"&&!control?select.previousElementSibling:null;
   const oldLogoRect=oldLogo&&oldLogo.classList.contains("areon-model-logo")?oldLogo.getBoundingClientRect():null;
+  const musicSelect=select.id.startsWith("music");
   const left=controlRect?controlRect.left:(oldLogoRect?oldLogoRect.left:selectRect.left);
   let desiredWidth=Math.ceil(controlRect?controlRect.width:(selectRect.width+(oldLogoRect?oldLogoRect.width:0)));
-  // Ratio menus must exactly match their closed 90px trigger; only model menus expand to fit long labels.
+  // Ratio menus keep the trigger width; model menus fit their full labels.
   const isRatioSelect=select.id==="composerRatio"||select.id==="videoRatio";
   const modelSelect=document.getElementById(select.id==="videoModel"?"videoModel":"composerModel")||document.getElementById("composerModel");
   if((select.id==="composerModel"||select.id==="videoModel")&&modelSelect){
@@ -639,14 +640,33 @@ body.light #composer.mode-images .areon-model-logo{
     desiredWidth=Math.max(desiredWidth,Math.ceil(logoWidth+7.5+longest+28));
    }
   }
+  if(musicSelect){
+   // Each music menu gets an independent width based on its longest real option label.
+   const canvas=document.createElement("canvas"),ctx=canvas.getContext("2d");
+   if(ctx){
+    ctx.font="600 12px Inter,system-ui,sans-serif";
+    const longest=availableOptions(select).reduce((max,option)=>Math.max(max,ctx.measureText(String(option.label||option.textContent||option.value)).width),0);
+    desiredWidth=Math.max(desiredWidth,Math.ceil(longest+44));
+   }
+  }
   const width=Math.max(1,Math.min(desiredWidth,window.innerWidth-16));
   popup.style.width=width+"px";
-  popup.style.left=Math.max(8,Math.min(left,window.innerWidth-width-8))+"px";
-  // Fit all model options when possible; only scroll on unusually short viewports.
+  const popupLeft=Math.max(8,Math.min(left,window.innerWidth-width-8));
+  popup.style.left=popupLeft+"px";
   const desiredHeight=popup.scrollHeight;
+  const popupAnchor=controlRect||oldLogoRect||selectRect;
+  if(musicSelect){
+   // Show at most ten 36px rows and anchor the list above its field; the rest scrolls.
+   const tenRowsHeight=10*36+8;
+   const availableAbove=Math.max(80,selectRect.top-12);
+   const visibleHeight=Math.min(desiredHeight,tenRowsHeight,availableAbove,window.innerHeight-16);
+   popup.style.maxHeight=Math.max(80,visibleHeight)+"px";
+   const popupHeight=Math.min(desiredHeight,tenRowsHeight,availableAbove,window.innerHeight-16);
+   popup.style.top=Math.max(8,selectRect.top-popupHeight-4)+"px";
+   return;
+  }
   popup.style.maxHeight=Math.max(80,Math.min(desiredHeight,window.innerHeight-16))+"px";
   const popupHeight=Math.min(desiredHeight,window.innerHeight-16);
-  const popupAnchor=controlRect||oldLogoRect||selectRect;
   const below=window.innerHeight-popupAnchor.bottom-8;
   const above=popupAnchor.top-8;
   let top;

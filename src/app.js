@@ -8233,3 +8233,24 @@ document.head.appendChild(musicCardPolish);const oldHero=modeHero;modeHero=funct
   }`;
   document.head.appendChild(style);
 })();
+
+
+/* Match the 31px Images ratio trigger (16:9), not the taller Nano Banana model tile. */
+(function setMusicControlsToImageRatioHeight(){
+  const id="areonMusicRatioHeightAndUpwardMenus";
+  if(document.getElementById(id))return;
+  const style=document.createElement("style");
+  style.id=id;
+  style.textContent=`
+  #composer.mode-music .music-options .select-pill{
+    box-sizing:border-box!important;
+    height:31px!important;
+    min-height:31px!important;
+    max-height:31px!important;
+    padding:0 27px 0 8px!important;
+    line-height:16px!important;
+    align-self:center!important;
+  }
+  `;
+  document.head.appendChild(style);
+})();
