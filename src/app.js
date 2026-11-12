@@ -7020,6 +7020,11 @@ body.light #composer.mode-music .music-options #composerMic:focus-visible{
   min-width:17px!important;min-height:17px!important;margin:0!important;
   background-color:#fff!important;
 }
+/* Pin the Music composer to the wrapper's bottom edge so added textarea height grows upward. */
+#composer.mode-music{
+  align-self:flex-end!important;
+  margin-top:auto!important;
+}
 `;
 document.head.appendChild(musicFinalAlignment);
  const musicPlayerPrecision=document.createElement("style");musicPlayerPrecision.id="areonMusicPlayerPrecision";musicPlayerPrecision.textContent=`
