@@ -8409,3 +8409,40 @@ document.head.appendChild(musicCardPolish);const oldHero=modeHero;modeHero=funct
   ].join(String.fromCharCode(10));
   document.head.appendChild(style);
 })();
+
+
+/* Final Music composer height: keep its bottom rail in place and remove excess height above it. */
+(function lockMusicComposerHeightToImages(){
+  const id="areonMusicComposerHeightFinal";
+  if(document.getElementById(id))return;
+  const style=document.createElement("style");
+  style.id=id;
+  style.textContent=`
+    @media(min-width:801px){
+      #composer.mode-music{
+        box-sizing:border-box!important;
+        height:auto!important;min-height:0!important;max-height:none!important;
+        grid-template-rows:34px 34px 14px!important;
+        row-gap:5px!important;
+        align-content:start!important;
+        padding-top:9px!important;padding-bottom:7px!important;
+      }
+      #composer.mode-music .composer-input-row{display:contents!important}
+      #composer.mode-music #composerInput{
+        height:34px!important;min-height:34px!important;max-height:34px!important;
+        align-self:stretch!important;
+      }
+      #composer.mode-music .music-options{
+        grid-row:2!important;height:34px!important;min-height:34px!important;max-height:34px!important;
+      }
+      #composer.mode-music .composer-status{
+        grid-row:3!important;height:14px!important;min-height:14px!important;max-height:14px!important;
+        align-items:center!important;
+      }
+      #composer.mode-music .composer-status .status-dot{
+        align-self:center!important;margin:0!important;transform:none!important;
+      }
+    }
+  `;
+  document.head.appendChild(style);
+})();
