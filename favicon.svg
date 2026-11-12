@@ -5,6 +5,7 @@
   <linearGradient id="play" x1="25" y1="17" x2="43" y2="36" gradientUnits="userSpaceOnUse"><stop stop-color="#FFFFFF"/><stop offset="1" stop-color="#83F0FF"/></linearGradient>
   <linearGradient id="tracks" x1="12" y1="46" x2="53" y2="56" gradientUnits="userSpaceOnUse"><stop stop-color="#20D8FF"/><stop offset=".55" stop-color="#8A4DFF"/><stop offset="1" stop-color="#FF8B45"/></linearGradient>
 </defs>
+<g transform="translate(2 0) rotate(-12 32 32) skewY(-6)">
 <rect x="5" y="4" width="54" height="56" rx="10" fill="url(#body)"/>
 <rect x="9" y="8" width="46" height="48" rx="7" fill="#101B43"/>
 <rect x="12" y="11" width="40" height="30" rx="4" fill="url(#screen)" stroke="#78DFFF" stroke-opacity=".8" stroke-width="1.2"/>
@@ -18,4 +19,5 @@
 <rect x="22.5" y="50.8" width="14" height="2.2" rx="1.1" fill="url(#tracks)"/>
 <rect x="38" y="50.8" width="11" height="2.2" rx="1.1" fill="#A36BFF"/>
 <circle cx="46.5" cy="46.7" r="2" fill="#FFF2C6" stroke="#FF9C54" stroke-width="1"/>
+</g>
 </svg>

@@ -4791,3 +4791,7 @@ html body.light #areonComposerSelectPopup.areon-composer-select-popup .areon-com
   filter:none!important;
   background:#e3ebf4!important;
 }
+
+/* Areon brand mark: larger angled creative-editor tablet */
+.side-logo{width:52px!important;height:52px!important;flex:0 0 52px!important;filter:drop-shadow(0 3px 9px rgba(55,150,255,.38))!important}
+.side-brand{gap:10px!important}
