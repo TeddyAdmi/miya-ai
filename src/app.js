@@ -8042,13 +8042,13 @@ document.head.appendChild(musicCardPolish);const oldHero=modeHero;modeHero=funct
       width:min(900px,calc(100vw - 265px))!important;
       max-width:900px!important;
       min-width:0!important;
-      height:152px!important;
-      min-height:152px!important;
-      max-height:152px!important;
+      height:110px!important;
+      min-height:110px!important;
+      max-height:110px!important;
       margin:0 auto!important;
       padding:9px 10px 7px!important;
       grid-template-columns:minmax(0,1fr)!important;
-      grid-template-rows:76px 34px 14px!important;
+      grid-template-rows:34px 34px 14px!important;
       row-gap:5px!important;
       align-content:start!important;
       align-items:center!important;
@@ -8063,14 +8063,14 @@ document.head.appendChild(musicCardPolish);const oldHero=modeHero;modeHero=funct
       box-sizing:border-box!important;
       width:100%!important;
       min-width:0!important;
-      height:76px!important;
-      min-height:76px!important;
-      max-height:76px!important;
+      height:34px!important;
+      min-height:34px!important;
+      max-height:34px!important;
       margin:0!important;
       padding:9px 3px 10px!important;
-      line-height:1.5!important;
+      line-height:15px!important;
       align-self:stretch!important;
-      overflow-y:auto!important;
+      overflow-y:hidden!important;
       resize:none!important;
       transform:none!important;
     }
