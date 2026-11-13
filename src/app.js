@@ -7387,73 +7387,6 @@ function nav(parent,ref,mobile){if(!parent||parent.querySelector('[data-mode="mu
  }
  function progress(pct,msg){const b=$m(".areon-music-loading",canvas);if(!b)return;const n=$m(".areon-music-progress-ring span",b),d=$m(".areon-music-loading-detail",b);if(n)n.textContent=Math.round(Math.max(1,Math.min(99,pct)) )+"%";if(d)d.textContent=msg}
  function saveSong(url,lyrics,title,meta,image){const item={id:"music-"+Date.now()+"-"+Math.random().toString(36).slice(2),type:"music",url,image:image||"",prompt:lyrics,model:title||"Новая песня",format:"audio/flac",createdAt:Date.now(),musicMeta:meta};const list=getLibrary();list.unshift(item);try{localStorage.setItem(LIB_KEY,JSON.stringify(list.slice(0,500)))}catch{try{localStorage.setItem(LIB_KEY,JSON.stringify(list.slice(0,100)))}catch{}}return item}
- function firstFourChorusLines(lyrics){
-  const raw=String(lyrics||"").replace(/\r/g,"").split("\n");
-  const sections=[];let current=null;
-  const heading=/^\s*\[?\s*(куплет|verse|припев|chorus|бридж|bridge|интро|intro|аутро|outro)\s*(?:\d+)?[^\]]*\]?\s*:?\s*$/i;
-  for(const line of raw){
-   const clean=String(line||"").trim();
-   const match=clean.match(heading);
-   if(match){
-    const kind=/^(припев|chorus)$/i.test(match[1])?"chorus":"other";
-    current={kind,lines:[]};sections.push(current);continue;
-   }
-   if(current&&clean&&!/^(не заменять|не менять|повторить припев)$/i.test(clean))current.lines.push(clean);
-  }
-  const chorus=sections.find(section=>section.kind==="chorus");
-  const chosen=chorus?.lines?.length?chorus.lines:raw.map(line=>String(line||"").trim()).filter(line=>line&&!heading.test(line)&&!/^(не заменять|не менять|повторить припев)$/i.test(line));
-  return chosen.slice(0,4);
- }
- async function generateMusicCover(lyrics){
-  const lines=firstFourChorusLines(lyrics);
-  if(!lines.length)return {image:"",model:""};
-  const excerpt=lines.join("\n");
-  const prompt=[
-   "Создай оригинальную горизонтальную обложку музыкального сингла в формате 16:9, как широкая кинематографичная обложка.",
-   "Используй следующие строки припева только как смысловое и эмоциональное вдохновение: передай их сюжет, образы и настроение выразительной кинематографичной сценой. Не изображай текст песни буквально.",
-   "Первые четыре строки припева:\n"+excerpt,
-   "Профессиональная обложка музыкального релиза, выразительная композиция, яркие насыщенные цвета, детализированный главный образ, красивый свет и глубина.",
-   "Не добавляй никаких надписей, букв, цифр, текста песни, логотипов, водяных знаков или рамок. Без коллажа и без макета обложки внутри картинки."
-  ].join("\n\n");
-  const requestJson=async(payload,timeoutMs)=>{
-   const response=await fetch("/api/image",{
-    method:"POST",headers:{"Content-Type":"application/json","Accept":"application/json"},
-    body:JSON.stringify(payload),cache:"no-store",signal:AbortSignal.timeout(timeoutMs)
-   });
-   const raw=await response.text();let data={};try{data=raw?JSON.parse(raw):{}}catch{}
-   if(!response.ok||data.ok===false)throw new Error(String(data.message||data.error||raw||("HTTP "+response.status)).slice(0,350));
-   return data;
-  };
-  try{
-   const base={mode:"image",provider:"imagefree",model:"Z-Image Turbo (ImageFree)",ratio:"16:9",prompt};
-   const started=await requestJson({...base,action:"start"},22000);
-   const taskId=String(started.taskId||"").trim();
-   if(!taskId)throw new Error("Z-Image Turbo не вернула номер задания");
-   const deadline=Date.now()+45000;
-   while(Date.now()<deadline){
-    await new Promise(resolve=>setTimeout(resolve,1700));
-    const status=await requestJson({...base,action:"status",taskId},12000);
-    if(status.status==="completed"&&/^https?:\/\//i.test(String(status.imageUrl||""))){
-     return {image:String(status.imageUrl),model:"Z-Image Turbo"};
-    }
-    if(["failed","error","cancelled","canceled"].includes(String(status.status||"").toLowerCase())){
-     throw new Error(String(status.message||"Z-Image Turbo завершилась ошибкой"));
-    }
-   }
-   throw new Error("Z-Image Turbo не вернула обложку за 45 секунд");
-  }catch(error){
-   console.warn("Music cover: Z-Image Turbo failed; trying Flux Dev.",String(error?.message||error));
-  }
-  try{
-   const data=await requestJson({prompt,model:"Flux Dev",ratio:"16:9"},60000);
-   const image=String(data.imageUrl||(Array.isArray(data.imageUrls)?data.imageUrls[0]:"")||"").trim();
-   if(!/^https?:\/\//i.test(image))throw new Error("Flux Dev не вернул ссылку на обложку");
-   return {image,model:"Flux Dev"};
-  }catch(error){
-   console.warn("Music cover: Z-Image Turbo and Flux Dev failed.",String(error?.message||error));
-   return {image:"",model:""};
-  }
- }
  async function generateMusic(lyrics){
   const finalLyrics=String(lyrics||"").trim();if(busy){toast("Песня уже создаётся. Дождитесь завершения.");return}if(!lyricsApproved&&!(/\[(?:куплет|припев|бридж|интро|аутро)/i.test(finalLyrics)||finalLyrics.split(/\n/).filter(x=>x.trim()).length>=4)){toast("Сначала открой «Создать текст» и подготовь текст песни");openLyrics();return}if(!finalLyrics){toast("Добавь текст песни перед созданием");return}if($m("#musicRecipient",opts)?.value==="Другой адресат"&&!customRecipient.trim()){toast("Укажи другого адресата в окне «Создать текст»");openLyrics();return}
   busy=true;if(send)send.disabled=true;canvas.innerHTML='<div class="areon-music-loading"><div class="areon-music-progress-ring"><span>1%</span></div><b>Создание песни</b><div class="areon-music-loading-detail">Подключаюсь к Aura…</div></div>';if(status)status.textContent="Создание песни…";const started=Date.now();clearInterval(progressTimer);progressTimer=setInterval(()=>progress(Math.min(94,3+(Date.now()-started)/1000*1.1),"Aura создаёт музыку и вокал…"),1000);
@@ -7488,22 +7421,7 @@ function nav(parent,ref,mobile){if(!parent||parent.querySelector('[data-mode="mu
     if(!completed)throw new Error("Aura не завершила создание песни за 8 минут");
     return {result:completed,id:taskId};
    };
-   let songTask=null;
-   for(let attempt=0;attempt<2;attempt++){
-    try{songTask=await createAuraSongTask();break}
-    catch(error){
-     const message=String(error?.message||error);
-     const cudaFailure=/unspecified launch failure|cudaErrorLaunchFailure|CUDA[^\\n]*launch failure/i.test(message);
-     if(attempt===0&&cudaFailure){
-      console.warn("Aura CUDA worker failed; retrying once with a fresh task.",message);
-      progress(8,"Сбой GPU Aura. Повторяю запуск…");
-      await new Promise(resolve=>setTimeout(resolve,1800));
-      continue;
-     }
-     throw error;
-    }
-   }
-   if(!songTask)throw new Error("Aura не вернула результат создания песни");
+   const songTask=await createAuraSongTask();
    const {result,id}=songTask;
    clearInterval(progressTimer);progressTimer=0;
    const url=String(result?.audio_url||result?.audioUrl||result?.result?.audio_url||result?.data?.audio_url||"");
@@ -7513,16 +7431,7 @@ function nav(parent,ref,mobile){if(!parent||parent.querySelector('[data-mode="mu
    lyricsApproved=false;input.value="";syncInput();
    if(status)status.textContent="Песня готова";
    toast("Песня создана");renderWall();
-   // Do not launch cover generation until the song is safely created.
-   const coverPromise=generateMusicCover(finalLyrics);
-   coverPromise.then(cover=>{
-    if(!cover?.image||!savedSong?.id)return;
-    const all=getLibrary();
-    const updated=all.map(x=>String(x.id)===String(savedSong.id)?{...x,image:cover.image,musicMeta:{...(x.musicMeta||{}),coverModel:cover.model||""}}:x);
-    try{localStorage.setItem(LIB_KEY,JSON.stringify(updated))}catch{}
-    if(mode==="music")renderWall();
-    if(mode==="library"&&libraryActiveTab==="music")renderLibrary("music");
-   }).catch(error=>console.warn("Background music cover update failed",error))
+
   }catch(e){console.error("Aura song failed",e);clearInterval(progressTimer);progressTimer=0;canvas.innerHTML="";const wrap=document.createElement("div");wrap.className="areon-music-empty";const inner=document.createElement("div"),h=document.createElement("h2"),p=document.createElement("p"),a=document.createElement("a");h.textContent="Не удалось создать песню";p.textContent=/Failed to fetch|NetworkError|CORS|fetch/i.test(String(e?.message||""))?"Не удалось связаться с сервисом создания музыки. Проверь подключение и попробуй ещё раз.":String(e?.message||"Ошибка создания музыки");inner.append(h,p);wrap.appendChild(inner);canvas.appendChild(wrap);if(status)status.textContent="Не удалось создать песню";toast("Не удалось создать песню")}
   finally{clearInterval(progressTimer);progressTimer=0;busy=false;if(send)send.disabled=false}
  }
