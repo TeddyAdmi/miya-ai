@@ -2937,6 +2937,7 @@ function toast(message){
 function syncInput(){
  const i=$("#composerInput");if(!i)return;
  const composer=i.closest("#composer");
+ const isMusic=Boolean(composer?.classList.contains("mode-music"));
  const cs=getComputedStyle(i);
  const lineHeight=Number.parseFloat(cs.lineHeight)||15;
  const padding=(Number.parseFloat(cs.paddingTop)||0)+(Number.parseFloat(cs.paddingBottom)||0);
@@ -2949,8 +2950,21 @@ function syncInput(){
  const h=Math.min(maxHeight,contentHeight);
  i.style.setProperty("height",h+"px","important");
  i.style.setProperty("overflow-y",contentHeight>maxHeight?"auto":"hidden","important");
- // The Images layout lets its auto grid track follow the textarea; Music uses the same flow.
- composer?.style.removeProperty("grid-template-rows");
+ if(isMusic){
+  // Keep Music's controls/status at the bottom; increase the prompt track and panel upward.
+  const panelHeight=h+76; // prompt + 34px options + 14px status + gaps + padding + borders
+  composer.style.setProperty("grid-template-rows",h+"px 34px 14px","important");
+  composer.style.setProperty("height",panelHeight+"px","important");
+  composer.style.setProperty("min-height",panelHeight+"px","important");
+  composer.style.setProperty("max-height",panelHeight+"px","important");
+  composer.style.setProperty("align-self","flex-end","important");
+ }else if(composer){
+  composer.style.removeProperty("grid-template-rows");
+  composer.style.removeProperty("height");
+  composer.style.removeProperty("min-height");
+  composer.style.removeProperty("max-height");
+  composer.style.removeProperty("align-self");
+ }
  const row=i.closest(".composer-input-row");if(row)row.style.height="";
 }
 function renderAssistantQuoteBlock(){
@@ -7132,21 +7146,22 @@ musicFinalAlignment.textContent += `
 /* One canonical Music composer layout, matching Chat, Images and Video. */
 musicFinalAlignment.textContent += `
 #composer.mode-music{
-  position:relative!important;inset:auto!important;transform:none!important;contain:none!important;
+  position:relative!important;inset:auto!important;transform:translateY(42px)!important;contain:none!important;
   display:grid!important;box-sizing:border-box!important;flex:0 0 auto!important;flex-basis:auto!important;
+  align-self:flex-end!important;
   width:min(900px,calc(100vw - 265px))!important;max-width:900px!important;min-width:0!important;
-  height:auto!important;min-height:110px!important;max-height:none!important;
+  height:110px!important;min-height:110px!important;max-height:110px!important;
   margin:0 auto!important;padding:9px 10px 7px!important;
-  grid-template-columns:minmax(0,1fr)!important;grid-template-rows:minmax(34px,auto) 34px 14px!important;
+  grid-template-columns:minmax(0,1fr)!important;grid-template-rows:34px 34px 14px!important;
   row-gap:5px!important;align-content:start!important;align-items:center!important;overflow:visible!important;
 }
 #composer.mode-music .composer-input-row{display:contents!important;height:auto!important;min-height:0!important;max-height:none!important}
 #composer.mode-music #composerInput{
   position:relative!important;grid-column:1/-1!important;grid-row:1!important;display:block!important;
   box-sizing:border-box!important;width:100%!important;min-width:0!important;
-  height:auto!important;min-height:34px!important;max-height:none!important;
+  height:34px!important;min-height:34px!important;max-height:none!important;
   margin:0!important;padding:9px 3px 10px!important;line-height:15px!important;
-  align-self:stretch!important;overflow-x:hidden!important;overflow-y:hidden!important;resize:none!important;transform:none!important;
+  align-self:end!important;overflow-x:hidden!important;overflow-y:hidden!important;resize:none!important;transform:none!important;
 }
 #composer.mode-music .music-options{
   grid-column:1/-1!important;grid-row:2!important;align-self:center!important;
