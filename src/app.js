@@ -7146,7 +7146,7 @@ musicFinalAlignment.textContent += `
 /* One canonical Music composer layout, matching Chat, Images and Video. */
 musicFinalAlignment.textContent += `
 #composer.mode-music{
-  position:relative!important;inset:auto!important;transform:translateY(42px)!important;contain:none!important;
+  position:relative!important;inset:auto!important;transform:none!important;contain:none!important;
   display:grid!important;box-sizing:border-box!important;flex:0 0 auto!important;flex-basis:auto!important;
   align-self:flex-end!important;
   width:min(900px,calc(100vw - 265px))!important;max-width:900px!important;min-width:0!important;
@@ -7161,7 +7161,7 @@ musicFinalAlignment.textContent += `
   box-sizing:border-box!important;width:100%!important;min-width:0!important;
   height:34px!important;min-height:34px!important;max-height:none!important;
   margin:0!important;padding:9px 3px 10px!important;line-height:15px!important;
-  align-self:end!important;overflow-x:hidden!important;overflow-y:hidden!important;resize:none!important;transform:translateY(-42px)!important;
+  align-self:end!important;overflow-x:hidden!important;overflow-y:hidden!important;resize:none!important;transform:none!important;
 }
 #composer.mode-music .music-options{
   grid-column:1/-1!important;grid-row:2!important;align-self:center!important;
