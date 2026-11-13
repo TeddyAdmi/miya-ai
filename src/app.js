@@ -7457,7 +7457,72 @@ function nav(parent,ref,mobile){if(!parent||parent.querySelector('[data-mode="mu
  async function generateMusic(lyrics){
   const finalLyrics=String(lyrics||"").trim();if(busy){toast("Песня уже создаётся. Дождитесь завершения.");return}if(!lyricsApproved&&!(/\[(?:куплет|припев|бридж|интро|аутро)/i.test(finalLyrics)||finalLyrics.split(/\n/).filter(x=>x.trim()).length>=4)){toast("Сначала открой «Создать текст» и подготовь текст песни");openLyrics();return}if(!finalLyrics){toast("Добавь текст песни перед созданием");return}if($m("#musicRecipient",opts)?.value==="Другой адресат"&&!customRecipient.trim()){toast("Укажи другого адресата в окне «Создать текст»");openLyrics();return}
   busy=true;if(send)send.disabled=true;canvas.innerHTML='<div class="areon-music-loading"><div class="areon-music-progress-ring"><span>1%</span></div><b>Создание песни</b><div class="areon-music-loading-detail">Подключаюсь к Aura…</div></div>';if(status)status.textContent="Создание песни…";const started=Date.now();clearInterval(progressTimer);progressTimer=setInterval(()=>progress(Math.min(94,3+(Date.now()-started)/1000*1.1),"Aura создаёт музыку и вокал…"),1000);
-  try{const occasion=$m("#musicOccasion").value,recipientChoice=$m("#musicRecipient",opts)?.value||"Маме",recipient=recipientChoice==="Другой адресат"?customRecipient.trim():recipientChoice,genre=$m("#musicGenre").value,vocal=$m("#musicVocal").value,title=!["Своя тема","Своя история","Просто песня"].includes(occasion)?occasion:(lastTopic||finalLyrics.split("\n").find(x=>x.trim())||"Новая песня").replace(/^\[.*?\]\s*/,"").slice(0,70),payload={lyrics:finalLyrics,recipient,genre,genre_label:genre,style_prompt:styleForGenre(genre),mood:/люб|романт|свадьб/i.test(occasion+" "+lastTopic)?"romantic":"warm",occasion,performer:styleForGenre(genre),vocal,title,instrumental:vocal==="Без слов",tier:"standard"};const coverPromise=generateMusicCover(finalLyrics);const r=await fetch("https://aurasoundai.ru/api/generate-song",{method:"POST",mode:"cors",credentials:"omit",headers:{"Content-Type":"application/json","Accept":"application/json"},body:JSON.stringify(payload),cache:"no-store"});const raw=await r.text();let created={};try{created=raw?JSON.parse(raw):{}}catch{}if(!r.ok)throw new Error(created.message||created.error||"Aura song HTTP "+r.status);const id=String(created.task_id||created.taskId||created.id||"");if(!id)throw new Error("Aura не вернула идентификатор задачи");let result=null;for(let i=0;i<120;i++){await new Promise(r=>setTimeout(r,4000));const pr=await fetch("https://aurasoundai.ru/api/task/"+encodeURIComponent(id),{method:"GET",mode:"cors",credentials:"omit",headers:{"Accept":"application/json"},cache:"no-store"});const txt=await pr.text();let state={};try{state=txt?JSON.parse(txt):{}}catch{}if(!pr.ok)throw new Error(state.message||state.error||"Aura status HTTP "+pr.status);const s=String(state.status||state.data?.status||"").toLowerCase();if(["done","completed","success"].includes(s)){result=state;break}if(["error","failed"].includes(s))throw new Error(state.error?.message||state.error||state.message||"Aura не смогла создать песню");progress(Math.min(96,8+(Date.now()-started)/1000*.75),s==="waiting_audio"?"Музыка почти готова…":"Создаю мелодию и вокал…")}clearInterval(progressTimer);progressTimer=0;const url=String(result?.audio_url||result?.audioUrl||result?.result?.audio_url||result?.data?.audio_url||"");if(!/^https:\/\//i.test(url))throw new Error("Aura не успела вернуть аудиофайл");progress(99,"Сохраняю готовую песню…");const savedSong=saveSong(url,finalLyrics,String(result?.title||result?.result?.title||title),{genre,occasion,recipient,vocal,taskId:id,coverModel:""},"");lyricsApproved=false;input.value="";syncInput();if(status)status.textContent="Песня готова";toast("Песня создана");renderWall();coverPromise.then(cover=>{if(!cover?.image||!savedSong?.id)return;const all=getLibrary();const updated=all.map(x=>String(x.id)===String(savedSong.id)?{...x,image:cover.image,musicMeta:{...(x.musicMeta||{}),coverModel:cover.model||""}}:x);try{localStorage.setItem(LIB_KEY,JSON.stringify(updated))}catch{}if(mode==="music")renderWall();if(mode==="library"&&libraryActiveTab==="music")renderLibrary("music")}).catch(error=>console.warn("Background music cover update failed",error))
+  try{const occasion=$m("#musicOccasion").value,recipientChoice=$m("#musicRecipient",opts)?.value||"Маме",recipient=recipientChoice==="Другой адресат"?customRecipient.trim():recipientChoice,genre=$m("#musicGenre").value,vocal=$m("#musicVocal").value,title=!["Своя тема","Своя история","Просто песня"].includes(occasion)?occasion:(lastTopic||finalLyrics.split("\n").find(x=>x.trim())||"Новая песня").replace(/^\[.*?\]\s*/,"").slice(0,70),payload={lyrics:finalLyrics,recipient,genre,genre_label:genre,style_prompt:styleForGenre(genre),mood:/люб|романт|свадьб/i.test(occasion+" "+lastTopic)?"romantic":"warm",occasion,performer:styleForGenre(genre),vocal,title,instrumental:vocal==="Без слов",tier:"standard"};const createAuraSongTask=async()=>{
+    const response=await fetch("https://aurasoundai.ru/api/generate-song",{
+     method:"POST",mode:"cors",credentials:"omit",
+     headers:{"Content-Type":"application/json","Accept":"application/json"},
+     body:JSON.stringify(payload),cache:"no-store"
+    });
+    const raw=await response.text();
+    let created={};try{created=raw?JSON.parse(raw):{}}catch{}
+    if(!response.ok)throw new Error(created.message||created.error||"Aura song HTTP "+response.status);
+    const taskId=String(created.task_id||created.taskId||created.id||"");
+    if(!taskId)throw new Error("Aura не вернула идентификатор задачи");
+    let completed=null;
+    for(let i=0;i<120;i++){
+     await new Promise(resolve=>setTimeout(resolve,4000));
+     const poll=await fetch("https://aurasoundai.ru/api/task/"+encodeURIComponent(taskId),{
+      method:"GET",mode:"cors",credentials:"omit",headers:{"Accept":"application/json"},cache:"no-store"
+     });
+     const text=await poll.text();
+     let state={};try{state=text?JSON.parse(text):{}}catch{}
+     if(!poll.ok)throw new Error(state.message||state.error||"Aura status HTTP "+poll.status);
+     const taskStatus=String(state.status||state.data?.status||"").toLowerCase();
+     if(["done","completed","success"].includes(taskStatus)){completed=state;break}
+     if(["error","failed","cancelled","canceled"].includes(taskStatus)){
+      const detail=typeof state.error==="string"?state.error:(state.error?.message||state.message||state.detail||"Aura не смогла создать песню");
+      throw new Error(String(detail));
+     }
+     progress(Math.min(96,8+(Date.now()-started)/1000*.75),taskStatus==="waiting_audio"?"Музыка почти готова…":"Создаю мелодию и вокал…");
+    }
+    if(!completed)throw new Error("Aura не завершила создание песни за 8 минут");
+    return {result:completed,id:taskId};
+   };
+   let songTask=null;
+   for(let attempt=0;attempt<2;attempt++){
+    try{songTask=await createAuraSongTask();break}
+    catch(error){
+     const message=String(error?.message||error);
+     const cudaFailure=/unspecified launch failure|cudaErrorLaunchFailure|CUDA[^\\n]*launch failure/i.test(message);
+     if(attempt===0&&cudaFailure){
+      console.warn("Aura CUDA worker failed; retrying once with a fresh task.",message);
+      progress(8,"Сбой GPU Aura. Повторяю запуск…");
+      await new Promise(resolve=>setTimeout(resolve,1800));
+      continue;
+     }
+     throw error;
+    }
+   }
+   if(!songTask)throw new Error("Aura не вернула результат создания песни");
+   const {result,id}=songTask;
+   clearInterval(progressTimer);progressTimer=0;
+   const url=String(result?.audio_url||result?.audioUrl||result?.result?.audio_url||result?.data?.audio_url||"");
+   if(!/^https:\/\//i.test(url))throw new Error("Aura не успела вернуть аудиофайл");
+   progress(99,"Сохраняю готовую песню…");
+   const savedSong=saveSong(url,finalLyrics,String(result?.title||result?.result?.title||title),{genre,occasion,recipient,vocal,taskId:id,coverModel:""},"");
+   lyricsApproved=false;input.value="";syncInput();
+   if(status)status.textContent="Песня готова";
+   toast("Песня создана");renderWall();
+   // Do not launch cover generation until the song is safely created.
+   const coverPromise=generateMusicCover(finalLyrics);
+   coverPromise.then(cover=>{
+    if(!cover?.image||!savedSong?.id)return;
+    const all=getLibrary();
+    const updated=all.map(x=>String(x.id)===String(savedSong.id)?{...x,image:cover.image,musicMeta:{...(x.musicMeta||{}),coverModel:cover.model||""}}:x);
+    try{localStorage.setItem(LIB_KEY,JSON.stringify(updated))}catch{}
+    if(mode==="music")renderWall();
+    if(mode==="library"&&libraryActiveTab==="music")renderLibrary("music");
+   }).catch(error=>console.warn("Background music cover update failed",error))
   }catch(e){console.error("Aura song failed",e);clearInterval(progressTimer);progressTimer=0;canvas.innerHTML="";const wrap=document.createElement("div");wrap.className="areon-music-empty";const inner=document.createElement("div"),h=document.createElement("h2"),p=document.createElement("p"),a=document.createElement("a");h.textContent="Не удалось создать песню";p.textContent=/Failed to fetch|NetworkError|CORS|fetch/i.test(String(e?.message||""))?"Не удалось связаться с сервисом создания музыки. Проверь подключение и попробуй ещё раз.":String(e?.message||"Ошибка создания музыки");inner.append(h,p);wrap.appendChild(inner);canvas.appendChild(wrap);if(status)status.textContent="Не удалось создать песню";toast("Не удалось создать песню")}
   finally{clearInterval(progressTimer);progressTimer=0;busy=false;if(send)send.disabled=false}
  }
