@@ -7161,7 +7161,7 @@ musicFinalAlignment.textContent += `
   box-sizing:border-box!important;width:100%!important;min-width:0!important;
   height:34px!important;min-height:34px!important;max-height:none!important;
   margin:0!important;padding:9px 3px 10px!important;line-height:15px!important;
-  align-self:end!important;overflow-x:hidden!important;overflow-y:hidden!important;resize:none!important;transform:none!important;
+  align-self:end!important;overflow-x:hidden!important;overflow-y:hidden!important;resize:none!important;transform:translateY(-42px)!important;
 }
 #composer.mode-music .music-options{
   grid-column:1/-1!important;grid-row:2!important;align-self:center!important;
